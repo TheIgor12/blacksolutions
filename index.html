@@ -118,7 +118,7 @@ footer .wrap{display:flex;justify-content:space-between;gap:16px;flex-wrap:wrap;
 <div class="hero"><div class="wrap">
  <div class="grade">
   <div>
-   <div class="selo"><i></i> HappyFEET Gestão versão 1.2 disponível</div>
+   <div class="selo"><i></i> HappyFEET Gestão versão 1.2.1 disponível</div>
    <h1>A clínica de podologia inteira <span class="grad">em um só sistema.</span></h1>
    <p class="lead">Agenda, prontuário, anamnese, financeiro e cobrança pelo WhatsApp. Traga suas planilhas do Excel e o sistema organiza tudo sozinho, cada dado no seu lugar.</p>
    <div class="acoes">
@@ -218,7 +218,7 @@ footer .wrap{display:flex;justify-content:space-between;gap:16px;flex-wrap:wrap;
 
 <script>
 // Link fixo para a última versão publicada do instalador
-const DOWNLOAD='https://github.com/TheIgor12/blacksolutions/releases/latest/download/HappyFEETGestao_Instalador.exe';
+const DOWNLOAD='download/HappyFEETGestao_Instalador.exe';
 document.querySelectorAll('.baixar').forEach(a=>a.href=DOWNLOAD);
 const io=new IntersectionObserver(es=>es.forEach(e=>{if(e.isIntersecting){e.target.classList.add('on');io.unobserve(e.target)}}),{threshold:.12});
 document.querySelectorAll('.revela').forEach(el=>io.observe(el));
