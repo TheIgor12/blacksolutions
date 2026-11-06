@@ -104,13 +104,31 @@ footer .wrap{display:flex;justify-content:space-between;gap:16px;flex-wrap:wrap;
  .numeros{grid-template-columns:repeat(2,1fr)}.recursos,.passos,.galeria{grid-template-columns:1fr}
  .links{display:none}section{padding:64px 0}.destaque{margin-bottom:60px}
 }
+.pers{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:8px}
+.pers figure{margin:0}.pers figcaption{color:var(--mut);font-size:14px;padding:10px 4px 0;text-align:center}
+.paleta{display:flex;gap:10px;margin:18px 0 6px}.paleta i{width:34px;height:34px;border-radius:10px;border:2px solid rgba(255,255,255,.15);display:block}
+.comp{width:100%;border-collapse:separate;border-spacing:0;background:var(--card);border:1px solid var(--linha);border-radius:18px;overflow:hidden}
+.comp th,.comp td{padding:16px 18px;text-align:left;border-bottom:1px solid var(--linha);font-size:15px;vertical-align:top}
+.comp tr:last-child td{border-bottom:0}
+.comp th{background:#0b0e17;font-size:14px;color:var(--mut);font-weight:800;letter-spacing:.04em}
+.comp td:nth-child(2){color:#d8f7e7;font-weight:700}.comp td:nth-child(3){color:var(--mut)}
+.comp td:nth-child(2)::before{content:"✓ ";color:#34d399}
+.fonte{color:var(--mut);font-size:12px;margin-top:10px;text-align:center}
+.planos{display:grid;grid-template-columns:1fr 1fr;gap:18px;max-width:860px;margin:0 auto}
+.plano{background:var(--card);border:1px solid var(--linha);border-radius:20px;padding:30px}
+.plano.dest{border-color:rgba(59,130,246,.6);background:linear-gradient(180deg,#0f1733,var(--card));box-shadow:0 0 50px rgba(10,75,222,.25)}
+.plano h3{margin:0 0 6px;font-size:22px}.plano .pr{font-size:34px;font-weight:900;margin:8px 0}.plano .pr small{font-size:15px;color:var(--mut);font-weight:600}
+.plano ul{list-style:none;padding:0;margin:16px 0 24px}.plano li{padding:6px 0 6px 26px;position:relative;color:#d5dbea}
+.plano li::before{content:"✓";position:absolute;left:0;color:#34d399;font-weight:900}
+.pag{display:flex;gap:10px;flex-wrap:wrap;margin-top:6px}.pag span{background:rgba(255,255,255,.06);border:1px solid var(--linha);border-radius:8px;padding:5px 10px;font-size:13px;color:#cfd6e8}
+@media (max-width:900px){.pers,.planos{grid-template-columns:1fr}.comp th:nth-child(3),.comp td:nth-child(3){display:none}}
 @media (prefers-reduced-motion:reduce){.mascote{animation:none}.revela{opacity:1;transform:none;transition:none}}
 </style>
 </head>
 <body>
 <header><div class="wrap nav">
  <a class="marca" href="#"><span class="bl">◆</span><span>Black<b>Solutions</b></span></a>
- <nav class="links"><a href="#recursos">Recursos</a><a href="#como">Como funciona</a><a href="#telas">Telas</a><a href="#duvidas">Dúvidas</a></nav>
+ <nav class="links"><a href="#recursos">Recursos</a><a href="#personalize">Sua marca</a><a href="#diferencas">Por que nós</a><a href="#planos">Planos</a><a href="#duvidas">Dúvidas</a></nav>
  <a class="btn sm baixar" href="#">Baixar grátis</a>
 </div></header>
 
@@ -118,7 +136,7 @@ footer .wrap{display:flex;justify-content:space-between;gap:16px;flex-wrap:wrap;
 <div class="hero"><div class="wrap">
  <div class="grade">
   <div>
-   <div class="selo"><i></i> HappyFEET Gestão versão 1.2.1 disponível</div>
+   <div class="selo"><i></i> 14 dias grátis, sem cartão de crédito</div>
    <h1>A clínica de podologia inteira <span class="grad">em um só sistema.</span></h1>
    <p class="lead">Agenda, prontuário, anamnese, financeiro e cobrança pelo WhatsApp. Traga suas planilhas do Excel e o sistema organiza tudo sozinho, cada dado no seu lugar.</p>
    <div class="acoes">
@@ -136,7 +154,7 @@ footer .wrap{display:flex;justify-content:space-between;gap:16px;flex-wrap:wrap;
   <div class="num revela"><b>1 clique</b><span>para importar todas as planilhas</span></div>
   <div class="num revela"><b>Nuvem</b><span>dados guardados em servidor no Brasil</span></div>
   <div class="num revela"><b>Equipe</b><span>vários usuários na mesma clínica</span></div>
-  <div class="num revela"><b>Automático</b><span>atualizações chegam sozinhas</span></div>
+  <div class="num revela"><b>Sua marca</b><span>cores e logotipo da sua clínica</span></div>
  </div>
 </div></div>
 
@@ -188,9 +206,48 @@ footer .wrap{display:flex;justify-content:space-between;gap:16px;flex-wrap:wrap;
  </div>
 </div></section>
 
+<section id="personalize" style="padding-top:0"><div class="wrap">
+ <div class="destaque revela" style="margin-bottom:30px">
+  <div class="txt"><h3>Com a cara da sua clínica</h3><p>O sistema é personalizável. Em Configurações, você escolhe a cor principal, a cor da barra superior e envia o logotipo da sua clínica. Tudo muda na hora e vale para toda a equipe, em todos os computadores.</p>
+   <ul><li>Cor dos botões e destaques</li><li>Cor da barra superior</li><li>Logotipo da clínica no menu</li><li>Mensagens de cobrança e retorno com o nome da clínica</li></ul>
+   <div class="paleta"><i style="background:#0a4bde"></i><i style="background:#0f8c64"></i><i style="background:#7c3aed"></i><i style="background:#db2777"></i><i style="background:#ea580c"></i><i style="background:#0e7490"></i></div></div>
+  <div class="shot"><img src="img/pers_config.webp" alt="Tela de configurações com escolha de cores e logotipo da clínica" loading="lazy" width="1440" height="860"></div>
+ </div>
+ <div class="pers">
+  <figure class="revela"><div class="shot"><img src="img/pers_verde.webp" alt="Sistema com a cor verde e o logotipo de uma clínica de demonstração" loading="lazy" width="1440" height="860"></div><figcaption>Clínica de demonstração em verde</figcaption></figure>
+  <figure class="revela"><div class="shot"><img src="img/pers_roxa.webp" alt="Sistema com a cor roxa e o logotipo de outra clínica de demonstração" loading="lazy" width="1440" height="860"></div><figcaption>Clínica de demonstração em roxo</figcaption></figure>
+ </div>
+</div></section>
+
+<section id="diferencas" style="padding-top:0"><div class="wrap">
+ <div class="tit revela"><small>POR QUE NÓS</small><h2>O que muda em relação ao que existe no mercado</h2><p>Estudamos os sistemas mais usados pelas clínicas e montamos o nosso para resolver o que mais incomoda quem já usa um.</p></div>
+ <div class="revela" style="overflow-x:auto"><table class="comp">
+  <tr><th></th><th>HAPPYFEET GESTÃO</th><th>COMUM NO MERCADO</th></tr>
+  <tr><td>Teste antes de pagar</td><td>14 dias grátis, sem cartão</td><td>Muitos sistemas não oferecem teste grátis</td></tr>
+  <tr><td>Implantação</td><td>Sem taxa: instale e use</td><td>Implantação obrigatória, cobrada à parte</td></tr>
+  <tr><td>Trazer os dados do sistema antigo</td><td>Importação automática do Excel, incluída</td><td>Pacote de migração pago separadamente</td></tr>
+  <tr><td>Lembrete e cobrança pelo WhatsApp</td><td>Botões que abrem o WhatsApp, sem custo por mensagem</td><td>Mensagens cobradas conforme o uso</td></tr>
+  <tr><td>Especialidade</td><td>Feito para podologia, com anamnese podológica pronta</td><td>Muitos são feitos para odontologia e adaptados</td></tr>
+  <tr><td>Equipe</td><td>Convide quantas pessoas precisar</td><td>Varia conforme o plano</td></tr>
+  <tr><td>Internet caiu</td><td>Continua funcionando e sincroniza depois</td><td>Varia conforme o sistema</td></tr>
+  <tr><td>Seus dados</td><td>Exporte tudo para o Excel quando quiser</td><td>Varia conforme o sistema</td></tr>
+ </table></div>
+ <p class="fonte revela">Comparação baseada em planos e condições publicados por sistemas de gestão de clínicas em 2026. Condições de cada empresa podem mudar.</p>
+</div></section>
+
+<section id="planos" style="padding-top:0"><div class="wrap">
+ <div class="tit revela"><small>PLANOS</small><h2>Comece grátis hoje</h2><p>Experimente tudo por 14 dias. Se gostar, continue com a assinatura mensal.</p></div>
+ <div class="planos">
+  <div class="plano revela"><h3>Teste grátis</h3><div class="pr">14 dias <small>sem custo</small></div><ul><li>Todos os recursos liberados</li><li>Importação das suas planilhas</li><li>Equipe ilimitada</li><li>Sem cartão de crédito para começar</li></ul><a class="btn baixar" href="#">Baixar e começar</a></div>
+  <div class="plano dest revela"><h3>Assinatura mensal</h3><div class="pr">Mensal <small>por clínica</small></div><ul><li>Tudo do teste grátis</li><li>Dados guardados na nuvem, no Brasil</li><li>Atualizações automáticas</li><li>Sua cor e seu logotipo</li></ul><div class="pag"><span>Pix</span><span>Cartão de crédito</span></div><p style="color:var(--mut);font-size:14px;margin:14px 0 0">O valor e o link de pagamento aparecem dentro do programa, na tela de assinatura.</p></div>
+ </div>
+</div></section>
+
 <section id="duvidas" style="padding-top:0"><div class="wrap">
  <div class="tit revela"><small>DÚVIDAS</small><h2>Perguntas frequentes</h2></div>
  <div class="faq">
+  <details><summary>O teste é grátis mesmo?</summary><p>Sim. Você usa todos os recursos por 14 dias, sem informar cartão. Depois desse prazo, o acesso continua com a assinatura mensal, por Pix ou cartão de crédito. Se não assinar, seus dados ficam guardados e voltam a aparecer quando você assinar.</p></details>
+  <details><summary>Posso usar a cor e o logotipo da minha clínica?</summary><p>Sim. Em Configurações você escolhe a cor principal, a cor da barra superior e envia o logotipo. A mudança vale para toda a equipe.</p></details>
   <details><summary>Preciso instalar mais alguma coisa?</summary><p>Não. O instalador já traz tudo o que o programa precisa. Basta o Windows 10 ou 11 atualizado.</p></details>
   <details><summary>Apareceu "O Windows protegeu o computador". E agora?</summary><p>Clique em "Mais informações" e depois em "Executar assim mesmo". O aviso aparece com programas novos que ainda não têm certificado de assinatura digital.</p></details>
   <details><summary>Onde ficam os dados da minha clínica?</summary><p>Em um servidor na nuvem localizado em São Paulo, com regras de segurança que impedem uma clínica de ver os dados de outra. Uma cópia fica no computador para o sistema continuar funcionando se a internet cair.</p></details>
@@ -204,7 +261,7 @@ footer .wrap{display:flex;justify-content:space-between;gap:16px;flex-wrap:wrap;
  <div class="cta revela">
   <img src="img/mascote.png" alt="" width="220" height="220">
   <h2>Pronto para organizar a sua clínica?</h2>
-  <p>Baixe o HappyFEET Gestão, crie a conta da clínica e importe suas planilhas hoje mesmo.</p>
+  <p>Baixe o HappyFEET Gestão, crie a conta da clínica e teste tudo por 14 dias, sem cartão de crédito.</p>
   <a class="btn baixar" href="#"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 4v12M6 10l6 6 6-6M4 20h16"/></svg> Baixar para Windows</a>
   <div class="req"><span>Windows 10 e 11</span><span>Cerca de 15 MB</span><span>Internet para sincronizar</span></div>
  </div>
