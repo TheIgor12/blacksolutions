@@ -1,0 +1,227 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Black Solutions | HappyFEET Gestão, o sistema da clínica de podologia</title>
+<meta name="description" content="HappyFEET Gestão: agenda, prontuário, anamnese, financeiro e cobrança pelo WhatsApp em um só sistema. Importe suas planilhas do Excel e comece no mesmo dia.">
+<meta property="og:title" content="HappyFEET Gestão | Black Solutions">
+<meta property="og:description" content="O sistema completo para a sua clínica de podologia. Baixe grátis.">
+<meta property="og:image" content="img/dashboard.webp">
+<link rel="icon" href="favicon.ico">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+<style>
+:root{--azul:#0a4bde;--azul2:#3b82f6;--ciano:#38bdf8;--preto:#06070b;--preto2:#0d1018;--card:#121623;--linha:rgba(255,255,255,.08);--txt:#e8ecf7;--mut:#9aa3ba}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{margin:0;background:var(--preto);color:var(--txt);font-family:Nunito,"Segoe UI",Arial,sans-serif;line-height:1.55;overflow-x:hidden}
+a{color:inherit}
+.wrap{max-width:1180px;margin:0 auto;padding:0 20px}
+/* topo */
+header{position:sticky;top:0;z-index:20;background:rgba(6,7,11,.75);backdrop-filter:blur(12px);border-bottom:1px solid var(--linha)}
+.nav{display:flex;align-items:center;justify-content:space-between;height:66px;gap:16px}
+.marca{display:flex;align-items:center;gap:10px;text-decoration:none;font-weight:900;font-size:20px;letter-spacing:.02em}
+.marca .bl{width:34px;height:34px;border-radius:10px;background:linear-gradient(135deg,#1c1f2b,#000);border:1px solid rgba(255,255,255,.15);display:grid;place-items:center;font-size:15px;box-shadow:0 0 22px rgba(10,75,222,.45)}
+.marca span b{color:var(--azul2)}
+.links{display:flex;gap:26px;font-weight:700;font-size:15px}
+.links a{text-decoration:none;color:var(--mut)}.links a:hover{color:#fff}
+.btn{display:inline-flex;align-items:center;gap:10px;background:linear-gradient(135deg,var(--azul),var(--azul2));color:#fff;text-decoration:none;font-weight:800;padding:13px 22px;border-radius:12px;box-shadow:0 10px 30px rgba(10,75,222,.45);transition:transform .15s,box-shadow .15s;border:0;font-size:16px;cursor:pointer}
+.btn:hover{transform:translateY(-2px);box-shadow:0 14px 40px rgba(10,75,222,.6)}
+.btn.sm{padding:9px 16px;font-size:14px}
+.btn.ghost{background:transparent;border:1px solid rgba(255,255,255,.2);box-shadow:none}
+.btn svg{width:20px;height:20px}
+/* hero */
+.hero{position:relative;padding:80px 0 40px;overflow:hidden}
+.hero::before{content:"";position:absolute;inset:-200px -100px auto;height:700px;background:radial-gradient(600px 380px at 75% 30%,rgba(10,75,222,.45),transparent 70%),radial-gradient(500px 300px at 10% 10%,rgba(56,189,248,.18),transparent 70%);pointer-events:none}
+.hero .grade{position:relative;display:grid;grid-template-columns:1.05fr 1fr;gap:40px;align-items:center}
+.selo{display:inline-flex;align-items:center;gap:8px;background:rgba(59,130,246,.12);border:1px solid rgba(59,130,246,.35);color:#bcd3ff;padding:6px 14px;border-radius:30px;font-size:13px;font-weight:700;margin-bottom:20px}
+.selo i{width:8px;height:8px;border-radius:50%;background:#34d399;box-shadow:0 0 10px #34d399}
+h1{font-size:clamp(34px,5vw,58px);line-height:1.08;margin:0 0 20px;font-weight:900;letter-spacing:-.01em}
+h1 .grad{background:linear-gradient(90deg,#fff,var(--ciano) 50%,var(--azul2));-webkit-background-clip:text;background-clip:text;color:transparent}
+.hero p.lead{font-size:19px;color:var(--mut);margin:0 0 30px;max-width:560px}
+.acoes{display:flex;gap:14px;flex-wrap:wrap;align-items:center}
+.nota{font-size:13px;color:var(--mut);margin-top:14px}
+.palco{position:relative}
+.tela{border-radius:16px;overflow:hidden;border:1px solid rgba(255,255,255,.12);box-shadow:0 30px 80px rgba(0,0,0,.6),0 0 0 1px rgba(10,75,222,.3),0 0 80px rgba(10,75,222,.35);transform:perspective(1400px) rotateY(-8deg) rotateX(3deg);background:#fff}
+.tela img{display:block;width:100%}
+.mascote{position:absolute;left:-40px;bottom:-30px;width:150px;filter:drop-shadow(0 18px 30px rgba(0,0,0,.6));animation:flutua 4s ease-in-out infinite}
+@keyframes flutua{50%{transform:translateY(-12px)}}
+.numeros{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-top:70px}
+.num{background:var(--card);border:1px solid var(--linha);border-radius:16px;padding:20px}
+.num b{display:block;font-size:28px;font-weight:900;color:#fff}
+.num span{color:var(--mut);font-size:14px}
+/* seções */
+section{padding:90px 0}
+.tit{text-align:center;max-width:720px;margin:0 auto 50px}
+.tit small{color:var(--azul2);font-weight:800;letter-spacing:.14em;font-size:13px}
+.tit h2{font-size:clamp(28px,3.6vw,42px);margin:10px 0 12px;font-weight:900;line-height:1.15}
+.tit p{color:var(--mut);font-size:17px;margin:0}
+.recursos{display:grid;grid-template-columns:repeat(3,1fr);gap:18px}
+.rec{background:linear-gradient(180deg,var(--card),var(--preto2));border:1px solid var(--linha);border-radius:18px;padding:26px;transition:border-color .2s,transform .2s}
+.rec:hover{border-color:rgba(59,130,246,.5);transform:translateY(-4px)}
+.rec .ic{width:46px;height:46px;border-radius:12px;display:grid;place-items:center;background:rgba(59,130,246,.14);color:var(--azul2);margin-bottom:16px}
+.rec .ic svg{width:24px;height:24px}
+.rec h3{margin:0 0 8px;font-size:19px}
+.rec p{margin:0;color:var(--mut);font-size:15px}
+.destaque{display:grid;grid-template-columns:1fr 1.15fr;gap:50px;align-items:center;margin-bottom:90px}
+.destaque.inv{grid-template-columns:1.15fr 1fr}
+.destaque.inv .txt{order:2}
+.destaque h3{font-size:clamp(24px,3vw,34px);margin:0 0 14px;line-height:1.2;font-weight:900}
+.destaque p{color:var(--mut);font-size:17px;margin:0 0 18px}
+.destaque ul{list-style:none;padding:0;margin:0}
+.destaque li{padding:7px 0 7px 30px;position:relative;color:#d5dbea}
+.destaque li::before{content:"";position:absolute;left:0;top:12px;width:18px;height:18px;border-radius:50%;background:rgba(52,211,153,.15);border:2px solid #34d399}
+.shot{border-radius:14px;overflow:hidden;border:1px solid rgba(255,255,255,.1);box-shadow:0 24px 60px rgba(0,0,0,.55),0 0 60px rgba(10,75,222,.2)}
+.shot img{display:block;width:100%}
+.passos{display:grid;grid-template-columns:repeat(3,1fr);gap:18px;counter-reset:p}
+.passo{background:var(--card);border:1px solid var(--linha);border-radius:18px;padding:28px;position:relative}
+.passo::before{counter-increment:p;content:counter(p);position:absolute;top:-18px;left:24px;width:40px;height:40px;border-radius:12px;background:linear-gradient(135deg,var(--azul),var(--azul2));display:grid;place-items:center;font-weight:900;font-size:18px;box-shadow:0 8px 20px rgba(10,75,222,.5)}
+.passo h3{margin:10px 0 8px}
+.passo p{color:var(--mut);margin:0}
+.galeria{display:grid;grid-template-columns:repeat(3,1fr);gap:16px}
+.galeria figure{margin:0}
+.galeria figcaption{color:var(--mut);font-size:14px;padding:10px 4px 0;text-align:center}
+.cta{position:relative;border-radius:28px;padding:60px 30px;text-align:center;overflow:hidden;background:radial-gradient(500px 260px at 50% 0%,rgba(59,130,246,.45),transparent 70%),linear-gradient(180deg,#0e1430,#090b14);border:1px solid rgba(59,130,246,.35)}
+.cta img{width:110px;margin-bottom:10px;filter:drop-shadow(0 12px 24px rgba(0,0,0,.6))}
+.cta h2{font-size:clamp(28px,4vw,44px);margin:0 0 12px;font-weight:900}
+.cta p{color:#c6cfe6;font-size:17px;margin:0 auto 26px;max-width:560px}
+.req{display:flex;gap:22px;justify-content:center;flex-wrap:wrap;margin-top:22px;color:var(--mut);font-size:14px}
+.faq{max-width:820px;margin:0 auto}
+details{background:var(--card);border:1px solid var(--linha);border-radius:14px;padding:18px 22px;margin-bottom:12px}
+summary{cursor:pointer;font-weight:800;font-size:17px;list-style:none;display:flex;justify-content:space-between;gap:16px}
+summary::-webkit-details-marker{display:none}
+summary::after{content:"+";color:var(--azul2);font-size:22px;line-height:1}
+details[open] summary::after{content:"−"}
+details p{color:var(--mut);margin:12px 0 0}
+footer{border-top:1px solid var(--linha);padding:34px 0;color:var(--mut);font-size:14px}
+footer .wrap{display:flex;justify-content:space-between;gap:16px;flex-wrap:wrap;align-items:center}
+.revela{opacity:0;transform:translateY(24px);transition:opacity .7s,transform .7s}
+.revela.on{opacity:1;transform:none}
+@media (max-width:900px){
+ .hero{padding-top:50px}.hero .grade,.destaque,.destaque.inv{grid-template-columns:1fr}.destaque.inv .txt{order:0}
+ .tela{transform:none}.mascote{width:100px;left:auto;right:-6px;bottom:-24px}
+ .numeros{grid-template-columns:repeat(2,1fr)}.recursos,.passos,.galeria{grid-template-columns:1fr}
+ .links{display:none}section{padding:64px 0}.destaque{margin-bottom:60px}
+}
+@media (prefers-reduced-motion:reduce){.mascote{animation:none}.revela{opacity:1;transform:none;transition:none}}
+</style>
+</head>
+<body>
+<header><div class="wrap nav">
+ <a class="marca" href="#"><span class="bl">◆</span><span>Black<b>Solutions</b></span></a>
+ <nav class="links"><a href="#recursos">Recursos</a><a href="#como">Como funciona</a><a href="#telas">Telas</a><a href="#duvidas">Dúvidas</a></nav>
+ <a class="btn sm baixar" href="#">Baixar grátis</a>
+</div></header>
+
+<main>
+<div class="hero"><div class="wrap">
+ <div class="grade">
+  <div>
+   <div class="selo"><i></i> HappyFEET Gestão versão 1.2 disponível</div>
+   <h1>A clínica de podologia inteira <span class="grad">em um só sistema.</span></h1>
+   <p class="lead">Agenda, prontuário, anamnese, financeiro e cobrança pelo WhatsApp. Traga suas planilhas do Excel e o sistema organiza tudo sozinho, cada dado no seu lugar.</p>
+   <div class="acoes">
+    <a class="btn baixar" href="#"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 4v12M6 10l6 6 6-6M4 20h16"/></svg> Baixar para Windows</a>
+    <a class="btn ghost" href="#telas">Ver as telas</a>
+   </div>
+   <div class="nota">Windows 10 e 11. Instalação em menos de 1 minuto, sem precisar de nenhum outro programa.</div>
+  </div>
+  <div class="palco">
+   <div class="tela"><img src="img/dashboard.webp" alt="Painel com indicadores financeiros e de agenda da clínica" width="1440" height="860"></div>
+   <img class="mascote" src="img/mascote.png" alt="Mascote HappyFEET" width="220" height="220">
+  </div>
+ </div>
+ <div class="numeros">
+  <div class="num revela"><b>1 clique</b><span>para importar todas as planilhas</span></div>
+  <div class="num revela"><b>Nuvem</b><span>dados guardados em servidor no Brasil</span></div>
+  <div class="num revela"><b>Equipe</b><span>vários usuários na mesma clínica</span></div>
+  <div class="num revela"><b>Automático</b><span>atualizações chegam sozinhas</span></div>
+ </div>
+</div></div>
+
+<section id="recursos"><div class="wrap">
+ <div class="tit revela"><small>RECURSOS</small><h2>Tudo o que a clínica usa no dia a dia</h2><p>Feito junto com uma clínica de podologia de verdade, para resolver o que realmente toma tempo.</p></div>
+ <div class="recursos">
+  <div class="rec revela"><div class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg></div><h3>Agenda por profissional</h3><p>Visão por semana ou por dia, cores por profissional, confirmação, faltas e alertas de retorno de quem sumiu.</p></div>
+  <div class="rec revela"><div class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6M8 13h8M8 17h6"/></svg></div><h3>Prontuário completo</h3><p>Cadastro, anamnese, evolução de cada atendimento, controle de sessões e histórico de agendamentos.</p></div>
+  <div class="rec revela"><div class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="2" y="6" width="20" height="12" rx="2"/><circle cx="12" cy="12" r="3"/></svg></div><h3>Financeiro sem planilha</h3><p>Parcelamento, contas a receber e a pagar, fluxo de caixa e o resultado real do mês, com as despesas descontadas.</p></div>
+  <div class="rec revela"><div class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M21 11.5a8.4 8.4 0 0 1-12.4 7.4L3 21l2.1-5.5A8.4 8.4 0 1 1 21 11.5z"/></svg></div><h3>Cobrança pelo WhatsApp</h3><p>Veja quem está em atraso e há quantos dias. Um clique abre o WhatsApp com a mensagem de cobrança pronta.</p></div>
+  <div class="rec revela"><div class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 16V4M6 10l6-6 6 6M4 20h16"/></svg></div><h3>Importação inteligente</h3><p>Selecione todos os arquivos do Excel de uma vez. O sistema reconhece pacientes, financeiro, tratamentos, agenda e anamnese.</p></div>
+  <div class="rec revela"><div class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></svg></div><h3>Relatórios e painel</h3><p>Aniversariantes, origem dos pacientes, procedimentos mais vendidos, faltas, inadimplência e ticket médio.</p></div>
+ </div>
+</div></section>
+
+<section style="padding-top:20px"><div class="wrap">
+ <div class="destaque revela">
+  <div class="txt"><h3>Saia do Excel sem perder nada</h3><p>Exportou tudo do sistema antigo? Selecione os arquivos e pronto. O sistema analisa cada aba, mostra o que reconheceu e grava na ordem certa, ligando cada parcela e cada anamnese ao paciente correto.</p>
+   <ul><li>Vários arquivos e várias abas ao mesmo tempo</li><li>Reconhece pelo conteúdo, não pelo nome do arquivo</li><li>Mostra a confiança de cada aba antes de gravar</li><li>Planilha modelo pronta para baixar</li></ul></div>
+  <div class="shot"><img src="img/importar.webp" alt="Tela de importação reconhecendo seis abas automaticamente" loading="lazy" width="1440" height="860"></div>
+ </div>
+ <div class="destaque inv revela">
+  <div class="txt"><h3>Dinheiro parado não paga as contas</h3><p>A tela de inadimplência junta todas as parcelas vencidas por paciente, mostra há quantos dias estão em atraso e deixa a cobrança a um clique, direto no WhatsApp.</p>
+   <ul><li>Valor em atraso e total em aberto de cada paciente</li><li>Mensagem de cobrança personalizada</li><li>Baixa do pagamento com data e forma</li></ul></div>
+  <div class="shot"><img src="img/inadimplencia.webp" alt="Tela de inadimplência com botão de cobrança pelo WhatsApp" loading="lazy" width="1440" height="860"></div>
+ </div>
+ <div class="destaque revela">
+  <div class="txt"><h3>A agenda que a equipe entende de primeira</h3><p>Cada profissional com a sua cor, faltas e desmarcações à vista e a lista de pacientes que precisam voltar, com o WhatsApp a um clique.</p>
+   <ul><li>Semana e dia</li><li>Status: agendado, confirmado, atendido, faltou</li><li>Alerta de retorno configurável</li></ul></div>
+  <div class="shot"><img src="img/agenda.webp" alt="Agenda semanal com atendimentos por profissional" loading="lazy" width="1440" height="860"></div>
+ </div>
+</div></section>
+
+<section id="como" style="padding-top:0"><div class="wrap">
+ <div class="tit revela"><small>COMO FUNCIONA</small><h2>Do download ao primeiro atendimento</h2><p>Sem técnico, sem instalação complicada.</p></div>
+ <div class="passos">
+  <div class="passo revela"><h3>Baixe e instale</h3><p>Clique em Baixar, abra o arquivo e avance até o fim. O programa abre sozinho.</p></div>
+  <div class="passo revela"><h3>Crie a conta da clínica</h3><p>Nome, e-mail e senha. Você vira o administrador e convida a sua equipe.</p></div>
+  <div class="passo revela"><h3>Traga seus dados</h3><p>Importe as planilhas do Excel de uma vez e comece a usar no mesmo dia.</p></div>
+ </div>
+</div></section>
+
+<section id="telas" style="padding-top:0"><div class="wrap">
+ <div class="tit revela"><small>TELAS</small><h2>Veja por dentro</h2><p>Imagens do sistema com dados de demonstração.</p></div>
+ <div class="galeria">
+  <figure class="revela"><div class="shot"><img src="img/ficha.webp" alt="Ficha do paciente" loading="lazy" width="1440" height="860"></div><figcaption>Ficha do paciente</figcaption></figure>
+  <figure class="revela"><div class="shot"><img src="img/dashboard.webp" alt="Painel analítico" loading="lazy" width="1440" height="860"></div><figcaption>Painel analítico</figcaption></figure>
+  <figure class="revela"><div class="shot"><img src="img/login.webp" alt="Tela de acesso" loading="lazy" width="1440" height="860"></div><figcaption>Acesso com login da equipe</figcaption></figure>
+ </div>
+</div></section>
+
+<section id="duvidas" style="padding-top:0"><div class="wrap">
+ <div class="tit revela"><small>DÚVIDAS</small><h2>Perguntas frequentes</h2></div>
+ <div class="faq">
+  <details><summary>Preciso instalar mais alguma coisa?</summary><p>Não. O instalador já traz tudo o que o programa precisa. Basta o Windows 10 ou 11 atualizado.</p></details>
+  <details><summary>Apareceu "O Windows protegeu o computador". E agora?</summary><p>Clique em "Mais informações" e depois em "Executar assim mesmo". O aviso aparece com programas novos que ainda não têm certificado de assinatura digital.</p></details>
+  <details><summary>Onde ficam os dados da minha clínica?</summary><p>Em um servidor na nuvem localizado em São Paulo, com regras de segurança que impedem uma clínica de ver os dados de outra. Uma cópia fica no computador para o sistema continuar funcionando se a internet cair.</p></details>
+  <details><summary>Mais de uma pessoa pode usar?</summary><p>Sim. O administrador convida a equipe pelo e-mail, e cada pessoa entra com o próprio login, em qualquer computador da clínica.</p></details>
+  <details><summary>Consigo trazer os dados do meu sistema atual?</summary><p>Sim, desde que ele exporte em Excel ou CSV. O sistema reconhece as planilhas sozinho e você confere antes de gravar.</p></details>
+  <details><summary>Como recebo as atualizações?</summary><p>Automaticamente. Quando sai uma versão nova, o programa avisa e se atualiza com um clique.</p></details>
+ </div>
+</div></section>
+
+<section style="padding-top:0"><div class="wrap">
+ <div class="cta revela">
+  <img src="img/mascote.png" alt="" width="220" height="220">
+  <h2>Pronto para organizar a sua clínica?</h2>
+  <p>Baixe o HappyFEET Gestão, crie a conta da clínica e importe suas planilhas hoje mesmo.</p>
+  <a class="btn baixar" href="#"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 4v12M6 10l6 6 6-6M4 20h16"/></svg> Baixar para Windows</a>
+  <div class="req"><span>Windows 10 e 11</span><span>Cerca de 15 MB</span><span>Internet para sincronizar</span></div>
+ </div>
+</div></section>
+</main>
+
+<footer><div class="wrap">
+ <a class="marca" href="#"><span class="bl">◆</span><span>Black<b>Solutions</b></span></a>
+ <span>HappyFEET Gestão é um produto Black Solutions.</span>
+</div></footer>
+
+<script>
+// Link fixo para a última versão publicada do instalador
+const DOWNLOAD='https://github.com/TheIgor12/blacksolutions/releases/latest/download/HappyFEETGestao_Instalador.exe';
+document.querySelectorAll('.baixar').forEach(a=>a.href=DOWNLOAD);
+const io=new IntersectionObserver(es=>es.forEach(e=>{if(e.isIntersecting){e.target.classList.add('on');io.unobserve(e.target)}}),{threshold:.12});
+document.querySelectorAll('.revela').forEach(el=>io.observe(el));
+</script>
+</body>
+</html>
