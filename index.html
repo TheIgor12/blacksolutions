@@ -3,16 +3,16 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Black Solutions | HappyFEET Gestão, o sistema da clínica de podologia</title>
-<meta name="description" content="HappyFEET Gestão: agenda, prontuário, anamnese, financeiro e cobrança pelo WhatsApp em um só sistema. Importe suas planilhas do Excel e comece no mesmo dia.">
-<meta property="og:title" content="HappyFEET Gestão | Black Solutions">
-<meta property="og:description" content="O sistema completo para a sua clínica de podologia. Baixe grátis.">
-<meta property="og:image" content="img/dashboard.webp">
+<title>BlackFlow by BlackSolutions | Gestão inteligente para clínicas e negócios de atendimento</title>
+<meta name="description" content="BlackFlow, by BlackSolutions: agenda, clientes, prontuário, financeiro e cobrança pelo WhatsApp em uma só plataforma, com módulos por segmento. Teste grátis por 14 dias.">
+<meta property="og:title" content="BlackFlow by BlackSolutions">
+<meta property="og:description" content="Gestão inteligente. Negócios eficientes. Teste grátis por 14 dias.">
+<meta property="og:image" content="img/blackflow-post.webp">
 <link rel="icon" href="favicon.ico">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&display=swap" rel="stylesheet">
 <style>
-:root{--azul:#0a4bde;--azul2:#3b82f6;--ciano:#38bdf8;--preto:#06070b;--preto2:#0d1018;--card:#121623;--linha:rgba(255,255,255,.08);--txt:#e8ecf7;--mut:#9aa3ba}
+:root{--azul:#0b6cf2;--azul2:#2f8cff;--ciano:#38bdf8;--preto:#06070b;--preto2:#0d1018;--card:#121623;--linha:rgba(255,255,255,.08);--txt:#e8ecf7;--mut:#9aa3ba}
 *{box-sizing:border-box}
 html{scroll-behavior:smooth}
 body{margin:0;background:var(--preto);color:var(--txt);font-family:Nunito,"Segoe UI",Arial,sans-serif;line-height:1.55;overflow-x:hidden}
@@ -45,7 +45,7 @@ h1 .grad{background:linear-gradient(90deg,#fff,var(--ciano) 50%,var(--azul2));-w
 .palco{position:relative}
 .tela{border-radius:16px;overflow:hidden;border:1px solid rgba(255,255,255,.12);box-shadow:0 30px 80px rgba(0,0,0,.6),0 0 0 1px rgba(10,75,222,.3),0 0 80px rgba(10,75,222,.35);transform:perspective(1400px) rotateY(-8deg) rotateX(3deg);background:#fff}
 .tela img{display:block;width:100%}
-.mascote{position:absolute;left:-40px;bottom:-30px;width:150px;filter:drop-shadow(0 18px 30px rgba(0,0,0,.6));animation:flutua 4s ease-in-out infinite}
+.mascote{position:absolute;left:-60px;bottom:-50px;width:190px;height:auto;border-radius:50%;filter:drop-shadow(0 18px 30px rgba(0,0,0,.6));animation:flutua 4s ease-in-out infinite}
 @keyframes flutua{50%{transform:translateY(-12px)}}
 .numeros{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-top:70px}
 .num{background:var(--card);border:1px solid var(--linha);border-radius:16px;padding:20px}
@@ -104,6 +104,7 @@ footer .wrap{display:flex;justify-content:space-between;gap:16px;flex-wrap:wrap;
  .numeros{grid-template-columns:repeat(2,1fr)}.recursos,.passos,.galeria{grid-template-columns:1fr}
  .links{display:none}section{padding:64px 0}.destaque{margin-bottom:60px}
 }
+.segs{display:grid;grid-template-columns:repeat(3,1fr);gap:18px}.seg{background:linear-gradient(180deg,var(--card),var(--preto2));border:1px solid var(--linha);border-radius:20px;padding:26px;text-align:center;position:relative}.seg img{width:150px;height:150px;border-radius:50%;margin:0 auto 14px;display:block;box-shadow:0 0 40px rgba(11,108,242,.35)}.seg h3{margin:6px 0 8px;font-size:21px}.seg p{color:var(--mut);margin:0;font-size:15px}.st{position:absolute;top:16px;right:16px;font-size:12px;font-weight:800;padding:4px 10px;border-radius:20px;background:rgba(255,255,255,.08);color:#cfd6e8;border:1px solid var(--linha)}.st.ok{background:rgba(52,211,153,.14);color:#6ee7b7;border-color:rgba(52,211,153,.4)}
 .pers{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:8px}
 .pers figure{margin:0}.pers figcaption{color:var(--mut);font-size:14px;padding:10px 4px 0;text-align:center}
 .paleta{display:flex;gap:10px;margin:18px 0 6px}.paleta i{width:34px;height:34px;border-radius:10px;border:2px solid rgba(255,255,255,.15);display:block}
@@ -121,14 +122,14 @@ footer .wrap{display:flex;justify-content:space-between;gap:16px;flex-wrap:wrap;
 .plano ul{list-style:none;padding:0;margin:16px 0 24px}.plano li{padding:6px 0 6px 26px;position:relative;color:#d5dbea}
 .plano li::before{content:"✓";position:absolute;left:0;color:#34d399;font-weight:900}
 .pag{display:flex;gap:10px;flex-wrap:wrap;margin-top:6px}.pag span{background:rgba(255,255,255,.06);border:1px solid var(--linha);border-radius:8px;padding:5px 10px;font-size:13px;color:#cfd6e8}
-@media (max-width:900px){.pers,.planos{grid-template-columns:1fr}.comp th:nth-child(3),.comp td:nth-child(3){display:none}}
+@media (max-width:900px){.pers,.planos,.segs{grid-template-columns:1fr}.comp th:nth-child(3),.comp td:nth-child(3){display:none}}
 @media (prefers-reduced-motion:reduce){.mascote{animation:none}.revela{opacity:1;transform:none;transition:none}}
 </style>
 </head>
 <body>
 <header><div class="wrap nav">
- <a class="marca" href="#"><span class="bl">◆</span><span>Black<b>Solutions</b></span></a>
- <nav class="links"><a href="#recursos">Recursos</a><a href="#personalize">Sua marca</a><a href="#diferencas">Por que nós</a><a href="#planos">Planos</a><a href="#duvidas">Dúvidas</a></nav>
+ <a class="marca" href="#"><img src="img/blackflow-icone.png" alt="" width="36" height="36" style="border-radius:9px;box-shadow:0 0 18px rgba(11,108,242,.5)"><span>Black<b>Flow</b> <small style="font-weight:600;color:var(--mut);font-size:12px">by BlackSolutions</small></span></a>
+ <nav class="links"><a href="#segmentos">Segmentos</a><a href="#recursos">Recursos</a><a href="#personalize">Sua marca</a><a href="#diferencas">Por que nós</a><a href="#planos">Planos</a><a href="#duvidas">Dúvidas</a></nav>
  <a class="btn sm baixar" href="#">Baixar grátis</a>
 </div></header>
 
@@ -137,8 +138,8 @@ footer .wrap{display:flex;justify-content:space-between;gap:16px;flex-wrap:wrap;
  <div class="grade">
   <div>
    <div class="selo"><i></i> 14 dias grátis, sem cartão de crédito</div>
-   <h1>A clínica de podologia inteira <span class="grad">em um só sistema.</span></h1>
-   <p class="lead">Agenda, prontuário, anamnese, financeiro e cobrança pelo WhatsApp. Traga suas planilhas do Excel e o sistema organiza tudo sozinho, cada dado no seu lugar.</p>
+   <h1>Gestão inteligente. <span class="grad">Negócios eficientes.</span></h1>
+   <p class="lead">O BlackFlow reúne agenda, clientes, prontuário, financeiro e cobrança pelo WhatsApp em uma só plataforma, com módulos para cada segmento. Traga suas planilhas do Excel e o sistema organiza tudo sozinho.</p>
    <div class="acoes">
     <a class="btn baixar" href="#"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 4v12M6 10l6 6 6-6M4 20h16"/></svg> Baixar para Windows</a>
     <a class="btn ghost" href="#telas">Ver as telas</a>
@@ -147,7 +148,7 @@ footer .wrap{display:flex;justify-content:space-between;gap:16px;flex-wrap:wrap;
   </div>
   <div class="palco">
    <div class="tela"><img src="img/dashboard.webp" alt="Painel com indicadores financeiros e de agenda da clínica" width="1440" height="860"></div>
-   <img class="mascote" src="img/mascote.png" alt="Mascote HappyFEET" width="220" height="220">
+   <img class="mascote" src="img/mascote.webp" alt="Mascote BlackFlow" width="640" height="640">
   </div>
  </div>
  <div class="numeros">
@@ -158,8 +159,17 @@ footer .wrap{display:flex;justify-content:space-between;gap:16px;flex-wrap:wrap;
  </div>
 </div></div>
 
+
+<section id="segmentos" style="padding-top:70px;padding-bottom:20px"><div class="wrap">
+ <div class="tit revela"><small>SEGMENTOS</small><h2>Uma plataforma, um módulo para cada profissão</h2><p>A base é a mesma para todos: clientes, agenda, financeiro, histórico e relatórios. Cada segmento ganha as telas e os cadastros da sua rotina.</p></div>
+ <div class="segs">
+  <div class="seg revela"><img src="img/seg-podologia.webp" alt="Podologia" width="300" height="300"><span class="st ok">Disponível</span><h3>Podologia</h3><p>Anamnese podológica pronta, evolução de cada atendimento, controle de sessões e retorno.</p></div>
+  <div class="seg revela"><img src="img/seg-beleza.webp" alt="Beleza" width="300" height="300"><span class="st">Em breve</span><h3>Beleza</h3><p>Agenda por profissional, pacotes de serviços, comissões e venda de produtos.</p></div>
+  <div class="seg revela"><img src="img/seg-odontologia.webp" alt="Odontologia" width="300" height="300"><span class="st">Em breve</span><h3>Odontologia</h3><p>Odontograma, plano de tratamento por dente, orçamentos e acompanhamento clínico.</p></div>
+ </div>
+</div></section>
 <section id="recursos"><div class="wrap">
- <div class="tit revela"><small>RECURSOS</small><h2>Tudo o que a clínica usa no dia a dia</h2><p>Feito junto com uma clínica de podologia de verdade, para resolver o que realmente toma tempo.</p></div>
+ <div class="tit revela"><small>RECURSOS</small><h2>Tudo o que o seu negócio usa no dia a dia</h2><p>Desenvolvido junto com uma clínica de verdade, para resolver o que realmente toma tempo.</p></div>
  <div class="recursos">
   <div class="rec revela"><div class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg></div><h3>Agenda por profissional</h3><p>Visão por semana ou por dia, cores por profissional, confirmação, faltas e alertas de retorno de quem sumiu.</p></div>
   <div class="rec revela"><div class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6M8 13h8M8 17h6"/></svg></div><h3>Prontuário completo</h3><p>Cadastro, anamnese, evolução de cada atendimento, controle de sessões e histórico de agendamentos.</p></div>
@@ -222,12 +232,12 @@ footer .wrap{display:flex;justify-content:space-between;gap:16px;flex-wrap:wrap;
 <section id="diferencas" style="padding-top:0"><div class="wrap">
  <div class="tit revela"><small>POR QUE NÓS</small><h2>O que muda em relação ao que existe no mercado</h2><p>Estudamos os sistemas mais usados pelas clínicas e montamos o nosso para resolver o que mais incomoda quem já usa um.</p></div>
  <div class="revela" style="overflow-x:auto"><table class="comp">
-  <tr><th></th><th>HAPPYFEET GESTÃO</th><th>COMUM NO MERCADO</th></tr>
+  <tr><th></th><th>BLACKFLOW</th><th>COMUM NO MERCADO</th></tr>
   <tr><td>Teste antes de pagar</td><td>14 dias grátis, sem cartão</td><td>Muitos sistemas não oferecem teste grátis</td></tr>
   <tr><td>Implantação</td><td>Sem taxa: instale e use</td><td>Implantação obrigatória, cobrada à parte</td></tr>
   <tr><td>Trazer os dados do sistema antigo</td><td>Importação automática do Excel, incluída</td><td>Pacote de migração pago separadamente</td></tr>
   <tr><td>Lembrete e cobrança pelo WhatsApp</td><td>Botões que abrem o WhatsApp, sem custo por mensagem</td><td>Mensagens cobradas conforme o uso</td></tr>
-  <tr><td>Especialidade</td><td>Feito para podologia, com anamnese podológica pronta</td><td>Muitos são feitos para odontologia e adaptados</td></tr>
+  <tr><td>Especialidade</td><td>Módulos próprios por segmento, a começar pela podologia</td><td>Muitos são feitos para odontologia e adaptados</td></tr>
   <tr><td>Equipe</td><td>Convide quantas pessoas precisar</td><td>Varia conforme o plano</td></tr>
   <tr><td>Internet caiu</td><td>Continua funcionando e sincroniza depois</td><td>Varia conforme o sistema</td></tr>
   <tr><td>Seus dados</td><td>Exporte tudo para o Excel quando quiser</td><td>Varia conforme o sistema</td></tr>
@@ -259,9 +269,9 @@ footer .wrap{display:flex;justify-content:space-between;gap:16px;flex-wrap:wrap;
 
 <section style="padding-top:0"><div class="wrap">
  <div class="cta revela">
-  <img src="img/mascote.png" alt="" width="220" height="220">
+  <img src="img/mascote.webp" alt="" width="640" height="640" style="width:150px">
   <h2>Pronto para organizar a sua clínica?</h2>
-  <p>Baixe o HappyFEET Gestão, crie a conta da clínica e teste tudo por 14 dias, sem cartão de crédito.</p>
+  <p>Baixe o BlackFlow, crie a conta do seu negócio e teste tudo por 14 dias, sem cartão de crédito.</p>
   <a class="btn baixar" href="#"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 4v12M6 10l6 6 6-6M4 20h16"/></svg> Baixar para Windows</a>
   <div class="req"><span>Windows 10 e 11</span><span>Cerca de 15 MB</span><span>Internet para sincronizar</span></div>
  </div>
@@ -269,13 +279,13 @@ footer .wrap{display:flex;justify-content:space-between;gap:16px;flex-wrap:wrap;
 </main>
 
 <footer><div class="wrap">
- <a class="marca" href="#"><span class="bl">◆</span><span>Black<b>Solutions</b></span></a>
- <span>HappyFEET Gestão é um produto Black Solutions.</span>
+ <a class="marca" href="#"><img src="img/blackflow-icone.png" alt="" width="36" height="36" style="border-radius:9px;box-shadow:0 0 18px rgba(11,108,242,.5)"><span>Black<b>Flow</b> <small style="font-weight:600;color:var(--mut);font-size:12px">by BlackSolutions</small></span></a>
+ <span>BlackFlow é um produto BlackSolutions. Gestão inteligente. Negócios eficientes.</span>
 </div></footer>
 
 <script>
 // Link fixo para a última versão publicada do instalador
-const DOWNLOAD='download/HappyFEETGestao_Instalador.exe';
+const DOWNLOAD='download/BlackFlow_Instalador.exe';
 document.querySelectorAll('.baixar').forEach(a=>a.href=DOWNLOAD);
 const io=new IntersectionObserver(es=>es.forEach(e=>{if(e.isIntersecting){e.target.classList.add('on');io.unobserve(e.target)}}),{threshold:.12});
 document.querySelectorAll('.revela').forEach(el=>io.observe(el));

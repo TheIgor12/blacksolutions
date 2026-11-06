@@ -1,5 +1,6 @@
 {
-  "versao": "1.2.2",
+  "versao": "1.3.0",
+  "instalador": "https://theigor12.github.io/blacksolutions/download/BlackFlow_Instalador.exe",
   "html": "https://theigor12.github.io/blacksolutions/download/happyfeet-gestao.html",
-  "novidades": "Teste grátis de 14 dias, tela de assinatura por Pix e cartão e escolha da cor da barra superior."
+  "novidades": "Nova marca: BlackFlow, by BlackSolutions. Novo ícone e nova tela de acesso."
 }
