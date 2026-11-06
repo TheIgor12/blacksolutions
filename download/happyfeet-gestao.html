@@ -438,7 +438,7 @@ function shell(content){const c=S.config;
  return `<header class="top"><button class="ico" onclick="toggleDrawer()" aria-label="Menu">${ico('menu')}</button>
  <div class="gsearch"><input id="gs" placeholder="Encontre pacientes ou funções do sistema" oninput="globalSearch(this.value)" onblur="setTimeout(()=>{const r=$('#gsr');if(r)r.classList.remove('on')},200)" autocomplete="off"><div id="gsr" class="gsr"></div></div>
  ${NV.ativa?`<span id="sync" class="sync" title="Sincronização com a nuvem">${syncTxt()}</span>`:''}<div class="user" style="cursor:pointer" onclick="abrirConta()"><span class="av">${esc(initials(nomeUsuario()))}</span><div><b>${esc(nomeUsuario())}</b><small>${esc(c.clinica)}</small></div></div></header>
- <aside class="drawer ${UI.drawer?'open':''}"><div class="brand ${S.config.logo?'':'escuro'}"><img src="${logoClinica()}" alt="${esc(c.clinica)}"></div><div class="prod">BLACKFLOW <span style="font-weight:600">by BlackSolutions</span></div><span class="plan">Versão 1.3.0</span>
+ <aside class="drawer ${UI.drawer?'open':''}"><div class="brand ${S.config.logo?'':'escuro'}"><img src="${logoClinica()}" alt="${esc(c.clinica)}"></div><div class="prod">BLACKFLOW <span style="font-weight:600">by BlackSolutions</span></div><span class="plan">Versão 1.3.1</span>
  <div class="menu"><button class="${UI.view==='inicio'?'on':''}" onclick="go('inicio')">${ico('home',18)} Início</button><div class="msec">MÓDULOS</div>
  ${MENU.map(([k,l,i])=>`<button class="${UI.view===k||(k==='pacientes'&&UI.view==='paciente')?'on':''}" onclick="go('${k}')">${ico(i,18)} ${l}</button>`).join('')}</div>
  <div class="mfoot menu"><button class="${UI.view==='config'?'on':''}" onclick="go('config')">${ico('gear',18)} Configurações</button></div></aside>
@@ -828,7 +828,7 @@ function exportAll(){if(typeof XLSX==='undefined'){toast('Biblioteca de Excel n�
 const NUVEM={url:'https://blszdbjpxgtloblxlusr.supabase.co',chave:'sb_publishable_0Tns_mDN2N1iQmw_sEzFXw_SRMy1uXK'};
 const NV={ativa:!!(NUVEM.url&&NUVEM.chave),sb:null,sessao:null,clinicaId:null,papel:'',nomeClinica:'',hashes:{},cursor:0,status:'local',ocupado:false,offline:false,timer:null};
 const COLS=['pacientes','lancamentos','tratamentos','anamneses','agendamentos','contasPagar','evolucoes','profissionais','importacoes'];
-const URL_ASSINATURA='https://theigor12.github.io/blacksolutions/assinatura.json';
+const URL_ASSINATURA='https://raw.githubusercontent.com/TheIgor12/blacksolutions/main/assinatura.json';
 let ASSINATURA=null;
 async function carregarAssinatura(){if(ASSINATURA)return ASSINATURA;try{ASSINATURA=await (await fetch(URL_ASSINATURA+'?t='+Date.now(),{cache:'no-store'})).json()}catch(e){ASSINATURA={}}return ASSINATURA}
 function blocoAssinatura(){const a=ASSINATURA||{};const pix=a.link_pix,cartao=a.link_cartao;

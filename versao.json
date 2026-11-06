@@ -1,6 +1,5 @@
 {
-  "versao": "1.3.0",
-  "instalador": "https://theigor12.github.io/blacksolutions/download/BlackFlow_Instalador.exe",
-  "html": "https://theigor12.github.io/blacksolutions/download/happyfeet-gestao.html",
-  "novidades": "Nova marca: BlackFlow, by BlackSolutions. Novo ícone e nova tela de acesso."
+  "versao": "1.3.1",
+  "html": "https://raw.githubusercontent.com/TheIgor12/blacksolutions/main/download/happyfeet-gestao.html",
+  "novidades": "Assinatura mensal por Pix, boleto ou cartão de crédito disponível na tela de assinatura."
 }
