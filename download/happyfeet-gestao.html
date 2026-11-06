@@ -152,7 +152,7 @@ a.btn{text-decoration:none}
 .ret{display:flex;justify-content:space-between;align-items:center;font-size:12px;padding:5px 0;border-bottom:1px solid var(--line);gap:6px}
 .wa{color:#25a244;display:inline-flex;vertical-align:middle}
 .drop{border:2px dashed #a9bdf3;background:#f7f9ff;border-radius:10px;padding:30px;text-align:center;color:var(--mut)}
-.drop input{margin-top:12px}
+.drop input{margin-top:12px}.drop.over{border-color:var(--acc);background:#eaf1ff}.spin{width:34px;height:34px;border:4px solid #c9d6f5;border-top-color:var(--acc);border-radius:50%;margin:0 auto;animation:gira 0.9s linear infinite}@keyframes gira{to{transform:rotate(360deg)}}
 .steps{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px}
 .steps span{background:#fff;border:1px solid var(--line);border-radius:20px;padding:5px 12px;font-size:12px;color:var(--mut)}
 .steps span.on{border-color:var(--acc);color:var(--acc);font-weight:600}
@@ -438,7 +438,7 @@ function shell(content){const c=S.config;
  return `<header class="top"><button class="ico" onclick="toggleDrawer()" aria-label="Menu">${ico('menu')}</button>
  <div class="gsearch"><input id="gs" placeholder="Encontre pacientes ou funções do sistema" oninput="globalSearch(this.value)" onblur="setTimeout(()=>{const r=$('#gsr');if(r)r.classList.remove('on')},200)" autocomplete="off"><div id="gsr" class="gsr"></div></div>
  ${NV.ativa?`<span id="sync" class="sync" title="Sincronização com a nuvem">${syncTxt()}</span>`:''}<div class="user" style="cursor:pointer" onclick="abrirConta()"><span class="av">${esc(initials(nomeUsuario()))}</span><div><b>${esc(nomeUsuario())}</b><small>${esc(c.clinica)}</small></div></div></header>
- <aside class="drawer ${UI.drawer?'open':''}"><div class="brand ${S.config.logo?'':'escuro'}"><img src="${logoClinica()}" alt="${esc(c.clinica)}"></div><div class="prod">BLACKFLOW <span style="font-weight:600">by BlackSolutions</span></div><span class="plan">Versão 1.3.1</span>
+ <aside class="drawer ${UI.drawer?'open':''}"><div class="brand ${S.config.logo?'':'escuro'}"><img src="${logoClinica()}" alt="${esc(c.clinica)}"></div><div class="prod">BLACKFLOW <span style="font-weight:600">by BlackSolutions</span></div><span class="plan">Versão 1.3.2</span>
  <div class="menu"><button class="${UI.view==='inicio'?'on':''}" onclick="go('inicio')">${ico('home',18)} Início</button><div class="msec">MÓDULOS</div>
  ${MENU.map(([k,l,i])=>`<button class="${UI.view===k||(k==='pacientes'&&UI.view==='paciente')?'on':''}" onclick="go('${k}')">${ico(i,18)} ${l}</button>`).join('')}</div>
  <div class="mfoot menu"><button class="${UI.view==='config'?'on':''}" onclick="go('config')">${ico('gear',18)} Configurações</button></div></aside>
@@ -765,34 +765,177 @@ function detectType(rows,name){let best=null;const nn=norm(name);
   if(t==='pacientes'&&map.nome!=null&&autoMap(head,'financeiro').valor!=null)sc-=3;
   if(!best||sc>best.sc)best={type:t,sc,hr,map}});if(/leia me|instruc|como preencher/.test(nn)||(best&&best.sc<1.5))return null;return best}
 function confLabel(sc){return sc>=6?'<span class="conf-a">Alta</span>':sc>=3?'<span class="conf-m">Média</span>':'<span class="conf-b">Baixa, confira</span>'}
-async function loteFiles(input){const files=[...(input.files||[])];if(!files.length)return;if(typeof XLSX==='undefined'){toast('A biblioteca de leitura do Excel não carregou. Verifique a internet.');return}
- const items=[];for(const f of files){try{const wb=XLSX.read(await f.arrayBuffer(),{type:'array'});wb.SheetNames.forEach(sn=>{const rows=XLSX.utils.sheet_to_json(wb.Sheets[sn],{header:1,raw:true,defval:''}).filter(r=>r.some(c=>String(c).trim()!==''));if(rows.length<2)return;
-  const d=detectType(rows,f.name+' '+sn);items.push({id:uid(),arquivo:f.name,aba:sn,rows,type:d?d.type:'ignorar',sc:d?d.sc:0,hr:d?d.hr:0,map:d?d.map:{},result:null})})}catch(e){toast('Não foi possível ler '+f.name+': '+e.message)}}
- if(!items.length){toast('Nenhuma aba com dados foi encontrada.');return}UI.lote={items,mode:UI.lote&&UI.lote.mode||'substituir',feito:false};render()}
-function loteType(id,t){const it=UI.lote.items.find(x=>x.id===id);it.type=t;if(t!=='ignorar'){it.hr=detectHeader(it.rows,t);it.map=autoMap(it.rows[it.hr]||[],t)}render()}
+function b64buf(b){const bin=atob(b);const u=new Uint8Array(bin.length);for(let i=0;i<bin.length;i++)u[i]=bin.charCodeAt(i);return u.buffer}
+async function loteFiles(input){const fs=[...(input.files||[])];input.value='';await loteLer(fs.map(f=>({nome:f.name,ler:()=>f.arrayBuffer()})))}
+function loteDrop(ev){ev.preventDefault();ev.currentTarget.classList.remove('over');const fs=[...((ev.dataTransfer&&ev.dataTransfer.files)||[])];if(fs.length)loteLer(fs.map(f=>({nome:f.name,ler:()=>f.arrayBuffer()})))}
+async function loteEscolher(){const api=window.pywebview&&window.pywebview.api;
+ if(api&&api.escolher_planilhas){try{const L=await api.escolher_planilhas();if(!L||!L.length)return;await loteLer(L.map((f,i)=>({nome:f.nome,ler:async()=>b64buf(await api.ler_planilha(i))})));return}catch(e){console.warn(e)}}
+ const inp=document.getElementById('loteInput');if(inp)inp.click()}
+async function loteLer(lista){if(!lista.length)return;if(typeof XLSX==='undefined'){toast('A biblioteca de leitura do Excel não carregou. Verifique a internet.');return}
+ const base=UI.lote&&!UI.lote.feito?UI.lote:null;UI.loteLendo={total:lista.length,feitos:0};render();await new Promise(r=>setTimeout(r,30));
+ const items=base?base.items.slice():[];
+ for(const f of lista){if(!/\.(xlsx|xlsm|xls|csv|ods)$/i.test(f.nome)){toast(f.nome+' não é uma planilha e foi deixado de lado.');UI.loteLendo.feitos++;continue}
+  try{const wb=XLSX.read(await f.ler(),{type:'array'});wb.SheetNames.forEach(sn=>{const rows=XLSX.utils.sheet_to_json(wb.Sheets[sn],{header:1,raw:true,defval:''}).filter(r=>r.some(c=>String(c).trim()!==''));if(rows.length<2)return;
+   const ja=items.findIndex(x=>x.arquivo===f.nome&&x.aba===sn);if(ja>=0)items.splice(ja,1);
+   const ccp=ccpDetect(rows);if(ccp){items.push({id:uid(),arquivo:f.nome,aba:sn,rows,type:CCP[ccp].info?'ignorar':'clinicorp',ccp,sc:9,hr:0,map:{},result:null});return}
+   const d=detectType(rows,f.nome+' '+sn);items.push({id:uid(),arquivo:f.nome,aba:sn,rows,type:d?d.type:'ignorar',sc:d?d.sc:0,hr:d?d.hr:0,map:d?d.map:{},result:null})})}
+  catch(e){toast('Não foi possível ler '+f.nome+': '+e.message)}
+  UI.loteLendo.feitos++;render();await new Promise(r=>setTimeout(r,10))}
+ UI.loteLendo=null;
+ if(!items.length){toast('Nenhuma aba com dados foi encontrada.');render();return}
+ UI.lote={items,mode:UI.lote&&UI.lote.mode||'substituir',feito:false};render();toast(lista.length+(lista.length===1?' arquivo lido':' arquivos lidos'))}
+function loteType(id,t){const it=UI.lote.items.find(x=>x.id===id);it.type=t;if(t!=='ignorar'&&t!=='clinicorp'){it.hr=detectHeader(it.rows,t);it.map=autoMap(it.rows[it.hr]||[],t)}render()}
 function loteRun(){const L=UI.lote;const ja={};let tot=0;
+ const cc=L.items.filter(it=>it.type==='clinicorp');
+ if(cc.length){const res=importarClinicorp(cc,L.mode);cc.forEach(it=>{it.result=res[it.ccp]||{importadas:0};it.resumo=ccpResumo(it.ccp,res[it.ccp])});L.items.forEach(it=>{if(it.ccp&&CCP[it.ccp].info&&it.type==='ignorar')it.resumo='Não precisa importar'});
+  Object.entries(res).forEach(([k,r])=>{tot+=r.importadas+(r.atualizadas||0);S.importacoes.unshift({id:uid(),data:new Date().toISOString(),tipo:'Clinicorp: '+CCP[k].label,arquivo:cc.filter(it=>it.ccp===k).map(it=>it.arquivo).join(', '),modo:'substituir',...r})})}
  for(const t of ORDEM){L.items.filter(it=>it.type===t).forEach(it=>{const def=IMPORT[t];const miss=def.req.filter(k=>it.map[k]==null);if(miss.length){it.result={erro:'Faltam colunas: '+miss.map(k=>fieldLabel(t,k)).join(', ')};return}
   const mode=L.mode==='substituir'&&!ja[t]?'substituir':'acrescentar';ja[t]=true;
   const r=IMPORTERS[t](it.rows.slice(it.hr+1),it.rows[it.hr],it.map,mode);it.result=r;tot+=r.importadas+(r.atualizadas||0);
   S.importacoes.unshift({id:uid(),data:new Date().toISOString(),tipo:def.label,arquivo:it.arquivo+' / '+it.aba,modo:t==='pacientes'?'atualizar':mode,...r})})}
  S.importacoes=S.importacoes.slice(0,60);L.feito=true;save();render();toast(tot+' registros gravados')}
+function loteDropHTML(mais){const lendo=UI.loteLendo;
+ if(lendo)return `<div class="drop"><div class="spin"></div><p><b>Lendo os arquivos: ${lendo.feitos} de ${lendo.total}</b></p><p class="sub">Arquivos grandes, como o BookEntry, podem levar alguns segundos.</p></div>`;
+ return `<div class="drop" ondragover="event.preventDefault();this.classList.add('over')" ondragleave="this.classList.remove('over')" ondrop="loteDrop(event)">${ico('up',34)}
+  <p style="margin:8px 0 12px"><b>${mais?'Acrescentar mais arquivos':'Arraste todos os arquivos para cá'}</b>${mais?'':' ou clique no botão'}</p>
+  <button class="btn" onclick="loteEscolher()">${ico('up',16)} ${mais?'Selecionar mais arquivos':'Selecionar os arquivos'}</button>
+  <input type="file" id="loteInput" multiple accept=".xlsx,.xlsm,.xls,.csv,.ods" style="display:none" onchange="loteFiles(this)">
+  ${mais?'':`<p class="sub" style="margin-top:12px">Para escolher todos de uma vez: na janela que abrir, clique em um dos arquivos e aperte <b>Ctrl</b> e <b>A</b> juntos. Depois clique em <b>Abrir</b>.<br>Os arquivos exportados do Clinicorp (Patient, Appointment, Budgets, PaymentItem, BookEntry, PatientAnamnesis e os demais) são reconhecidos e ligados entre si automaticamente.</p>`}</div>`}
 function loteHTML(){const L=UI.lote;
+ if(UI.loteLendo)return `<div class="card" style="margin-bottom:20px;border:2px solid var(--acc)"><h2>Importar tudo de uma vez</h2>${loteDropHTML()}</div>`;
  if(!L)return `<div class="card" style="margin-bottom:20px;border:2px solid var(--acc)"><h2>Importar tudo de uma vez</h2><p class="sub" style="margin-bottom:12px">Selecione um ou vários arquivos Excel de uma só vez. Cada aba é analisada e o sistema reconhece sozinho se é cadastro de pacientes, financeiro, tratamentos, agendamentos, anamnese ou contas a pagar, e grava cada dado no seu lugar.</p>
-  <div class="drop">${ico('up',34)}<p><b>Arraste ou selecione as planilhas</b></p><input type="file" multiple accept=".xlsx,.xls,.csv,.ods" onchange="loteFiles(this)"></div>
-  <div class="mact" style="justify-content:flex-start"><button class="btn ghost" onclick="baixarModelo()">${ico('down',16)} Baixar planilha modelo com todas as abas</button></div></div>`;
- const tipos=[...ORDEM.map(t=>[t,IMPORT[t].label]),['ignorar','Ignorar esta aba']];
+  ${loteDropHTML()}
+  <p class="sub" style="margin-top:14px">Não tem os arquivos do Clinicorp? Existe uma planilha modelo em branco para preencher à mão: <a href="#" onclick="baixarModelo();return false">salvar a planilha modelo vazia</a>. Atenção: esse link cria um arquivo novo e não serve para importar.</p></div>`;
+ const tiposG=[...ORDEM.map(t=>[t,IMPORT[t].label]),['ignorar','Ignorar esta aba']];
  return `<div class="card" style="margin-bottom:20px;border:2px solid var(--acc)"><div class="phead"><div><h2 style="margin:0">Importar tudo de uma vez</h2><p class="sub">${L.items.length} abas encontradas. ${L.feito?'Importação concluída.':'Confira o tipo reconhecido de cada aba antes de importar.'}</p></div><button class="btn ghost sm" onclick="UI.lote=null;render()">Começar de novo</button></div>
  <div class="tw"><table class="tbl"><thead><tr><th>Arquivo</th><th>Aba</th><th class="num">Linhas</th><th>Reconhecido como</th><th>Confiança</th><th>Colunas reconhecidas</th>${L.feito?'<th>Resultado</th>':''}</tr></thead><tbody>
- ${L.items.map(it=>{const head=it.rows[it.hr]||[];const cols=it.type==='ignorar'?'-':IMPORT[it.type].fields.filter(([k])=>it.map[k]!=null).map(([k,l])=>l).join(', ');const r=it.result;
-  return `<tr><td>${esc(it.arquivo)}</td><td>${esc(it.aba)}</td><td class="num">${it.rows.length-it.hr-1}</td><td><select class="inp" ${L.feito?'disabled':''} onchange="loteType('${it.id}',this.value)">${tipos.map(([k,l])=>`<option value="${k}" ${k===it.type?'selected':''}>${esc(l)}</option>`).join('')}</select></td><td>${it.type==='ignorar'?'-':confLabel(it.sc)}</td><td style="font-size:12px;color:var(--mut);max-width:340px">${esc(cols)}</td>${L.feito?`<td style="font-size:12px">${r?(r.erro?`<span style="color:var(--bad)">${esc(r.erro)}</span>`:`${r.importadas} novos${r.atualizadas?', '+r.atualizadas+' atualizados':''}${r.ignoradas?', '+r.ignoradas+' ignorados':''}${r.novosPacientes?', '+r.novosPacientes+' pacientes criados':''}`):'Ignorada'}</td>`:''}</tr>`}).join('')}</tbody></table></div>
+ ${L.items.map(it=>{const tipos=it.ccp?[['clinicorp','Clinicorp: '+CCP[it.ccp].label],['ignorar','Ignorar esta aba']]:tiposG;const cols=it.ccp?'Arquivo do Clinicorp: '+it.ccp:it.type==='ignorar'?'-':IMPORT[it.type].fields.filter(([k])=>it.map[k]!=null).map(([k,l])=>l).join(', ');const r=it.result;
+  return `<tr><td>${esc(it.arquivo)}</td><td>${esc(it.aba)}</td><td class="num">${it.rows.length-it.hr-1}</td><td><select class="inp" ${L.feito?'disabled':''} onchange="loteType('${it.id}',this.value)">${tipos.map(([k,l])=>`<option value="${k}" ${k===it.type?'selected':''}>${esc(l)}</option>`).join('')}</select></td><td>${it.type==='ignorar'?(it.ccp&&CCP[it.ccp].info?'Não precisa':'-'):confLabel(it.sc)}</td><td style="font-size:12px;color:var(--mut);max-width:340px">${esc(cols)}</td>${L.feito?`<td style="font-size:12px">${it.resumo?esc(it.resumo):r?(r.erro?`<span style="color:var(--bad)">${esc(r.erro)}</span>`:`${r.importadas} novos${r.atualizadas?', '+r.atualizadas+' atualizados':''}${r.ignoradas?', '+r.ignoradas+' ignorados':''}${r.novosPacientes?', '+r.novosPacientes+' pacientes criados':''}`):'Ignorada'}</td>`:''}</tr>`}).join('')}</tbody></table></div>
  ${L.feito?'':`<div style="margin-top:14px"><label style="display:flex;gap:8px;align-items:flex-start;margin-bottom:8px;cursor:pointer"><input type="radio" name="lm" ${L.mode==='substituir'?'checked':''} onchange="UI.lote.mode='substituir'"><span><b>Substituir</b> o que veio de importações anteriores (use quando exportar tudo de novo). O que foi lançado à mão é preservado.</span></label><label style="display:flex;gap:8px;align-items:flex-start;cursor:pointer"><input type="radio" name="lm" ${L.mode==='acrescentar'?'checked':''} onchange="UI.lote.mode='acrescentar'"><span><b>Acrescentar</b> às informações existentes (use só para planilhas de outro período).</span></label>
- <p class="sub" style="margin-top:10px">A gravação segue sempre a ordem: pacientes, financeiro, tratamentos, agendamentos, anamnese e contas a pagar. Para ajustar coluna por coluna, use a importação individual abaixo.</p>
+ <p class="sub" style="margin-top:10px">A gravação segue sempre a ordem: pacientes, financeiro, tratamentos, agendamentos, anamnese e contas a pagar. Os arquivos do Clinicorp substituem sempre o que veio do Clinicorp em importações anteriores, sem duplicar. Para ajustar coluna por coluna, use a importação individual abaixo.</p>
+ <div style="margin:12px 0">${loteDropHTML(true)}</div>
  <div class="mact" style="justify-content:flex-start"><button class="btn" onclick="loteRun()">${ico('up',16)} Importar tudo</button></div></div>`}</div>`}
 function baixarModelo(){if(typeof XLSX==='undefined'){toast('Biblioteca de Excel não carregou');return}const wb=XLSX.utils.book_new();
  const nomes={pacientes:'Pacientes',financeiro:'Financeiro',tratamentos:'Tratamentos',agendamentos:'Agendamentos',anamnese:'Anamnese',contasPagar:'Contas a pagar'};
  XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet([['Como preencher'],['Cada aba corresponde a um tipo de dado. Não altere os títulos da primeira linha.'],['Datas no formato dia/mês/ano. Valores em reais, com vírgula nos centavos.'],['O paciente é ligado entre as abas pelo CPF ou, sem CPF, pelo nome escrito exatamente igual.'],['Na aba Anamnese, cada coluna depois de Data é uma pergunta. Acrescente quantas colunas precisar.'],['Abas que não forem usadas podem ficar vazias.']]),'Leia-me');
  ORDEM.forEach(t=>{let h=IMPORT[t].fields.filter(([k])=>!['pergunta','resposta','modelo'].includes(k)).map(([,l])=>l);if(t==='anamnese')h=h.concat(['Diabético?','Hipertenso?','Alergias','Medicamentos em uso','Queixa principal']);XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet([h]),nomes[t])});
  saveWB(wb,'modelo_importacao_blackflow.xlsx')}
+
+/* ============ Importação direta dos arquivos exportados do Clinicorp ============ */
+/* O Clinicorp exporta as tabelas do banco de dados com nomes em inglês (Patient, Appointment, Budgets...).
+   Cada tabela é reconhecida pelas colunas e as tabelas são ligadas entre si pelo código interno do paciente. */
+const CCP={
+ Patient:{label:'Pacientes',cols:['ClinicalRecordNumber','OtherDocumentId','Name','MobilePhone']},
+ Dentist:{label:'Profissionais',cols:['Name','MobilePhone','OtherDocumentId','Active'],sem:['ClinicalRecordNumber','PatientId']},
+ Appointment:{label:'Agendamentos',cols:['PatientId','fromTime','toTime','date']},
+ Budgets:{label:'Tratamentos e orçamentos',cols:['BudgetId','ProcedureName','PatientId']},
+ TreatmentOperation:{label:'Evoluções (procedimentos executados)',cols:['ProcedureDescription','ExecutedDate','PatientId']},
+ PaymentItem:{label:'Financeiro dos pacientes (pagamentos)',cols:['PaymentHeaderId','DueDate','Amount','PatientId']},
+ BookEntry:{label:'Livro financeiro (contas a pagar e saldos em aberto)',cols:['EntryType','AP_Classification','Amount','Type']},
+ PatientAnamnesis:{label:'Anamnese',cols:['AnamnesisDate','Question','PatientName']},
+ PaymentHeader:{label:'Cabeçalho dos pagamentos (não precisa importar)',cols:['BookEntryIdList','PatientId'],info:true},
+ Anamnesis:{label:'Lista de anamneses (não precisa importar)',cols:['Patient_PersonId','CreateAtomicDate'],info:true},
+ AnamnesisQuestions:{label:'Perguntas da anamnese (não precisa importar)',cols:['Question','QuestionType','TemplateDescription'],sem:['PatientName'],info:true}
+};
+const CCP_ORDEM=['Dentist','Patient','Budgets','PaymentItem','BookEntry','Appointment','TreatmentOperation','PatientAnamnesis'];
+function ccpDetect(rows){const h=(rows[0]||[]).map(x=>String(x??'').trim());if(h.length<3)return null;
+ for(const k of Object.keys(CCP)){const d=CCP[k];if(d.cols.every(c=>h.includes(c))&&!(d.sem||[]).some(c=>h.includes(c)))return k}return null}
+function ccpObjs(rows){const h=rows[0].map(x=>String(x??'').trim());return rows.slice(1).map(r=>{const o={};h.forEach((k,i)=>{if(k)o[k]=r[i]});return o})}
+const ccpSim=v=>{const s=String(v??'').trim().toUpperCase();return s==='X'||s==='TRUE'||s==='SIM'||s==='1'};
+const ccpTxt=v=>{const s=str(v);return s==='None'||s==='null'||s==='undefined'?'':s};
+/* Datas do Clinicorp: "2026-04-25T13:26:27.000Z" (horário universal), "15/09/2025 21:06:00" ou 20260425.
+   O horário universal é convertido para o horário de Brasília (3 horas a menos) antes de tirar o dia. */
+function ccpData(v){if(v===''||v==null)return '';
+ if(typeof v==='number'){if(v>19000000&&v<30000000){const s=String(Math.round(v));return `${s.slice(0,4)}-${s.slice(4,6)}-${s.slice(6,8)}`}return parseDT(v).d}
+ const s=String(v).trim();if(!s||s==='None')return '';
+ const m=s.match(/^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2})(?::\d{2}(?:\.\d+)?)?Z$/);
+ if(m){const t=Date.UTC(+m[1],+m[2]-1,+m[3],+m[4],+m[5])-3*3600000;const d=new Date(t);return `${d.getUTCFullYear()}-${pad(d.getUTCMonth()+1)}-${pad(d.getUTCDate())}`}
+ return parseDT(s).d}
+function ccpHora(v){const t=parseDT(v).t;return /^\d{2}:\d{2}$/.test(t)?t:''}
+const CCP_FORMA={CREDIT_CARD_EXTERNAL:'Cartão de crédito',CREDIT_CARD:'Cartão de crédito',DEBIT_CARD_EXTERNAL:'Cartão de débito',DEBIT_CARD:'Cartão de débito',PIX_EXTERNAL:'Pix',PIX:'Pix',BOLETO_EXTERNAL:'Boleto',BOLETO:'Boleto',CASH:'Dinheiro',MONEY:'Dinheiro',CHECK:'Cheque',BANK_TRANSFER:'Transferência',TRANSFER:'Transferência',OTHER:'Outros'};
+const CCP_CIVIL={MARRIED:'Casado(a)',SINGLE:'Solteiro(a)',WIDOWED:'Viúvo(a)',DIVORCED:'Divorciado(a)',SEPARATED:'Separado(a)',STABLE_UNION:'União estável'};
+const CCP_TIPO={fixedCost:'Custo Fixo',variableCost:'Custo Variável',investment:'Investimento'};
+function ccpId(pre,...v){const t=v.map(x=>ccpTxt(x)).join('_');if(!t.replace(/_/g,''))return uid();let h=0;for(const ch of t)h=(h*31+ch.charCodeAt(0))>>>0;return pre+(t.length<=40?t.replace(/[^A-Za-z0-9_-]/g,''):'')+'_'+h.toString(36)}
+function ccpCelular(v){const d=onlyDigits(v);return d.length>11&&d.startsWith('55')?d.slice(2):ccpTxt(v)}
+
+function importarClinicorp(items,mode){
+ const T={};items.forEach(it=>{const k=it.ccp;if(CCP[k].info)return;(T[k]||(T[k]=[])).push(...ccpObjs(it.rows))});
+ const res={};const novo=()=>({lidas:0,importadas:0,atualizadas:0,ignoradas:0,novosPacientes:0});
+ const limpar=col=>{S[col]=S[col].filter(x=>x.origem!=='clinicorp'&&!(mode==='substituir'&&x.origem==='import'))};
+ /* Profissionais */
+ if(T.Dentist){const r=res.Dentist=novo();T.Dentist.forEach(d=>{r.lidas++;const nome=ccpTxt(d.Name);if(!nome||ccpSim(d.Deleted)){r.ignoradas++;return}
+  const n0=S.profissionais.length;ensureProf(nome);const p=S.profissionais.find(x=>norm(x.nome)===norm(nome));p.ativo=ccpSim(d.Active);if(ccpTxt(d.MobilePhone))p.celular=ccpCelular(d.MobilePhone);
+  if(S.profissionais.length>n0)r.importadas++;else r.atualizadas++})}
+ /* Pacientes */
+ const porId={};S.pacientes.forEach(p=>{if(p.clinicorpId)porId[p.clinicorpId]=p});
+ if(T.Patient){const r=res.Patient=novo();T.Patient.forEach(c=>{r.lidas++;const nome=ccpTxt(c.Name);if(!nome||ccpSim(c.Deleted)){r.ignoradas++;return}
+  const o={nome,clinicorpId:ccpTxt(c.id)};const set=(k,v)=>{v=ccpTxt(v);if(v)o[k]=v};
+  set('codigo',c.ClinicalRecordNumber);set('cpf',c.OtherDocumentId);set('rg',c.DocumentId);o.nascimento=ccpData(c.BirthDate)||ccpData(c.PersonBirthDate);if(!o.nascimento)delete o.nascimento;
+  const sx=ccpTxt(c.Sex).toUpperCase();if(sx==='F')o.sexo='Feminino';else if(sx==='M')o.sexo='Masculino';
+  const ec=ccpTxt(c.CivilStatus);if(ec)o.estadoCivil=CCP_CIVIL[ec]||ec;
+  set('profissao',c.Profession);if(ccpTxt(c.MobilePhone))o.celular=ccpCelular(c.MobilePhone);set('telefone',c.Landline);set('email',c.Email);set('cep',c.Zip);
+  set('endereco',c.Address);set('numero',c.AddressNumber);set('complemento',c.AddressComplement);set('bairro',c.Neighborhood);set('cidade',c.City);set('uf',c.state);
+  set('comoConheceu',ccpTxt(c.HowDidMeet)||ccpTxt(c.IndicationSource));set('plano',c.insurancePlanName);set('responsavel',c.PersonInCharge);set('observacoes',c.Notes);
+  o.status=c.Active===undefined||ccpSim(c.Active)?'Ativo':'Inativo';
+  let p=(o.clinicorpId&&porId[o.clinicorpId])||findPatient(o.nome,o.cpf,o.codigo);
+  if(p){Object.assign(p,o);delete p.criadoPorImportacao;r.atualizadas++}else{p={id:uid(),...o,codigo:o.codigo||nextCodigo()};S.pacientes.push(p);r.importadas++}
+  if(o.clinicorpId)porId[o.clinicorpId]=p})}
+ /* Liga o paciente de qualquer tabela pelo código interno do Clinicorp; sem ele, pelo CPF ou pelo nome */
+ const acharPac=(id,nome,cpf,r)=>{const k=ccpTxt(id);if(k&&porId[k])return porId[k];const n=ccpTxt(nome);if(!n&&!keyCPF(cpf))return null;
+  const n0=S.pacientes.length;const p=ensurePatient(n||'Paciente sem nome',ccpTxt(cpf));if(p&&S.pacientes.length>n0)r.novosPacientes++;if(p&&k&&!p.clinicorpId){p.clinicorpId=k;porId[k]=p}return p};
+ /* Tratamentos: cada linha do orçamento é uma sessão; as linhas do mesmo procedimento no mesmo orçamento viram um tratamento */
+ if(T.Budgets){limpar('tratamentos');const r=res.Budgets=novo();const g={};
+  T.Budgets.forEach(b=>{r.lidas++;if(ccpSim(b.Deleted)||!ccpTxt(b.ProcedureName)){r.ignoradas++;return}const k=ccpTxt(b.BudgetId)+'|'+norm(b.ProcedureName);(g[k]||(g[k]=[])).push(b)});
+  Object.values(g).forEach(L=>{const b=L[0];const p=acharPac(b.PatientId,b.PatientName,'',r);if(!p){r.ignoradas+=L.length;return}
+   const st=ccpTxt(b.Status).toUpperCase();const feitas=L.filter(x=>ccpSim(x.Executed)).length;
+   let statusOrig=st==='CANCELED'||st==='CANCELLED'?'Cancelado':ccpSim(b.NotApproved)||ccpTxt(b.BudgetRejectedDate)?'Reprovado':!ccpSim(b.BudgetApproved)?'Em aberto':(st==='CLOSED'&&feitas>=L.length)?'Concluído':'Aprovado';
+   S.tratamentos.push({id:ccpId('cct',b.BudgetId,norm(b.ProcedureName)),pacienteId:p.id,procedimento:ccpTxt(b.ProcedureName).replace(/\s+/g,' '),data:ccpData(b.BudgetApprovedDate)||ccpData(b.BudgetsCreateDate),
+    sessoesTotal:L.length,sessoesRealizadas:feitas,valor:Math.round(L.reduce((a,x)=>a+parseNum(x.ProcedureFinalAmount),0)*100)/100,statusOrig,
+    profissional:ensureProf(b.DentistName),especialidade:ccpTxt(b.Specialty),orcamento:ccpTxt(b.BudgetId),origem:'clinicorp'});r.importadas++})}
+ /* Financeiro: pagamentos e parcelas (PaymentItem) e saldos de tratamento ainda em aberto (BookEntry) */
+ if(T.PaymentItem||T.BookEntry)limpar('lancamentos');
+ if(T.PaymentItem){const r=res.PaymentItem=novo();T.PaymentItem.forEach(x=>{r.lidas++;const valor=parseNum(x.Amount);if(!valor){r.ignoradas++;return}
+  const p=acharPac(x.PatientId,x.PayerName,x.PayerDocumentNumber,r);if(!p){r.ignoradas++;return}
+  const cancel=ccpSim(x.Canceled)||ccpSim(x.CancelInstallment);const pago=!cancel&&(ccpSim(x.PaymentConfirmed)||ccpSim(x.PaymentReceived));
+  const n=Number(x.InstallmentNumber)||0,q=Number(x.InstallmentsCount)||0;const parcela=q>1?`${n<q?n+1:n}/${q}`:'';
+  S.lancamentos.push({id:ccpId('ccp',x.id),pacienteId:p.id,descricao:ccpTxt(x.PaymentDescription)||'Pagamento de tratamento',valor,valorPago:pago?valor:0,
+   vencimento:ccpData(x.DueDate)||ccpData(x.PaymentDate),pagamento:pago?(ccpData(x.PaymentDate)||ccpData(x.ConfirmedDate)||ccpData(x.ReceivedDate)):'',
+   forma:CCP_FORMA[ccpTxt(x.Type)]||ccpTxt(x.PaymentForm)||'',parcela,statusOrig:cancel?'Cancelado':pago?'Pago':'Em aberto',profissional:'',origem:'clinicorp'});r.importadas++})}
+ if(T.BookEntry){limpar('contasPagar');const r=res.BookEntry=novo();
+  T.BookEntry.forEach(e=>{r.lidas++;const tipo=ccpTxt(e.EntryType),lado=ccpTxt(e.Type).toUpperCase(),valor=Math.abs(parseNum(e.Amount));
+   /* O livro do Clinicorp tem partidas dobradas: cada conta aparece duas vezes (débito e crédito). Usa-se um lado só. */
+   if(tipo==='ACCOUNT_TO_PAY'&&lado==='CREDIT'&&valor){const pago=!ccpSim(e.Open)&&!!ccpData(e.CloseDate);
+    S.contasPagar.push({id:ccpId('ccc',e.id),descricao:ccpTxt(e.Description)||ccpTxt(e.Category)||'Conta',fornecedor:'',categoria:ccpTxt(e.Category),tipo:CCP_TIPO[ccpTxt(e.AP_Classification)]||'Outros',
+     vencimento:ccpData(e.Date),valor,valorPago:pago?valor:0,pagamento:pago?ccpData(e.CloseDate):'',statusOrig:pago?'Pago':'Em aberto',obs:ccpTxt(e.AP_Notes)||ccpTxt(e.Notes),origem:'clinicorp'});r.importadas++;return}
+   if(tipo==='PATIENT_AP'&&lado==='DEBIT'&&ccpSim(e.Open)&&valor&&porId[ccpTxt(e.PersonId)]){const p=porId[ccpTxt(e.PersonId)];
+    S.lancamentos.push({id:ccpId('ccs',e.id),pacienteId:p.id,descricao:'Saldo de tratamento em aberto',valor,valorPago:0,vencimento:ccpData(e.PatientDueDate)||ccpData(e.Date),pagamento:'',forma:'',parcela:'',statusOrig:'Em aberto',profissional:'',origem:'clinicorp'});r.atualizadas++;return}
+   r.ignoradas++});
+  r.nota='contas a pagar e saldos em aberto';}
+ /* Agenda */
+ if(T.Appointment){limpar('agendamentos');const r=res.Appointment=novo();T.Appointment.forEach(a=>{r.lidas++;if(ccpSim(a.Deleted)){r.ignoradas++;return}const data=ccpData(a.date);if(!data){r.ignoradas++;return}
+  const p=acharPac(a.PatientId,a.PatientName,'',r);if(!p){r.ignoradas++;return}
+  const hora=ccpHora(a.fromTime)||'08:00',fim=ccpHora(a.toTime);let dur=30;if(fim){const [h1,m1]=hora.split(':').map(Number),[h2,m2]=fim.split(':').map(Number);const d=(h2*60+m2)-(h1*60+m1);if(d>0)dur=d}
+  const st=ccpTxt(a.Status).toUpperCase();const status=ccpSim(a.Canceled)?'Desmarcado':st==='CHECKOUT'?'Atendido':st==='MISSED'?'Faltou':st==='CONFIRMED'?'Confirmado':'Agendado';
+  const obs=[ccpTxt(a.Notes),ccpSim(a.Canceled)&&ccpTxt(a.CancelReason)?'Motivo do cancelamento: '+ccpTxt(a.CancelReason):''].filter(Boolean).join(' ');
+  S.agendamentos.push({id:ccpId('cca',a.id),pacienteId:p.id,data,hora,duracao:dur,profissional:ensureProf(a.DentistName),procedimento:ccpTxt(a.Procedures)||ccpTxt(a.CategoryDescription),status,obs,origem:'clinicorp'});r.importadas++})}
+ /* Evoluções: procedimentos executados com as anotações */
+ if(T.TreatmentOperation){limpar('evolucoes');const r=res.TreatmentOperation=novo();T.TreatmentOperation.forEach(t=>{r.lidas++;if(ccpSim(t.Deleted)){r.ignoradas++;return}
+  const p=acharPac(t.PatientId,t.PatientName,'',r);if(!p){r.ignoradas++;return}const proc=ccpTxt(t.ProcedureDescription).replace(/\s*\n\s*/g,', ');
+  const texto=[proc?(ccpSim(t.Executed)?'Procedimento executado: ':'Procedimento planejado: ')+proc:'',ccpTxt(t.Notes),ccpTxt(t.NextAppointmentNotes)?'Próxima consulta: '+ccpTxt(t.NextAppointmentNotes):''].filter(Boolean).join('\n');
+  if(!texto){r.ignoradas++;return}S.evolucoes.push({id:ccpId('cce',t.id),pacienteId:p.id,data:ccpData(t.ExecutedDate)||ccpData(t.CreateDate)||todayISO(),profissional:ensureProf(t.DentistName),texto,origem:'clinicorp'});r.importadas++})}
+ /* Anamnese: uma linha por pergunta; agrupa por paciente e data */
+ if(T.PatientAnamnesis){limpar('anamneses');const r=res.PatientAnamnesis=novo();const g={};
+  const porCPF={};S.pacientes.forEach(p=>{const k=keyCPF(p.cpf);if(k)porCPF[k]=p});
+  T.PatientAnamnesis.forEach(q=>{r.lidas++;const k=keyCPF(q.PatientOtherDocument);let p=k&&porCPF[k];if(!p)p=acharPac('',q.PatientName,q.PatientOtherDocument,r);if(!p){r.ignoradas++;return}
+   const data=ccpData(q.AnamnesisDate);const modelo=ccpTxt(q.TemplateDescription)||'Anamnese';const key=p.id+'|'+data+'|'+modelo;
+   const gr=g[key]||(g[key]={id:ccpId('ccn',p.clinicorpId||p.id,data,modelo),pacienteId:p.id,data,modelo,respostas:[],origem:'clinicorp'});
+   const op=ccpTxt(q.AnswerOption),ds=ccpTxt(q.AnswerDescription);const a=op&&ds&&norm(op)!==norm(ds)?op+'. '+ds:(op||ds);
+   if(ccpTxt(q.Question))gr.respostas.push({q:ccpTxt(q.Question),a,seq:Number(q.Sequence)||0})});
+  Object.values(g).forEach(gr=>{gr.respostas.sort((x,y)=>x.seq-y.seq);gr.respostas=gr.respostas.map(({q,a})=>({q,a}));S.anamneses.push(gr);r.importadas++})}
+ return res}
+function ccpResumo(k,r){if(!r)return 'Ignorada';if(CCP[k].info)return 'Não precisa importar';
+ if(k==='BookEntry')return `${r.importadas} contas a pagar e ${r.atualizadas} saldos de pacientes em aberto (todas as partes juntas)`;
+ return `${r.importadas} novos${r.atualizadas?', '+r.atualizadas+' atualizados':''}${r.novosPacientes?', '+r.novosPacientes+' pacientes criados':''}`}
 
 /* ============ Configurações ============ */
 function vConfig(){const c=S.config;const tot=S.pacientes.length+S.lancamentos.length+S.tratamentos.length+S.agendamentos.length+S.anamneses.length+S.contasPagar.length;
@@ -804,7 +947,7 @@ function vConfig(){const c=S.config;const tot=S.pacientes.length+S.lancamentos.l
  <div class="card"><h2>Logotipo da clínica</h2><p class="sub" style="margin-bottom:12px">Aparece no menu lateral, para toda a equipe. Use imagem PNG ou JPG. As cores e o logotipo ficam salvos na nuvem da clínica.</p><div style="display:flex;gap:18px;align-items:center;flex-wrap:wrap"><img src="${logoClinica()}" style="max-width:180px;max-height:90px;border:1px solid var(--line);border-radius:10px;padding:8px;background:#fff">${/happy\s*feet/i.test(S.config.clinica)&&S.config.logo!==LOGO_HAPPYFEET?'<button class="btn soft" onclick="S.config.logo=LOGO_HAPPYFEET;save();render()">Usar o logotipo HappyFEET</button>':''}<label class="btn ghost" style="cursor:pointer">${ico('up',16)} Trocar logotipo<input type="file" accept="image/*" style="display:none" onchange="setLogo(this)"></label>${S.config.logo?'<button class="btn ghost" onclick="S.config.logo=\'\';save();render()">Usar o logotipo BlackFlow</button>':''}</div></div>
  <div class="card"><h2>Backup e segurança dos dados</h2><div class="note warn">Os dados ficam gravados somente neste navegador, neste computador. Não vão para nenhum servidor. Se limpar os dados do navegador, trocar de computador ou o disco falhar, tudo se perde. Baixe um backup toda semana e guarde em local seguro. São dados de saúde: o arquivo de backup deve ser tratado com o mesmo sigilo do prontuário.</div>
  <p class="sub">${tot} registros gravados: ${S.pacientes.length} pacientes, ${S.lancamentos.length} lançamentos, ${S.tratamentos.length} tratamentos, ${S.agendamentos.length} agendamentos, ${S.anamneses.length} anamneses, ${S.evolucoes.length} evoluções, ${S.contasPagar.length} contas a pagar.</p>
- <div class="mact" style="justify-content:flex-start"><button class="btn" onclick="backup()">${ico('down',16)} Baixar backup</button><label class="btn ghost" style="cursor:pointer">${ico('up',16)} Restaurar backup<input type="file" accept=".json" style="display:none" onchange="restore(this)"></label><button class="btn ghost" onclick="exportAll()">${ico('down',16)} Exportar tudo em Excel</button></div></div>
+ <div class="mact" style="justify-content:flex-start"><button class="btn" onclick="backup()">${ico('down',16)} Baixar backup</button><label class="btn ghost" style="cursor:pointer">${ico('up',16)} Restaurar backup<input type="file" accept=".json" style="display:none" onchange="restore(this)"></label><button class="btn ghost" onclick="exportAll()">${ico('down',16)} Salvar uma cópia dos dados do BlackFlow em Excel</button></div></div>
  ${NV.ativa&&NV.papel!=='admin'?'':`<div class="card"><h2>Zona de risco</h2><p class="sub">Apaga todos os dados deste navegador. Faça um backup antes.</p><div class="mact" style="justify-content:flex-start"><button class="btn danger" onclick="wipe()">Apagar todos os dados</button></div></div>`}</div>`}
 function setLogo(input){const f=input.files[0];if(!f)return;const r=new FileReader();r.onload=()=>{const img=new Image();img.onload=()=>{const k=Math.min(1,400/Math.max(img.width,img.height));const c=document.createElement('canvas');c.width=Math.round(img.width*k);c.height=Math.round(img.height*k);c.getContext('2d').drawImage(img,0,0,c.width,c.height);S.config.logo=c.toDataURL('image/png');save();render();toast('Logotipo atualizado')};img.src=r.result};r.readAsDataURL(f)}
 function saveCfg(){const f=$('#cfgF');f.querySelectorAll('input,textarea').forEach(i=>{S.config[i.name]=i.type==='number'?(+i.value||90):i.value});save();render();toast('Configurações salvas')}
