@@ -152,7 +152,7 @@ a.btn{text-decoration:none}
 .ret{display:flex;justify-content:space-between;align-items:center;font-size:12px;padding:5px 0;border-bottom:1px solid var(--line);gap:6px}
 .wa{color:#25a244;display:inline-flex;vertical-align:middle}
 .drop{border:2px dashed #a9bdf3;background:#f7f9ff;border-radius:10px;padding:30px;text-align:center;color:var(--mut)}
-.drop input{margin-top:12px}#avisos{position:fixed;top:64px;right:16px;z-index:9999;display:flex;flex-direction:column;gap:10px;max-width:360px;width:calc(100% - 32px)}.aviso{background:#fff;border-radius:14px;box-shadow:0 18px 50px rgba(0,0,0,.28);border-left:6px solid var(--acc);padding:14px 16px;animation:avisoEntra .35s ease}.aviso-t{display:flex;gap:6px;align-items:center;font-size:12px;font-weight:700;color:var(--acc);text-transform:uppercase;letter-spacing:.03em}.aviso-n{font-size:17px;font-weight:800;margin:6px 0 2px}.aviso-d{font-size:13px;color:#444}.aviso-b{display:flex;gap:8px;justify-content:flex-end;margin-top:10px}@keyframes avisoEntra{from{transform:translateX(40px);opacity:0}to{transform:none;opacity:1}}.drop.over{border-color:var(--acc);background:#eaf1ff}.spin{width:34px;height:34px;border:4px solid #c9d6f5;border-top-color:var(--acc);border-radius:50%;margin:0 auto;animation:gira 0.9s linear infinite}@keyframes gira{to{transform:rotate(360deg)}}
+.drop input{margin-top:12px}#atuFaixa{position:fixed;left:50%;bottom:18px;transform:translateX(-50%);z-index:9998;background:#0b0d12;color:#fff;border-radius:14px;box-shadow:0 18px 50px rgba(0,0,0,.35);padding:12px 16px;display:flex;gap:16px;align-items:center;flex-wrap:wrap;max-width:calc(100% - 32px);font-size:14px}#atuFaixa span{display:flex;align-items:center;gap:8px}#avisos{position:fixed;top:64px;right:16px;z-index:9999;display:flex;flex-direction:column;gap:10px;max-width:360px;width:calc(100% - 32px)}.aviso{background:#fff;border-radius:14px;box-shadow:0 18px 50px rgba(0,0,0,.28);border-left:6px solid var(--acc);padding:14px 16px;animation:avisoEntra .35s ease}.aviso-t{display:flex;gap:6px;align-items:center;font-size:12px;font-weight:700;color:var(--acc);text-transform:uppercase;letter-spacing:.03em}.aviso-n{font-size:17px;font-weight:800;margin:6px 0 2px}.aviso-d{font-size:13px;color:#444}.aviso-b{display:flex;gap:8px;justify-content:flex-end;margin-top:10px}@keyframes avisoEntra{from{transform:translateX(40px);opacity:0}to{transform:none;opacity:1}}.drop.over{border-color:var(--acc);background:#eaf1ff}.spin{width:34px;height:34px;border:4px solid #c9d6f5;border-top-color:var(--acc);border-radius:50%;margin:0 auto;animation:gira 0.9s linear infinite}@keyframes gira{to{transform:rotate(360deg)}}
 .steps{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px}
 .steps span{background:#fff;border:1px solid var(--line);border-radius:20px;padding:5px 12px;font-size:12px;color:var(--mut)}
 .steps span.on{border-color:var(--acc);color:var(--acc);font-weight:600}
@@ -438,7 +438,7 @@ function shell(content){const c=S.config;
  return `<header class="top"><button class="ico" onclick="toggleDrawer()" aria-label="Menu">${ico('menu')}</button>
  <div class="gsearch"><input id="gs" placeholder="Encontre ${esc(SEG().pessoas.toLowerCase())} ou funções do sistema" oninput="globalSearch(this.value)" onblur="setTimeout(()=>{const r=$('#gsr');if(r)r.classList.remove('on')},200)" autocomplete="off"><div id="gsr" class="gsr"></div></div>
  ${NV.ativa?`<span id="sync" class="sync" title="Sincronização com a nuvem">${syncTxt()}</span>`:''}<div class="user" style="cursor:pointer" onclick="abrirConta()"><span class="av">${esc(initials(nomeUsuario()))}</span><div><b>${esc(nomeUsuario())}</b><small>${esc(c.clinica)}</small></div></div></header>
- <aside class="drawer ${UI.drawer?'open':''}"><div class="brand ${S.config.logo?'':'escuro'}"><img src="${logoClinica()}" alt="${esc(c.clinica)}"></div><div class="prod">BLACKFLOW <span style="font-weight:600">by BlackSolutions</span></div><span class="plan">Versão 1.4.5</span><button class="lnk" style="display:block;margin:8px 16px 0;font-size:12px;text-align:left" onclick="UI.drawer=false;perguntarSegmento()">Segmento: <b>${esc(SEG().nome)}</b> · trocar</button>
+ <aside class="drawer ${UI.drawer?'open':''}"><div class="brand ${S.config.logo?'':'escuro'}"><img src="${logoClinica()}" alt="${esc(c.clinica)}"></div><div class="prod">BLACKFLOW <span style="font-weight:600">by BlackSolutions</span></div><span class="plan">Versão 1.4.6</span><button class="lnk" style="display:block;margin:6px 16px 0;font-size:12px;text-align:left" onclick="UI.drawer=false;render();atuChecar(true)">Procurar atualização</button><button class="lnk" style="display:block;margin:8px 16px 0;font-size:12px;text-align:left" onclick="UI.drawer=false;perguntarSegmento()">Segmento: <b>${esc(SEG().nome)}</b> · trocar</button>
  <div class="menu"><button class="${UI.view==='inicio'?'on':''}" onclick="go('inicio')">${ico('home',18)} Início</button><div class="msec">MÓDULOS</div>
  ${menuItens().map(([k,l,i])=>`<button class="${UI.view===k||(k==='pacientes'&&UI.view==='paciente')?'on':''}" onclick="go('${k}')">${ico(i,18)} ${l}</button>`).join('')}</div>
  <div class="mfoot menu"><button class="${UI.view==='config'?'on':''}" onclick="go('config')">${ico('gear',18)} Configurações</button></div></aside>
@@ -457,7 +457,7 @@ function render(){if(NV.ativa&&UI.auth){$('#app').innerHTML=vAuth();setTimeout((
  document.documentElement.style.setProperty('--acc',S.config.cor||'#0b6cf2');document.documentElement.style.setProperty('--top',S.config.corTopo||'#0b0d12');const fv=$('#fav');if(fv&&fv.href!==ICONE)fv.href=ICONE;
  const V={inicio:vInicio,agenda:vAgenda,pacientes:vPacientes,paciente:vPaciente,financeiro:vFinanceiro,dashboard:vDashboard,relatorios:vRelatorios,profissionais:vProfissionais,importar:vImportar,config:vConfig,servicos:vServicos,estoque:vEstoque,comandas:vComandas,caixa:vCaixa,comissoes:vComissoes,protocolos:vProtocolos,equipamentos:vEquipamentos};
  let c;try{c=(V[UI.view]||vInicio)()}catch(e){console.error(e);c=`<div class="page"><div class="card">Erro ao montar a tela: ${esc(e.message)}</div></div>`}
- $('#app').innerHTML=shell(c);checarSegmento();if(!AVISO.timer)avisoIniciar()}
+ $('#app').innerHTML=shell(c);checarSegmento();if(!AVISO.timer)avisoIniciar();atuIniciar()}
 
 /* ============ Início ============ */
 function vInicio(){const vazio=!S.pacientes.length;const inad=inadList().reduce((a,o)=>a+o.valor,0);
@@ -1318,6 +1318,24 @@ function agNovo(a,s){if(s==='Desmarcado'||s==='Faltou')return false;const k=a.da
  const antes=S.agendamentos.some(x=>x.pacienteId===a.pacienteId&&x.id!==a.id&&stAg(x)!=='Desmarcado'&&(x.data+' '+(x.hora||''))<k);if(antes)return false;
  const hist=c=>S[c].some(x=>x.pacienteId===a.pacienteId&&((x.data||x.vencimento||x.pagamento||'')<a.data)&&(x.data||x.vencimento||x.pagamento));
  return !hist('evolucoes')&&!hist('tratamentos')&&!S.lancamentos.some(l=>l.pacienteId===a.pacienteId&&l.pagamento&&l.pagamento<a.data)}
+/* ============ Atualização: aviso com botão Atualizar agora ============ */
+const VERSAO_APP='1.4.6';const URL_VERSAO_JSON='https://raw.githubusercontent.com/TheIgor12/blacksolutions/main/versao.json';
+const numV=v=>String(v||'0').split(/\D+/).filter(Boolean).map(Number);
+function versaoMaior(a,b){const x=numV(a),y=numV(b);for(let i=0;i<Math.max(x.length,y.length);i++){const d=(x[i]||0)-(y[i]||0);if(d)return d>0}return false}
+const ATU={nova:null,timer:null};
+async function atuChecar(manual){try{const r=await fetch(URL_VERSAO_JSON+'?t='+Date.now(),{cache:'no-store'});const j=await r.json();const v=String(j.versao||'').replace(/^v/i,'');
+  if(versaoMaior(v,VERSAO_APP)){ATU.nova={versao:v,novidades:j.novidades||''};atuFaixa()}else{ATU.nova=null;atuFaixa();if(manual)toast('Você já está na versão mais nova ('+VERSAO_APP+')')}}
+ catch(e){if(manual)toast('Não foi possível procurar atualização agora. Verifique a internet.')}}
+function atuFaixa(){let f=document.getElementById('atuFaixa');if(!ATU.nova){if(f)f.remove();return}
+ if(!f){f=document.createElement('div');f.id='atuFaixa';document.body.appendChild(f)}
+ f.innerHTML=`<span>${ico('down',18)} <b>Nova versão ${esc(ATU.nova.versao)} disponível.</b> Você está na ${VERSAO_APP}.</span><span style="display:flex;gap:8px"><button class="btn sm" id="atuBtn" onclick="atuAgora()">Atualizar agora</button><button class="btn ghost sm" onclick="document.getElementById('atuFaixa').remove()">Depois</button></span>`}
+async function atuAgora(){const b=document.getElementById('atuBtn');if(b){b.disabled=true;b.textContent='Atualizando...'}
+ const api=window.pywebview&&window.pywebview.api;
+ if(api&&api.atualizar){try{const r=await api.atualizar();if(String(r).startsWith('erro')){toast('Não foi possível atualizar: '+String(r).slice(6));if(b){b.disabled=false;b.textContent='Tentar de novo'}}else if(r==='atual'){toast('Já está na versão mais nova');atuFaixa()}}catch(e){toast('Não foi possível atualizar agora');if(b){b.disabled=false;b.textContent='Tentar de novo'}}return}
+ if(window.pywebview){openModal(`<h3>Atualizar o BlackFlow</h3><p>Para instalar a versão ${esc(ATU.nova.versao)}, feche o BlackFlow pelo X da janela e abra de novo. Quando aparecer a pergunta "Atualizar agora?", clique em <b>Sim</b>.</p><div class="mact"><button class="btn" onclick="closeModal()">Entendi</button></div>`);if(b){b.disabled=false;b.textContent='Atualizar agora'}return}
+ location.reload()}
+function atuIniciar(){if(ATU.timer)return;setTimeout(()=>atuChecar(false),6000);ATU.timer=setInterval(()=>atuChecar(false),30*60000)}
+
 /* ============ Configurações ============ */
 function vConfig(){const c=S.config;const tot=S.pacientes.length+S.lancamentos.length+S.tratamentos.length+S.agendamentos.length+S.anamneses.length+S.contasPagar.length;
  return `<div class="page" style="max-width:900px"><div class="phead"><div><h1>Configurações</h1><p class="sub">Dados da clínica, mensagens, backup e exportação.</p></div></div>

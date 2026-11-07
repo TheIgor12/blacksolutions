@@ -21,7 +21,7 @@ from pathlib import Path
 import webview
 
 APP_NOME = 'BlackFlow'
-VERSAO = '1.4.2'
+VERSAO = '1.4.6'
 # Arquivo público que informa a versão mais nova. Fica no repositório do site Black Solutions.
 URL_VERSAO = 'https://raw.githubusercontent.com/TheIgor12/blacksolutions/main/versao.json'
 ARQ_HTML = 'happyfeet-gestao.html'
@@ -130,6 +130,14 @@ class Api:
         except Exception:
             pass
 
+    def atualizar(self):
+        """Botão Atualizar agora, dentro do sistema."""
+        try:
+            r = verificar_atualizacoes(perguntar=False)
+            return r or 'atualizado'
+        except Exception as erro:
+            return 'erro: ' + str(erro)
+
     def abrir_link(self, url):
         if str(url).startswith(('https://', 'http://', 'mailto:')):
             webbrowser.open(url)
@@ -169,15 +177,18 @@ def instalar_atualizacao(instalador):
     janela.destroy()
 
 
-def verificar_atualizacoes():
-    time.sleep(4)
+def verificar_atualizacoes(perguntar=True):
+    if perguntar:
+        time.sleep(4)
     try:
         versao = buscar_ultima_versao()
-    except Exception:
+    except Exception as erro:
+        if not perguntar:
+            raise RuntimeError('sem conexão com o servidor de atualizações') from erro
         return  # sem internet ou sem versões publicadas: segue normalmente
     nova = str(versao.get('versao', '')).lstrip('vV')
     if numeros_versao(nova) <= numeros_versao(versao_atual()):
-        return
+        return 'atual'
     arquivos = {NOME_INSTALADOR: versao.get('instalador'), ARQ_HTML: versao.get('html')}
     notas = (versao.get('novidades') or '').strip()
     texto = f'A versão {nova} do {APP_NOME} está disponível.'
@@ -185,13 +196,13 @@ def verificar_atualizacoes():
         texto += '\n\nNovidades:\n' + notas[:600]
     try:
         if getattr(sys, 'frozen', False) and not NO_MAC and arquivos.get(NOME_INSTALADOR):
-            if not janela.create_confirmation_dialog('Atualização disponível', texto + '\n\nAtualizar agora? O programa vai fechar e abrir de novo sozinho.'):
+            if perguntar and not janela.create_confirmation_dialog('Atualização disponível', texto + '\n\nAtualizar agora? O programa vai fechar e abrir de novo sozinho.'):
                 return
             instalador = Path(tempfile.gettempdir()) / ('BlackFlow_Instalador_' + nova + '.exe')
             baixar(arquivos[NOME_INSTALADOR], instalador)
             instalar_atualizacao(instalador)
         elif arquivos.get(ARQ_HTML):
-            if not janela.create_confirmation_dialog('Atualização disponível', texto + '\n\nAtualizar agora?'):
+            if perguntar and not janela.create_confirmation_dialog('Atualização disponível', texto + '\n\nAtualizar agora?'):
                 return
             destino = PASTA_APP / ARQ_HTML
             temporario = PASTA_APP / (ARQ_HTML + '.novo')
@@ -205,7 +216,10 @@ def verificar_atualizacoes():
             info['html'] = nova
             gravar_info(info)
             janela.load_url(destino.as_uri())
+            return 'atualizado'
     except Exception as erro:
+        if not perguntar:
+            raise
         try:
             janela.evaluate_js(f"toast({json.dumps('Não foi possível atualizar agora: ' + str(erro))})")
         except Exception:
