@@ -1,5 +1,5 @@
 {
-  "versao": "1.6.1",
-  "html": "https://raw.githubusercontent.com/TheIgor12/blacksolutions/main/download/blackflow-1.6.1.html",
-  "novidades": "Agenda do celular em lista simples, um dia por vez, com o botão Trocar dia."
+  "versao": "1.7.0",
+  "html": "https://raw.githubusercontent.com/TheIgor12/blacksolutions/main/download/blackflow-1.7.0.html",
+  "novidades": "Novos módulos: Confirmação e Alertas, Controle de Indicação, Controle de Voucher, cobrança por Pix e assinatura de termos pelo celular. O botão Atualizar agora passa a recarregar o sistema sozinho."
 }

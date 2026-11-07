@@ -1,0 +1,60 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex">
+<title>Assinar termo</title>
+<style>
+:root{--acc:#0b6cf2;--ink:#1f2328;--mut:#6b7280;--line:#e5e7eb;--bg:#f2f2f3}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font-family:system-ui,-apple-system,"Segoe UI",Roboto,Arial,sans-serif;line-height:1.5}
+.w{max-width:680px;margin:0 auto;padding:20px 16px 40px}.c{background:#fff;border:1px solid var(--line);border-radius:14px;padding:20px;margin-bottom:14px}
+h1{font-size:20px;margin:0 0 4px}.sub{color:var(--mut);font-size:14px;margin:0}.txt{white-space:pre-wrap;font-size:15px;max-height:50vh;overflow:auto;border:1px solid var(--line);border-radius:10px;padding:14px;background:#fafafa}
+label{display:block;font-size:14px;margin:12px 0 4px}input[type=text]{width:100%;font-size:16px;padding:10px 12px;border:1px solid var(--line);border-radius:10px}
+canvas{width:100%;height:180px;border:1px dashed #9ca3af;border-radius:10px;background:#fff;touch-action:none;display:block}
+.row{display:flex;gap:10px;margin-top:14px;flex-wrap:wrap}button{font:inherit;font-size:16px;font-weight:700;border-radius:10px;padding:12px 18px;border:0;cursor:pointer}
+.ok{background:var(--acc);color:#fff;flex:1}.gh{background:#fff;border:1px solid var(--line);color:var(--ink)}button:disabled{opacity:.5}
+.chk{display:flex;gap:10px;align-items:flex-start;font-size:14px;margin-top:12px}.chk input{width:22px;height:22px;margin-top:1px}
+.msg{text-align:center;padding:30px 10px}.msg b{font-size:20px;display:block;margin-bottom:6px}.rod{text-align:center;color:var(--mut);font-size:12px}
+</style>
+</head>
+<body>
+<div class="w" id="app"><div class="c msg"><b>Carregando o termo...</b></div></div>
+<p class="rod">Assinatura eletrônica feita pelo sistema BlackFlow</p>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
+<script>
+const sb=supabase.createClient('https://blszdbjpxgtloblxlusr.supabase.co','sb_publishable_0Tns_mDN2N1iQmw_sEzFXw_SRMy1uXK',{auth:{persistSession:false}});
+const token=new URLSearchParams(location.search).get('t')||'';const app=document.getElementById('app');
+const esc=s=>String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+function aviso(t,s){app.innerHTML=`<div class="c msg"><b>${t}</b><p class="sub">${s||''}</p></div>`}
+async function iniciar(){
+ if(!/^[0-9a-f-]{36}$/i.test(token)){aviso('Link inválido','Peça um novo link para a clínica.');return}
+ const {data,error}=await sb.rpc('termo_publico',{p_token:token});
+ if(error||!data){aviso('Termo não encontrado','Confira se o link está completo ou peça um novo para a clínica.');return}
+ if(data.assinado){aviso('Este termo já foi assinado','Obrigado! Não é preciso fazer mais nada.');return}
+ if(data.expirado){aviso('Este link venceu','Peça um novo link para a clínica.');return}
+ app.innerHTML=`<div class="c"><h1>${esc(data.titulo)}</h1><p class="sub">${esc(data.clinica||'')}${data.paciente?' · '+esc(data.paciente):''}</p></div>
+ <div class="c"><div class="txt">${esc(data.texto)}</div>
+ <label for="nome">Seu nome completo</label><input type="text" id="nome" value="${esc(data.paciente||'')}" autocomplete="name">
+ <label>Assine abaixo com o dedo</label><canvas id="cv"></canvas>
+ <div class="chk"><input type="checkbox" id="li"><label for="li" style="margin:0">Li o termo acima e concordo com o que está escrito.</label></div>
+ <div class="row"><button class="gh" id="limpar">Limpar</button><button class="ok" id="enviar" disabled>Assinar</button></div></div>`;
+ const cv=document.getElementById('cv'),x=cv.getContext('2d');let tem=false,on=false;
+ function ajustar(){const r=cv.getBoundingClientRect();cv.width=Math.round(r.width*2);cv.height=Math.round(r.height*2);x.lineWidth=5;x.lineCap='round';x.lineJoin='round';x.strokeStyle='#111';tem=false;checar()}
+ const pt=e=>{const r=cv.getBoundingClientRect();return [(e.clientX-r.left)*cv.width/r.width,(e.clientY-r.top)*cv.height/r.height]};
+ cv.onpointerdown=e=>{on=true;cv.setPointerCapture(e.pointerId);const [a,b]=pt(e);x.beginPath();x.moveTo(a,b)};
+ cv.onpointermove=e=>{if(!on)return;const [a,b]=pt(e);x.lineTo(a,b);x.stroke();if(!tem){tem=true;checar()}};
+ cv.onpointerup=()=>{on=false};
+ const li=document.getElementById('li'),nome=document.getElementById('nome'),btn=document.getElementById('enviar');
+ function checar(){btn.disabled=!(tem&&li.checked&&nome.value.trim().length>3)}
+ li.onchange=checar;nome.oninput=checar;document.getElementById('limpar').onclick=ajustar;ajustar();
+ btn.onclick=async()=>{btn.disabled=true;btn.textContent='Enviando...';
+  const c=document.createElement('canvas');c.width=640;c.height=Math.round(640*cv.height/cv.width);const g=c.getContext('2d');g.fillStyle='#fff';g.fillRect(0,0,c.width,c.height);g.drawImage(cv,0,0,c.width,c.height);
+  const {data:ok,error}=await sb.rpc('assinar_termo',{p_token:token,p_assinatura:c.toDataURL('image/png'),p_nome:nome.value.trim()});
+  if(error||!ok){btn.disabled=false;btn.textContent='Tentar de novo';alert('Não foi possível enviar a assinatura. Verifique a internet e tente de novo.');return}
+  aviso('Termo assinado!','Obrigado. A clínica já recebeu a sua assinatura. Pode fechar esta página.')};
+}
+iniciar();
+</script>
+</body>
+</html>

@@ -21,7 +21,7 @@ from pathlib import Path
 import webview
 
 APP_NOME = 'BlackFlow'
-VERSAO = '1.6.1'
+VERSAO = '1.7.0'
 # Arquivo público que informa a versão mais nova. Fica no repositório do site Black Solutions.
 URL_VERSAO = 'https://raw.githubusercontent.com/TheIgor12/blacksolutions/main/versao.json'
 ARQ_HTML = 'happyfeet-gestao.html'
@@ -215,7 +215,7 @@ def verificar_atualizacoes(perguntar=True):
             info = ler_info()
             info['html'] = nova
             gravar_info(info)
-            janela.load_url(destino.as_uri())
+            janela.load_url(destino.as_uri() + '?v=' + nova)
             return 'atualizado'
     except Exception as erro:
         if not perguntar:
