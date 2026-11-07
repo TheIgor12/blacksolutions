@@ -21,7 +21,7 @@ from pathlib import Path
 import webview
 
 APP_NOME = 'BlackFlow'
-VERSAO = '1.5.2'
+VERSAO = '1.5.3'
 # Arquivo público que informa a versão mais nova. Fica no repositório do site Black Solutions.
 URL_VERSAO = 'https://raw.githubusercontent.com/TheIgor12/blacksolutions/main/versao.json'
 ARQ_HTML = 'happyfeet-gestao.html'
