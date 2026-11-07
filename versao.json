@@ -1,5 +1,5 @@
 {
-  "versao": "1.4.7",
-  "html": "https://raw.githubusercontent.com/TheIgor12/blacksolutions/main/download/blackflow-1.4.7.html",
-  "novidades": "Legenda de cores na barra de cima da agenda (agendado, confirmado, novo, atendido, faltou e desmarcou) e botão pequeno de atualizar ao lado de Sincronizado."
+  "versao": "1.4.8",
+  "html": "https://raw.githubusercontent.com/TheIgor12/blacksolutions/main/download/blackflow-1.4.8.html",
+  "novidades": "Podologia: tabela de Procedimentos e preços (menu lateral), montada pelos orçamentos. Ao agendar, o valor entra como previsto no financeiro; ao marcar como atendido, passa a ser cobrado. Falta e desmarcação retiram o valor."
 }

@@ -297,13 +297,13 @@ function findPatient(nome,cpf,codigo){const k=keyCPF(cpf);if(k){const p=S.pacien
 function ensurePatient(nomeRaw,cpf){const {nome,codigo}=splitNome(nomeRaw);let p=findPatient(nome,cpf,codigo);
  if(!p&&nome){p={id:uid(),codigo:codigo||nextCodigo(),nome,cpf:str(cpf),status:'Ativo',criadoPorImportacao:true};S.pacientes.push(p)}return p}
 const pac=id=>S.pacientes.find(p=>p.id===id);
-function stLanc(l){const s=norm(l.statusOrig);if(/cancel|estorn/.test(s))return 'Cancelado';
+function stLanc(l){const s=norm(l.statusOrig);if(/cancel|estorn/.test(s))return 'Cancelado';if(s==='previsto'&&!l.pagamento&&!(l.valorPago>0))return 'Previsto';
  const aberto=/(nao|n o) pag|aberto|pendente|parcial|a receber|vencid|atras/.test(s);
  const pagoTxt=!aberto&&/(^| )(pago|paga|quitad|recebid|baixad|liquidad|confirmad)/.test(s);
  if(pagoTxt||(!aberto&&l.pagamento)||(l.valor>0&&l.valorPago>=l.valor-0.005))return 'Pago';
  if(l.vencimento&&l.vencimento<todayISO())return 'Em atraso';return 'A vencer'}
 function pagoEf(l){const st=stLanc(l);if(st==='Cancelado')return 0;if(st==='Pago')return l.valorPago||l.valor||0;return l.valorPago||0}
-function saldoL(l){return stLanc(l)==='Cancelado'?0:Math.max(0,(l.valor||0)-pagoEf(l))}
+function saldoL(l){return ['Cancelado','Previsto'].includes(stLanc(l))?0:Math.max(0,(l.valor||0)-pagoEf(l))}
 function stConta(c){const s=norm(c.statusOrig);if(/cancel/.test(s))return 'Cancelado';const ab=/aberto|pendente|a pagar|nao pag/.test(s);
  if((!ab&&(c.pagamento||/(^| )(pago|paga|quitad|baixad|liquidad)/.test(s)))||(c.valor>0&&c.valorPago>=c.valor-0.005))return 'Pago';
  if(c.vencimento&&c.vencimento<todayISO())return 'Em atraso';return 'A vencer'}
@@ -312,7 +312,7 @@ function stTrat(t){const s=norm(t.statusOrig);if(/conclu|finaliz|executad/.test(
  if((t.sessoesTotal||0)>0&&(t.sessoesRealizadas||0)>=t.sessoesTotal)return 'Concluído';return 'Aprovado'}
 function stAg(a){const s=norm(a.status);if(/falt|nao compareceu|ausen/.test(s))return 'Faltou';if(/desmarc|cancel|remarc/.test(s))return 'Desmarcado';
  if(/atendid|conclu|finaliz|realizad/.test(s))return 'Atendido';if(/confirm/.test(s))return 'Confirmado';return 'Agendado'}
-function badgeFor(st){const m={'Pago':'b-ok','Concluído':'b-ok','Atendido':'b-ok','Aprovado':'b-ok','Ativo':'b-ok','Confirmado':'b-info','A vencer':'b-info','Agendado':'b-info','Em aberto':'b-warn','Em follow up':'b-warn','Em atraso':'b-bad','Faltou':'b-bad','Reprovado':'b-bad','Inativo':'b-mut','Cancelado':'b-mut','Desmarcado':'b-mut'};return `<span class="badge ${m[st]||'b-mut'}">${esc(st)}</span>`}
+function badgeFor(st){const m={'Pago':'b-ok','Concluído':'b-ok','Atendido':'b-ok','Aprovado':'b-ok','Ativo':'b-ok','Confirmado':'b-info','A vencer':'b-info','Agendado':'b-info','Em aberto':'b-warn','Em follow up':'b-warn','Em atraso':'b-bad','Previsto':'b-warn','Faltou':'b-bad','Reprovado':'b-bad','Inativo':'b-mut','Cancelado':'b-mut','Desmarcado':'b-mut'};return `<span class="badge ${m[st]||'b-mut'}">${esc(st)}</span>`}
 function entradasList(){return S.lancamentos.filter(l=>pagoEf(l)>0).map(l=>({data:l.pagamento||l.vencimento,valor:pagoEf(l),l}))}
 function saidasList(){return S.contasPagar.filter(c=>stConta(c)==='Pago').map(c=>({data:c.pagamento||c.vencimento,valor:c.valorPago||c.valor,c}))}
 function lastApptMap(){const m={};const t=todayISO();S.agendamentos.forEach(a=>{const sa=stAg(a);if(sa==='Desmarcado'||(sa==='Faltou'&&a.data<=t))return;const o=m[a.pacienteId]||(m[a.pacienteId]={last:'',next:''});if(a.data<=t){if(a.data>o.last)o.last=a.data}else{if(!o.next||a.data<o.next)o.next=a.data}});return m}
@@ -439,7 +439,7 @@ function shell(content){const c=S.config;
  return `<header class="top"><button class="ico" onclick="toggleDrawer()" aria-label="Menu">${ico('menu')}</button>
  <div class="gsearch"><input id="gs" placeholder="Encontre ${esc(SEG().pessoas.toLowerCase())} ou funções do sistema" oninput="globalSearch(this.value)" onblur="setTimeout(()=>{const r=$('#gsr');if(r)r.classList.remove('on')},200)" autocomplete="off"><div id="gsr" class="gsr"></div></div>
  ${NV.ativa?`<span id="sync" class="sync" title="Sincronização com a nuvem">${syncTxt()}</span>`:''}<button class="ico refr" title="Atualizar: busca os dados novos da nuvem e procura versão nova do sistema" onclick="refrescar(this)">${ico('refresh',17)}</button><div class="user" style="cursor:pointer" onclick="abrirConta()"><span class="av">${esc(initials(nomeUsuario()))}</span><div><b>${esc(nomeUsuario())}</b><small>${esc(c.clinica)}</small></div></div></header>
- <aside class="drawer ${UI.drawer?'open':''}"><div class="brand ${S.config.logo?'':'escuro'}"><img src="${logoClinica()}" alt="${esc(c.clinica)}"></div><div class="prod">BLACKFLOW <span style="font-weight:600">by BlackSolutions</span></div><span class="plan">Versão 1.4.7</span><button class="lnk" style="display:block;margin:6px 16px 0;font-size:12px;text-align:left" onclick="UI.drawer=false;render();atuChecar(true)">Procurar atualização</button><button class="lnk" style="display:block;margin:8px 16px 0;font-size:12px;text-align:left" onclick="UI.drawer=false;perguntarSegmento()">Segmento: <b>${esc(SEG().nome)}</b> · trocar</button>
+ <aside class="drawer ${UI.drawer?'open':''}"><div class="brand ${S.config.logo?'':'escuro'}"><img src="${logoClinica()}" alt="${esc(c.clinica)}"></div><div class="prod">BLACKFLOW <span style="font-weight:600">by BlackSolutions</span></div><span class="plan">Versão 1.4.8</span><button class="lnk" style="display:block;margin:6px 16px 0;font-size:12px;text-align:left" onclick="UI.drawer=false;render();atuChecar(true)">Procurar atualização</button><button class="lnk" style="display:block;margin:8px 16px 0;font-size:12px;text-align:left" onclick="UI.drawer=false;perguntarSegmento()">Segmento: <b>${esc(SEG().nome)}</b> · trocar</button>
  <div class="menu"><button class="${UI.view==='inicio'?'on':''}" onclick="go('inicio')">${ico('home',18)} Início</button><div class="msec">MÓDULOS</div>
  ${menuItens().map(([k,l,i])=>`<button class="${UI.view===k||(k==='pacientes'&&UI.view==='paciente')?'on':''}" onclick="go('${k}')">${ico(i,18)} ${l}</button>`).join('')}</div>
  <div class="mfoot menu"><button class="${UI.view==='config'?'on':''}" onclick="go('config')">${ico('gear',18)} Configurações</button></div></aside>
@@ -502,12 +502,12 @@ function agForm(id,pacienteId){const a=id?S.agendamentos.find(x=>x.id===id):null
  formModal(a?'Editar agendamento':'Novo agendamento',[{k:'paciente',l:SEG().pessoa,req:true,list:'dlPac',full:true},{k:'data',l:'Data',type:'date',req:true},{k:'hora',l:'Hora',type:'time',req:true},{k:'duracao',l:'Duração (minutos)',type:'number'},{k:'profissional',l:'Profissional',list:'dlProf'},{k:'procedimento',l:ehSeg('podologia')?'Procedimento':'Serviço',full:true,list:'dlServ'},{k:'status',l:'Status',type:'select',opts:['Agendado','Confirmado','Atendido','Faltou','Desmarcado']},{k:'obs',l:'Observação',type:'textarea',rows:2,full:true}],
   a?{...a,paciente:p?p.nome:'',status:stAg(a)}:{paciente:p?p.nome:'',data:UI.agDate,hora:'09:00',duracao:30,status:'Agendado'},
   o=>{const pp=ensurePatient(o.paciente);if(!pp){toast('Informe o paciente');return false}const rec={pacienteId:pp.id,data:o.data,hora:o.hora,duracao:o.duracao||30,profissional:ensureProf(o.profissional),procedimento:o.procedimento,status:o.status,obs:o.obs};
-   if(a)Object.assign(a,rec);else S.agendamentos.push({id:uid(),origem:'manual',...rec});UI.agDate=o.data},
+   let ag=a;if(a)Object.assign(a,rec);else{ag={id:uid(),origem:'manual',...rec};S.agendamentos.push(ag)}UI.agDate=o.data;sincLancAg(ag);if(lancAgAtivo()){const pr=precoProc(ag.procedimento);if(pr&&!pacoteAtivo(ag)&&['Agendado','Confirmado'].includes(stAg(ag)))setTimeout(()=>toast('Valor de '+money(pr)+' lançado como previsto no financeiro'),60)}},
   a?`<button class="btn danger" style="margin-right:auto" onclick="delRec('agendamentos','${a.id}')">Excluir</button>`:'')}
 function agModal(id){const a=S.agendamentos.find(x=>x.id===id);if(!a)return;const p=pac(a.pacienteId);const l=p?waLink(p.celular):'';
  openModal(`<h3>${esc(p?p.nome:'Paciente')}</h3><div class="row"><span>Data</span><span>${br(a.data)} às ${esc(a.hora)} (${a.duracao||30} min)</span></div><div class="row"><span>Profissional</span><span>${esc(a.profissional||'-')}</span></div><div class="row"><span>Procedimento</span><span>${esc(a.procedimento||'-')}</span></div><div class="row" style="align-items:center"><span><b>Situação</b></span><span><select id="agSt" onchange="setAgSt('${a.id}',this.value)" style="font-size:14px;font-weight:700;padding:8px 12px;border-radius:8px;border:2px solid ${({Agendado:'#e0a800',Confirmado:'#16a34a',Atendido:'#64748b',Faltou:'#dc2626',Desmarcado:'#999'})[stAg(a)]||'#e0a800'};background:${({Agendado:'#fff3bf',Confirmado:'#c9f2d6',Atendido:'#e6ebf3',Faltou:'#fde8e8',Desmarcado:'#eee'})[stAg(a)]||'#fff3bf'}">${['Agendado','Confirmado','Atendido','Faltou','Desmarcado'].map(x=>`<option value="${x}" ${stAg(a)===x?'selected':''}>${x==='Desmarcado'?'Desmarcou':x}</option>`).join('')}</select></span></div>${agNovo(a,stAg(a))?`<div class="row"><span></span><span><i class="evtag" style="font-size:11px;padding:2px 8px">${esc(SEG().pessoa.toUpperCase())} NOVO</i></span></div>`:''}${a.obs?`<div class="row"><span>Observação</span><span>${esc(a.obs)}</span></div>`:''}
  <div class="mact">${l?`<a class="btn green" href="${l}" target="_blank" rel="noopener">WhatsApp</a>`:''}${p?`<button class="btn ghost" onclick="closeModal();go('paciente','${p.id}')">Abrir ficha</button>`:''}${!ehSeg('podologia')&&p?`<button class="btn soft" onclick="comandaDoAgendamento('${a.id}')">Abrir comanda</button>`:''}<button class="btn" onclick="closeModal();agForm('${a.id}')">Editar</button></div>`)}
-function setAgSt(id,s){const a=S.agendamentos.find(x=>x.id===id);if(a)a.status=s;closeModal();save();render();toast('Situação alterada para '+(s==='Desmarcado'?'desmarcou':s.toLowerCase()))}
+function setAgSt(id,s){const a=S.agendamentos.find(x=>x.id===id);if(a){a.status=s;sincLancAg(a)}closeModal();save();render();if(a&&s==='Atendido'&&lancDoAg(a))setTimeout(()=>toast('Atendido: '+money(lancDoAg(a).valor)+' lançado a receber no financeiro'),50);toast('Situação alterada para '+(s==='Desmarcado'?'desmarcou':s.toLowerCase()))}
 function delRec(col,id){confirmModal('Excluir este registro definitivamente?',()=>{S[col]=S[col].filter(x=>x.id!==id)},'Excluir')}
 
 /* ============ Pacientes ============ */
@@ -627,7 +627,7 @@ function cpForm(id){const c=id?S.contasPagar.find(x=>x.id===id):null;formModal(c
  o=>{const rep=Math.max(1,Math.round(o.repetir||1));delete o.repetir;o.statusOrig=o.pagamento?'Pago':'';if(c){Object.assign(c,o);return}const d0=new Date(o.vencimento+'T00:00');for(let i=0;i<rep;i++){const d=new Date(d0);d.setMonth(d0.getMonth()+i);S.contasPagar.push({id:uid(),origem:'manual',...o,vencimento:iso(d),pagamento:i===0?o.pagamento:'',statusOrig:i===0?o.statusOrig:'',valorPago:0})}},
  c?`<button class="btn danger" style="margin-right:auto" onclick="delRec('contasPagar','${c.id}')">Excluir</button>`:'')}
 function baixarConta(id){const c=S.contasPagar.find(x=>x.id===id);formModal('Registrar pagamento da conta',[{k:'pagamento',l:'Data do pagamento',type:'date',req:true},{k:'valorPago',l:'Valor pago',type:'number',req:true}],{pagamento:todayISO(),valorPago:c.valor},o=>{Object.assign(c,o);c.statusOrig='Pago'})}
-function fReceber(){const t=todayISO();let L=S.lancamentos.filter(l=>{const st=stLanc(l);if(st==='Cancelado')return false;if(UI.crStatus==='aberto')return saldoL(l)>0&&(inRange(l.vencimento)||(l.vencimento&&l.vencimento<UI.de));if(UI.crStatus==='pago')return st==='Pago'&&inRange(l.pagamento||l.vencimento);return inRange(l.vencimento)}).sort((a,b)=>(a.vencimento||'').localeCompare(b.vencimento||''));
+function fReceber(){const t=todayISO();let L=S.lancamentos.filter(l=>{const st=stLanc(l);if(st==='Cancelado')return false;if(UI.crStatus==='aberto')return (saldoL(l)>0||st==='Previsto')&&(inRange(l.vencimento)||(st!=='Previsto'&&l.vencimento&&l.vencimento<UI.de));if(UI.crStatus==='pago')return st==='Pago'&&inRange(l.pagamento||l.vencimento);return inRange(l.vencimento)}).sort((a,b)=>(a.vencimento||'').localeCompare(b.vencimento||''));
  const tot=L.reduce((a,l)=>a+(UI.crStatus==='pago'?pagoEf(l):saldoL(l)),0);
  return `<div class="phead"><div><h1>Contas a Receber</h1><p class="sub">Parcelas dos pacientes. Em aberto inclui as vencidas antes do período.</p></div><button class="btn ghost" onclick="exportRows('contas_a_receber',['Status','Vencimento','Paciente','Descrição','Parcela','Forma','Valor','Saldo'],window._cr)">${ico('down',16)} Exportar Excel</button></div>
  <div class="card" style="margin-bottom:16px">${rangeFilters(`<label>Situação<select onchange="UI.crStatus=this.value;render()"><option value="aberto" ${UI.crStatus==='aberto'?'selected':''}>Em aberto</option><option value="pago" ${UI.crStatus==='pago'?'selected':''}>Recebidas</option><option value="todos" ${UI.crStatus==='todos'?'selected':''}>Todas do período</option></select></label>`)}</div>
@@ -956,7 +956,7 @@ const optList=(arr,v)=>arr.map(o=>{const [val,lab]=Array.isArray(o)?o:[o,o];retu
 
 function menuItens(){const P=SEG().pessoas;
  const base=[['agenda','Agenda','cal'],['dashboard','Dashboard Analítico','chart'],['financeiro','Financeiro','money'],['importar','Importar Dados','up'],['pacientes',P,'user'],['profissionais','Profissional','badge'],['relatorios','Relatórios','report']];
- if(ehSeg('podologia'))return [...base,['estoque','Estoque','badge']];
+ if(ehSeg('podologia'))return [...base,['servicos','Procedimentos e preços','report'],['estoque','Estoque','badge']];
  const extra=[['comandas','Comandas','file'],['caixa','Caixa do dia','money'],['servicos','Serviços e preços','report'],['estoque',ehSeg('estetica')?'Produtos e lotes':'Estoque','badge'],['comissoes',ehSeg('beleza')?'Comissões e salão-parceiro':'Comissões','chart']];
  if(ehSeg('estetica'))extra.push(['protocolos','Protocolos','report'],['equipamentos','Equipamentos','gear']);
  return [...base,...extra]}
@@ -982,7 +982,8 @@ function salvarTaxas(){const f=$('#cfgT');S.config.taxas={};f.querySelectorAll('
 /* ============ Serviços e preços ============ */
 const servPorNome=n=>S.servicos.find(s=>norm(s.nome)===norm(n));
 function vServicos(){const L=[...S.servicos].sort((a,b)=>(a.categoria||'').localeCompare(b.categoria||'')||a.nome.localeCompare(b.nome));
- return `<div class="page"><div class="phead"><div><h1>Serviços e preços</h1><p class="sub">Tabela de serviços com duração, preço e comissão. É usada na agenda, na comanda e nos pacotes.</p></div><button class="btn" onclick="servForm()">${ico('plus',16)} Novo serviço</button></div>
+ return `<div class="page"><div class="phead"><div><h1>${ehSeg('podologia')?'Procedimentos e preços':'Serviços e preços'}</h1><p class="sub">${ehSeg('podologia')?'Tabela de procedimentos com o preço de cada atendimento. Quando o paciente é agendado, o valor entra como previsto no financeiro; quando é marcado como atendido, o valor passa a ser cobrado.':'Tabela de serviços com duração, preço e comissão. É usada na agenda, na comanda e nos pacotes.'}</p></div><div style="display:flex;gap:8px;flex-wrap:wrap">${S.tratamentos.length?`<button class="btn ghost" onclick="montarTabelaPrecos()">Montar a tabela pelos orçamentos</button>`:''}<button class="btn" onclick="servForm()">${ico('plus',16)} ${ehSeg('podologia')?'Novo procedimento':'Novo serviço'}</button></div></div>
+ ${ehSeg('podologia')?`<div class="note">Lançar o valor da agenda no financeiro: <b>${S.config.lancarAgenda===false?'desligado':'ligado'}</b>. <button class="lnk" onclick="S.config.lancarAgenda=S.config.lancarAgenda===false;save();render()">${S.config.lancarAgenda===false?'Ligar':'Desligar'}</button>. Procedimentos de um plano ou pacote já aprovado na ficha do paciente não geram cobrança por sessão, porque o pacote já foi cobrado. Retorno e procedimentos sem preço também não geram cobrança.</div>`:''}
  <div class="card"><table class="tbl"><tr><th>Serviço</th><th>Categoria</th><th class="num">Duração</th><th class="num">Preço</th><th class="num">Comissão</th><th>Status</th><th></th></tr>
  ${L.map(s=>`<tr><td><b>${esc(s.nome)}</b></td><td>${esc(s.categoria||'-')}</td><td class="num">${s.duracao||30} min</td><td class="num">${money(s.preco)}</td><td class="num">${s.comissao!==''&&s.comissao!=null?s.comissao+'%':'Padrão do profissional'}</td><td>${badgeFor(s.ativo===false?'Inativo':'Ativo')}</td><td><button class="lnk" onclick="servForm('${s.id}')">Editar</button></td></tr>`).join('')||'<tr><td colspan="7" class="mini-empty">Nenhum serviço cadastrado ainda.</td></tr>'}</table></div></div>`}
 function servForm(id){const s=id?S.servicos.find(x=>x.id===id):null;
@@ -1321,7 +1322,7 @@ function agNovo(a,s){if(s==='Desmarcado'||s==='Faltou')return false;const k=a.da
  const hist=c=>S[c].some(x=>x.pacienteId===a.pacienteId&&((x.data||x.vencimento||x.pagamento||'')<a.data)&&(x.data||x.vencimento||x.pagamento));
  return !hist('evolucoes')&&!hist('tratamentos')&&!S.lancamentos.some(l=>l.pacienteId===a.pacienteId&&l.pagamento&&l.pagamento<a.data)}
 /* ============ Atualização: aviso com botão Atualizar agora ============ */
-const VERSAO_APP='1.4.7';const URL_VERSAO_JSON='https://raw.githubusercontent.com/TheIgor12/blacksolutions/main/versao.json';
+const VERSAO_APP='1.4.8';const URL_VERSAO_JSON='https://raw.githubusercontent.com/TheIgor12/blacksolutions/main/versao.json';
 const numV=v=>String(v||'0').split(/\D+/).filter(Boolean).map(Number);
 function versaoMaior(a,b){const x=numV(a),y=numV(b);for(let i=0;i<Math.max(x.length,y.length);i++){const d=(x[i]||0)-(y[i]||0);if(d)return d>0}return false}
 const ATU={nova:null,timer:null};
@@ -1338,6 +1339,23 @@ async function atuAgora(){const b=document.getElementById('atuBtn');if(b){b.disa
  location.reload()}
 async function refrescar(b){if(b)b.classList.add('gira');try{if(NV.ativa&&typeof sincronizar==='function')await sincronizar()}catch(e){}await atuChecar(false);render();toast(ATU.nova?'Dados atualizados. Há uma versão nova do sistema: use o botão Atualizar agora.':'Tudo atualizado')}
 function atuIniciar(){if(ATU.timer)return;setTimeout(()=>atuChecar(false),6000);ATU.timer=setInterval(()=>atuChecar(false),30*60000)}
+
+/* ============ Valor do procedimento lançado pela agenda (podologia) ============ */
+const lancAgAtivo=()=>ehSeg('podologia')&&S.config.lancarAgenda!==false;
+function precoProc(nome){const sv=servPorNome(nome);return sv&&sv.ativo!==false&&Number(sv.preco)>0?Number(sv.preco):0}
+function pacoteAtivo(a){const n=norm(a.procedimento||'');if(!n)return null;return S.tratamentos.find(t=>t.pacienteId===a.pacienteId&&norm(t.procedimento||'')===n&&!['Concluído','Reprovado'].includes(stTrat(t)))||null}
+function lancDoAg(a){return S.lancamentos.find(l=>l.agendamentoId===a.id)}
+function sincLancAg(a){if(!a||!lancAgAtivo())return;const st=stAg(a);let l=lancDoAg(a);const pago=l&&(pagoEf(l)>0||l.pagamento);
+ const preco=precoProc(a.procedimento);const pac0=pacoteAtivo(a);
+ if(st==='Faltou'||st==='Desmarcado'||!preco||pac0){if(l&&!pago)S.lancamentos=S.lancamentos.filter(x=>x!==l);return}
+ if(pago)return;
+ if(!l){l={id:'ag_'+a.id,pacienteId:a.pacienteId,valor:preco,valorPago:0,pagamento:'',forma:'',parcela:'',profissional:a.profissional||'',origem:'agenda',agendamentoId:a.id};S.lancamentos.push(l)}
+ l.pacienteId=a.pacienteId;l.vencimento=a.data;l.profissional=a.profissional||'';
+ l.descricao=(a.procedimento||'Atendimento')+(st==='Atendido'?' (atendido em '+br(a.data)+')':' (agendado para '+br(a.data)+')');
+ l.statusOrig=st==='Atendido'?'Em aberto':'Previsto'}
+function montarTabelaPrecos(){const g={};S.tratamentos.forEach(t=>{const n=str(t.procedimento).replace(/\s+/g,' ');if(!n||!(Number(t.valor)>0))return;const ps=r2(Number(t.valor)/Math.max(1,Number(t.sessoesTotal)||1));const o=g[norm(n)]||(g[norm(n)]={nome:n,precos:{},ult:'',ultP:0});o.precos[ps]=(o.precos[ps]||0)+1;if((t.data||'')>=o.ult){o.ult=t.data||'';o.ultP=ps}});
+ let novos=0,iguais=0;Object.values(g).forEach(o=>{if(servPorNome(o.nome)){iguais++;return}const moda=Object.entries(o.precos).sort((a,b)=>b[1]-a[1])[0];S.servicos.push({id:uid(),nome:o.nome,categoria:/plano|sess/i.test(o.nome)?'Pacotes e planos':'Procedimentos',duracao:30,preco:Number(moda[0]),comissao:'',ativo:true,origem:'orcamentos'});novos++});
+ save();render();toast(novos?`${novos} procedimentos criados com o preço mais usado nos orçamentos${iguais?'. '+iguais+' já existiam e não foram mudados':''}. Confira os valores.`:'Todos os procedimentos dos orçamentos já estão na tabela')}
 
 /* ============ Configurações ============ */
 function vConfig(){const c=S.config;const tot=S.pacientes.length+S.lancamentos.length+S.tratamentos.length+S.agendamentos.length+S.anamneses.length+S.contasPagar.length;
