@@ -1,0 +1,74 @@
+name: Gerar o BlackFlow para Mac
+
+on:
+  push:
+    branches: [main]
+    paths: ['mac/**', '.github/workflows/mac.yml']
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: mac
+  cancel-in-progress: true
+
+jobs:
+  gerar:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - maquina: macos-latest
+            chip: AppleSilicon
+          - maquina: macos-15-intel
+            chip: Intel
+    runs-on: ${{ matrix.maquina }}
+    continue-on-error: ${{ matrix.chip == 'Intel' }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Instalar dependências
+        working-directory: mac
+        run: python -m pip install -r requirements.txt pillow
+      - name: Gerar o aplicativo
+        working-directory: mac
+        run: |
+          python -m PyInstaller --noconfirm --windowed --name BlackFlow --icon icone.png \
+            --osx-bundle-identifier br.app.blackflow \
+            --add-data "happyfeet-gestao.html:." app.py
+          codesign --force --deep --sign - dist/BlackFlow.app
+      - name: Gerar o arquivo de instalação (DMG)
+        working-directory: mac
+        run: |
+          mkdir -p dmg
+          cp -R dist/BlackFlow.app dmg/
+          ln -s /Applications dmg/Applications
+          hdiutil create -volname "BlackFlow" -srcfolder dmg -ov -format UDZO "BlackFlow_Mac_${{ matrix.chip }}.dmg"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: mac-${{ matrix.chip }}
+          path: mac/BlackFlow_Mac_${{ matrix.chip }}.dmg
+
+  publicar:
+    needs: gerar
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          path: novos
+      - name: Colocar os arquivos na pasta de download do site
+        run: |
+          ls -R novos || true
+          found=0
+          for f in novos/*/*.dmg; do [ -f "$f" ] && cp "$f" download/ && found=1; done
+          [ "$found" = 1 ] || { echo "Nenhum DMG foi gerado"; exit 1; }
+          git config user.name "BlackFlow Mac"
+          git config user.email "actions@users.noreply.github.com"
+          git add download/*.dmg
+          git commit -m "Programa para Mac atualizado" || echo "Sem mudanças"
+          git push

@@ -152,7 +152,7 @@ a.btn{text-decoration:none}
 .ret{display:flex;justify-content:space-between;align-items:center;font-size:12px;padding:5px 0;border-bottom:1px solid var(--line);gap:6px}
 .wa{color:#25a244;display:inline-flex;vertical-align:middle}
 .drop{border:2px dashed #a9bdf3;background:#f7f9ff;border-radius:10px;padding:30px;text-align:center;color:var(--mut)}
-.drop input{margin-top:12px}.drop.over{border-color:var(--acc);background:#eaf1ff}.spin{width:34px;height:34px;border:4px solid #c9d6f5;border-top-color:var(--acc);border-radius:50%;margin:0 auto;animation:gira 0.9s linear infinite}@keyframes gira{to{transform:rotate(360deg)}}
+.drop input{margin-top:12px}#avisos{position:fixed;top:64px;right:16px;z-index:9999;display:flex;flex-direction:column;gap:10px;max-width:360px;width:calc(100% - 32px)}.aviso{background:#fff;border-radius:14px;box-shadow:0 18px 50px rgba(0,0,0,.28);border-left:6px solid var(--acc);padding:14px 16px;animation:avisoEntra .35s ease}.aviso-t{display:flex;gap:6px;align-items:center;font-size:12px;font-weight:700;color:var(--acc);text-transform:uppercase;letter-spacing:.03em}.aviso-n{font-size:17px;font-weight:800;margin:6px 0 2px}.aviso-d{font-size:13px;color:#444}.aviso-b{display:flex;gap:8px;justify-content:flex-end;margin-top:10px}@keyframes avisoEntra{from{transform:translateX(40px);opacity:0}to{transform:none;opacity:1}}.drop.over{border-color:var(--acc);background:#eaf1ff}.spin{width:34px;height:34px;border:4px solid #c9d6f5;border-top-color:var(--acc);border-radius:50%;margin:0 auto;animation:gira 0.9s linear infinite}@keyframes gira{to{transform:rotate(360deg)}}
 .steps{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px}
 .steps span{background:#fff;border:1px solid var(--line);border-radius:20px;padding:5px 12px;font-size:12px;color:var(--mut)}
 .steps span.on{border-color:var(--acc);color:var(--acc);font-weight:600}
@@ -438,7 +438,7 @@ function shell(content){const c=S.config;
  return `<header class="top"><button class="ico" onclick="toggleDrawer()" aria-label="Menu">${ico('menu')}</button>
  <div class="gsearch"><input id="gs" placeholder="Encontre ${esc(SEG().pessoas.toLowerCase())} ou funções do sistema" oninput="globalSearch(this.value)" onblur="setTimeout(()=>{const r=$('#gsr');if(r)r.classList.remove('on')},200)" autocomplete="off"><div id="gsr" class="gsr"></div></div>
  ${NV.ativa?`<span id="sync" class="sync" title="Sincronização com a nuvem">${syncTxt()}</span>`:''}<div class="user" style="cursor:pointer" onclick="abrirConta()"><span class="av">${esc(initials(nomeUsuario()))}</span><div><b>${esc(nomeUsuario())}</b><small>${esc(c.clinica)}</small></div></div></header>
- <aside class="drawer ${UI.drawer?'open':''}"><div class="brand ${S.config.logo?'':'escuro'}"><img src="${logoClinica()}" alt="${esc(c.clinica)}"></div><div class="prod">BLACKFLOW <span style="font-weight:600">by BlackSolutions</span></div><span class="plan">Versão 1.4.1</span>
+ <aside class="drawer ${UI.drawer?'open':''}"><div class="brand ${S.config.logo?'':'escuro'}"><img src="${logoClinica()}" alt="${esc(c.clinica)}"></div><div class="prod">BLACKFLOW <span style="font-weight:600">by BlackSolutions</span></div><span class="plan">Versão 1.4.2</span>
  <div class="menu"><button class="${UI.view==='inicio'?'on':''}" onclick="go('inicio')">${ico('home',18)} Início</button><div class="msec">MÓDULOS</div>
  ${menuItens().map(([k,l,i])=>`<button class="${UI.view===k||(k==='pacientes'&&UI.view==='paciente')?'on':''}" onclick="go('${k}')">${ico(i,18)} ${l}</button>`).join('')}</div>
  <div class="mfoot menu"><button class="${UI.view==='config'?'on':''}" onclick="go('config')">${ico('gear',18)} Configurações</button></div></aside>
@@ -457,7 +457,7 @@ function render(){if(NV.ativa&&UI.auth){$('#app').innerHTML=vAuth();setTimeout((
  document.documentElement.style.setProperty('--acc',S.config.cor||'#0b6cf2');document.documentElement.style.setProperty('--top',S.config.corTopo||'#0b0d12');const fv=$('#fav');if(fv&&fv.href!==ICONE)fv.href=ICONE;
  const V={inicio:vInicio,agenda:vAgenda,pacientes:vPacientes,paciente:vPaciente,financeiro:vFinanceiro,dashboard:vDashboard,relatorios:vRelatorios,profissionais:vProfissionais,importar:vImportar,config:vConfig,servicos:vServicos,estoque:vEstoque,comandas:vComandas,caixa:vCaixa,comissoes:vComissoes,protocolos:vProtocolos,equipamentos:vEquipamentos};
  let c;try{c=(V[UI.view]||vInicio)()}catch(e){console.error(e);c=`<div class="page"><div class="card">Erro ao montar a tela: ${esc(e.message)}</div></div>`}
- $('#app').innerHTML=shell(c);checarSegmento()}
+ $('#app').innerHTML=shell(c);checarSegmento();if(!AVISO.timer)avisoIniciar()}
 
 /* ============ Início ============ */
 function vInicio(){const vazio=!S.pacientes.length;const inad=inadList().reduce((a,o)=>a+o.valor,0);
@@ -1292,10 +1292,31 @@ function irDeclaracao(pid,ano){const p=pac(pid);const L=entradasList().filter(x=
  <table><tr><th>Data</th><th>Descrição</th><th>Forma</th><th class="n">Valor</th></tr>${L.map(x=>`<tr><td>${br(x.data)}</td><td>${esc(x.l.descricao||'Atendimento')}</td><td>${esc(x.l.forma||'')}</td><td class="n">${money(x.valor)}</td></tr>`).join('')||'<tr><td colspan="4">Nenhum pagamento no ano.</td></tr>'}<tr><th colspan="3">Total</th><th class="n">${money(tot)}</th></tr></table>
  <p style="margin-top:50px">${esc(S.config.clinica)}, ${br(todayISO())}.</p><div style="border-top:1px solid #000;width:320px;margin-top:50px;padding-top:4px">Responsável pelo estabelecimento</div>`)}
 
+/* ============ Aviso de atendimento: 15 e 5 minutos antes ============ */
+const AVISO={vistos:{},timer:null};
+function avisoCarregar(){try{const o=JSON.parse(localStorage.getItem('bf_avisos')||'{}');if(o.dia===todayISO())AVISO.vistos=o.v||{}}catch(e){}}
+function avisoGravar(){try{localStorage.setItem('bf_avisos',JSON.stringify({dia:todayISO(),v:AVISO.vistos}))}catch(e){}}
+function avisoSom(){try{const C=window.AudioContext||window.webkitAudioContext;if(!C)return;const c=new C();[0,0.35].forEach(t=>{const o=c.createOscillator(),g=c.createGain();o.type='sine';o.frequency.value=880;g.gain.setValueAtTime(0.0001,c.currentTime+t);g.gain.exponentialRampToValueAtTime(0.3,c.currentTime+t+0.02);g.gain.exponentialRampToValueAtTime(0.0001,c.currentTime+t+0.3);o.connect(g);g.connect(c.destination);o.start(c.currentTime+t);o.stop(c.currentTime+t+0.32)})}catch(e){}}
+function avisoChecar(){if(S.config.avisoAgenda===false||UI.auth)return;const t=todayISO(),n=new Date(),agora=n.getHours()*60+n.getMinutes()+n.getSeconds()/60;const novos=[];
+ S.agendamentos.forEach(a=>{if(a.data!==t)return;if(['Desmarcado','Faltou','Atendido'].includes(stAg(a)))return;const [h,m]=(a.hora||'').split(':').map(Number);if(isNaN(h))return;const falta=h*60+(m||0)-agora;
+  let etapa='';if(falta>5&&falta<=15)etapa='15';else if(falta>=-1&&falta<=5)etapa='5';if(!etapa)return;const k=a.id+':'+etapa;if(AVISO.vistos[k])return;
+  if(etapa==='15'&&AVISO.vistos[a.id+':5'])return;AVISO.vistos[k]=1;novos.push({a,falta:Math.max(0,Math.round(falta)),etapa})});
+ if(!novos.length)return;avisoGravar();novos.forEach(avisoMostrar);avisoSom();
+ try{if(window.pywebview&&window.pywebview.api&&window.pywebview.api.chamar_atencao)window.pywebview.api.chamar_atencao()}catch(e){}
+ try{if('Notification' in window&&Notification.permission==='granted')novos.forEach(x=>{const p=pac(x.a.pacienteId);new Notification('BlackFlow: atendimento às '+x.a.hora,{body:(p?p.nome:'')+(x.falta?' em '+x.falta+' minutos':' agora')})})}catch(e){}}
+function avisoMostrar({a,falta}){let box=document.getElementById('avisos');if(!box){box=document.createElement('div');box.id='avisos';document.body.appendChild(box)}
+ const p=pac(a.pacienteId);const d=document.createElement('div');d.className='aviso';const quando=falta>0?`em <b>${falta} ${falta===1?'minuto':'minutos'}</b>`:'<b>agora</b>';
+ d.innerHTML=`<div class="aviso-t">${ico('alert',18)} Está chegando a hora do atendimento</div><div class="aviso-n">${esc(p?p.nome:SEG().pessoa)}</div><div class="aviso-d">Às ${esc(a.hora)}, ${quando}${a.profissional?' · '+esc(a.profissional):''}${a.procedimento?'<br>'+esc(a.procedimento):''}</div>
+ <div class="aviso-b">${p?`<button class="btn sm" data-f="ficha">Abrir ficha</button>`:''}<button class="btn ghost sm" data-f="ok">Ciente</button></div>`;
+ d.querySelector('[data-f=ok]').onclick=()=>d.remove();const bf=d.querySelector('[data-f=ficha]');if(bf)bf.onclick=()=>{d.remove();go('paciente',p.id)};
+ box.appendChild(d)}
+function avisoIniciar(){avisoCarregar();clearInterval(AVISO.timer);AVISO.timer=setInterval(avisoChecar,20000);setTimeout(avisoChecar,3000);
+ try{if('Notification' in window&&Notification.permission==='default'&&!window.pywebview)setTimeout(()=>Notification.requestPermission(),8000)}catch(e){}}
+
 /* ============ Configurações ============ */
 function vConfig(){const c=S.config;const tot=S.pacientes.length+S.lancamentos.length+S.tratamentos.length+S.agendamentos.length+S.anamneses.length+S.contasPagar.length;
  return `<div class="page" style="max-width:900px"><div class="phead"><div><h1>Configurações</h1><p class="sub">Dados da clínica, mensagens, backup e exportação.</p></div></div>
- <div class="card"><h2>Clínica</h2><div class="fgrid" id="cfgF"><label>Nome da clínica<input name="clinica" value="${esc(c.clinica)}"></label><label>Nome do usuário<input name="usuario" value="${esc(c.usuario)}"></label><label>Cor principal (botões e destaques)<input name="cor" type="color" value="${esc(c.cor)}"></label><label>Cor da barra superior<input name="corTopo" type="color" value="${esc(c.corTopo||'#14306b')}"></label><label>Prazo do alerta de retorno (dias)<input name="diasRetorno" type="number" value="${esc(c.diasRetorno)}"></label>
+ <div class="card"><h2>Clínica</h2><div class="fgrid" id="cfgF"><label>Nome da clínica<input name="clinica" value="${esc(c.clinica)}"></label><label>Nome do usuário<input name="usuario" value="${esc(c.usuario)}"></label><label>Cor principal (botões e destaques)<input name="cor" type="color" value="${esc(c.cor)}"></label><label>Cor da barra superior<input name="corTopo" type="color" value="${esc(c.corTopo||'#14306b')}"></label><label>Prazo do alerta de retorno (dias)<input name="diasRetorno" type="number" value="${esc(c.diasRetorno)}"></label><label>Aviso na tela 15 e 5 minutos antes do atendimento<select name="avisoAgenda"><option value="sim" ${c.avisoAgenda!==false?'selected':''}>Ligado</option><option value="nao" ${c.avisoAgenda===false?'selected':''}>Desligado</option></select></label>
  <label class="full">Mensagem de cobrança (variáveis: {nome}, {clinica}, {valor}, {vencimento})<textarea name="msgCobranca" rows="3">${esc(c.msgCobranca)}</textarea></label>
  <label class="full">Mensagem de retorno (variáveis: {nome}, {clinica})<textarea name="msgRetorno" rows="3">${esc(c.msgRetorno)}</textarea></label></div>
  <div class="mact"><button class="btn" onclick="saveCfg()">Salvar configurações</button></div></div>
@@ -1307,7 +1328,7 @@ function vConfig(){const c=S.config;const tot=S.pacientes.length+S.lancamentos.l
  <div class="mact" style="justify-content:flex-start"><button class="btn" onclick="backup()">${ico('down',16)} Baixar backup</button><label class="btn ghost" style="cursor:pointer">${ico('up',16)} Restaurar backup<input type="file" accept=".json" style="display:none" onchange="restore(this)"></label><button class="btn ghost" onclick="exportAll()">${ico('down',16)} Salvar uma cópia dos dados do BlackFlow em Excel</button></div></div>
  ${NV.ativa&&NV.papel!=='admin'?'':`<div class="card"><h2>Zona de risco</h2><p class="sub">Apaga todos os dados deste navegador. Faça um backup antes.</p><div class="mact" style="justify-content:flex-start"><button class="btn danger" onclick="wipe()">Apagar todos os dados</button></div></div>`}</div>`}
 function setLogo(input){const f=input.files[0];if(!f)return;const r=new FileReader();r.onload=()=>{const img=new Image();img.onload=()=>{const k=Math.min(1,400/Math.max(img.width,img.height));const c=document.createElement('canvas');c.width=Math.round(img.width*k);c.height=Math.round(img.height*k);c.getContext('2d').drawImage(img,0,0,c.width,c.height);S.config.logo=c.toDataURL('image/png');save();render();toast('Logotipo atualizado')};img.src=r.result};r.readAsDataURL(f)}
-function saveCfg(){const f=$('#cfgF');f.querySelectorAll('input,textarea').forEach(i=>{S.config[i.name]=i.type==='number'?(+i.value||90):i.value});save();render();toast('Configurações salvas')}
+function saveCfg(){const f=$('#cfgF');f.querySelectorAll('input,textarea').forEach(i=>{S.config[i.name]=i.type==='number'?(+i.value||90):i.value});const av=f.querySelector('[name=avisoAgenda]');if(av)S.config.avisoAgenda=av.value!=='nao';save();render();toast('Configurações salvas')}
 function backup(){download(`backup_blackflow_${todayISO()}.json`,new Blob([JSON.stringify(S)],{type:'application/json'}));S.config.ultimoBackup=todayISO();save()}
 function restore(input){const f=input.files[0];if(!f)return;const r=new FileReader();r.onload=()=>{try{const o=JSON.parse(r.result);if(!o||!Array.isArray(o.pacientes))throw new Error('Arquivo não é um backup deste sistema');confirmModal(`Restaurar o backup com ${o.pacientes.length} pacientes? Os dados atuais serão substituídos.`,()=>{const d=defaultState();S={...d,...o,config:{...d.config,...(o.config||{})}}},'Restaurar')}catch(e){toast('Backup inválido: '+e.message)}};r.readAsText(f)}
 function wipe(){confirmModal('Apagar <b>todos</b> os dados deste sistema neste navegador? Esta ação não pode ser desfeita.',()=>{const cfg=S.config;S=defaultState();S.config=cfg},'Apagar tudo')}
