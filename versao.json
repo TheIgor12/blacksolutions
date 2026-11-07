@@ -1,5 +1,5 @@
 {
-  "versao": "1.4.4",
-  "html": "https://raw.githubusercontent.com/TheIgor12/blacksolutions/main/download/blackflow-1.4.4.html",
-  "novidades": "Agenda colorida pela situação: agendado em amarelo, confirmado em verde, paciente novo em azul turquesa, atendido em cinza, falta em vermelho e desmarcado riscado. A legenda fica na lateral da agenda."
+  "versao": "1.4.5",
+  "html": "https://raw.githubusercontent.com/TheIgor12/blacksolutions/main/download/blackflow-1.4.5.html",
+  "novidades": "Clique no paciente na agenda e escolha a situação na caixa: agendado (amarelo), confirmado (verde), atendido, faltou ou desmarcou. A cor muda na hora. Paciente novo aparece em azul turquesa."
 }
