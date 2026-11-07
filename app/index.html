@@ -186,6 +186,23 @@ a.btn{text-decoration:none}
 .authlinks{display:flex;justify-content:space-between;gap:10px;margin-top:14px;font-size:13px;flex-wrap:wrap}
 .hero{display:flex;align-items:center;gap:22px;margin-bottom:26px}.hero img{width:96px;height:96px;flex:none}
 .conf-a{color:var(--ok);font-weight:700}.conf-m{color:var(--warn);font-weight:700}.conf-b{color:var(--bad);font-weight:700}
+.agc{max-width:640px;margin:0 auto}
+.agc-top{display:flex;gap:10px;align-items:center;margin-bottom:8px}
+.agc-dia{flex:1;display:flex;align-items:center;gap:10px;background:var(--card,#fff);border:1px solid var(--line,#e5e7eb);border-radius:12px;padding:10px 12px;text-align:left;cursor:pointer;color:inherit;font:inherit}
+.agc-dia span{flex:1;display:flex;flex-direction:column;line-height:1.2}.agc-dia b{font-size:17px}.agc-dia small{color:var(--mut);font-size:13px}.agc-dia em{font-style:normal;font-size:12px;color:var(--acc,#0b6cf2);font-weight:700}
+.agc-n{font-size:12px;color:var(--mut);margin:6px 2px}
+.agc-it{width:100%;display:flex;align-items:center;gap:12px;background:#fff;border:1px solid var(--line,#e5e7eb);border-left:5px solid #e0a800;border-radius:10px;padding:10px 12px;margin-bottom:8px;text-align:left;cursor:pointer;font:inherit;color:inherit}
+.agc-h{font-weight:800;font-size:15px;min-width:46px}.agc-x{flex:1;min-width:0;display:flex;flex-direction:column}.agc-x b{font-size:15px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.agc-x small{color:var(--mut);font-size:12px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.agc-st{font-size:11px;font-weight:700;padding:3px 8px;border-radius:20px;background:#fff3bf;color:#7a5c00;white-space:nowrap}
+.agc-it.conf{border-left-color:#16a34a}.agc-it.conf .agc-st{background:#c9f2d6;color:#14532d}
+.agc-it.novo{border-left-color:#00897f}.agc-it.novo .agc-st{background:#00e5d4;color:#003a36}
+.agc-it.ok{border-left-color:#64748b}.agc-it.ok .agc-st{background:#e6ebf3;color:#475569}
+.agc-it.falta{border-left-color:#dc2626}.agc-it.falta .agc-st{background:#fde8e8;color:#991b1b}
+.agc-it.desm{border-left-color:#999;opacity:.7}.agc-it.desm b{text-decoration:line-through}.agc-it.desm .agc-st{background:#eee;color:#555}
+.agc-vazio{text-align:center;color:var(--mut);padding:40px 10px;background:#fff;border:1px dashed var(--line,#e5e7eb);border-radius:12px}
+.agc-lista{max-height:55vh;overflow:auto;display:flex;flex-direction:column;gap:6px}
+.agc-op{display:flex;justify-content:space-between;align-items:center;gap:8px;padding:12px;border:1px solid var(--line,#e5e7eb);border-radius:10px;background:#fff;text-align:left;cursor:pointer;font:inherit;color:inherit}
+.agc-op.on{border-color:var(--acc,#0b6cf2);background:#eef4ff}.agc-op small{color:var(--mut)}
 @media (max-width:900px){
  .pgrid{grid-template-columns:1fr}.pgrid .span2{grid-column:auto}
  .ag{grid-template-columns:1fr}.agside{display:none}
@@ -531,7 +548,7 @@ function shell(content){const c=S.config;
  return `<header class="top"><button class="ico" onclick="toggleDrawer()" aria-label="Menu">${ico('menu')}</button>
  <div class="gsearch"><input id="gs" placeholder="Encontre ${esc(SEG().pessoas.toLowerCase())} ou funções do sistema" oninput="globalSearch(this.value)" onblur="setTimeout(()=>{const r=$('#gsr');if(r)r.classList.remove('on')},200)" autocomplete="off"><div id="gsr" class="gsr"></div></div>
  ${NV.ativa?`<span id="sync" class="sync" title="Sincronização com a nuvem">${syncTxt()}</span>`:''}<button class="ico refr" title="Atualizar: busca os dados novos da nuvem e procura versão nova do sistema" onclick="refrescar(this)">${ico('refresh',17)}</button><div class="user" style="cursor:pointer" onclick="abrirConta()"><span class="av">${esc(initials(nomeUsuario()))}</span><div><b>${esc(nomeUsuario())}</b><small>${esc(c.clinica)}</small></div></div></header>
- <aside class="drawer ${UI.drawer?'open':''}"><div class="brand ${S.config.logo?'':'escuro'}"><img src="${logoClinica()}" alt="${esc(c.clinica)}"></div><div class="prod">BLACKFLOW <span style="font-weight:600">by BlackSolutions</span></div><span class="plan">Versão 1.6.0</span><button class="lnk" style="display:block;margin:6px 16px 0;font-size:12px;text-align:left" onclick="UI.drawer=false;render();atuChecar(true)">Procurar atualização</button><button class="lnk" style="display:block;margin:8px 16px 0;font-size:12px;text-align:left" onclick="UI.drawer=false;perguntarSegmento()">Segmento: <b>${esc(SEG().nome)}</b> · trocar</button>
+ <aside class="drawer ${UI.drawer?'open':''}"><div class="brand ${S.config.logo?'':'escuro'}"><img src="${logoClinica()}" alt="${esc(c.clinica)}"></div><div class="prod">BLACKFLOW <span style="font-weight:600">by BlackSolutions</span></div><span class="plan">Versão 1.6.1</span><button class="lnk" style="display:block;margin:6px 16px 0;font-size:12px;text-align:left" onclick="UI.drawer=false;render();atuChecar(true)">Procurar atualização</button><button class="lnk" style="display:block;margin:8px 16px 0;font-size:12px;text-align:left" onclick="UI.drawer=false;perguntarSegmento()">Segmento: <b>${esc(SEG().nome)}</b> · trocar</button>
  <div class="menu"><button class="${UI.view==='inicio'?'on':''}" onclick="go('inicio')">${ico('home',18)} Início</button><div class="msec">MÓDULOS</div>
  ${menuItens().map(([k,l,i])=>`<button class="${UI.view===k||(k==='pacientes'&&UI.view==='paciente')?'on':''}" onclick="go('${k}')">${ico(i,18)} ${l}</button>`).join('')}</div>
  <div class="mfoot menu"><button class="${UI.view==='config'?'on':''}" onclick="go('config')">${ico('gear',18)} Configurações</button></div></aside>
@@ -561,7 +578,27 @@ function vInicio(){const vazio=!S.pacientes.length;const inad=inadList().reduce(
 
 /* ============ Agenda ============ */
 function agShift(n){if(n===0)UI.agDate=todayISO();else UI.agDate=addDays(UI.agDate,n*(UI.agMode==='semana'?7:1));render()}
-function vAgenda(){const H0=6,H1=22,PX=64;const base=new Date(UI.agDate+'T00:00');let days=[];
+/* Agenda no celular: só o dia escolhido, em lista simples */
+function ehCel(){return window.innerWidth<700}
+function agClasse(a){const s=stAg(a);return s==='Faltou'?'falta':s==='Desmarcado'?'desm':s==='Atendido'?'ok':agNovo(a,s)?'novo':s==='Confirmado'?'conf':'agd'}
+function vAgendaCel(){const d=UI.agDate;const base=new Date(d+'T00:00');const t=todayISO();
+ const evs=S.agendamentos.filter(a=>a.data===d).sort((a,b)=>(a.hora||'').localeCompare(b.hora||''));
+ const rot={agd:'Agendado',conf:'Confirmado',novo:'Novo',ok:'Atendido',falta:'Faltou',desm:'Desmarcou'};
+ const titulo=d===t?'Hoje':d===addDays(t,1)?'Amanhã':d===addDays(t,-1)?'Ontem':DIAS[base.getDay()];
+ return `<div class="agc">
+  <div class="agc-top">
+   <button class="agc-dia" onclick="agEscolherDia()"><span><b>${esc(titulo)}</b><small>${base.getDate()} de ${MESES[base.getMonth()].toLowerCase()} de ${base.getFullYear()}</small></span>${ico('cal',18)}<em>Trocar dia</em></button>
+   <button class="btn sm" onclick="${ehSeg('podologia')?'agForm()':'atendForm()'}">${ico('plus',16)} Agendar</button>
+  </div>
+  <div class="agc-n">${evs.length?evs.length+(evs.length===1?' agendamento':' agendamentos'):''}</div>
+  ${evs.length?evs.map(a=>{const p=pac(a.pacienteId);const c=agClasse(a);return `<button class="agc-it ${c}" onclick="agModal('${a.id}')"><span class="agc-h">${esc(a.hora||'')}</span><span class="agc-x"><b>${esc(p?p.nome:'?')}</b><small>${esc(a.procedimento||'')}${a.profissional?' · '+esc(a.profissional):''}</small></span><span class="agc-st">${rot[c]}</span></button>`}).join(''):`<div class="agc-vazio">Nenhum agendamento neste dia.</div>`}
+ </div>`}
+function agEscolherDia(){const t=todayISO();let L='';for(let i=-3;i<=21;i++){const ds=addDays(t,i);const dd=new Date(ds+'T00:00');const n=S.agendamentos.filter(a=>a.data===ds&&!['Faltou','Desmarcado'].includes(stAg(a))).length;
+  L+=`<button class="agc-op ${ds===UI.agDate?'on':''}" onclick="UI.agDate='${ds}';closeModal();render()"><span><b>${i===0?'Hoje':i===1?'Amanhã':i===-1?'Ontem':DIAS[dd.getDay()]}</b> ${dd.getDate()} de ${MESES[dd.getMonth()].toLowerCase()}</span><small>${n?n+(n===1?' agendamento':' agendamentos'):''}</small></button>`}
+ openModal(`<h3>Escolha o dia</h3><div class="agc-lista">${L}</div><label class="filters" style="margin-top:12px;display:block"><span style="font-size:12px;color:var(--mut)">Outra data</span><input type="date" value="${UI.agDate}" onchange="if(this.value){UI.agDate=this.value;closeModal();render()}"></label><div class="mact"><button class="btn ghost" onclick="closeModal()">Fechar</button></div>`);
+ setTimeout(()=>{const e=document.querySelector('.agc-op.on');if(e)e.scrollIntoView({block:'center'})},30)}
+(function(){let cel=null;window.addEventListener('resize',()=>{const c=ehCel();if(cel!==null&&c!==cel&&UI.view==='agenda'&&!$('#modalRoot').innerHTML)render();cel=c})})();
+function vAgenda(){if(ehCel())return vAgendaCel();const H0=6,H1=22,PX=64;const base=new Date(UI.agDate+'T00:00');let days=[];
  if(UI.agMode==='dia'||UI.agMode==='prof')days=[base];else{const s=new Date(base);s.setDate(s.getDate()-s.getDay());for(let i=0;i<7;i++){const d=new Date(s);d.setDate(s.getDate()+i);days.push(d)}}
  const t=todayISO();const vis=a=>!UI.profOff[a.profissional||''];
  const title=UI.agMode!=='semana'?`${DIAS[base.getDay()]}, ${base.getDate()} de ${MESES[base.getMonth()]} ${base.getFullYear()}`:`${pad(days[0].getDate())}/${pad(days[0].getMonth()+1)} a ${pad(days[6].getDate())}/${pad(days[6].getMonth()+1)}/${days[6].getFullYear()}`;
@@ -1414,7 +1451,7 @@ function agNovo(a,s){if(s==='Desmarcado'||s==='Faltou')return false;const k=a.da
  const hist=c=>S[c].some(x=>x.pacienteId===a.pacienteId&&((x.data||x.vencimento||x.pagamento||'')<a.data)&&(x.data||x.vencimento||x.pagamento));
  return !hist('evolucoes')&&!hist('tratamentos')&&!S.lancamentos.some(l=>l.pacienteId===a.pacienteId&&l.pagamento&&l.pagamento<a.data)}
 /* ============ Atualização: aviso com botão Atualizar agora ============ */
-const VERSAO_APP='1.6.0';const URL_VERSAO_JSON='https://raw.githubusercontent.com/TheIgor12/blacksolutions/main/versao.json';
+const VERSAO_APP='1.6.1';const URL_VERSAO_JSON='https://raw.githubusercontent.com/TheIgor12/blacksolutions/main/versao.json';
 const numV=v=>String(v||'0').split(/\D+/).filter(Boolean).map(Number);
 function versaoMaior(a,b){const x=numV(a),y=numV(b);for(let i=0;i<Math.max(x.length,y.length);i++){const d=(x[i]||0)-(y[i]||0);if(d)return d>0}return false}
 const ATU={nova:null,timer:null};
