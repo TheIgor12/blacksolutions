@@ -12,6 +12,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&display=swap" rel="stylesheet">
 <style>
+img{max-width:100%;height:auto}
 :root{--azul:#0b6cf2;--azul2:#2f8cff;--ciano:#38bdf8;--preto:#06070b;--preto2:#0d1018;--card:#121623;--linha:rgba(255,255,255,.08);--txt:#e8ecf7;--mut:#9aa3ba}
 *{box-sizing:border-box}
 html{scroll-behavior:smooth}
@@ -44,7 +45,7 @@ h1 .grad{background:linear-gradient(90deg,#fff,var(--ciano) 50%,var(--azul2));-w
 .nota{font-size:13px;color:var(--mut);margin-top:14px}
 .palco{position:relative}
 .tela{border-radius:16px;overflow:hidden;border:1px solid rgba(255,255,255,.12);box-shadow:0 30px 80px rgba(0,0,0,.6),0 0 0 1px rgba(10,75,222,.3),0 0 80px rgba(10,75,222,.35);transform:perspective(1400px) rotateY(-8deg) rotateX(3deg);background:#fff}
-.tela img{display:block;width:100%}
+.tela img{display:block;width:100%;height:auto;cursor:zoom-in}
 .mascote{position:absolute;left:-60px;bottom:-50px;width:190px;height:auto;border-radius:50%;filter:drop-shadow(0 18px 30px rgba(0,0,0,.6));animation:flutua 4s ease-in-out infinite}
 @keyframes flutua{50%{transform:translateY(-12px)}}
 .numeros{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-top:70px}
@@ -73,13 +74,13 @@ section{padding:90px 0}
 .destaque li{padding:7px 0 7px 30px;position:relative;color:#d5dbea}
 .destaque li::before{content:"";position:absolute;left:0;top:12px;width:18px;height:18px;border-radius:50%;background:rgba(52,211,153,.15);border:2px solid #34d399}
 .shot{border-radius:14px;overflow:hidden;border:1px solid rgba(255,255,255,.1);box-shadow:0 24px 60px rgba(0,0,0,.55),0 0 60px rgba(10,75,222,.2)}
-.shot img{display:block;width:100%}
+.shot img{display:block;width:100%;height:auto;cursor:zoom-in;image-rendering:auto}.shot{position:relative}.shot:after{content:"Clique para ampliar";position:absolute;right:10px;bottom:10px;background:rgba(0,0,0,.65);color:#fff;font-size:12px;font-weight:700;padding:4px 10px;border-radius:20px;opacity:0;transition:opacity .2s;pointer-events:none}.shot:hover:after{opacity:1}#zoom{position:fixed;inset:0;background:rgba(3,5,10,.92);display:none;align-items:center;justify-content:center;z-index:999;padding:24px;cursor:zoom-out}#zoom.on{display:flex}#zoom img{max-width:100%;max-height:88vh;border-radius:12px;box-shadow:0 30px 80px rgba(0,0,0,.6)}#zoom p{position:absolute;bottom:14px;left:0;right:0;text-align:center;color:#cfd6e8;margin:0;font-size:15px}#zoom b{position:absolute;top:14px;right:22px;color:#fff;font-size:30px;cursor:pointer}
 .passos{display:grid;grid-template-columns:repeat(3,1fr);gap:18px;counter-reset:p}
 .passo{background:var(--card);border:1px solid var(--linha);border-radius:18px;padding:28px;position:relative}
 .passo::before{counter-increment:p;content:counter(p);position:absolute;top:-18px;left:24px;width:40px;height:40px;border-radius:12px;background:linear-gradient(135deg,var(--azul),var(--azul2));display:grid;place-items:center;font-weight:900;font-size:18px;box-shadow:0 8px 20px rgba(10,75,222,.5)}
 .passo h3{margin:10px 0 8px}
 .passo p{color:var(--mut);margin:0}
-.galeria{display:grid;grid-template-columns:repeat(3,1fr);gap:16px}
+.galeria{display:grid;grid-template-columns:repeat(2,1fr);gap:22px}
 .galeria figure{margin:0}
 .galeria figcaption{color:var(--mut);font-size:14px;padding:10px 4px 0;text-align:center}
 .cta{position:relative;border-radius:28px;padding:60px 30px;text-align:center;overflow:hidden;background:radial-gradient(500px 260px at 50% 0%,rgba(59,130,246,.45),transparent 70%),linear-gradient(180deg,#0e1430,#090b14);border:1px solid rgba(59,130,246,.35)}
@@ -148,7 +149,7 @@ footer .wrap{display:flex;justify-content:space-between;gap:16px;flex-wrap:wrap;
    <div class="nota">Windows 10 e 11. Instalação em menos de 1 minuto, sem precisar de nenhum outro programa.</div>
   </div>
   <div class="palco">
-   <div class="tela"><img src="img/dashboard.webp" alt="Painel com indicadores financeiros e de agenda da clínica" width="1440" height="860"></div>
+   <div class="tela"><img src="img/dashboard.webp" alt="Painel com indicadores financeiros e de agenda da clínica" width="2560" height="1536"></div>
    <img class="mascote" src="img/mascote.webp" alt="Mascote BlackFlow" width="640" height="640">
   </div>
  </div>
@@ -187,17 +188,17 @@ footer .wrap{display:flex;justify-content:space-between;gap:16px;flex-wrap:wrap;
  <div class="destaque revela">
   <div class="txt"><h3>Saia do Excel sem perder nada</h3><p>Exportou tudo do sistema antigo? Selecione os arquivos e pronto. O sistema analisa cada aba, mostra o que reconheceu e grava na ordem certa, ligando cada parcela e cada anamnese ao paciente correto.</p>
    <ul><li>Vários arquivos e várias abas ao mesmo tempo</li><li>Reconhece pelo conteúdo, não pelo nome do arquivo</li><li>Mostra a confiança de cada aba antes de gravar</li><li>Planilha modelo pronta para baixar</li></ul></div>
-  <div class="shot"><img src="img/importar.webp" alt="Tela de importação reconhecendo seis abas automaticamente" loading="lazy" width="1440" height="860"></div>
+  <div class="shot"><img src="img/importar.webp" alt="Tela de importação reconhecendo seis abas automaticamente" loading="lazy" width="2560" height="1536"></div>
  </div>
  <div class="destaque inv revela">
   <div class="txt"><h3>Dinheiro parado não paga as contas</h3><p>A tela de inadimplência junta todas as parcelas vencidas por paciente, mostra há quantos dias estão em atraso e deixa a cobrança a um clique, direto no WhatsApp.</p>
    <ul><li>Valor em atraso e total em aberto de cada paciente</li><li>Mensagem de cobrança personalizada</li><li>Baixa do pagamento com data e forma</li></ul></div>
-  <div class="shot"><img src="img/inadimplencia.webp" alt="Tela de inadimplência com botão de cobrança pelo WhatsApp" loading="lazy" width="1440" height="860"></div>
+  <div class="shot"><img src="img/inadimplencia.webp" alt="Tela de inadimplência com botão de cobrança pelo WhatsApp" loading="lazy" width="2560" height="1536"></div>
  </div>
  <div class="destaque revela">
   <div class="txt"><h3>A agenda que a equipe entende de primeira</h3><p>Cada profissional com a sua cor, faltas e desmarcações à vista e a lista de pacientes que precisam voltar, com o WhatsApp a um clique.</p>
    <ul><li>Semana e dia</li><li>Status: agendado, confirmado, atendido, faltou</li><li>Alerta de retorno configurável</li></ul></div>
-  <div class="shot"><img src="img/agenda.webp" alt="Agenda semanal com atendimentos por profissional" loading="lazy" width="1440" height="860"></div>
+  <div class="shot"><img src="img/agenda.webp" alt="Agenda semanal com atendimentos por profissional" loading="lazy" width="2560" height="1536"></div>
  </div>
 </div></section>
 
@@ -213,9 +214,17 @@ footer .wrap{display:flex;justify-content:space-between;gap:16px;flex-wrap:wrap;
 <section id="telas" style="padding-top:0"><div class="wrap">
  <div class="tit revela"><small>TELAS</small><h2>Veja por dentro</h2><p>Imagens do sistema com dados de demonstração.</p></div>
  <div class="galeria">
-  <figure class="revela"><div class="shot"><img src="img/ficha.webp" alt="Ficha do paciente" loading="lazy" width="1440" height="860"></div><figcaption>Ficha do paciente</figcaption></figure>
-  <figure class="revela"><div class="shot"><img src="img/dashboard.webp" alt="Painel analítico" loading="lazy" width="1440" height="860"></div><figcaption>Painel analítico</figcaption></figure>
-  <figure class="revela"><div class="shot"><img src="img/login.webp" alt="Tela de acesso" loading="lazy" width="1440" height="860"></div><figcaption>Acesso com login da equipe</figcaption></figure>
+  <figure class="revela"><div class="shot"><img src="img/ficha.webp" alt="Ficha do paciente" loading="lazy" width="2560" height="1536"></div><figcaption>Ficha do paciente</figcaption></figure>
+  <figure class="revela"><div class="shot"><img src="img/dashboard.webp" alt="Painel analítico" loading="lazy" width="2560" height="1536"></div><figcaption>Painel analítico</figcaption></figure>
+  <figure class="revela"><div class="shot"><img src="img/login.webp" alt="Tela de acesso" loading="lazy" width="2560" height="1536"></div><figcaption>Acesso com login da equipe</figcaption></figure>
+  <figure class="revela"><div class="shot"><img src="img/inadimplencia.webp" alt="Inadimplência com cobrança pelo WhatsApp" loading="lazy" width="2560" height="1536"></div><figcaption>Inadimplência com cobrança pelo WhatsApp</figcaption></figure>
+ </div>
+ <div class="tit revela" style="margin-top:60px"><small>ESTÉTICA E SALÃO DE BELEZA</small><h2>Os módulos novos</h2><p>Escolha o segmento e o sistema mostra as telas do seu negócio.</p></div>
+ <div class="galeria">
+  <figure class="revela"><div class="shot"><img src="img/beleza_agenda.webp" alt="Agenda do salão por profissional" loading="lazy" width="2560" height="1536"></div><figcaption>Salão: agenda por profissional, com vários serviços no mesmo atendimento</figcaption></figure>
+  <figure class="revela"><div class="shot"><img src="img/beleza_comanda.webp" alt="Comanda do salão" loading="lazy" width="2560" height="1536"></div><figcaption>Salão: comanda com serviços, produtos e pagamento dividido</figcaption></figure>
+  <figure class="revela"><div class="shot"><img src="img/beleza_comissoes.webp" alt="Comissões e salão-parceiro" loading="lazy" width="2560" height="1536"></div><figcaption>Salão: comissões e cota-parte do profissional-parceiro</figcaption></figure>
+  <figure class="revela"><div class="shot"><img src="img/estetica_avaliacao.webp" alt="Avaliação corporal com gráfico de evolução" loading="lazy" width="2560" height="1536"></div><figcaption>Estética: avaliação corporal com gráfico de evolução</figcaption></figure>
  </div>
 </div></section>
 
@@ -224,11 +233,11 @@ footer .wrap{display:flex;justify-content:space-between;gap:16px;flex-wrap:wrap;
   <div class="txt"><h3>Com a cara da sua clínica</h3><p>O sistema é personalizável. Em Configurações, você escolhe a cor principal, a cor da barra superior e envia o logotipo da sua clínica. Tudo muda na hora e vale para toda a equipe, em todos os computadores.</p>
    <ul><li>Cor dos botões e destaques</li><li>Cor da barra superior</li><li>Logotipo da clínica no menu</li><li>Mensagens de cobrança e retorno com o nome da clínica</li></ul>
    <div class="paleta"><i style="background:#0a4bde"></i><i style="background:#0f8c64"></i><i style="background:#7c3aed"></i><i style="background:#db2777"></i><i style="background:#ea580c"></i><i style="background:#0e7490"></i></div></div>
-  <div class="shot"><img src="img/pers_config.webp" alt="Tela de configurações com escolha de cores e logotipo da clínica" loading="lazy" width="1440" height="860"></div>
+  <div class="shot"><img src="img/pers_config.webp" alt="Tela de configurações com escolha de cores e logotipo da clínica" loading="lazy" width="2560" height="1536"></div>
  </div>
  <div class="pers">
-  <figure class="revela"><div class="shot"><img src="img/pers_verde.webp" alt="Sistema com a cor verde e o logotipo de uma clínica de demonstração" loading="lazy" width="1440" height="860"></div><figcaption>Clínica de demonstração em verde</figcaption></figure>
-  <figure class="revela"><div class="shot"><img src="img/pers_roxa.webp" alt="Sistema com a cor roxa e o logotipo de outra clínica de demonstração" loading="lazy" width="1440" height="860"></div><figcaption>Clínica de demonstração em roxo</figcaption></figure>
+  <figure class="revela"><div class="shot"><img src="img/pers_verde.webp" alt="Sistema com a cor verde e o logotipo de uma clínica de demonstração" loading="lazy" width="2560" height="1536"></div><figcaption>Clínica de demonstração em verde</figcaption></figure>
+  <figure class="revela"><div class="shot"><img src="img/pers_roxa.webp" alt="Sistema com a cor roxa e o logotipo de outra clínica de demonstração" loading="lazy" width="2560" height="1536"></div><figcaption>Clínica de demonstração em roxo</figcaption></figure>
  </div>
 </div></section>
 
@@ -273,7 +282,7 @@ footer .wrap{display:flex;justify-content:space-between;gap:16px;flex-wrap:wrap;
 <section style="padding-top:0"><div class="wrap">
  <div class="cta revela">
   <img src="img/mascote.webp" alt="" width="640" height="640" style="width:150px">
-  <h2>Pronto para organizar a sua clínica?</h2>
+  <h2>Pronto para organizar o seu negócio?</h2>
   <p>Baixe o BlackFlow, crie a conta do seu negócio e teste tudo por 14 dias, sem cartão de crédito.</p>
   <a class="btn baixar" href="#"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 4v12M6 10l6 6 6-6M4 20h16"/></svg> Baixar para Windows</a>
   <div class="req"><span>Windows 10 e 11</span><span>Cerca de 15 MB</span><span>Internet para sincronizar</span></div>
@@ -293,5 +302,7 @@ document.querySelectorAll('.baixar').forEach(a=>a.href=DOWNLOAD);
 const io=new IntersectionObserver(es=>es.forEach(e=>{if(e.isIntersecting){e.target.classList.add('on');io.unobserve(e.target)}}),{threshold:.12});
 document.querySelectorAll('.revela').forEach(el=>io.observe(el));
 </script>
+<div id="zoom" onclick="this.classList.remove('on')"><b>×</b><img alt=""><p></p></div>
+<script>document.querySelectorAll('.shot img,.tela img').forEach(function(i){i.addEventListener('click',function(){var z=document.getElementById('zoom');z.querySelector('img').src=i.src;z.querySelector('img').alt=i.alt;var f=i.closest('figure');z.querySelector('p').textContent=f&&f.querySelector('figcaption')?f.querySelector('figcaption').textContent:i.alt;z.classList.add('on')})});document.addEventListener('keydown',function(e){if(e.key==='Escape')document.getElementById('zoom').classList.remove('on')});</script>
 </body>
 </html>
