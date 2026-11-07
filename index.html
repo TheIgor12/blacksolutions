@@ -104,7 +104,7 @@ footer .wrap{display:flex;justify-content:space-between;gap:16px;flex-wrap:wrap;
  .numeros{grid-template-columns:repeat(2,1fr)}.recursos,.passos,.galeria{grid-template-columns:1fr}
  .links{display:none}section{padding:64px 0}.destaque{margin-bottom:60px}
 }
-.segs{display:grid;grid-template-columns:repeat(3,1fr);gap:18px}.seg{background:linear-gradient(180deg,var(--card),var(--preto2));border:1px solid var(--linha);border-radius:20px;padding:26px;text-align:center;position:relative}.seg img{width:150px;height:150px;border-radius:50%;margin:0 auto 14px;display:block;box-shadow:0 0 40px rgba(11,108,242,.35)}.seg h3{margin:6px 0 8px;font-size:21px}.seg p{color:var(--mut);margin:0;font-size:15px}.st{position:absolute;top:16px;right:16px;font-size:12px;font-weight:800;padding:4px 10px;border-radius:20px;background:rgba(255,255,255,.08);color:#cfd6e8;border:1px solid var(--linha)}.st.ok{background:rgba(52,211,153,.14);color:#6ee7b7;border-color:rgba(52,211,153,.4)}
+.segs{display:grid;grid-template-columns:repeat(4,1fr);gap:18px}.seg{background:linear-gradient(180deg,var(--card),var(--preto2));border:1px solid var(--linha);border-radius:20px;padding:26px;text-align:center;position:relative}.seg img{width:150px;height:150px;border-radius:50%;margin:0 auto 14px;display:block;box-shadow:0 0 40px rgba(11,108,242,.35)}.seg h3{margin:6px 0 8px;font-size:21px}.seg p{color:var(--mut);margin:0;font-size:15px}.st{position:absolute;top:16px;right:16px;font-size:12px;font-weight:800;padding:4px 10px;border-radius:20px;background:rgba(255,255,255,.08);color:#cfd6e8;border:1px solid var(--linha)}.st.ok{background:rgba(52,211,153,.14);color:#6ee7b7;border-color:rgba(52,211,153,.4)}
 .pers{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:8px}
 .pers figure{margin:0}.pers figcaption{color:var(--mut);font-size:14px;padding:10px 4px 0;text-align:center}
 .paleta{display:flex;gap:10px;margin:18px 0 6px}.paleta i{width:34px;height:34px;border-radius:10px;border:2px solid rgba(255,255,255,.15);display:block}
@@ -122,6 +122,7 @@ footer .wrap{display:flex;justify-content:space-between;gap:16px;flex-wrap:wrap;
 .plano ul{list-style:none;padding:0;margin:16px 0 24px}.plano li{padding:6px 0 6px 26px;position:relative;color:#d5dbea}
 .plano li::before{content:"✓";position:absolute;left:0;color:#34d399;font-weight:900}
 .pag{display:flex;gap:10px;flex-wrap:wrap;margin-top:6px}.pag span{background:rgba(255,255,255,.06);border:1px solid var(--linha);border-radius:8px;padding:5px 10px;font-size:13px;color:#cfd6e8}
+@media (max-width:1150px){.segs{grid-template-columns:repeat(2,1fr)}}
 @media (max-width:900px){.pers,.planos,.segs{grid-template-columns:1fr}.comp th:nth-child(3),.comp td:nth-child(3){display:none}}
 @media (prefers-reduced-motion:reduce){.mascote{animation:none}.revela{opacity:1;transform:none;transition:none}}
 </style>
@@ -164,9 +165,11 @@ footer .wrap{display:flex;justify-content:space-between;gap:16px;flex-wrap:wrap;
  <div class="tit revela"><small>SEGMENTOS</small><h2>Uma plataforma, um módulo para cada profissão</h2><p>A base é a mesma para todos: clientes, agenda, financeiro, histórico e relatórios. Cada segmento ganha as telas e os cadastros da sua rotina.</p></div>
  <div class="segs">
   <div class="seg revela"><img src="img/seg-podologia.webp" alt="Podologia" width="300" height="300"><span class="st ok">Disponível</span><h3>Podologia</h3><p>Anamnese podológica pronta, evolução de cada atendimento, controle de sessões e retorno.</p></div>
-  <div class="seg revela"><img src="img/seg-beleza.webp" alt="Beleza" width="300" height="300"><span class="st">Em breve</span><h3>Beleza</h3><p>Agenda por profissional, pacotes de serviços, comissões e venda de produtos.</p></div>
+  <div class="seg revela"><img src="img/seg-estetica.webp" alt="Estética" width="300" height="300"><span class="st ok">Disponível</span><h3>Estética</h3><p>Pacotes de sessões, avaliação corporal e facial com gráfico, fotos de antes e depois, termos assinados na tela, produtos por lote, protocolos e equipamentos.</p></div>
+  <div class="seg revela"><img src="img/seg-beleza.webp" alt="Salão de beleza" width="300" height="300"><span class="st ok">Disponível</span><h3>Salão de beleza</h3><p>Atendimento com vários serviços e profissionais, comanda, caixa do dia, comissões, salão-parceiro, estoque, pacotes, cashback e ficha técnica.</p></div>
   <div class="seg revela"><img src="img/seg-odontologia.webp" alt="Odontologia" width="300" height="300"><span class="st">Em breve</span><h3>Odontologia</h3><p>Odontograma, plano de tratamento por dente, orçamentos e acompanhamento clínico.</p></div>
  </div>
+ <p class="revela" style="text-align:center;color:var(--mut);margin-top:22px">Na primeira vez que abre o BlackFlow, você escolhe o seu segmento e o sistema mostra os módulos certos. Precisa de algo sob medida para o seu negócio? Fazemos a personalização como valor adicional na assinatura.</p>
 </div></section>
 <section id="recursos"><div class="wrap">
  <div class="tit revela"><small>RECURSOS</small><h2>Tudo o que o seu negócio usa no dia a dia</h2><p>Desenvolvido junto com uma clínica de verdade, para resolver o que realmente toma tempo.</p></div>
@@ -237,7 +240,7 @@ footer .wrap{display:flex;justify-content:space-between;gap:16px;flex-wrap:wrap;
   <tr><td>Implantação</td><td>Sem taxa: instale e use</td><td>Implantação obrigatória, cobrada à parte</td></tr>
   <tr><td>Trazer os dados do sistema antigo</td><td>Importação automática do Excel, incluída</td><td>Pacote de migração pago separadamente</td></tr>
   <tr><td>Lembrete e cobrança pelo WhatsApp</td><td>Botões que abrem o WhatsApp, sem custo por mensagem</td><td>Mensagens cobradas conforme o uso</td></tr>
-  <tr><td>Especialidade</td><td>Módulos próprios por segmento, a começar pela podologia</td><td>Muitos são feitos para odontologia e adaptados</td></tr>
+  <tr><td>Especialidade</td><td>Módulos próprios para podologia, estética e salão de beleza, escolhidos com um clique</td><td>Muitos são feitos para odontologia e adaptados</td></tr>
   <tr><td>Equipe</td><td>Convide quantas pessoas precisar</td><td>Varia conforme o plano</td></tr>
   <tr><td>Internet caiu</td><td>Continua funcionando e sincroniza depois</td><td>Varia conforme o sistema</td></tr>
   <tr><td>Seus dados</td><td>Exporte tudo para o Excel quando quiser</td><td>Varia conforme o sistema</td></tr>

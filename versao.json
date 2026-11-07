@@ -1,5 +1,5 @@
 {
-  "versao": "1.3.3",
-  "html": "https://raw.githubusercontent.com/TheIgor12/blacksolutions/main/download/happyfeet-gestao.html",
-  "novidades": "Correção na importação do Clinicorp: importar só alguns arquivos não apaga mais os dados que vieram dos outros."
+  "versao": "1.4.0",
+  "html": "https://raw.githubusercontent.com/TheIgor12/blacksolutions/main/download/blackflow-1.4.0.html",
+  "novidades": "Novos módulos de Estética e Salão de beleza. Em Configurações, escolha o segmento do seu negócio. Salão: comanda, caixa do dia, comissões, salão-parceiro, estoque, pacotes, cashback e ficha técnica. Estética: pacotes de sessões, avaliação com gráfico, fotos de antes e depois, termos assinados na tela, produtos por lote, protocolos e equipamentos."
 }
