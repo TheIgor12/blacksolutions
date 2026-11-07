@@ -438,7 +438,7 @@ function shell(content){const c=S.config;
  return `<header class="top"><button class="ico" onclick="toggleDrawer()" aria-label="Menu">${ico('menu')}</button>
  <div class="gsearch"><input id="gs" placeholder="Encontre pacientes ou funções do sistema" oninput="globalSearch(this.value)" onblur="setTimeout(()=>{const r=$('#gsr');if(r)r.classList.remove('on')},200)" autocomplete="off"><div id="gsr" class="gsr"></div></div>
  ${NV.ativa?`<span id="sync" class="sync" title="Sincronização com a nuvem">${syncTxt()}</span>`:''}<div class="user" style="cursor:pointer" onclick="abrirConta()"><span class="av">${esc(initials(nomeUsuario()))}</span><div><b>${esc(nomeUsuario())}</b><small>${esc(c.clinica)}</small></div></div></header>
- <aside class="drawer ${UI.drawer?'open':''}"><div class="brand ${S.config.logo?'':'escuro'}"><img src="${logoClinica()}" alt="${esc(c.clinica)}"></div><div class="prod">BLACKFLOW <span style="font-weight:600">by BlackSolutions</span></div><span class="plan">Versão 1.3.2</span>
+ <aside class="drawer ${UI.drawer?'open':''}"><div class="brand ${S.config.logo?'':'escuro'}"><img src="${logoClinica()}" alt="${esc(c.clinica)}"></div><div class="prod">BLACKFLOW <span style="font-weight:600">by BlackSolutions</span></div><span class="plan">Versão 1.3.3</span>
  <div class="menu"><button class="${UI.view==='inicio'?'on':''}" onclick="go('inicio')">${ico('home',18)} Início</button><div class="msec">MÓDULOS</div>
  ${MENU.map(([k,l,i])=>`<button class="${UI.view===k||(k==='pacientes'&&UI.view==='paciente')?'on':''}" onclick="go('${k}')">${ico(i,18)} ${l}</button>`).join('')}</div>
  <div class="mfoot menu"><button class="${UI.view==='config'?'on':''}" onclick="go('config')">${ico('gear',18)} Configurações</button></div></aside>
@@ -861,7 +861,7 @@ function ccpCelular(v){const d=onlyDigits(v);return d.length>11&&d.startsWith('5
 function importarClinicorp(items,mode){
  const T={};items.forEach(it=>{const k=it.ccp;if(CCP[k].info)return;(T[k]||(T[k]=[])).push(...ccpObjs(it.rows))});
  const res={};const novo=()=>({lidas:0,importadas:0,atualizadas:0,ignoradas:0,novosPacientes:0});
- const limpar=col=>{S[col]=S[col].filter(x=>x.origem!=='clinicorp'&&!(mode==='substituir'&&x.origem==='import'))};
+ const limpar=(col,pref)=>{S[col]=S[col].filter(x=>!(x.origem==='clinicorp'&&(!pref||String(x.id).startsWith(pref)))&&!(mode==='substituir'&&x.origem==='import'))};
  /* Profissionais */
  if(T.Dentist){const r=res.Dentist=novo();T.Dentist.forEach(d=>{r.lidas++;const nome=ccpTxt(d.Name);if(!nome||ccpSim(d.Deleted)){r.ignoradas++;return}
   const n0=S.profissionais.length;ensureProf(nome);const p=S.profissionais.find(x=>norm(x.nome)===norm(nome));p.ativo=ccpSim(d.Active);if(ccpTxt(d.MobilePhone))p.celular=ccpCelular(d.MobilePhone);
@@ -893,15 +893,14 @@ function importarClinicorp(items,mode){
     sessoesTotal:L.length,sessoesRealizadas:feitas,valor:Math.round(L.reduce((a,x)=>a+parseNum(x.ProcedureFinalAmount),0)*100)/100,statusOrig,
     profissional:ensureProf(b.DentistName),especialidade:ccpTxt(b.Specialty),orcamento:ccpTxt(b.BudgetId),origem:'clinicorp'});r.importadas++})}
  /* Financeiro: pagamentos e parcelas (PaymentItem) e saldos de tratamento ainda em aberto (BookEntry) */
- if(T.PaymentItem||T.BookEntry)limpar('lancamentos');
- if(T.PaymentItem){const r=res.PaymentItem=novo();T.PaymentItem.forEach(x=>{r.lidas++;const valor=parseNum(x.Amount);if(!valor){r.ignoradas++;return}
+ if(T.PaymentItem){limpar('lancamentos','ccp');const r=res.PaymentItem=novo();T.PaymentItem.forEach(x=>{r.lidas++;const valor=parseNum(x.Amount);if(!valor){r.ignoradas++;return}
   const p=acharPac(x.PatientId,x.PayerName,x.PayerDocumentNumber,r);if(!p){r.ignoradas++;return}
   const cancel=ccpSim(x.Canceled)||ccpSim(x.CancelInstallment);const pago=!cancel&&(ccpSim(x.PaymentConfirmed)||ccpSim(x.PaymentReceived));
   const n=Number(x.InstallmentNumber)||0,q=Number(x.InstallmentsCount)||0;const parcela=q>1?`${n<q?n+1:n}/${q}`:'';
   S.lancamentos.push({id:ccpId('ccp',x.id),pacienteId:p.id,descricao:ccpTxt(x.PaymentDescription)||'Pagamento de tratamento',valor,valorPago:pago?valor:0,
    vencimento:ccpData(x.DueDate)||ccpData(x.PaymentDate),pagamento:pago?(ccpData(x.PaymentDate)||ccpData(x.ConfirmedDate)||ccpData(x.ReceivedDate)):'',
    forma:CCP_FORMA[ccpTxt(x.Type)]||ccpTxt(x.PaymentForm)||'',parcela,statusOrig:cancel?'Cancelado':pago?'Pago':'Em aberto',profissional:'',origem:'clinicorp'});r.importadas++})}
- if(T.BookEntry){limpar('contasPagar');const r=res.BookEntry=novo();
+ if(T.BookEntry){limpar('contasPagar');limpar('lancamentos','ccs');const r=res.BookEntry=novo();
   T.BookEntry.forEach(e=>{r.lidas++;const tipo=ccpTxt(e.EntryType),lado=ccpTxt(e.Type).toUpperCase(),valor=Math.abs(parseNum(e.Amount));
    /* O livro do Clinicorp tem partidas dobradas: cada conta aparece duas vezes (débito e crédito). Usa-se um lado só. */
    if(tipo==='ACCOUNT_TO_PAY'&&lado==='CREDIT'&&valor){const pago=!ccpSim(e.Open)&&!!ccpData(e.CloseDate);
