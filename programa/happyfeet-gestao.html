@@ -279,6 +279,96 @@ const DB={
  async set(v,k='state'){try{const db=await this.open();await new Promise((res,rej)=>{const tx=db.transaction('kv','readwrite');tx.objectStore('kv').put(v,k);tx.oncomplete=res;tx.onerror=()=>rej(tx.error)})}catch(e){console.warn(e);toast('Não foi possível salvar neste navegador. Faça um backup.')}}
 };
 let saveTimer;function save(){clearTimeout(saveTimer);saveTimer=setTimeout(()=>{if(NV.ativa&&NV.clinicaId)persistirNuvem();else DB.set(S);agendarEnvio()},250)}
+/* ============ Fotos em arquivo ============
+   Nos dados fica só a miniatura (cerca de 6 KB). A imagem inteira fica guardada
+   neste computador (IndexedDB) e na nuvem de arquivos (Supabase Storage),
+   na pasta da clínica: fotos/<clinica>/<foto>.jpg */
+const FT={db:null,urls:{},enviando:false,erroNuvem:'',pend:0,
+ open(){if(!this.db)this.db=new Promise((res,rej)=>{const r=indexedDB.open('blackflow-fotos',1);r.onupgradeneeded=()=>{r.result.createObjectStore('img');r.result.createObjectStore('fila')};r.onsuccess=()=>res(r.result);r.onerror=()=>rej(r.error)});return this.db},
+ async op(store,mode,fn){const db=await this.open();return new Promise((res,rej)=>{const tx=db.transaction(store,mode);const q=fn(tx.objectStore(store));let v;if(q)q.onsuccess=()=>{v=q.result};tx.oncomplete=()=>res(v);tx.onerror=()=>rej(tx.error)})},
+ get(id){return this.op('img','readonly',s=>s.get(id)).catch(()=>null)},
+ put(id,blob){return this.op('img','readwrite',s=>s.put(blob,id))},
+ del(id){return this.op('img','readwrite',s=>s.delete(id)).catch(()=>{})},
+ filaAdd(chave){return this.op('fila','readwrite',s=>s.put(1,chave)).catch(()=>{})},
+ filaDel(chave){return this.op('fila','readwrite',s=>s.delete(chave)).catch(()=>{})},
+ fila(){return this.op('fila','readonly',s=>s.getAllKeys()).catch(()=>[])}};
+function nuvemFotos(){return !!(NV.ativa&&NV.sb&&NV.clinicaId&&!NV.offline)}
+function fotoMini(f){return f.thumb||f.img||''}
+function canvasDe(img,lado){const k=Math.min(1,lado/Math.max(img.width,img.height));const c=document.createElement('canvas');c.width=Math.max(1,Math.round(img.width*k));c.height=Math.max(1,Math.round(img.height*k));const g=c.getContext('2d');g.fillStyle='#fff';g.fillRect(0,0,c.width,c.height);g.drawImage(img,0,0,c.width,c.height);return c}
+function imagemDe(blob){return new Promise((res,rej)=>{const u=URL.createObjectURL(blob);const i=new Image();i.onload=()=>{res(i);setTimeout(()=>URL.revokeObjectURL(u),1000)};i.onerror=()=>{URL.revokeObjectURL(u);rej(new Error('imagem'))};i.src=u})}
+/* Recebe um arquivo ou blob de imagem e devolve a imagem inteira (até 1600 px) e a miniatura */
+async function fotoPreparar(blob,jaReduzida){const img=await imagemDe(blob);
+ let cheia=blob;if(!jaReduzida||Math.max(img.width,img.height)>1700){const c=canvasDe(img,1600);cheia=await new Promise(r=>c.toBlob(r,'image/jpeg',0.8))}
+ const thumb=canvasDe(img,220).toDataURL('image/jpeg',0.62);return {cheia,thumb}}
+/* Guarda a imagem inteira neste computador e coloca na fila de envio para a nuvem */
+async function fotoGuardar(id,blob){await FT.put(id,blob);if(nuvemFotos()){await FT.filaAdd(NV.clinicaId+'/'+id)}}
+async function filaEnviar(){if(FT.enviando||!nuvemFotos())return;FT.enviando=true;
+ try{const pre=NV.clinicaId+'/';const L=(await FT.fila()).filter(k=>String(k).startsWith(pre));FT.pend=L.length;let i=0,sujo=false;
+  const um=async()=>{while(i<L.length&&nuvemFotos()){const k=L[i++];const id=k.slice(pre.length);const blob=await FT.get(id);
+    if(!blob){await FT.filaDel(k);FT.pend--;continue}
+    const {error}=await NV.sb.storage.from('fotos').upload(k+'.jpg',blob,{upsert:true,contentType:'image/jpeg'});
+    if(error){const m=String(error.message||error);FT.erroNuvem=/bucket not found/i.test(m)?'a nuvem de fotos ainda não foi ativada no servidor':/row-level|security|unauthorized|403/i.test(m)?'sem permissão para enviar fotos desta clínica':m;throw error}
+    FT.erroNuvem='';await FT.filaDel(k);FT.pend--;const f=S.fotos.find(x=>x.id===id);if(f&&f.img&&f.thumb){delete f.img;sujo=true}}};
+  await Promise.all([um(),um(),um()]);if(sujo)save()}
+ catch(e){console.warn('fotos',e)}
+ finally{FT.enviando=false;fotoStatus()}}
+function fotoStatus(){const e=$('#fotoSt');if(e)e.innerHTML=fotoStatusTxt()}
+function fotoStatusTxt(){if(!NV.ativa)return 'As fotos ficam guardadas neste computador.';if(FT.erroNuvem)return '<span style="color:var(--bad)">As fotos novas estão guardadas neste computador, mas ainda não foram enviadas para a nuvem. Motivo: '+esc(FT.erroNuvem)+'</span>';return FT.pend>0?'Enviando fotos para a nuvem: faltam '+FT.pend+'.':'Todas as fotos estão salvas na nuvem.'}
+/* Devolve o endereço da imagem inteira: deste computador, ou baixa da nuvem e guarda */
+async function fotoCheia(f){if(!f)return '';if(f.img)return f.img;if(FT.urls[f.id])return FT.urls[f.id];
+ let blob=await FT.get(f.id);
+ if(!blob&&nuvemFotos()){try{const {data}=await NV.sb.storage.from('fotos').download(NV.clinicaId+'/'+f.id+'.jpg');if(data){blob=data;FT.put(f.id,data).catch(()=>{})}}catch(e){}}
+ if(!blob)return fotoMini(f);return FT.urls[f.id]=URL.createObjectURL(blob)}
+function fotoCarregar(f,elId){fotoCheia(f).then(u=>{const e=document.getElementById(elId);if(e&&u)e.src=u})}
+async function fotoApagarArquivo(id){await FT.del(id);if(FT.urls[id]){URL.revokeObjectURL(FT.urls[id]);delete FT.urls[id]}
+ if(nuvemFotos()){await FT.filaDel(NV.clinicaId+'/'+id);try{await NV.sb.storage.from('fotos').remove([NV.clinicaId+'/'+id+'.jpg'])}catch(e){}}}
+/* Converte as fotos antigas (imagem inteira dentro dos dados) para o formato novo */
+async function fotoMigrar(){if(UI.fotoMigrando)return;const L=S.fotos.filter(f=>f.img&&!f.thumb);if(!L.length){filaEnviar();return}UI.fotoMigrando=1;
+ try{for(const f of L){try{const blob=await (await fetch(f.img)).blob();const {thumb}=await fotoPreparar(blob,true);await fotoGuardar(f.id,blob);f.thumb=thumb;f.arq=1;if(!nuvemFotos())delete f.img}catch(e){}}save()}
+ finally{UI.fotoMigrando=0;filaEnviar()}}
+function fotoIniciar(){if(UI.fotoTimer)return;UI.fotoTimer=setInterval(()=>{if(!UI.auth)filaEnviar()},60000);setTimeout(()=>{if(!UI.auth)fotoMigrar()},4000)}
+
+/* ============ Importar fotos do Clinicorp (arquivos ZIP) ============ */
+function u16(d,o){return d[o]|(d[o+1]<<8)}
+function u32(d,o){return (d[o]|(d[o+1]<<8)|(d[o+2]<<16)|(d[o+3]<<24))>>>0}
+async function zipLer(buf){const d=new Uint8Array(buf);let e=-1;for(let i=d.length-22;i>=Math.max(0,d.length-70000);i--){if(u32(d,i)===0x06054b50){e=i;break}}
+ if(e<0)throw new Error('Este arquivo não é um ZIP válido.');
+ const n=u16(d,e+10);let p=u32(d,e+16);const L=[];const dec=new TextDecoder();
+ for(let k=0;k<n;k++){if(u32(d,p)!==0x02014b50)break;const met=u16(d,p+10),tam=u32(d,p+20),nl=u16(d,p+28),xl=u16(d,p+30),cl=u16(d,p+32),loc=u32(d,p+42);const nome=dec.decode(d.subarray(p+46,p+46+nl));
+  const ini=loc+30+u16(d,loc+26)+u16(d,loc+28);L.push({nome,met,ini,tam});p+=46+nl+xl+cl}
+ return {lista:L,async dados(it){const bruto=d.subarray(it.ini,it.ini+it.tam);if(it.met===0)return bruto;
+  if(it.met===8&&window.DecompressionStream){const s=new Blob([bruto]).stream().pipeThrough(new DecompressionStream('deflate-raw'));return new Uint8Array(await new Response(s).arrayBuffer())}
+  throw new Error('Formato de compressão não suportado')}}}
+function fotosZipHTML(){const z=UI.fotoZip;
+ if(z&&z.lendo)return `<div class="card" style="margin-bottom:20px"><h2>Fotos do Clinicorp</h2><div class="drop"><div class="spin"></div><p><b>${esc(z.msg||'Lendo...')}</b></p><p class="sub">${z.feitas} de ${z.total} fotos. Pode continuar usando o sistema, mas não feche o programa.</p></div></div>`;
+ return `<div class="card" style="margin-bottom:20px"><h2>Fotos do Clinicorp</h2><p class="sub" style="margin-bottom:12px">Selecione os arquivos <b>Fotos_Clinicorp_parte_1.zip</b>, <b>parte_2</b> e os demais, todos de uma vez. Cada foto vai para a aba Fotos do paciente certo, ligada pelo código do Clinicorp. Importe antes os arquivos Excel do Clinicorp, para os pacientes já existirem. Se importar o mesmo arquivo duas vezes, as fotos não se repetem.</p>
+ <label class="btn" style="cursor:pointer">${ico('up',16)} Selecionar os arquivos ZIP<input type="file" accept=".zip,application/zip" multiple style="display:none" onchange="fotosZipImportar(this)"></label>
+ ${z&&z.res?`<div class="row" style="margin-top:14px"><span>Resultado</span><span>${z.res}</span></div>`:''}
+ <p class="sub" id="fotoSt" style="margin-top:12px">${fotoStatusTxt()}</p></div>`}
+async function fotosZipImportar(input){const arqs=[...input.files];input.value='';if(!arqs.length)return;
+ const porId={};S.pacientes.forEach(p=>{if(p.clinicorpId)porId[String(p.clinicorpId)]=p});
+ if(!Object.keys(porId).length){toast('Nenhum paciente veio do Clinicorp ainda. Importe primeiro os arquivos Excel.');return}
+ const ja=new Set(S.fotos.map(f=>f.id));const z=UI.fotoZip={lendo:true,feitas:0,total:0,msg:'Abrindo os arquivos...'};render();
+ let novas=0,repetidas=0,semPac=0,erros=0;const faltam=new Set();
+ try{for(const a of arqs){z.msg='Abrindo '+a.name;render();const zip=await zipLer(await a.arrayBuffer());
+   const man=zip.lista.find(x=>/manifesto\.json$/i.test(x.nome));let M=[];
+   if(man){try{M=JSON.parse(new TextDecoder().decode(await zip.dados(man)))}catch(e){M=[]}}
+   const info={};M.forEach(m=>{info[m.arquivo]=m});
+   const fotos=zip.lista.filter(x=>/\.(jpe?g|png|webp)$/i.test(x.nome));z.total+=fotos.length;
+   for(const it of fotos){z.feitas++;if(z.feitas%10===0){z.msg='Importando '+a.name;render()}
+    const m=info[it.nome]||{};const partes=it.nome.split('/');const pacCod=String(m.paciente||partes[partes.length-2]||'');
+    const base=partes[partes.length-1].replace(/\.[^.]+$/,'');const mm=base.match(/^(\d{4}-\d{2}-\d{2})_(.+)$/);
+    const picId=mm?mm[2]:base;const data=m.data||(mm?mm[1]:todayISO());const id='ccf_'+picId;
+    if(ja.has(id)){repetidas++;continue}
+    const p=porId[pacCod];if(!p){semPac++;faltam.add(pacCod);continue}
+    try{const bytes=await zip.dados(it);const blob=new Blob([bytes],{type:'image/jpeg'});const {cheia,thumb}=await fotoPreparar(blob,true);
+     await fotoGuardar(id,cheia);S.fotos.push({id,pacienteId:p.id,data:String(data).slice(0,10),area:'Clinicorp',momento:'',obs:m.original?'Arquivo original: '+m.original:'',thumb,arq:1,origem:'clinicorp'});ja.add(id);novas++;
+     if(novas%50===0)save()}catch(e){erros++}}}
+  S.importacoes.unshift({id:uid(),data:new Date().toISOString(),tipo:'Fotos do Clinicorp',arquivo:arqs.map(a=>a.name).join(', '),modo:'acrescentar',importadas:novas,ignoradas:repetidas+semPac+erros});
+  save()}
+ catch(e){erros++;toast(String(e.message||e))}
+ z.lendo=false;z.res=`${novas} fotos importadas${repetidas?', '+repetidas+' já existiam':''}${semPac?', '+semPac+' de '+faltam.size+' pacientes não encontrados no cadastro':''}${erros?', '+erros+' com erro':''}.`;
+ render();toast(novas+' fotos importadas');filaEnviar()}
 
 const UI={view:'inicio',param:null,drawer:false,pacQuery:'',pacPage:0,pacPer:10,pacTab:'geral',pacInfo:'cadastro',finTab:'geral',
  agDate:todayISO(),agMode:'semana',profOff:{},rel:'pac_aniv',relMes:new Date().getMonth()+1,
@@ -439,7 +529,7 @@ function shell(content){const c=S.config;
  return `<header class="top"><button class="ico" onclick="toggleDrawer()" aria-label="Menu">${ico('menu')}</button>
  <div class="gsearch"><input id="gs" placeholder="Encontre ${esc(SEG().pessoas.toLowerCase())} ou funções do sistema" oninput="globalSearch(this.value)" onblur="setTimeout(()=>{const r=$('#gsr');if(r)r.classList.remove('on')},200)" autocomplete="off"><div id="gsr" class="gsr"></div></div>
  ${NV.ativa?`<span id="sync" class="sync" title="Sincronização com a nuvem">${syncTxt()}</span>`:''}<button class="ico refr" title="Atualizar: busca os dados novos da nuvem e procura versão nova do sistema" onclick="refrescar(this)">${ico('refresh',17)}</button><div class="user" style="cursor:pointer" onclick="abrirConta()"><span class="av">${esc(initials(nomeUsuario()))}</span><div><b>${esc(nomeUsuario())}</b><small>${esc(c.clinica)}</small></div></div></header>
- <aside class="drawer ${UI.drawer?'open':''}"><div class="brand ${S.config.logo?'':'escuro'}"><img src="${logoClinica()}" alt="${esc(c.clinica)}"></div><div class="prod">BLACKFLOW <span style="font-weight:600">by BlackSolutions</span></div><span class="plan">Versão 1.5.0</span><button class="lnk" style="display:block;margin:6px 16px 0;font-size:12px;text-align:left" onclick="UI.drawer=false;render();atuChecar(true)">Procurar atualização</button><button class="lnk" style="display:block;margin:8px 16px 0;font-size:12px;text-align:left" onclick="UI.drawer=false;perguntarSegmento()">Segmento: <b>${esc(SEG().nome)}</b> · trocar</button>
+ <aside class="drawer ${UI.drawer?'open':''}"><div class="brand ${S.config.logo?'':'escuro'}"><img src="${logoClinica()}" alt="${esc(c.clinica)}"></div><div class="prod">BLACKFLOW <span style="font-weight:600">by BlackSolutions</span></div><span class="plan">Versão 1.5.1</span><button class="lnk" style="display:block;margin:6px 16px 0;font-size:12px;text-align:left" onclick="UI.drawer=false;render();atuChecar(true)">Procurar atualização</button><button class="lnk" style="display:block;margin:8px 16px 0;font-size:12px;text-align:left" onclick="UI.drawer=false;perguntarSegmento()">Segmento: <b>${esc(SEG().nome)}</b> · trocar</button>
  <div class="menu"><button class="${UI.view==='inicio'?'on':''}" onclick="go('inicio')">${ico('home',18)} Início</button><div class="msec">MÓDULOS</div>
  ${menuItens().map(([k,l,i])=>`<button class="${UI.view===k||(k==='pacientes'&&UI.view==='paciente')?'on':''}" onclick="go('${k}')">${ico(i,18)} ${l}</button>`).join('')}</div>
  <div class="mfoot menu"><button class="${UI.view==='config'?'on':''}" onclick="go('config')">${ico('gear',18)} Configurações</button></div></aside>
@@ -458,7 +548,7 @@ function render(){if(NV.ativa&&UI.auth){$('#app').innerHTML=vAuth();setTimeout((
  document.documentElement.style.setProperty('--acc',S.config.cor||'#0b6cf2');document.documentElement.style.setProperty('--top',S.config.corTopo||'#0b0d12');const fv=$('#fav');if(fv&&fv.href!==ICONE)fv.href=ICONE;
  const V={inicio:vInicio,agenda:vAgenda,pacientes:vPacientes,paciente:vPaciente,financeiro:vFinanceiro,dashboard:vDashboard,relatorios:vRelatorios,profissionais:vProfissionais,importar:vImportar,config:vConfig,servicos:vServicos,estoque:vEstoque,comandas:vComandas,caixa:vCaixa,comissoes:vComissoes,protocolos:vProtocolos,equipamentos:vEquipamentos};
  let c;try{c=(V[UI.view]||vInicio)()}catch(e){console.error(e);c=`<div class="page"><div class="card">Erro ao montar a tela: ${esc(e.message)}</div></div>`}
- $('#app').innerHTML=shell(c);checarSegmento();if(!UI.regrasOk&&S.servicos.length&&!UI.auth){UI.regrasOk=1;if(regrasClinica())save()}if(!AVISO.timer)avisoIniciar();atuIniciar()}
+ $('#app').innerHTML=shell(c);checarSegmento();if(!UI.regrasOk&&S.servicos.length&&!UI.auth){UI.regrasOk=1;if(regrasClinica())save()}if(!AVISO.timer)avisoIniciar();atuIniciar();if(!UI.auth)fotoIniciar()}
 
 /* ============ Início ============ */
 function vInicio(){const vazio=!S.pacientes.length;const inad=inadList().reduce((a,o)=>a+o.valor,0);
@@ -508,7 +598,7 @@ function agModal(id){const a=S.agendamentos.find(x=>x.id===id);if(!a)return;cons
  openModal(`<h3>${esc(p?p.nome:'Paciente')}</h3><div class="row"><span>Data</span><span>${br(a.data)} às ${esc(a.hora)} (${a.duracao||30} min)</span></div><div class="row"><span>Profissional</span><span>${esc(a.profissional||'-')}</span></div><div class="row"><span>Procedimento</span><span>${esc(a.procedimento||'-')}</span></div><div class="row" style="align-items:center"><span><b>Situação</b></span><span><select id="agSt" onchange="setAgSt('${a.id}',this.value)" style="font-size:14px;font-weight:700;padding:8px 12px;border-radius:8px;border:2px solid ${({Agendado:'#e0a800',Confirmado:'#16a34a',Atendido:'#64748b',Faltou:'#dc2626',Desmarcado:'#999'})[stAg(a)]||'#e0a800'};background:${({Agendado:'#fff3bf',Confirmado:'#c9f2d6',Atendido:'#e6ebf3',Faltou:'#fde8e8',Desmarcado:'#eee'})[stAg(a)]||'#fff3bf'}">${['Agendado','Confirmado','Atendido','Faltou','Desmarcado'].map(x=>`<option value="${x}" ${stAg(a)===x?'selected':''}>${x==='Desmarcado'?'Desmarcou':x}</option>`).join('')}</select></span></div>${agNovo(a,stAg(a))?`<div class="row"><span></span><span><i class="evtag" style="font-size:11px;padding:2px 8px">${esc(SEG().pessoa.toUpperCase())} NOVO</i></span></div>`:''}${a.obs?`<div class="row"><span>Observação</span><span>${esc(a.obs)}</span></div>`:''}
  <div class="mact">${l?`<a class="btn green" href="${l}" target="_blank" rel="noopener">WhatsApp</a>`:''}${p?`<button class="btn ghost" onclick="closeModal();go('paciente','${p.id}')">Abrir ficha</button>`:''}${!ehSeg('podologia')&&p?`<button class="btn soft" onclick="comandaDoAgendamento('${a.id}')">Abrir comanda</button>`:''}<button class="btn" onclick="closeModal();agForm('${a.id}')">Editar</button></div>`)}
 function setAgSt(id,s){const a=S.agendamentos.find(x=>x.id===id);if(a){a.status=s;sincLancAg(a)}closeModal();save();render();if(a&&s==='Atendido'&&lancDoAg(a))setTimeout(()=>toast('Atendido: '+money(lancDoAg(a).valor)+' lançado a receber no financeiro'),50);toast('Situação alterada para '+(s==='Desmarcado'?'desmarcou':s.toLowerCase()))}
-function delRec(col,id){confirmModal('Excluir este registro definitivamente?',()=>{S[col]=S[col].filter(x=>x.id!==id)},'Excluir')}
+function delRec(col,id){confirmModal('Excluir este registro definitivamente?',()=>{S[col]=S[col].filter(x=>x.id!==id);if(col==='fotos')fotoApagarArquivo(id)},'Excluir')}
 
 /* ============ Pacientes ============ */
 function pacFiltered(){const raw=UI.pacQuery.trim();const q=norm(raw.replace(/^%/,''));const qd=onlyDigits(raw);let L=S.pacientes;
@@ -730,7 +820,7 @@ function prevVal(type,k,v){if(v===''||v==null)return '';if(['nascimento','vencim
 function vImportar(){const I=UI.imp;const counts={pacientes:S.pacientes.length,financeiro:S.lancamentos.length,tratamentos:S.tratamentos.length,anamnese:S.anamneses.length,agendamentos:S.agendamentos.length,contasPagar:S.contasPagar.length};
  if(!I.type)return `<div class="page"><div class="phead"><div><h1>Importar Dados</h1><p class="sub">Alimente o sistema com as planilhas exportadas do Clinicorp (ou de qualquer outro sistema) em Excel ou CSV.</p></div></div>
  <div class="note"><b>Ordem recomendada:</b> 1. Pacientes, 2. Financeiro, 3. Tratamentos, 4. Agendamentos, 5. Anamnese, 6. Contas a pagar. Os registros são ligados ao paciente pelo CPF e, na falta dele, pelo nome exato. Se uma planilha trouxer um paciente que ainda não existe, ele é criado com a marca de cadastro incompleto.</div>
- ${loteHTML()}<h2 style="margin-top:8px">Importação individual</h2><div class="grid g3">${Object.entries(IMPORT).map(([k,d])=>`<div class="tile" onclick="impChoose('${k}')"><span class="cnt">${counts[k]} registros</span><div class="ti">${ico(d.icon)}</div><b>${d.label}</b><p>${d.desc}</p></div>`).join('')}</div>
+ ${loteHTML()}${fotosZipHTML()}<h2 style="margin-top:8px">Importação individual</h2><div class="grid g3">${Object.entries(IMPORT).map(([k,d])=>`<div class="tile" onclick="impChoose('${k}')"><span class="cnt">${counts[k]} registros</span><div class="ti">${ico(d.icon)}</div><b>${d.label}</b><p>${d.desc}</p></div>`).join('')}</div>
  ${S.importacoes.length?`<div class="card" style="margin-top:20px"><h2>Histórico de importações</h2><div class="tw"><table class="tbl"><thead><tr><th>Data</th><th>Tipo</th><th>Arquivo</th><th>Modo</th><th class="num">Linhas lidas</th><th class="num">Importadas</th><th class="num">Atualizadas</th><th class="num">Ignoradas</th><th class="num">Pacientes criados</th></tr></thead><tbody>${S.importacoes.map(h=>`<tr><td>${new Date(h.data).toLocaleString('pt-BR')}</td><td>${esc(h.tipo)}</td><td>${esc(h.arquivo)}</td><td>${esc(h.modo)}</td><td class="num">${h.lidas}</td><td class="num">${h.importadas}</td><td class="num">${h.atualizadas||0}</td><td class="num">${h.ignoradas}</td><td class="num">${h.novosPacientes||0}</td></tr>`).join('')}</tbody></table></div></div>`:''}</div>`;
  const def=IMPORT[I.type];const head=I.rows?I.rows[I.headerRow]||[]:[];
  const step=!I.rows?1:I.result?3:2;
@@ -1176,15 +1266,15 @@ function avalForm(pid,id){const a=id?S.avaliacoes.find(x=>x.id===id):null;
 /* Fotos de antes e depois: reduzidas para caber na nuvem */
 function pFotos(p){const L=S.fotos.filter(f=>f.pacienteId===p.id).sort((a,b)=>(b.data||'').localeCompare(a.data||''));const sel=UI.fotoSel||[];const areas=[...new Set(L.map(f=>f.area||'Sem área'))];
  return `<div class="card"><div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px"><h2 style="margin:0">${ehSeg('beleza')?'Fotos':ehSeg('podologia')?'Fotos do tratamento':'Fotos de antes e depois'}</h2><span style="display:flex;gap:8px;flex-wrap:wrap">${sel.length===2?`<button class="btn soft sm" onclick="fotoComparar()">Comparar as 2 marcadas</button>`:'<small style="color:var(--mut);align-self:center">Marque 2 fotos para comparar lado a lado</small>'}<label class="btn sm" style="cursor:pointer">${ico('up',14)} Adicionar fotos<input type="file" accept="image/*" multiple style="display:none" onchange="fotoAdd('${p.id}',this)"></label></span></div>
- ${areas.map(ar=>`<h2 style="margin-top:16px;font-size:14px">${esc(ar)}</h2><div class="grid g4">${L.filter(f=>(f.area||'Sem área')===ar).map(f=>`<div class="card" style="margin:0;padding:8px;${sel.includes(f.id)?'outline:3px solid var(--acc)':''}"><img src="${f.img}" style="width:100%;height:170px;object-fit:cover;border-radius:8px;cursor:pointer" onclick="fotoVer('${f.id}')">${f.refTipo?`<small style="display:block;color:var(--mut);margin-top:4px">Da ${f.refTipo==='evolucao'?'evolução':'anamnese'} de ${br(f.data)}</small>`:''}<div style="display:flex;justify-content:space-between;align-items:center;margin-top:6px;font-size:12px"><label style="display:flex;gap:4px;align-items:center"><input type="checkbox" ${sel.includes(f.id)?'checked':''} onchange="fotoMarcar('${f.id}')">${br(f.data)} · ${esc(f.momento||'')}</label><button class="lnk" onclick="fotoEditar('${f.id}')">Editar</button></div></div>`).join('')}</div>`).join('')||'<div class="mini-empty">Nenhuma foto ainda.</div>'}
+ ${areas.map(ar=>`<h2 style="margin-top:16px;font-size:14px">${esc(ar)}</h2><div class="grid g4">${L.filter(f=>(f.area||'Sem área')===ar).map(f=>`<div class="card" style="margin:0;padding:8px;${sel.includes(f.id)?'outline:3px solid var(--acc)':''}"><img src="${fotoMini(f)}" loading="lazy" style="width:100%;height:170px;object-fit:cover;border-radius:8px;cursor:pointer" onclick="fotoVer('${f.id}')">${f.refTipo?`<small style="display:block;color:var(--mut);margin-top:4px">Da ${f.refTipo==='evolucao'?'evolução':'anamnese'} de ${br(f.data)}</small>`:''}<div style="display:flex;justify-content:space-between;align-items:center;margin-top:6px;font-size:12px"><label style="display:flex;gap:4px;align-items:center"><input type="checkbox" ${sel.includes(f.id)?'checked':''} onchange="fotoMarcar('${f.id}')">${br(f.data)} · ${esc(f.momento||'')}</label><button class="lnk" onclick="fotoEditar('${f.id}')">Editar</button></div></div>`).join('')}</div>`).join('')||'<div class="mini-empty">Nenhuma foto ainda.</div>'}
  ${ehSeg('estetica')?'<p class="sub" style="margin-top:12px">Para usar a foto em redes sociais, registre antes a autorização de uso de imagem na aba Termos.</p>':''}</div>`}
 function fotoReduzir(file){return new Promise((res,rej)=>{const r=new FileReader();r.onload=()=>{const img=new Image();img.onload=()=>{const k=Math.min(1,1100/Math.max(img.width,img.height));const c=document.createElement('canvas');c.width=Math.round(img.width*k);c.height=Math.round(img.height*k);c.getContext('2d').drawImage(img,0,0,c.width,c.height);res(c.toDataURL('image/jpeg',0.72))};img.onerror=rej;img.src=r.result};r.onerror=rej;r.readAsDataURL(file)})}
 async function fotoAdd(pid,input){const fs=[...input.files];input.value='';if(!fs.length)return;
- formModal('Dados das fotos',[{k:'data',l:'Data',type:'date',req:true},{k:'area',l:'Área (ex.: Abdômen, Rosto, Cabelo)',req:true},{k:'momento',l:'Momento',type:'select',opts:['Antes','Durante','Depois']},{k:'obs',l:'Observação',full:true}],{data:todayISO(),momento:'Antes'},o=>{(async()=>{let n=0;for(const f of fs){try{const img=await fotoReduzir(f);S.fotos.push({id:uid(),pacienteId:pid,data:o.data,area:o.area,momento:o.momento,obs:o.obs,img});n++}catch(e){toast('Não foi possível ler '+f.name)}}save();render();toast(n+(n===1?' foto adicionada':' fotos adicionadas'))})()})}
+ formModal('Dados das fotos',[{k:'data',l:'Data',type:'date',req:true},{k:'area',l:'Área (ex.: Abdômen, Rosto, Cabelo)',req:true},{k:'momento',l:'Momento',type:'select',opts:['Antes','Durante','Depois']},{k:'obs',l:'Observação',full:true}],{data:todayISO(),momento:'Antes'},o=>{(async()=>{let n=0;for(const f of fs){try{const {cheia,thumb}=await fotoPreparar(f);const id=uid();await fotoGuardar(id,cheia);S.fotos.push({id,pacienteId:pid,data:o.data,area:o.area,momento:o.momento,obs:o.obs,thumb,arq:1});n++}catch(e){toast('Não foi possível ler '+f.name)}}save();render();toast(n+(n===1?' foto adicionada':' fotos adicionadas'))})()})}
 function fotoMarcar(id){let s=UI.fotoSel||[];s=s.includes(id)?s.filter(x=>x!==id):[...s,id].slice(-2);UI.fotoSel=s;render()}
-function fotoVer(id){const f=S.fotos.find(x=>x.id===id);openModal(`<h3>${esc(f.area||'')} · ${br(f.data)} · ${esc(f.momento||'')}</h3><img src="${f.img}" style="width:100%;border-radius:10px">${f.obs?`<p>${esc(f.obs)}</p>`:''}<div class="mact"><button class="btn" onclick="closeModal()">Fechar</button></div>`,true)}
+function fotoVer(id){const f=S.fotos.find(x=>x.id===id);openModal(`<h3>${esc(f.area||'')} · ${br(f.data)} · ${esc(f.momento||'')}</h3><img id="fvImg" src="${fotoMini(f)}" style="width:100%;border-radius:10px">${f.obs?`<p>${esc(f.obs)}</p>`:''}<div class="mact"><button class="btn" onclick="closeModal()">Fechar</button></div>`,true);fotoCarregar(f,'fvImg')}
 function fotoComparar(){const [a,b]=(UI.fotoSel||[]).map(id=>S.fotos.find(x=>x.id===id)).filter(Boolean).sort((x,y)=>(x.data||'').localeCompare(y.data||''));if(!a||!b)return;
- openModal(`<h3>Comparação</h3><div class="grid g2">${[a,b].map(f=>`<div><img src="${f.img}" style="width:100%;border-radius:10px"><p style="text-align:center;margin:6px 0"><b>${esc(f.momento||'')}</b> · ${br(f.data)} · ${esc(f.area||'')}</p></div>`).join('')}</div><p class="sub" style="text-align:center">${diffDays(a.data,b.data)} dias entre as fotos</p><div class="mact"><button class="btn ghost" onclick="window.print()">${ico('print',15)} Imprimir</button><button class="btn" onclick="closeModal()">Fechar</button></div>`,true)}
+ openModal(`<h3>Comparação</h3><div class="grid g2">${[a,b].map((f,n)=>`<div><img id="fc${n}" src="${fotoMini(f)}" style="width:100%;border-radius:10px"><p style="text-align:center;margin:6px 0"><b>${esc(f.momento||'')}</b> · ${br(f.data)} · ${esc(f.area||'')}</p></div>`).join('')}</div><p class="sub" style="text-align:center">${diffDays(a.data,b.data)} dias entre as fotos</p><div class="mact"><button class="btn ghost" onclick="window.print()">${ico('print',15)} Imprimir</button><button class="btn" onclick="closeModal()">Fechar</button></div>`,true);fotoCarregar(a,'fc0');fotoCarregar(b,'fc1')}
 function fotoEditar(id){const f=S.fotos.find(x=>x.id===id);formModal('Editar foto',[{k:'data',l:'Data',type:'date'},{k:'area',l:'Área'},{k:'momento',l:'Momento',type:'select',opts:['Antes','Durante','Depois']},{k:'obs',l:'Observação',full:true}],f,o=>{Object.assign(f,o)},`<button class="btn danger" style="margin-right:auto" onclick="UI.fotoSel=(UI.fotoSel||[]).filter(x=>x!=='${f.id}');delRec('fotos','${f.id}')">Excluir</button>`)}
 /* Termos com assinatura na tela */
 const TERMO_PADRAO={
@@ -1322,7 +1412,7 @@ function agNovo(a,s){if(s==='Desmarcado'||s==='Faltou')return false;const k=a.da
  const hist=c=>S[c].some(x=>x.pacienteId===a.pacienteId&&((x.data||x.vencimento||x.pagamento||'')<a.data)&&(x.data||x.vencimento||x.pagamento));
  return !hist('evolucoes')&&!hist('tratamentos')&&!S.lancamentos.some(l=>l.pacienteId===a.pacienteId&&l.pagamento&&l.pagamento<a.data)}
 /* ============ Atualização: aviso com botão Atualizar agora ============ */
-const VERSAO_APP='1.5.0';const URL_VERSAO_JSON='https://raw.githubusercontent.com/TheIgor12/blacksolutions/main/versao.json';
+const VERSAO_APP='1.5.1';const URL_VERSAO_JSON='https://raw.githubusercontent.com/TheIgor12/blacksolutions/main/versao.json';
 const numV=v=>String(v||'0').split(/\D+/).filter(Boolean).map(Number);
 function versaoMaior(a,b){const x=numV(a),y=numV(b);for(let i=0;i<Math.max(x.length,y.length);i++){const d=(x[i]||0)-(y[i]||0);if(d)return d>0}return false}
 const ATU={nova:null,timer:null};
@@ -1370,9 +1460,9 @@ async function fotoPerfilSalvar(pid,input){const f=input.files[0];input.value=''
 function fotoReduzirLado(file,lado,q){return new Promise((res,rej)=>{const r=new FileReader();r.onload=()=>{const img=new Image();img.onload=()=>{const k=Math.min(1,lado/Math.max(img.width,img.height));const c=document.createElement('canvas');c.width=Math.round(img.width*k);c.height=Math.round(img.height*k);c.getContext('2d').drawImage(img,0,0,c.width,c.height);res(c.toDataURL('image/jpeg',q))};img.onerror=rej;img.src=r.result};r.onerror=rej;r.readAsDataURL(file)})}
 function avatarPac(p,cls){return p.foto?`<img class="av ${cls} avfoto" src="${p.foto}" alt="" onclick="fotoPerfil('${p.id}')" title="Clique para trocar a foto">`:`<span class="av ${cls}" style="cursor:pointer" onclick="fotoPerfil('${p.id}')" title="Clique para colocar a foto">${esc(initials(p.nome))}</span>`}
 function fotosDe(tipo,id){return S.fotos.filter(f=>f.refTipo===tipo&&f.refId===id)}
-function fotosMini(pid,tipo,id){const L=fotosDe(tipo,id);return `<div class="fmini">${L.map(f=>`<img src="${f.img}" onclick="fotoVer('${f.id}')" title="${esc(br(f.data))}">`).join('')}<label class="fadd" title="Adicionar fotos">${ico('plus',16)}<span>Fotos</span><input type="file" accept="image/*" multiple style="display:none" onchange="fotoAddRef('${pid}','${tipo}','${id}',this)"></label></div>`}
+function fotosMini(pid,tipo,id){const L=fotosDe(tipo,id);return `<div class="fmini">${L.map(f=>`<img src="${fotoMini(f)}" loading="lazy" onclick="fotoVer('${f.id}')" title="${esc(br(f.data))}">`).join('')}<label class="fadd" title="Adicionar fotos">${ico('plus',16)}<span>Fotos</span><input type="file" accept="image/*" multiple style="display:none" onchange="fotoAddRef('${pid}','${tipo}','${id}',this)"></label></div>`}
 async function fotoAddRef(pid,tipo,id,input){const fs=[...input.files];input.value='';if(!fs.length)return;const rec=(tipo==='evolucao'?S.evolucoes:S.anamneses).find(x=>x.id===id);let n=0;
- for(const f of fs){try{const img=await fotoReduzir(f);S.fotos.push({id:uid(),pacienteId:pid,data:rec&&rec.data||todayISO(),area:tipo==='evolucao'?'Evolução':'Anamnese',momento:'',obs:'',img,refTipo:tipo,refId:id});n++}catch(e){toast('Não foi possível ler '+f.name)}}
+ for(const f of fs){try{const {cheia,thumb}=await fotoPreparar(f);const fid=uid();await fotoGuardar(fid,cheia);S.fotos.push({id:fid,pacienteId:pid,data:rec&&rec.data||todayISO(),area:tipo==='evolucao'?'Evolução':'Anamnese',momento:'',obs:'',thumb,arq:1,refTipo:tipo,refId:id});n++}catch(e){toast('Não foi possível ler '+f.name)}}
  save();render();toast(n+(n===1?' foto adicionada':' fotos adicionadas'))}
 
 /* ============ Configurações ============ */

@@ -1,5 +1,5 @@
 {
-  "versao": "1.5.0",
-  "html": "https://raw.githubusercontent.com/TheIgor12/blacksolutions/main/download/blackflow-1.5.0.html",
-  "novidades": "Fotos do paciente: foto de perfil (clique no círculo com as iniciais), fotos em cada evolução e em cada anamnese, e a aba Fotos na ficha, com todas as fotos do paciente."
+  "versao": "1.5.1",
+  "html": "https://raw.githubusercontent.com/TheIgor12/blacksolutions/main/download/blackflow-1.5.1.html",
+  "novidades": "Fotos mais leves: o sistema guarda as fotos como arquivo e continua rápido mesmo com milhares de fotos. Novo: importar as fotos do Clinicorp pelos arquivos ZIP, na tela Importar Dados."
 }
