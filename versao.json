@@ -1,5 +1,5 @@
 {
-  "versao": "1.4.8",
-  "html": "https://raw.githubusercontent.com/TheIgor12/blacksolutions/main/download/blackflow-1.4.8.html",
-  "novidades": "Podologia: tabela de Procedimentos e preços (menu lateral), montada pelos orçamentos. Ao agendar, o valor entra como previsto no financeiro; ao marcar como atendido, passa a ser cobrado. Falta e desmarcação retiram o valor."
+  "versao": "1.4.9",
+  "html": "https://raw.githubusercontent.com/TheIgor12/blacksolutions/main/download/blackflow-1.4.9.html",
+  "novidades": "Avaliação e retorno não geram cobrança. A tabela de procedimentos ganhou o valor do pacote completo, e o orçamento novo puxa o valor da tabela. Pacote de laserterapia de 10 sessões por R$ 1.860."
 }
