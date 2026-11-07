@@ -1,5 +1,5 @@
 {
-  "versao": "1.4.0",
-  "html": "https://raw.githubusercontent.com/TheIgor12/blacksolutions/main/download/blackflow-1.4.0.html",
-  "novidades": "Novos módulos de Estética e Salão de beleza. Em Configurações, escolha o segmento do seu negócio. Salão: comanda, caixa do dia, comissões, salão-parceiro, estoque, pacotes, cashback e ficha técnica. Estética: pacotes de sessões, avaliação com gráfico, fotos de antes e depois, termos assinados na tela, produtos por lote, protocolos e equipamentos."
+  "versao": "1.4.1",
+  "html": "https://raw.githubusercontent.com/TheIgor12/blacksolutions/main/download/blackflow-1.4.1.html",
+  "novidades": "Novos módulos de Estética e Salão de beleza (escolha o segmento em Configurações) e nova aba Imposto de Renda no Financeiro, com demonstrativo anual de rendimentos e despesas, planilha em Excel e declaração de pagamentos para cada cliente."
 }
