@@ -1,0 +1,82 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="robots" content="noindex">
+<meta name="theme-color" content="#0b6cf2">
+<title>Agendar horário</title>
+<style>
+:root{--acc:#0b6cf2;--acc2:#e8f1ff;--ink:#1f2328;--mut:#6b7280;--line:#e5e7eb;--bg:#f2f4f8;--ok:#16a34a;--bad:#dc2626}
+*{box-sizing:border-box}html,body{margin:0}body{background:var(--bg);color:var(--ink);font-family:system-ui,-apple-system,"Segoe UI",Roboto,Arial,sans-serif;line-height:1.45;-webkit-tap-highlight-color:transparent}
+.top{background:var(--acc);color:#fff;padding:22px 16px 46px}.top h1{margin:0;font-size:22px}.top p{margin:4px 0 0;opacity:.9;font-size:14px}
+.w{max-width:620px;margin:-30px auto 0;padding:0 14px 40px}
+.c{background:#fff;border:1px solid var(--line);border-radius:16px;padding:18px;margin-bottom:12px;box-shadow:0 1px 2px #0000000a}
+.c h2{font-size:16px;margin:0 0 12px;display:flex;gap:10px;align-items:center}.n{display:inline-grid;place-items:center;width:26px;height:26px;border-radius:50%;background:var(--acc);color:#fff;font-size:13px;flex:none}
+.c.off{opacity:.45;pointer-events:none}
+.ops{display:grid;gap:8px}.op{display:flex;justify-content:space-between;align-items:center;gap:10px;width:100%;text-align:left;font:inherit;background:#fff;border:1.5px solid var(--line);border-radius:12px;padding:13px 14px;cursor:pointer;color:inherit}
+.op small{color:var(--mut);display:block}.op.on{border-color:var(--acc);background:var(--acc2)}.op b{font-weight:600}
+.dias{display:flex;gap:8px;overflow-x:auto;padding-bottom:6px;scroll-snap-type:x mandatory}.dia{flex:none;width:68px;scroll-snap-align:start;text-align:center;font:inherit;background:#fff;border:1.5px solid var(--line);border-radius:12px;padding:9px 4px;cursor:pointer;color:inherit}
+.dia small{display:block;color:var(--mut);font-size:12px;text-transform:capitalize}.dia b{font-size:20px;display:block}.dia.on{border-color:var(--acc);background:var(--acc);color:#fff}.dia.on small{color:#fff}.dia:disabled{opacity:.35;cursor:default}
+.horas{display:grid;grid-template-columns:repeat(auto-fill,minmax(78px,1fr));gap:8px}.hr{font:inherit;font-weight:600;background:#fff;border:1.5px solid var(--line);border-radius:10px;padding:11px 0;cursor:pointer;color:inherit}.hr.on{background:var(--acc);border-color:var(--acc);color:#fff}
+label{display:block;font-size:14px;font-weight:600;margin:12px 0 5px}input{width:100%;font:inherit;font-size:16px;padding:12px;border:1.5px solid var(--line);border-radius:10px;background:#fff}input:focus{outline:2px solid var(--acc);border-color:var(--acc)}
+.btn{display:block;width:100%;font:inherit;font-size:17px;font-weight:700;border:0;border-radius:12px;padding:15px;background:var(--acc);color:#fff;cursor:pointer;margin-top:16px;text-align:center;text-decoration:none}.btn:disabled{opacity:.5}.btn.g{background:#fff;color:var(--acc);border:1.5px solid var(--acc)}.btn.wa{background:#25d366}
+.res{background:var(--acc2);border-radius:12px;padding:12px 14px;font-size:14px;margin-top:12px}
+.vazio{color:var(--mut);font-size:14px;text-align:center;padding:10px}.msg{text-align:center;padding:26px 8px}.msg .ic{font-size:44px}.msg b{display:block;font-size:20px;margin:6px 0}
+.rod{text-align:center;color:var(--mut);font-size:12px;margin-top:18px}
+.err{background:#fef2f2;color:var(--bad);border-radius:10px;padding:10px 12px;font-size:14px;margin-top:10px}
+</style>
+</head>
+<body>
+<div class="top"><h1 id="tit">Agendar horário</h1><p id="sub">Escolha o serviço, o dia e o horário</p></div>
+<div class="w" id="app"><div class="c msg">Carregando a agenda...</div></div>
+<p class="rod">Agendamento online pelo BlackFlow</p>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
+<script>
+const sb=supabase.createClient('https://blszdbjpxgtloblxlusr.supabase.co','sb_publishable_0Tns_mDN2N1iQmw_sEzFXw_SRMy1uXK',{auth:{persistSession:false}});
+const slug=(new URLSearchParams(location.search).get('c')||location.search.replace(/^\?/,'').split('&')[0]||'').toLowerCase();
+const app=document.getElementById('app');const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const pad=n=>String(n).padStart(2,'0');const min=h=>{const [a,b]=String(h).split(':').map(Number);return a*60+(b||0)};const hm=m=>pad(Math.floor(m/60))+':'+pad(m%60);
+const DS=['dom','seg','ter','qua','qui','sex','sáb'],DL=['domingo','segunda-feira','terça-feira','quarta-feira','quinta-feira','sexta-feira','sábado'],MS=['janeiro','fevereiro','março','abril','maio','junho','julho','agosto','setembro','outubro','novembro','dezembro'];
+const addD=(iso,n)=>{const d=new Date(iso+'T12:00');d.setDate(d.getDate()+n);return d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate())};
+const brD=iso=>{const d=new Date(iso+'T12:00');return DL[d.getDay()]+', '+d.getDate()+' de '+MS[d.getMonth()]};
+const money=v=>(Number(v)||0).toLocaleString('pt-BR',{style:'currency',currency:'BRL'});
+const E={dados:null,serv:null,prof:'',dia:'',hora:'',erro:''};
+function aviso(t,s){app.innerHTML=`<div class="c msg"><div class="ic">📅</div><b>${t}</b><p style="color:var(--mut)">${s||''}</p></div>`}
+async function carregar(){if(!/^[a-z0-9-]{3,41}$/.test(slug)){aviso('Link incompleto','Peça o link de agendamento para a clínica.');return}
+ const {data,error}=await sb.rpc('agenda_publica',{p_slug:slug});if(error){aviso('Não foi possível abrir a agenda','Verifique a internet e tente de novo.');return}
+ if(!data){aviso('Agenda indisponível','O agendamento online desta clínica não está ativo no momento.');return}
+ E.dados=data;const c=data.config||{};document.title='Agendar: '+data.clinica;document.getElementById('tit').textContent=data.clinica;document.getElementById('sub').textContent=c.endereco||'Escolha o serviço, o dia e o horário';
+ const S=c.servicos||[];if(S.length===1)E.serv=S[0];render()}
+function profs(){return (E.dados.config.profissionais||[])}
+function livres(dia){const c=E.dados.config,s=E.serv;if(!s||!dia)return [];const dur=Math.max(5,+s.duracao||30),passo=Math.max(5,+c.intervalo||30);
+ const dow=new Date(dia+'T12:00').getDay();const per=(c.horarios||{})[dow]||[];if((c.bloqueios||[]).includes(dia))return [];
+ let lim=-1;if(dia===E.dados.hoje)lim=min(E.dados.agora)+(+c.antecedenciaHoras||0)*60;else if(dia===addD(E.dados.hoje,1)&&(+c.antecedenciaHoras||0)>24)lim=min(E.dados.agora)+((+c.antecedenciaHoras)-24)*60;
+ const oc=E.dados.ocupados.filter(o=>o.d===dia);const P=profs();const out=[];
+ per.forEach(([a,b])=>{for(let t=min(a);t+dur<=min(b);t+=passo){if(t<lim)continue;const f=t+dur;
+  const conf=p=>oc.some(o=>o.i<f&&o.f>t&&(p==null||o.p===p||o.p===''));
+  let ok;if(!P.length)ok=!conf(null);else if(E.prof)ok=!conf(E.prof);else ok=P.some(p=>!conf(p));if(ok&&!out.includes(t))out.push(t)}});
+ return out.sort((x,y)=>x-y).map(hm)}
+function diasLista(){const c=E.dados.config,n=Math.min(90,Math.max(1,+c.diasMax||30));const L=[];for(let i=0;i<=n;i++){const d=addD(E.dados.hoje,i);L.push(d)}return L}
+function render(){const c=E.dados.config,S=c.servicos||[],P=profs();const escolheProf=c.escolherProfissional&&P.length>1;
+ const horas=livres(E.dia);let h=`<div class="c"><h2><span class="n">1</span>Serviço</h2><div class="ops">${S.map((s,i)=>`<button class="op ${E.serv&&E.serv.nome===s.nome?'on':''}" onclick="E.serv=E.dados.config.servicos[${i}];E.hora='';render()"><span><b>${esc(s.nome)}</b><small>${+s.duracao||30} minutos</small></span>${c.mostrarPreco&&+s.preco?`<span>${money(s.preco)}</span>`:''}</button>`).join('')||'<p class="vazio">Nenhum serviço disponível.</p>'}</div></div>`;
+ let k=2;if(escolheProf)h+=`<div class="c ${E.serv?'':'off'}"><h2><span class="n">${k++}</span>Profissional</h2><div class="ops"><button class="op ${!E.prof?'on':''}" onclick="E.prof='';E.hora='';render()"><b>Sem preferência</b></button>${P.map(p=>`<button class="op ${E.prof===p?'on':''}" onclick="E.prof=${esc(JSON.stringify(p))};E.hora='';render()"><b>${esc(p)}</b></button>`).join('')}</div></div>`;
+ h+=`<div class="c ${E.serv?'':'off'}"><h2><span class="n">${k++}</span>Dia</h2><div class="dias">${diasLista().map(d=>{const dt=new Date(d+'T12:00');const tem=E.serv&&livres(d).length;return `<button class="dia ${E.dia===d?'on':''}" ${tem?'':'disabled'} onclick="E.dia='${d}';E.hora='';render()"><small>${DS[dt.getDay()]}</small><b>${dt.getDate()}</b><small>${MS[dt.getMonth()].slice(0,3)}</small></button>`}).join('')}</div></div>`;
+ h+=`<div class="c ${E.dia?'':'off'}"><h2><span class="n">${k++}</span>Horário</h2>${E.dia?(horas.length?`<div class="horas">${horas.map(x=>`<button class="hr ${E.hora===x?'on':''}" onclick="E.hora='${x}';render();setTimeout(()=>document.getElementById('fNome').scrollIntoView({behavior:'smooth',block:'center'}),50)">${x}</button>`).join('')}</div>`:'<p class="vazio">Nenhum horário livre neste dia.</p>'):'<p class="vazio">Escolha o dia primeiro.</p>'}</div>`;
+ h+=`<div class="c ${E.hora?'':'off'}"><h2><span class="n">${k++}</span>Seus dados</h2><label for="fNome">Nome completo</label><input id="fNome" autocomplete="name" value="${esc(E.nome||'')}" oninput="E.nome=this.value"><label for="fTel">WhatsApp com DDD</label><input id="fTel" type="tel" inputmode="tel" autocomplete="tel" placeholder="(47) 99999-9999" value="${esc(E.tel||'')}" oninput="E.tel=this.value">
+  ${E.hora?`<div class="res"><b>${esc(E.serv.nome)}</b><br>${brD(E.dia)}, às ${E.hora}${E.prof?'<br>Com '+esc(E.prof):''}</div>`:''}${E.erro?`<div class="err">${esc(E.erro)}</div>`:''}<button class="btn" id="bOk" onclick="confirmar()">Confirmar agendamento</button></div>`;
+ app.innerHTML=h}
+async function confirmar(){const nome=(E.nome||'').trim(),tel=(E.tel||'').replace(/\D/g,'');E.erro='';
+ if(nome.split(' ').length<2||nome.length<5){E.erro='Informe o seu nome e sobrenome.';render();return}if(tel.length<10||tel.length>13){E.erro='Informe o WhatsApp com DDD.';render();return}
+ const b=document.getElementById('bOk');b.disabled=true;b.textContent='Agendando...';
+ const {data,error}=await sb.rpc('agendar_online',{p_slug:slug,p_nome:nome,p_telefone:tel,p_servico:E.serv.nome,p_profissional:E.prof||'',p_data:E.dia,p_hora:E.hora});
+ if(error){E.erro=(error.message||'Não foi possível agendar.').replace(/^.*?:\s(?=[A-ZÁÉÍÓÚ])/,'');const r=await sb.rpc('agenda_publica',{p_slug:slug});if(r.data)E.dados=r.data;if(!livres(E.dia).includes(E.hora))E.hora='';render();return}
+ const wa=data.whatsapp?String(data.whatsapp).replace(/\D/g,''):'';const txt=encodeURIComponent(`Olá! Acabei de agendar ${data.servico} para ${brD(data.data)}, às ${data.hora}, pelo link online. Meu nome é ${nome}.`);
+ const ics='data:text/calendar;charset=utf-8,'+encodeURIComponent(['BEGIN:VCALENDAR','VERSION:2.0','BEGIN:VEVENT','DTSTART:'+data.data.replace(/-/g,'')+'T'+data.hora.replace(':','')+'00','DURATION:PT'+(+E.serv.duracao||30)+'M','SUMMARY:'+data.servico+' - '+data.clinica,'LOCATION:'+(data.endereco||''),'END:VEVENT','END:VCALENDAR'].join('\r\n'));
+ app.innerHTML=`<div class="c msg"><div class="ic">✅</div><b>Agendamento confirmado!</b><p>${esc(data.servico)}<br><b style="font-size:17px;display:inline">${brD(data.data)}, às ${data.hora}</b>${data.profissional?'<br>Com '+esc(data.profissional):''}<br>${esc(data.clinica)}${data.endereco?'<br><span style="color:var(--mut)">'+esc(data.endereco)+'</span>':''}</p>
+  <a class="btn g" href="${ics}" download="agendamento.ics">Salvar na agenda do celular</a>${wa?`<a class="btn wa" href="https://wa.me/${wa.length<=11?'55'+wa:wa}?text=${txt}" target="_blank" rel="noopener">Avisar a clínica no WhatsApp</a>`:''}
+  <p style="color:var(--mut);font-size:13px;margin-top:16px">Se precisar desmarcar ou remarcar, fale com a clínica.</p></div>`}
+carregar();
+</script>
+</body>
+</html>

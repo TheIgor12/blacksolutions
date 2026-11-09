@@ -553,7 +553,7 @@ function shell(content){const c=S.config;
  return `<header class="top"><button class="ico" onclick="toggleDrawer()" aria-label="Menu">${ico('menu')}</button>
  <div class="gsearch"><input id="gs" placeholder="Encontre ${esc(SEG().pessoas.toLowerCase())} ou funções do sistema" oninput="globalSearch(this.value)" onblur="setTimeout(()=>{const r=$('#gsr');if(r)r.classList.remove('on')},200)" autocomplete="off"><div id="gsr" class="gsr"></div></div>
  ${NV.ativa?`<span id="sync" class="sync" title="Sincronização com a nuvem">${syncTxt()}</span>`:''}<button class="ico refr" title="Atualizar: busca os dados novos da nuvem e procura versão nova do sistema" onclick="refrescar(this)">${ico('refresh',17)}</button><div class="user" style="cursor:pointer" onclick="abrirConta()"><span class="av">${esc(initials(nomeUsuario()))}</span><div><b>${esc(nomeUsuario())}</b><small>${esc(c.clinica)}</small></div></div></header>
- <aside class="drawer ${UI.drawer?'open':''}"><div class="brand ${S.config.logo?'':'escuro'}"><img src="${logoClinica()}" alt="${esc(c.clinica)}"></div><div class="prod">BLACKFLOW <span style="font-weight:600">by BlackSolutions</span></div><span class="plan">Versão 1.8.1</span><button class="lnk" style="display:block;margin:6px 16px 0;font-size:12px;text-align:left" onclick="UI.drawer=false;render();atuChecar(true)">Procurar atualização</button><button class="lnk" style="display:block;margin:8px 16px 0;font-size:12px;text-align:left" onclick="UI.drawer=false;perguntarSegmento()">Segmento: <b>${esc(SEG().nome)}</b> · trocar</button>
+ <aside class="drawer ${UI.drawer?'open':''}"><div class="brand ${S.config.logo?'':'escuro'}"><img src="${logoClinica()}" alt="${esc(c.clinica)}"></div><div class="prod">BLACKFLOW <span style="font-weight:600">by BlackSolutions</span></div><span class="plan">Versão 1.9.0</span><button class="lnk" style="display:block;margin:6px 16px 0;font-size:12px;text-align:left" onclick="UI.drawer=false;render();atuChecar(true)">Procurar atualização</button><button class="lnk" style="display:block;margin:8px 16px 0;font-size:12px;text-align:left" onclick="UI.drawer=false;perguntarSegmento()">Segmento: <b>${esc(SEG().nome)}</b> · trocar</button>
  <div class="menu"><button class="${UI.view==='inicio'?'on':''}" onclick="go('inicio')">${ico('home',18)} Início</button><div class="msec">MÓDULOS</div>
  ${menuItens().map(([k,l,i])=>`<button class="${UI.view===k||(k==='pacientes'&&UI.view==='paciente')?'on':''}" onclick="go('${k}')">${ico(i,18)} ${l}</button>`).join('')}</div>
  <div class="mfoot menu"><button class="${UI.view==='config'?'on':''}" onclick="go('config')">${ico('gear',18)} Configurações</button></div></aside>
@@ -687,6 +687,65 @@ function cardMsgsConfig(){const c=S.config;return `<div class="card"><h2>Mensage
  <label class="full">Mensagem de aniversário (variáveis: {nome}, {clinica})<textarea name="msgAniversario" rows="2">${esc(c.msgAniversario||MSG_ANIV)}</textarea></label>
  <label class="full">Recompensa por indicação (ex.: 10% de desconto na próxima sessão)<input name="recompensaIndicacao" value="${esc(c.recompensaIndicacao||'')}"></label></div>
  <div class="mact"><button class="btn" onclick="$('#cfgMsg').querySelectorAll('input,textarea').forEach(i=>S.config[i.name]=i.value);save();toast('Mensagens salvas')">Salvar mensagens</button></div></div>`}
+
+/* ============ Agendamento online pelo próprio paciente ============ */
+const URL_AGENDAR='https://blackflow.app.br/a/';
+const DIAS_CURTO=['Domingo','Segunda','Terça','Quarta','Quinta','Sexta','Sábado'];
+function slugify(t){return norm(t).replace(/ /g,'-').replace(/-+/g,'-').slice(0,40).replace(/^-|-$/g,'')}
+function agOnCfg(){const c=S.config.agOnline||{};const h=c.horarios||{1:[['08:00','12:00'],['13:30','18:00']],2:[['08:00','12:00'],['13:30','18:00']],3:[['08:00','12:00'],['13:30','18:00']],4:[['08:00','12:00'],['13:30','18:00']],5:[['08:00','12:00'],['13:30','18:00']],6:[['08:00','12:00']]};
+ return {ativo:c.ativo!==false,slug:c.slug||slugify(S.config.clinica||'minha-clinica'),titulo:c.titulo||S.config.clinica||'',whatsapp:c.whatsapp||'',endereco:c.endereco??(S.config.endereco||''),horarios:h,intervalo:c.intervalo||30,antecedenciaHoras:c.antecedenciaHoras??2,diasMax:c.diasMax||30,mostrarPreco:!!c.mostrarPreco,escolherProfissional:c.escolherProfissional!==false,
+  servicos:c.servicos||S.servicos.filter(x=>x.ativo!==false).map(x=>x.id),profissionais:c.profissionais||S.profissionais.filter(x=>x.ativo!==false).map(x=>x.id),bloqueios:c.bloqueios||[],publicado:c.publicado||''}}
+function cardAgOnline(){const c=agOnCfg();const link=URL_AGENDAR+c.slug;const nuvem=NV.ativa&&NV.clinicaId&&!NV.offline;
+ const sv=S.servicos.filter(x=>x.ativo!==false),pf=S.profissionais.filter(x=>x.ativo!==false);
+ const hh=(d,i,j)=>((c.horarios[d]||[])[i]||[])[j]||'';
+ return `<div class="card" id="cardAgOn"><h2>Agendamento online pelo paciente</h2><p class="sub" style="margin-bottom:10px">O paciente abre um link curto, escolhe o serviço, o dia e o horário livre, informa o nome e o WhatsApp, e o horário entra direto na agenda. Ele só vê os horários vagos, nunca o nome de outro paciente. Se ele ainda não tiver cadastro, o cadastro é criado sozinho.</p>
+ ${!nuvem?`<div class="note">Para usar o agendamento online, entre com a sua conta da nuvem do BlackFlow.</div>`:NV.papel!=='admin'?`<div class="note">Somente o administrador da clínica pode alterar o agendamento online.</div><p>Link da clínica: <b>${esc(link)}</b></p>`:`
+ ${c.publicado?`<div class="note" style="display:flex;gap:10px;align-items:center;flex-wrap:wrap"><span>Link para os pacientes: <b>${esc(link)}</b></span><span style="margin-left:auto;display:flex;gap:8px;flex-wrap:wrap"><button class="btn ghost" onclick="agOnCopiar()">Copiar link</button><a class="btn green" href="https://wa.me/?text=${encodeURIComponent('Agende o seu horário pelo link: '+link)}" target="_blank" rel="noopener">Enviar pelo WhatsApp</a><a class="btn ghost" href="${esc(link)}" target="_blank" rel="noopener">Abrir</a></span></div>`:''}
+ <div class="fgrid" id="agOnF">
+  <label>Agendamento online<select name="ativo"><option value="sim" ${c.ativo?'selected':''}>Ligado</option><option value="nao" ${!c.ativo?'selected':''}>Desligado</option></select></label>
+  <label>Endereço do link: ${esc(URL_AGENDAR)}<input name="slug" value="${esc(c.slug)}" placeholder="nome-da-clinica"></label>
+  <label>Nome que aparece para o paciente<input name="titulo" value="${esc(c.titulo)}"></label>
+  <label>WhatsApp da clínica<input name="whatsapp" value="${esc(c.whatsapp)}" placeholder="(47) 99999-9999"></label>
+  <label class="full">Endereço da clínica<input name="endereco" value="${esc(c.endereco)}"></label>
+  <label>Intervalo entre os horários<select name="intervalo">${[10,15,20,30,40,45,60].map(n=>`<option value="${n}" ${+c.intervalo===n?'selected':''}>${n} minutos</option>`).join('')}</select></label>
+  <label>Antecedência mínima para agendar (horas)<input name="antecedenciaHoras" type="number" min="0" value="${esc(c.antecedenciaHoras)}"></label>
+  <label>Até quantos dias à frente o paciente pode agendar<input name="diasMax" type="number" min="1" max="90" value="${esc(c.diasMax)}"></label>
+  <label>Mostrar o preço dos serviços<select name="mostrarPreco"><option value="nao" ${!c.mostrarPreco?'selected':''}>Não</option><option value="sim" ${c.mostrarPreco?'selected':''}>Sim</option></select></label>
+  <label>Paciente escolhe o profissional<select name="escolherProfissional"><option value="sim" ${c.escolherProfissional?'selected':''}>Sim</option><option value="nao" ${!c.escolherProfissional?'selected':''}>Não, o sistema escolhe quem estiver livre</option></select></label>
+  <label class="full">Dias fechados: feriados, folgas e férias (datas separadas por vírgula, ex.: 25/12/2026, 01/01/2027)<input name="bloqueios" value="${esc(c.bloqueios.map(d=>d.split('-').reverse().join('/')).join(', '))}"></label>
+ </div>
+ <h3 style="margin:16px 0 8px">Horário de atendimento</h3><div style="overflow:auto"><table class="tbl"><thead><tr><th>Dia</th><th>Atende</th><th>Manhã: início</th><th>Manhã: fim</th><th>Tarde: início</th><th>Tarde: fim</th></tr></thead><tbody>
+ ${[1,2,3,4,5,6,0].map(d=>`<tr data-d="${d}"><td><b>${DIAS_CURTO[d]}</b></td><td><input type="checkbox" class="agA" ${(c.horarios[d]||[]).length?'checked':''}></td>${[[0,0],[0,1],[1,0],[1,1]].map(([i,j])=>`<td><input type="time" class="agH" data-i="${i}" data-j="${j}" value="${hh(d,i,j)}"></td>`).join('')}</tr>`).join('')}</tbody></table></div>
+ <p class="sub" style="margin-top:6px">Deixe a tarde em branco se atender só em um período. Os horários já ocupados na agenda nunca aparecem para o paciente.</p>
+ <h3 style="margin:16px 0 8px">Serviços que o paciente pode agendar</h3>${sv.length?`<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:6px">${sv.map(x=>`<label style="display:flex;gap:8px;align-items:center"><input type="checkbox" class="agS" value="${esc(x.id)}" ${c.servicos.includes(x.id)?'checked':''}> ${esc(x.nome)} <small style="color:var(--mut)">(${+x.duracao||30} min)</small></label>`).join('')}</div>`:`<p class="note">Cadastre os serviços com a duração em ${ehSeg('podologia')?'Procedimentos e preços':'Serviços e preços'} para eles aparecerem aqui.</p>`}
+ <h3 style="margin:16px 0 8px">Profissionais que atendem pelo link</h3>${pf.length?`<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:6px">${pf.map(x=>`<label style="display:flex;gap:8px;align-items:center"><input type="checkbox" class="agP" value="${esc(x.id)}" ${c.profissionais.includes(x.id)?'checked':''}> ${esc(x.nome)}</label>`).join('')}</div>`:`<p class="sub">Sem profissionais cadastrados: um paciente por horário.</p>`}
+ <div class="mact"><button class="btn" onclick="agOnPublicar(this)">Salvar e publicar</button></div>`}</div>`}
+function agOnCopiar(){const l=URL_AGENDAR+agOnCfg().slug;(navigator.clipboard?navigator.clipboard.writeText(l):Promise.reject()).then(()=>toast('Link copiado'),()=>prompt('Copie o link:',l))}
+async function agOnPublicar(b){const f=$('#agOnF');const v=n=>f.querySelector(`[name="${n}"]`).value.trim();
+ const slug=slugify(v('slug'));if(slug.length<3){toast('O endereço do link precisa ter pelo menos 3 letras.');return}
+ const horarios={};let erro='';document.querySelectorAll('#cardAgOn tr[data-d]').forEach(tr=>{const d=tr.dataset.d;if(!tr.querySelector('.agA').checked)return;const H=[...tr.querySelectorAll('.agH')].map(i=>i.value);const L=[];[[H[0],H[1]],[H[2],H[3]]].forEach(([a,z])=>{if(a&&z){if(z<=a)erro='Em '+DIAS_CURTO[d]+', o fim do período precisa ser depois do início.';else L.push([a,z])}else if(a||z)erro='Em '+DIAS_CURTO[d]+', preencha o início e o fim do período.'});if(L.length)horarios[d]=L});
+ if(erro){toast(erro);return}if(!Object.keys(horarios).length){toast('Marque pelo menos um dia de atendimento.');return}
+ const servIds=[...document.querySelectorAll('.agS:checked')].map(i=>i.value),profIds=[...document.querySelectorAll('.agP:checked')].map(i=>i.value);
+ const serv=S.servicos.filter(x=>servIds.includes(x.id));if(!serv.length){toast('Escolha pelo menos um serviço.');return}
+ const bloq=v('bloqueios').split(/[,;\s]+/).filter(Boolean).map(t=>{const m=t.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);return m?m[3]+'-'+pad(m[2])+'-'+pad(m[1]):null});if(bloq.includes(null)){toast('Confira as datas dos dias fechados: use dia/mês/ano.');return}
+ const cfg={ativo:v('ativo')==='sim',slug,titulo:v('titulo'),whatsapp:v('whatsapp'),endereco:v('endereco'),horarios,intervalo:+v('intervalo')||30,antecedenciaHoras:Math.max(0,+v('antecedenciaHoras')||0),diasMax:Math.min(90,Math.max(1,+v('diasMax')||30)),mostrarPreco:v('mostrarPreco')==='sim',escolherProfissional:v('escolherProfissional')==='sim',servicos:servIds,profissionais:profIds,bloqueios:bloq};
+ const pub={titulo:cfg.titulo||S.config.clinica,whatsapp:onlyDigits(cfg.whatsapp),endereco:cfg.endereco,horarios,intervalo:cfg.intervalo,antecedenciaHoras:cfg.antecedenciaHoras,diasMax:cfg.diasMax,mostrarPreco:cfg.mostrarPreco,escolherProfissional:cfg.escolherProfissional,bloqueios:bloq,
+  servicos:serv.map(x=>({nome:x.nome,duracao:+x.duracao||30,preco:cfg.mostrarPreco?(+x.preco||0):0})),profissionais:S.profissionais.filter(x=>profIds.includes(x.id)).map(x=>x.nome)};
+ const t0=b.textContent;b.disabled=true;b.textContent='Publicando...';
+ try{const {error}=await NV.sb.from('agenda_online').upsert({clinica_id:NV.clinicaId,slug,ativo:cfg.ativo,config:pub,atualizado_em:new Date().toISOString()},{onConflict:'clinica_id'});
+  if(error){toast(/duplicate|unique/i.test(error.message)?'Esse endereço de link já está em uso por outra clínica. Escolha outro.':/relation|does not exist/i.test(error.message)?'O agendamento online ainda não foi ativado no servidor.':'Não foi possível publicar: '+error.message);return}
+  cfg.publicado=new Date().toISOString();S.config.agOnline=cfg;save();toast(cfg.ativo?'Agendamento online publicado':'Agendamento online desligado');render()}
+ finally{b.disabled=false;b.textContent=t0}}
+/* Agendamentos que chegam pelo link: liga ao cadastro do paciente (ou cria) */
+function processarOnline(){const novos=S.agendamentos.filter(a=>a.origem==='online'&&!a.pacienteId&&a.nomeOnline);if(!novos.length)return 0;
+ novos.forEach(a=>{const tel=onlyDigits(a.telefoneOnline).replace(/^55(?=\d{10,11}$)/,'');const fim=tel.slice(-8);
+  let p=fim.length===8?S.pacientes.find(x=>[x.celular,x.telefone].some(t=>{const d=onlyDigits(t);return d.length>=8&&d.slice(-8)===fim})&&norm(x.nome).split(' ')[0]===norm(a.nomeOnline).split(' ')[0]):null;
+  if(!p)p=S.pacientes.find(x=>norm(x.nome)===norm(a.nomeOnline))||null;
+  if(!p){const id='pon'+a.id;p=S.pacientes.find(x=>x.id===id);if(!p){const cel=tel.length===11?`(${tel.slice(0,2)}) ${tel.slice(2,7)}-${tel.slice(7)}`:tel.length===10?`(${tel.slice(0,2)}) ${tel.slice(2,6)}-${tel.slice(6)}`:tel;p={id,codigo:nextCodigo(),nome:a.nomeOnline,celular:cel,status:'Ativo',comoConheceu:'Agendamento online'};S.pacientes.push(p)}}
+  else if(!p.celular&&tel)p.celular=tel;
+  a.pacienteId=p.id;if(typeof sincLancAg==='function')try{sincLancAg(a)}catch(e){}
+  const dt=a.data.split('-').reverse().join('/');setTimeout(()=>toast(`Novo agendamento online: ${a.nomeOnline}, ${dt} às ${a.hora}`),300)});
+ save();return novos.length}
 
 /* ============ Assinatura de termos pelo celular ============ */
 const URL_ASSINAR='https://blackflow.app.br/assinar/?t=';
@@ -1577,7 +1636,7 @@ function agNovo(a,s){if(s==='Desmarcado'||s==='Faltou')return false;const k=a.da
  const hist=c=>S[c].some(x=>x.pacienteId===a.pacienteId&&((x.data||x.vencimento||x.pagamento||'')<a.data)&&(x.data||x.vencimento||x.pagamento));
  return !hist('evolucoes')&&!hist('tratamentos')&&!S.lancamentos.some(l=>l.pacienteId===a.pacienteId&&l.pagamento&&l.pagamento<a.data)}
 /* ============ Atualização: aviso com botão Atualizar agora ============ */
-const VERSAO_APP='1.8.1';const URL_VERSAO_JSON='https://raw.githubusercontent.com/TheIgor12/blacksolutions/main/versao.json';
+const VERSAO_APP='1.9.0';const URL_VERSAO_JSON='https://raw.githubusercontent.com/TheIgor12/blacksolutions/main/versao.json';
 const numV=v=>String(v||'0').split(/\D+/).filter(Boolean).map(Number);
 function versaoMaior(a,b){const x=numV(a),y=numV(b);for(let i=0;i<Math.max(x.length,y.length);i++){const d=(x[i]||0)-(y[i]||0);if(d)return d>0}return false}
 const ATU={nova:null,timer:null};
@@ -1670,7 +1729,7 @@ function vConfig(){const c=S.config;const tot=S.pacientes.length+S.lancamentos.l
  <label class="full">Mensagem de retorno (variáveis: {nome}, {clinica})<textarea name="msgRetorno" rows="3">${esc(c.msgRetorno)}</textarea></label></div>
  <div class="mact"><button class="btn" onclick="saveCfg()">Salvar configurações</button></div></div>
  ${cardSegmentoConfig()}
- ${cardPixConfig()}${cardMsgsConfig()}${true?`<div class="card"><h2>Textos dos termos</h2><p class="sub" style="margin-bottom:10px">Variáveis: {nome}, {cpf}, {clinica}, {procedimento}, {data}. Revise os textos com o seu advogado.</p><div class="fgrid" id="cfgTm"><label class="full">Termo de consentimento<textarea name="termoConsentimento" rows="4">${esc(c.termoConsentimento||TERMO_PADRAO.consentimento)}</textarea></label><label class="full">Autorização de uso de imagem<textarea name="termoImagem" rows="4">${esc(c.termoImagem||TERMO_PADRAO.imagem)}</textarea></label></div><div class="mact"><button class="btn" onclick="$('#cfgTm').querySelectorAll('textarea').forEach(t=>S.config[t.name]=t.value);save();toast('Textos dos termos salvos')">Salvar textos</button></div></div>`:''}
+ ${cardPixConfig()}${cardMsgsConfig()}${cardAgOnline()}${true?`<div class="card"><h2>Textos dos termos</h2><p class="sub" style="margin-bottom:10px">Variáveis: {nome}, {cpf}, {clinica}, {procedimento}, {data}. Revise os textos com o seu advogado.</p><div class="fgrid" id="cfgTm"><label class="full">Termo de consentimento<textarea name="termoConsentimento" rows="4">${esc(c.termoConsentimento||TERMO_PADRAO.consentimento)}</textarea></label><label class="full">Autorização de uso de imagem<textarea name="termoImagem" rows="4">${esc(c.termoImagem||TERMO_PADRAO.imagem)}</textarea></label></div><div class="mact"><button class="btn" onclick="$('#cfgTm').querySelectorAll('textarea').forEach(t=>S.config[t.name]=t.value);save();toast('Textos dos termos salvos')">Salvar textos</button></div></div>`:''}
  <div class="card"><h2>Logotipo da clínica</h2><p class="sub" style="margin-bottom:12px">Aparece no menu lateral, para toda a equipe. Use imagem PNG ou JPG. As cores e o logotipo ficam salvos na nuvem da clínica.</p><div style="display:flex;gap:18px;align-items:center;flex-wrap:wrap"><img src="${logoClinica()}" style="max-width:180px;max-height:90px;border:1px solid var(--line);border-radius:10px;padding:8px;background:#fff">${/happy\s*feet/i.test(S.config.clinica)&&S.config.logo!==LOGO_HAPPYFEET?'<button class="btn soft" onclick="S.config.logo=LOGO_HAPPYFEET;save();render()">Usar o logotipo HappyFEET</button>':''}<label class="btn ghost" style="cursor:pointer">${ico('up',16)} Trocar logotipo<input type="file" accept="image/*" style="display:none" onchange="setLogo(this)"></label>${S.config.logo?'<button class="btn ghost" onclick="S.config.logo=\'\';save();render()">Usar o logotipo BlackFlow</button>':''}</div></div>
  <div class="card"><h2>Backup e segurança dos dados</h2><div class="note warn">Os dados ficam gravados somente neste navegador, neste computador. Não vão para nenhum servidor. Se limpar os dados do navegador, trocar de computador ou o disco falhar, tudo se perde. Baixe um backup toda semana e guarde em local seguro. São dados de saúde: o arquivo de backup deve ser tratado com o mesmo sigilo do prontuário.</div>
  <p class="sub">${tot} registros gravados: ${S.pacientes.length} pacientes, ${S.lancamentos.length} lançamentos, ${S.tratamentos.length} tratamentos, ${S.agendamentos.length} agendamentos, ${S.anamneses.length} anamneses, ${S.evolucoes.length} evoluções, ${S.contasPagar.length} contas a pagar.</p>
@@ -1779,7 +1838,7 @@ function aplicarRemoto(r){const k=r.colecao+':'+r.id;
 async function puxar(){if(!NV.sb||NV.offline)return 0;let n=0;
  for(;;){const {data,error}=await NV.sb.from('registros').select('colecao,id,dados,excluido,seq').eq('clinica_id',NV.clinicaId).gt('seq',NV.cursor).order('seq').limit(1000);
   if(error)throw error;data.forEach(aplicarRemoto);n+=data.length;if(data.length)NV.cursor=data[data.length-1].seq;if(data.length<1000)break}
- if(n)persistirNuvem();return n}
+ if(n){processarOnline();persistirNuvem()}return n}
 let envioTimer;function agendarEnvio(){if(!NV.ativa||!NV.clinicaId||NV.offline)return;clearTimeout(envioTimer);envioTimer=setTimeout(enviar,1200)}
 async function enviar(){if(!NV.sb||!NV.clinicaId||NV.offline)return;if(NV.ocupado){agendarEnvio();return}NV.ocupado=true;
  try{const ups=[],vistos={};
