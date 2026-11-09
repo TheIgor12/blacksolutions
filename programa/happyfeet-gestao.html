@@ -215,6 +215,7 @@ a.btn{text-decoration:none}
  .dayrow summary{grid-template-columns:80px repeat(3,1fr) 16px;padding:10px}
 }
 @media print{.top,.drawer,.scrim,.btn,.tabs{display:none!important}body{background:#fff}}
+.olhoW{position:relative;display:block;width:100%}.olhoW input{width:100%;padding-right:44px!important}.olhoB{position:absolute;right:6px;top:50%;transform:translateY(-50%);background:none;border:0;cursor:pointer;color:inherit;opacity:.65;padding:6px;line-height:0}.olhoB:hover{opacity:1}
 </style>
 </head>
 <body>
@@ -552,7 +553,7 @@ function shell(content){const c=S.config;
  return `<header class="top"><button class="ico" onclick="toggleDrawer()" aria-label="Menu">${ico('menu')}</button>
  <div class="gsearch"><input id="gs" placeholder="Encontre ${esc(SEG().pessoas.toLowerCase())} ou funções do sistema" oninput="globalSearch(this.value)" onblur="setTimeout(()=>{const r=$('#gsr');if(r)r.classList.remove('on')},200)" autocomplete="off"><div id="gsr" class="gsr"></div></div>
  ${NV.ativa?`<span id="sync" class="sync" title="Sincronização com a nuvem">${syncTxt()}</span>`:''}<button class="ico refr" title="Atualizar: busca os dados novos da nuvem e procura versão nova do sistema" onclick="refrescar(this)">${ico('refresh',17)}</button><div class="user" style="cursor:pointer" onclick="abrirConta()"><span class="av">${esc(initials(nomeUsuario()))}</span><div><b>${esc(nomeUsuario())}</b><small>${esc(c.clinica)}</small></div></div></header>
- <aside class="drawer ${UI.drawer?'open':''}"><div class="brand ${S.config.logo?'':'escuro'}"><img src="${logoClinica()}" alt="${esc(c.clinica)}"></div><div class="prod">BLACKFLOW <span style="font-weight:600">by BlackSolutions</span></div><span class="plan">Versão 1.8.0</span><button class="lnk" style="display:block;margin:6px 16px 0;font-size:12px;text-align:left" onclick="UI.drawer=false;render();atuChecar(true)">Procurar atualização</button><button class="lnk" style="display:block;margin:8px 16px 0;font-size:12px;text-align:left" onclick="UI.drawer=false;perguntarSegmento()">Segmento: <b>${esc(SEG().nome)}</b> · trocar</button>
+ <aside class="drawer ${UI.drawer?'open':''}"><div class="brand ${S.config.logo?'':'escuro'}"><img src="${logoClinica()}" alt="${esc(c.clinica)}"></div><div class="prod">BLACKFLOW <span style="font-weight:600">by BlackSolutions</span></div><span class="plan">Versão 1.8.1</span><button class="lnk" style="display:block;margin:6px 16px 0;font-size:12px;text-align:left" onclick="UI.drawer=false;render();atuChecar(true)">Procurar atualização</button><button class="lnk" style="display:block;margin:8px 16px 0;font-size:12px;text-align:left" onclick="UI.drawer=false;perguntarSegmento()">Segmento: <b>${esc(SEG().nome)}</b> · trocar</button>
  <div class="menu"><button class="${UI.view==='inicio'?'on':''}" onclick="go('inicio')">${ico('home',18)} Início</button><div class="msec">MÓDULOS</div>
  ${menuItens().map(([k,l,i])=>`<button class="${UI.view===k||(k==='pacientes'&&UI.view==='paciente')?'on':''}" onclick="go('${k}')">${ico(i,18)} ${l}</button>`).join('')}</div>
  <div class="mfoot menu"><button class="${UI.view==='config'?'on':''}" onclick="go('config')">${ico('gear',18)} Configurações</button></div></aside>
@@ -1576,7 +1577,7 @@ function agNovo(a,s){if(s==='Desmarcado'||s==='Faltou')return false;const k=a.da
  const hist=c=>S[c].some(x=>x.pacienteId===a.pacienteId&&((x.data||x.vencimento||x.pagamento||'')<a.data)&&(x.data||x.vencimento||x.pagamento));
  return !hist('evolucoes')&&!hist('tratamentos')&&!S.lancamentos.some(l=>l.pacienteId===a.pacienteId&&l.pagamento&&l.pagamento<a.data)}
 /* ============ Atualização: aviso com botão Atualizar agora ============ */
-const VERSAO_APP='1.8.0';const URL_VERSAO_JSON='https://raw.githubusercontent.com/TheIgor12/blacksolutions/main/versao.json';
+const VERSAO_APP='1.8.1';const URL_VERSAO_JSON='https://raw.githubusercontent.com/TheIgor12/blacksolutions/main/versao.json';
 const numV=v=>String(v||'0').split(/\D+/).filter(Boolean).map(Number);
 function versaoMaior(a,b){const x=numV(a),y=numV(b);for(let i=0;i<Math.max(x.length,y.length);i++){const d=(x[i]||0)-(y[i]||0);if(d)return d>0}return false}
 const ATU={nova:null,timer:null};
@@ -1823,6 +1824,12 @@ document.addEventListener('click',e=>{const a=e.target.closest&&e.target.closest
  render();
  const lb=S.config.ultimoBackup;if(S.pacientes.length&&(!lb||diffDays(lb,todayISO())>7))setTimeout(()=>toast('Lembrete: faça o backup semanal em Configurações.'),1500)})();
 document.addEventListener('keydown',e=>{if(e.key==='Escape'){closeModal();if(UI.drawer){UI.drawer=false;render()}}});
+
+/* Olhinho para mostrar ou esconder a senha */
+const OLHO='<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12Z"/><circle cx="12" cy="12" r="3"/></svg>',OLHO_X='<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.6 5.1A10.4 10.4 0 0 1 12 5c6.5 0 10 7 10 7a17.6 17.6 0 0 1-2.4 3.4M6.6 6.6A17.5 17.5 0 0 0 2 12s3.5 7 10 7a9.7 9.7 0 0 0 5.4-1.6"/><path d="M9.9 9.9a3 3 0 0 0 4.2 4.2M2 2l20 20"/></svg>';
+function olhoSenha(){document.querySelectorAll('input[type=password]:not([data-olho])').forEach(i=>{i.dataset.olho=1;const w=document.createElement('span');w.className='olhoW';i.parentNode.insertBefore(w,i);w.appendChild(i);const b=document.createElement('button');b.type='button';b.className='olhoB';b.title='Mostrar senha';b.innerHTML=OLHO;
+ b.onclick=e=>{e.preventDefault();const ver=i.type==='password';i.type=ver?'text':'password';b.innerHTML=ver?OLHO_X:OLHO;b.title=ver?'Esconder senha':'Mostrar senha';i.focus()};w.appendChild(b)})}
+new MutationObserver(olhoSenha).observe(document.documentElement,{childList:true,subtree:true});
 </script>
 </body>
 </html>

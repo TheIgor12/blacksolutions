@@ -1,5 +1,5 @@
 {
-  "versao": "1.8.0",
-  "html": "https://raw.githubusercontent.com/TheIgor12/blacksolutions/main/download/blackflow-1.8.0.html",
-  "novidades": "Valor do atendimento editável na janela do agendamento, com procedimentos adicionais. Ao marcar Atendido, o total vai direto para o financeiro. Às 10h o sistema abre a fila de confirmações do próximo dia."
+  "versao": "1.8.1",
+  "html": "https://raw.githubusercontent.com/TheIgor12/blacksolutions/main/download/blackflow-1.8.1.html",
+  "novidades": "Botão de olho no campo de senha para mostrar ou esconder o que foi digitado."
 }
