@@ -219,7 +219,7 @@ a.btn{text-decoration:none}
 .dtW{position:relative;display:flex;align-items:center;width:100%}.dtW .dtT{width:100%;padding-right:38px!important}.dtW input[type=date]{position:absolute;right:6px;bottom:0;width:28px;height:100%;opacity:0;pointer-events:none;border:0;padding:0}.dtW .dtB{position:absolute;right:6px;top:50%;transform:translateY(-50%);background:none;border:0;padding:5px;line-height:0;cursor:pointer;color:inherit;opacity:.7}.dtW .dtB:hover{opacity:1}.dtErr{border-color:#dc2626!important;outline-color:#dc2626!important}
 .rsW{position:relative;display:flex;align-items:center;width:100%}.rsW:has(>input[style*="width"]){display:inline-flex;width:auto}.rsW>input{width:100%;padding-left:36px!important}.rsW .rsP{position:absolute;left:11px;top:50%;transform:translateY(-50%);font-size:.92em;opacity:.7;pointer-events:none}
 </style>
-</head>
+<script>if(/(^|\.)blackflow\.app\.br$/.test(location.hostname)){var bsc=document.createElement('script');bsc.src='/cliques.js';bsc.async=true;bsc.setAttribute('data-modo','app');document.head.appendChild(bsc)}</script></head>
 <body>
 <div id="app"></div>
 <div id="modalRoot"></div>
@@ -1809,7 +1809,7 @@ async function authEntrar(){const email=val('#au_email'),senha=$('#au_senha').va
 async function authCriar(){const nome=val('#au_nome'),email=val('#au_email'),senha=$('#au_senha').value,s2=$('#au_senha2').value;
  if(!nome||!email){authMsg('Preencha nome e e-mail.');return}if(senha.length<8){authMsg('A senha precisa ter pelo menos 8 caracteres.');return}if(senha!==s2){authMsg('As senhas não conferem.');return}
  authMsg('Criando conta...',true);const {data,error}=await NV.sb.auth.signUp({email,password:senha,options:{data:{nome}}});
- if(error){authMsg(traduz(error));return}if(data.session){await entrar(data.session);return}
+ if(error){authMsg(traduz(error));return}window.BSC&&BSC.evento('cadastro','blackflow');if(data.session){await entrar(data.session);return}
  UI.auth={modo:'codigo',email,msg:'Se este e-mail já tinha cadastro, volte e use Entrar.',ok:true};render()}
 async function authCodigo(){const cod=val('#au_cod').replace(/\s/g,'');if(!cod){authMsg('Digite o código.');return}authMsg('Confirmando...',true);
  let r=await NV.sb.auth.verifyOtp({email:UI.auth.email,token:cod,type:'signup'});if(r.error)r=await NV.sb.auth.verifyOtp({email:UI.auth.email,token:cod,type:'email'});
@@ -1819,7 +1819,7 @@ async function authEsqueci(){const email=val('#au_email');if(!email){authMsg('In
 async function authNovaSenha(){const cod=val('#au_cod').replace(/\s/g,''),senha=$('#au_senha').value,s2=$('#au_senha2').value;if(senha.length<8){authMsg('A senha precisa ter pelo menos 8 caracteres.');return}if(senha!==s2){authMsg('As senhas não conferem.');return}
  authMsg('Salvando...',true);const r=await NV.sb.auth.verifyOtp({email:UI.auth.email,token:cod,type:'recovery'});if(r.error){authMsg(traduz(r.error));return}
  const u=await NV.sb.auth.updateUser({password:senha});if(u.error){authMsg(traduz(u.error));return}await entrar(r.data.session)}
-async function authClinica(){const nome=val('#au_clin');if(!nome){authMsg('Informe o nome da clínica.');return}authMsg('Criando...',true);const {error}=await NV.sb.rpc('criar_clinica',{p_nome:nome});if(error){authMsg(traduz(error));return}await entrar(NV.sessao)}
+async function authClinica(){const nome=val('#au_clin');if(!nome){authMsg('Informe o nome da clínica.');return}authMsg('Criando...',true);const {error}=await NV.sb.rpc('criar_clinica',{p_nome:nome});if(error){authMsg(traduz(error));return}window.BSC&&BSC.evento('clique','clinica_criada');await entrar(NV.sessao)}
 async function entrar(sessao){NV.sessao=sessao;NV.offline=false;UI.auth={modo:'carregando'};render();
  try{await NV.sb.rpc('aceitar_convites')}catch(e){}
  const {data:m,error}=await NV.sb.from('membros').select('clinica_id,papel,clinicas(nome,ativa,valido_ate,plano)').eq('user_id',sessao.user.id);
