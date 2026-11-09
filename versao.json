@@ -1,5 +1,5 @@
 {
-  "versao": "1.9.1",
-  "html": "https://raw.githubusercontent.com/TheIgor12/blacksolutions/main/download/blackflow-1.9.1.html",
-  "novidades": "Valor do atendimento já vem preenchido com o preço da tabela. Datas com as barras automáticas e R$ nos campos de valor."
+  "versao": "1.9.2",
+  "html": "https://raw.githubusercontent.com/TheIgor12/blacksolutions/main/download/blackflow-1.9.2.html",
+  "novidades": "Profissionais no menu lateral: um clique abre a agenda só daquele profissional. Horários do agendamento de 15 em 15 minutos."
 }

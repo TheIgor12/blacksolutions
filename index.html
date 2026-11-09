@@ -536,7 +536,8 @@ function openModal(html,wide){$('#modalRoot').innerHTML=`<div class="modalw" onc
 function closeModal(){$('#modalRoot').innerHTML=''}
 function formModal(title,fields,data,onSave,extra){data=data||{};
  const h=fields.map(f=>{const v=data[f.k]??(f.def??'');let inp;
-  if(f.type==='select')inp=`<select name="${f.k}">${f.opts.map(o=>`<option ${String(o)===String(v)?'selected':''}>${esc(o)}</option>`).join('')}</select>`;
+  if(f.type==='hora15'){const L=[];for(let m=6*60;m<=22*60;m+=15)L.push(pad(Math.floor(m/60))+':'+pad(m%60));if(v&&!L.includes(String(v).slice(0,5)))L.push(String(v).slice(0,5));L.sort();inp=`<select name="${f.k}" class="hora15">${L.map(o=>`<option ${o===String(v).slice(0,5)?'selected':''}>${o}</option>`).join('')}</select>`}
+  else if(f.type==='select')inp=`<select name="${f.k}">${f.opts.map(o=>`<option ${String(o)===String(v)?'selected':''}>${esc(o)}</option>`).join('')}</select>`;
   else if(f.type==='textarea')inp=`<textarea name="${f.k}" rows="${f.rows||4}">${esc(v)}</textarea>`;
   else inp=`<input name="${f.k}" type="${f.type||'text'}" ${f.type==='number'?'step="0.01"':''} value="${esc(v)}" ${f.list?`list="${f.list}"`:''} autocomplete="off">`;
   return `<label class="${f.full?'full':''}"><span>${esc(f.l)}${f.req?' *':''}</span>${inp}</label>`}).join('');
@@ -555,9 +556,9 @@ function shell(content){const c=S.config;
  return `<header class="top"><button class="ico" onclick="toggleDrawer()" aria-label="Menu">${ico('menu')}</button>
  <div class="gsearch"><input id="gs" placeholder="Encontre ${esc(SEG().pessoas.toLowerCase())} ou funções do sistema" oninput="globalSearch(this.value)" onblur="setTimeout(()=>{const r=$('#gsr');if(r)r.classList.remove('on')},200)" autocomplete="off"><div id="gsr" class="gsr"></div></div>
  ${NV.ativa?`<span id="sync" class="sync" title="Sincronização com a nuvem">${syncTxt()}</span>`:''}<button class="ico refr" title="Atualizar: busca os dados novos da nuvem e procura versão nova do sistema" onclick="refrescar(this)">${ico('refresh',17)}</button><div class="user" style="cursor:pointer" onclick="abrirConta()"><span class="av">${esc(initials(nomeUsuario()))}</span><div><b>${esc(nomeUsuario())}</b><small>${esc(c.clinica)}</small></div></div></header>
- <aside class="drawer ${UI.drawer?'open':''}"><div class="brand ${S.config.logo?'':'escuro'}"><img src="${logoClinica()}" alt="${esc(c.clinica)}"></div><div class="prod">BLACKFLOW <span style="font-weight:600">by BlackSolutions</span></div><span class="plan">Versão 1.9.1</span><button class="lnk" style="display:block;margin:6px 16px 0;font-size:12px;text-align:left" onclick="UI.drawer=false;render();atuChecar(true)">Procurar atualização</button><button class="lnk" style="display:block;margin:8px 16px 0;font-size:12px;text-align:left" onclick="UI.drawer=false;perguntarSegmento()">Segmento: <b>${esc(SEG().nome)}</b> · trocar</button>
- <div class="menu"><button class="${UI.view==='inicio'?'on':''}" onclick="go('inicio')">${ico('home',18)} Início</button><div class="msec">MÓDULOS</div>
- ${menuItens().map(([k,l,i])=>`<button class="${UI.view===k||(k==='pacientes'&&UI.view==='paciente')?'on':''}" onclick="go('${k}')">${ico(i,18)} ${l}</button>`).join('')}</div>
+ <aside class="drawer ${UI.drawer?'open':''}"><div class="brand ${S.config.logo?'':'escuro'}"><img src="${logoClinica()}" alt="${esc(c.clinica)}"></div><div class="prod">BLACKFLOW <span style="font-weight:600">by BlackSolutions</span></div><span class="plan">Versão 1.9.2</span><button class="lnk" style="display:block;margin:6px 16px 0;font-size:12px;text-align:left" onclick="UI.drawer=false;render();atuChecar(true)">Procurar atualização</button><button class="lnk" style="display:block;margin:8px 16px 0;font-size:12px;text-align:left" onclick="UI.drawer=false;perguntarSegmento()">Segmento: <b>${esc(SEG().nome)}</b> · trocar</button>
+ <div class="menu"><button class="${UI.view==='inicio'?'on':''}" onclick="go('inicio')">${ico('home',18)} Início</button>${menuProfs()}<div class="msec">MÓDULOS</div>
+ ${menuItens().map(([k,l,i])=>`<button class="${(UI.view===k&&!(k==='agenda'&&UI.agProf))||(k==='pacientes'&&UI.view==='paciente')?'on':''}" onclick="${k==='agenda'?"agProf('')":`go('${k}')`}">${ico(i,18)} ${l}</button>`).join('')}</div>
  <div class="mfoot menu"><button class="${UI.view==='config'?'on':''}" onclick="go('config')">${ico('gear',18)} Configurações</button></div></aside>
  <div class="scrim ${UI.drawer?'open':''}" onclick="toggleDrawer()"></div>
  <datalist id="dlPac">${S.pacientes.map(p=>`<option value="${esc(p.nome)}">`).join('')}</datalist>
@@ -815,7 +816,7 @@ function vAgenda(){if(ehCel())return vAgendaCel();const H0=6,H1=22,PX=64;const b
    <div class="agtime" style="height:${H}px">${times}</div>${cols.map(c=>`<div class="agcol ${c.d.getDay()===0?'wk':''}" style="height:${H}px">${c.html}</div>`).join('')}
   </div></div></div></div>`}
 function agForm(id,pacienteId){const a=id?S.agendamentos.find(x=>x.id===id):null;const p=a?pac(a.pacienteId):(pacienteId?pac(pacienteId):null);
- formModal(a?'Editar agendamento':'Novo agendamento',[{k:'paciente',l:SEG().pessoa,req:true,list:'dlPac',full:true},{k:'data',l:'Data',type:'date',req:true},{k:'hora',l:'Hora',type:'time',req:true},{k:'duracao',l:'Duração (minutos)',type:'number'},{k:'profissional',l:'Profissional',list:'dlProf'},{k:'procedimento',l:ehSeg('podologia')?'Procedimento':'Serviço',full:true,list:'dlServ'},{k:'status',l:'Status',type:'select',opts:['Agendado','Confirmado','Atendido','Faltou','Desmarcado']},{k:'obs',l:'Observação',type:'textarea',rows:2,full:true}],
+ formModal(a?'Editar agendamento':'Novo agendamento',[{k:'paciente',l:SEG().pessoa,req:true,list:'dlPac',full:true},{k:'data',l:'Data',type:'date',req:true},{k:'hora',l:'Hora',type:'hora15',req:true},{k:'duracao',l:'Duração (minutos)',type:'number'},{k:'profissional',l:'Profissional',list:'dlProf'},{k:'procedimento',l:ehSeg('podologia')?'Procedimento':'Serviço',full:true,list:'dlServ'},{k:'status',l:'Status',type:'select',opts:['Agendado','Confirmado','Atendido','Faltou','Desmarcado']},{k:'obs',l:'Observação',type:'textarea',rows:2,full:true}],
   a?{...a,paciente:p?p.nome:'',status:stAg(a)}:{paciente:p?p.nome:'',data:UI.agDate,hora:'09:00',duracao:30,status:'Agendado'},
   o=>{const pp=ensurePatient(o.paciente);if(!pp){toast('Informe o paciente');return false}const rec={pacienteId:pp.id,data:o.data,hora:o.hora,duracao:o.duracao||30,profissional:ensureProf(o.profissional),procedimento:o.procedimento,status:o.status,obs:o.obs};
    let ag=a;if(a)Object.assign(a,rec);else{ag={id:uid(),origem:'manual',...rec};S.agendamentos.push(ag)}UI.agDate=o.data;sincLancAg(ag);if(lancAgAtivo()){const pr=precoProc(ag.procedimento);if(pr&&!pacoteAtivo(ag)&&['Agendado','Confirmado'].includes(stAg(ag)))setTimeout(()=>toast('Valor de '+money(pr)+' lançado como previsto no financeiro'),60)}},
@@ -1544,7 +1545,7 @@ function protForm(id){const p=id?S.protocolos.find(x=>x.id===id):null;
   p||{sessoes:10,intervalo:7,duracao:60},o=>{o.sessoes=Math.max(1,parseInt(o.sessoes,10)||1);o.intervalo=Math.max(1,parseInt(o.intervalo,10)||1);if(p)Object.assign(p,o);else S.protocolos.push({id:uid(),...o})},
   p?`<button class="btn danger" style="margin-right:auto" onclick="delRec('protocolos','${p.id}')">Excluir</button>`:'')}
 function protAplicar(id){const pr=S.protocolos.find(x=>x.id===id);
- formModal('Aplicar: '+pr.nome,[{k:'cliente',l:SEG().pessoa,req:true,list:'dlPac',full:true},{k:'inicio',l:'Data da primeira sessão',type:'date',req:true},{k:'hora',l:'Horário',type:'time',req:true},{k:'profissional',l:'Profissional',list:'dlProf'},{k:'cobrar',l:'Lançar a cobrança no financeiro',type:'select',opts:['Sim, em aberto','Não']}],{inicio:todayISO(),hora:'09:00',cobrar:'Sim, em aberto'},o=>{const p=ensurePatient(o.cliente);if(!p){toast('Informe o cliente');return false}
+ formModal('Aplicar: '+pr.nome,[{k:'cliente',l:SEG().pessoa,req:true,list:'dlPac',full:true},{k:'inicio',l:'Data da primeira sessão',type:'date',req:true},{k:'hora',l:'Horário',type:'hora15',req:true},{k:'profissional',l:'Profissional',list:'dlProf'},{k:'cobrar',l:'Lançar a cobrança no financeiro',type:'select',opts:['Sim, em aberto','Não']}],{inicio:todayISO(),hora:'09:00',cobrar:'Sim, em aberto'},o=>{const p=ensurePatient(o.cliente);if(!p){toast('Informe o cliente');return false}
   const tid=uid(),g=uid(),prof=ensureProf(o.profissional);S.tratamentos.push({id:tid,pacienteId:p.id,procedimento:pr.nome,data:o.inicio,sessoesTotal:pr.sessoes,sessoesRealizadas:0,valor:Number(pr.valor)||0,statusOrig:'Aprovado',profissional:prof,origem:'manual',pacote:true,protocoloId:pr.id});
   const sv=servPorNome(pr.servico);let d=o.inicio;for(let i=0;i<pr.sessoes;i++){if(i)d=addDays(d,pr.intervalo);if(new Date(d+'T00:00').getDay()===0)d=addDays(d,1);S.agendamentos.push({id:uid(),pacienteId:p.id,data:d,hora:o.hora,duracao:Number(pr.duracao)||(sv?Number(sv.duracao):60)||60,profissional:prof,procedimento:`${pr.servico||pr.nome} (sessão ${i+1}/${pr.sessoes})`,servicoId:sv?sv.id:'',status:'Agendado',obs:'Protocolo '+pr.nome,origem:'manual',protocoloGrupo:g})}
   if(o.cobrar!=='Não'&&Number(pr.valor)>0)S.lancamentos.push({id:uid(),pacienteId:p.id,descricao:'Protocolo: '+pr.nome,valor:Number(pr.valor),valorPago:0,vencimento:o.inicio,pagamento:'',forma:'',parcela:'',statusOrig:'Em aberto',profissional:'',origem:'manual'});
@@ -1638,7 +1639,7 @@ function agNovo(a,s){if(s==='Desmarcado'||s==='Faltou')return false;const k=a.da
  const hist=c=>S[c].some(x=>x.pacienteId===a.pacienteId&&((x.data||x.vencimento||x.pagamento||'')<a.data)&&(x.data||x.vencimento||x.pagamento));
  return !hist('evolucoes')&&!hist('tratamentos')&&!S.lancamentos.some(l=>l.pacienteId===a.pacienteId&&l.pagamento&&l.pagamento<a.data)}
 /* ============ Atualização: aviso com botão Atualizar agora ============ */
-const VERSAO_APP='1.9.1';const URL_VERSAO_JSON='https://raw.githubusercontent.com/TheIgor12/blacksolutions/main/versao.json';
+const VERSAO_APP='1.9.2';const URL_VERSAO_JSON='https://raw.githubusercontent.com/TheIgor12/blacksolutions/main/versao.json';
 const numV=v=>String(v||'0').split(/\D+/).filter(Boolean).map(Number);
 function versaoMaior(a,b){const x=numV(a),y=numV(b);for(let i=0;i<Math.max(x.length,y.length);i++){const d=(x[i]||0)-(y[i]||0);if(d)return d>0}return false}
 const ATU={nova:null,timer:null};
@@ -1915,6 +1916,16 @@ function ehDinheiro(i){if(i.dataset.rs!==undefined)return i.dataset.rs!=='0';if(
  if(DINHEIRO_CHAVE.test(k))return true;const l=i.closest('label');const tx=l?(l.querySelector('span')||l).textContent:'';return /R\$|\bvalor\b|\bpreço\b|\bcusto\b/i.test(tx)&&!/%|\bdias?\b|\bminutos?\b|\bsess/i.test(tx)}
 function prefixoReais(){document.querySelectorAll('input:not([data-rsok])').forEach(i=>{i.dataset.rsok=1;if(!ehDinheiro(i))return;const w=document.createElement('span');w.className='rsW';i.parentNode.insertBefore(w,i);const s=document.createElement('span');s.className='rsP';s.textContent='R$';w.appendChild(s);w.appendChild(i)})}
 new MutationObserver(()=>{mascaraData();prefixoReais()}).observe(document.documentElement,{childList:true,subtree:true});
+
+/* Campos de hora: de 15 em 15 minutos (setas do teclado e roda do mouse) */
+function hora15(){document.querySelectorAll('input[type=time]:not([data-h15])').forEach(i=>{i.dataset.h15=1;if(!i.step||i.step==='60')i.step=900;
+ i.addEventListener('wheel',e=>{if(document.activeElement!==i)return;e.preventDefault();const [h,m]=(i.value||'08:00').split(':').map(Number);let t=h*60+m;t=e.deltaY<0?Math.floor(t/15)*15+15:Math.ceil(t/15)*15-15;t=Math.max(0,Math.min(23*60+45,t));i.value=pad(Math.floor(t/60))+':'+pad(t%60);i.dispatchEvent(new Event('input',{bubbles:true}));i.dispatchEvent(new Event('change',{bubbles:true}))},{passive:false})});
+ document.querySelectorAll('select.hora15:not([data-h15])').forEach(sl=>{sl.dataset.h15=1;sl.addEventListener('wheel',e=>{if(document.activeElement!==sl)return;e.preventDefault();const n=sl.selectedIndex+(e.deltaY<0?-1:1);if(n>=0&&n<sl.options.length){sl.selectedIndex=n;sl.dispatchEvent(new Event('change',{bubbles:true}))}},{passive:false})})}
+new MutationObserver(hora15).observe(document.documentElement,{childList:true,subtree:true});
+/* Agenda de um profissional, aberta pelo menu lateral */
+function agProf(nome){UI.profOff={};if(nome){S.profissionais.forEach(p=>{if(norm(p.nome)!==norm(nome))UI.profOff[p.nome]=true});UI.profOff['']=true}UI.agProf=nome||'';UI.drawer=false;go('agenda')}
+function menuProfs(){const L=S.profissionais.filter(p=>p.ativo!==false).sort((a,b)=>a.nome.localeCompare(b.nome));if(!L.length)return '';const sel=UI.view==='agenda'?(UI.agProf||''):null;
+ return `<div class="msec">AGENDA POR PROFISSIONAL</div><button class="${sel===''&&UI.view==='agenda'?'on':''}" onclick="agProf('')">${ico('cal',18)} Todos os profissionais</button>${L.map(p=>`<button class="${sel!=null&&norm(sel)===norm(p.nome)?'on':''}" onclick="agProf(${esc(JSON.stringify(p.nome))})"><span style="display:inline-block;width:12px;height:12px;border-radius:50%;background:${esc(p.cor||'#0a4bde')};margin:0 3px;flex:none"></span> ${esc(p.nome)}</button>`).join('')}`}
 </script>
 </body>
 </html>
