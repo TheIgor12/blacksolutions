@@ -7,7 +7,7 @@
   if (window.BSC) return;
   var AW = 'AW-16458923412';
   // Rótulo de cada conversão criada no Google Ads (o que vem depois da barra no send_to). Vazio = só conta no painel.
-  var CONVERSOES = { cadastro: '', whatsapp: '', compra: '' };
+  var CONVERSOES = { cadastro: 'XaN1CN3QpLUdEJT7nKg9', whatsapp: '13TxCODQpLUdEJT7nKg9', compra: '' };
   var RPC = 'https://blszdbjpxgtloblxlusr.supabase.co/rest/v1/rpc/registrar_clique';
   var CHAVE = 'sb_publishable_0Tns_mDN2N1iQmw_sEzFXw_SRMy1uXK';
 
