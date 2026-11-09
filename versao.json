@@ -1,5 +1,5 @@
 {
-  "versao": "1.9.0",
-  "html": "https://raw.githubusercontent.com/TheIgor12/blacksolutions/main/download/blackflow-1.9.0.html",
-  "novidades": "Agendamento online: o paciente marca o próprio horário por um link curto. O horário entra direto na agenda e o cadastro é criado sozinho."
+  "versao": "1.9.1",
+  "html": "https://raw.githubusercontent.com/TheIgor12/blacksolutions/main/download/blackflow-1.9.1.html",
+  "novidades": "Valor do atendimento já vem preenchido com o preço da tabela. Datas com as barras automáticas e R$ nos campos de valor."
 }
