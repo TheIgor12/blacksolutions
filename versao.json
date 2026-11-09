@@ -1,5 +1,6 @@
 {
   "versao": "1.9.2",
   "html": "https://raw.githubusercontent.com/TheIgor12/blacksolutions/main/download/blackflow-1.9.2.html",
-  "novidades": "Profissionais no menu lateral: um clique abre a agenda só daquele profissional. Horários do agendamento de 15 em 15 minutos."
+  "novidades": "Profissionais no menu lateral: um clique abre a agenda só daquele profissional. Horários do agendamento de 15 em 15 minutos.",
+  "instalador": "https://blackflow.app.br/download/BlackFlow_Instalador.exe"
 }
