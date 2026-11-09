@@ -1,6 +1,5 @@
 {
-  "versao": "1.9.3",
-  "html": "https://raw.githubusercontent.com/TheIgor12/blacksolutions/main/download/blackflow-1.9.3.html",
-  "novidades": "Atualizar agora no programa do computador: baixa a versão nova, fecha e abre sozinho.",
-  "instalador": "https://blackflow.app.br/download/BlackFlow_Instalador.exe"
+  "versao": "1.9.4",
+  "html": "https://raw.githubusercontent.com/TheIgor12/blacksolutions/main/download/blackflow-1.9.4.html",
+  "novidades": "Procedimento adicional com a lista ao digitar. Botão + Produto no atendimento, com preço automático e baixa no estoque."
 }
