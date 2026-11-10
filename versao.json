@@ -1,6 +1,6 @@
 {
-  "versao": "1.9.5",
-  "html": "https://raw.githubusercontent.com/TheIgor12/blacksolutions/main/download/blackflow-1.9.5.html",
-  "novidades": "Desmarcado fica transparente e libera o horário na agenda. Ao marcar Atendido em pacote, o sistema pergunta se executa a sessão e mostra quantas faltam. O pacote é lançado no financeiro uma única vez.",
+  "versao": "1.9.6",
+  "html": "https://raw.githubusercontent.com/TheIgor12/blacksolutions/main/download/blackflow-1.9.6.html",
+  "novidades": "No Registrar pagamento: cartão à vista ou parcelado e em quantas vezes, maquininha Ton, bandeira, taxa e valor líquido. Opção de pagar em outra data, com novo vencimento.",
   "instalador": "https://blackflow.app.br/download/BlackFlow_Instalador.exe"
 }
