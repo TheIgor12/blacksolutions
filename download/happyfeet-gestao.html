@@ -182,7 +182,13 @@ a.btn{text-decoration:none}
 .color-dot{display:inline-block;width:12px;height:12px;border-radius:50%;vertical-align:-1px;margin-right:6px}
 .sync{font-size:12px;display:inline-flex;align-items:center;gap:6px;white-space:nowrap;color:#d6def5}.sync i{width:8px;height:8px;border-radius:50%;display:inline-block}
 .auth{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:24px;background:radial-gradient(700px 400px at 70% 20%,rgba(11,108,242,.45),transparent 70%),#05060a}
-.authbox{background:#fff;border-radius:18px;width:100%;max-width:420px;padding:30px;box-shadow:0 24px 60px rgba(0,0,0,.3)}
+.authbox{background:#fff;border-radius:18px;width:100%;max-width:460px;padding:30px;box-shadow:0 24px 60px rgba(0,0,0,.3)}
+.authbox .ast{font-weight:700;font-size:13px;color:var(--mut);margin:16px 0 8px}
+.aopt{display:flex;align-items:center;gap:10px;width:100%;text-align:left;border:1px solid var(--bd);border-radius:12px;padding:12px 14px;background:#fff;margin-bottom:8px;cursor:pointer}
+.aopt:hover{border-color:var(--acc)}.aopt.on{border-color:var(--acc);background:var(--acc-soft);box-shadow:inset 0 0 0 1px var(--acc)}
+.aopt b{display:block;font-size:14px}.aopt small{color:var(--mut);display:block;line-height:1.35}
+.aopt .pr{margin-left:auto;font-weight:800;white-space:nowrap}
+.aresumo{border-radius:12px;background:var(--acc-soft);padding:12px 14px;margin:14px 0 4px;font-size:14px}
 .authbox .lg{display:flex;justify-content:center;background:#05060a;border-radius:14px;padding:10px;margin-bottom:22px}.authbox .lg img.l{max-width:100%;max-height:150px}
 .authbox label{display:flex;flex-direction:column;gap:5px;font-size:12px;color:var(--mut);margin-bottom:12px}.authbox input{border:1px solid var(--line);border-radius:8px;padding:10px 12px;font-size:14px;outline:none}.authbox input:focus{border-color:var(--acc)}
 .authbox .btn{width:100%;justify-content:center;padding:11px}.authmsg{font-size:13px;margin:10px 0;min-height:18px}.authmsg.err{color:var(--bad)}.authmsg.ok{color:var(--ok)}
@@ -560,7 +566,7 @@ function shell(content){const c=S.config;
  return `<header class="top"><button class="ico" onclick="toggleDrawer()" aria-label="Menu">${ico('menu')}</button>
  <div class="gsearch"><input id="gs" placeholder="Encontre ${esc(SEG().pessoas.toLowerCase())} ou funções do sistema" oninput="globalSearch(this.value)" onblur="setTimeout(()=>{const r=$('#gsr');if(r)r.classList.remove('on')},200)" autocomplete="off"><div id="gsr" class="gsr"></div></div>
  ${NV.ativa?`<span id="sync" class="sync" title="Sincronização com a nuvem">${syncTxt()}</span>`:''}<button class="ico refr" title="Atualizar: busca os dados novos da nuvem e procura versão nova do sistema" onclick="refrescar(this)">${ico('refresh',17)}</button><div class="user" style="cursor:pointer" onclick="abrirConta()"><span class="av">${esc(initials(nomeUsuario()))}</span><div><b>${esc(nomeUsuario())}</b><small>${esc(c.clinica)}</small></div></div></header>
- <aside class="drawer ${UI.drawer?'open':''}"><div class="brand ${S.config.logo?'':'escuro'}"><img src="${logoClinica()}" alt="${esc(c.clinica)}"></div><div class="prod">BLACKFLOW <span style="font-weight:600">by BlackSolutions</span></div><span class="plan">Versão 1.9.9</span><button class="lnk" style="display:block;margin:6px 16px 0;font-size:12px;text-align:left" onclick="UI.drawer=false;render();atuChecar(true)">Procurar atualização</button><button class="lnk" style="display:block;margin:8px 16px 0;font-size:12px;text-align:left" onclick="UI.drawer=false;perguntarSegmento()">Segmento: <b>${esc(SEG().nome)}</b> · trocar</button>
+ <aside class="drawer ${UI.drawer?'open':''}"><div class="brand ${S.config.logo?'':'escuro'}"><img src="${logoClinica()}" alt="${esc(c.clinica)}"></div><div class="prod">BLACKFLOW <span style="font-weight:600">by BlackSolutions</span></div><span class="plan">Versão 1.9.10</span><button class="lnk" style="display:block;margin:6px 16px 0;font-size:12px;text-align:left" onclick="UI.drawer=false;render();atuChecar(true)">Procurar atualização</button><button class="lnk" style="display:block;margin:8px 16px 0;font-size:12px;text-align:left" onclick="UI.drawer=false;perguntarSegmento()">Segmento: <b>${esc(SEG().nome)}</b> · trocar</button>
  <div class="menu"><button class="${UI.view==='inicio'?'on':''}" onclick="go('inicio')">${ico('home',18)} Início</button>${menuProfs()}<div class="msec">MÓDULOS</div>
  ${menuItens().map(([k,l,i])=>`<button class="${(UI.view===k&&!(k==='agenda'&&UI.agProf))||(k==='pacientes'&&UI.view==='paciente')?'on':''}" onclick="${k==='agenda'?"agProf('')":`go('${k}')`}">${ico(i,18)} ${l}</button>`).join('')}</div>
  <div class="mfoot menu"><button class="${UI.view==='config'?'on':''}" onclick="go('config')">${ico('gear',18)} Configurações</button></div></aside>
@@ -1542,7 +1548,12 @@ const SEGMENTOS={
 const PLANOS={
  agenda:{nome:'Só agenda',desc:'Agenda, cadastro de clientes, profissionais, serviços e preços, confirmação por WhatsApp e agendamento online. Sem financeiro, sem estoque e sem comanda.'},
  completo:{nome:'Completo',desc:'Tudo o que o seu segmento usa: agenda, financeiro, relatórios, dashboard e os módulos próprios do negócio.'}};
-const planoK=()=>S.config.plano==='agenda'?'agenda':'completo';
+/* O plano contratado vem da nuvem, não da configuração local: é ele que trava os módulos */
+function planoContratado(){const p=String((typeof NV!=='undefined'&&NV.plano)||'').toLowerCase();
+ if(p==='agenda')return 'agenda';if(!p||p==='teste')return 'teste';return 'completo'}
+function planoInfo(k){const a=(typeof ASSINATURA!=='undefined'&&ASSINATURA&&ASSINATURA.planos)||{};const d={agenda:{nome:'Só agenda',preco:'R$ 29,90 por mês',valor:29.90},completo:{nome:'Completo',preco:'R$ 79,99 por mês',valor:79.99},upgrade:{nome:'Complemento para o plano completo',preco:'R$ 50,09',valor:50.09}};
+ return Object.assign({},d[k]||{},a[k]||{})}
+const planoK=()=>planoContratado()==='agenda'?'agenda':(S.config.plano==='agenda'?'agenda':'completo');
 const soAgenda=()=>planoK()==='agenda';
 const VIEWS_AGENDA=['inicio','agenda','pacientes','paciente','profissionais','servicos','confirmacao','config'];
 const segK=()=>SEGMENTOS[S.config.segmento]?S.config.segmento:'podologia';
@@ -1565,9 +1576,11 @@ function menuItens(){const P=SEG().pessoas;
 /* Escolha do segmento */
 function segCards(acao){return `<div class="grid g3">${Object.entries(SEGMENTOS).map(([k,s])=>`<div class="tile" style="${segK()===k&&S.config.segmento?'outline:3px solid var(--acc)':''}" onclick="${acao}('${k}')"><div class="ti">${ico(k==='podologia'?'user':k==='estetica'?'chart':'badge')}</div><b>${esc(s.nome)}</b><p>${esc(s.desc)}</p></div>`).join('')}</div>`}
 function perguntarSegmento(){openModal(`<h3>Qual é o seu tipo de negócio?</h3><p class="sub" style="margin-bottom:14px">O BlackFlow mostra os módulos certos para o seu segmento. Dá para trocar depois em Configurações.</p>${segCards('escolherSegmento')}`,true)}
-function escolherSegmento(k){const antes=S.config.segmento;S.config.segmento=k;closeModal();save();render();toast('Segmento: '+SEGMENTOS[k].nome+(antes&&antes!==k?'. Os dados de antes continuam guardados.':''));
+function escolherSegmento(k){if(planoContratado()==='agenda'&&S.config.segmento&&k!==S.config.segmento){modalLiberar('segmento');return}
+ const antes=S.config.segmento;S.config.segmento=k;closeModal();save();render();toast('Segmento: '+SEGMENTOS[k].nome+(antes&&antes!==k?'. Os dados de antes continuam guardados.':''));
  if(!S.config.plano&&!UI.planoPerguntado){UI.planoPerguntado=true;setTimeout(perguntarPlano,400)}}
 function checarSegmento(){if(UI.auth)return;
+ if(CAD){if(!S.config.segmento)S.config.segmento=CAD.segmento;if(!S.config.plano)S.config.plano=CAD.plano;S.config.clinica=S.config.clinica||NV.nomeClinica||S.config.clinica;CAD=null;UI.segPerguntado=true;UI.planoPerguntado=true;save();setTimeout(render,0);return}
  if(!S.config.segmento&&!UI.segPerguntado){UI.segPerguntado=true;
   if(S.pacientes.length||S.agendamentos.length){S.config.segmento='podologia';save()}
   else{setTimeout(()=>{if(!$('#modalRoot').innerHTML)perguntarSegmento()},300);return}}
@@ -1576,9 +1589,26 @@ function checarSegmento(){if(UI.auth)return;
   setTimeout(()=>{if(!$('#modalRoot').innerHTML)perguntarPlano()},300)}}
 function planoCards(acao){return `<div class="grid g3">${Object.entries(PLANOS).map(([k,x])=>`<div class="tile" style="${planoK()===k?'outline:3px solid var(--acc)':''}" onclick="${acao}('${k}')"><div class="ti">${ico(k==='agenda'?'cal':'chart')}</div><b>${esc(x.nome)}</b><p>${esc(x.desc)}</p></div>`).join('')}</div>`}
 function perguntarPlano(){openModal(`<h3>Como você quer usar o BlackFlow?</h3><p class="sub" style="margin-bottom:14px">Dá para trocar a qualquer momento em Configurações. Nada do que já foi lançado é apagado.</p>${planoCards('escolherPlano')}`,true)}
-function escolherPlano(k){const antes=planoK();S.config.plano=k;if(k==='agenda')UI.view='agenda';closeModal();save();render();
+function escolherPlano(k){if(k==='completo'&&planoContratado()==='agenda'){modalLiberar('plano');return}
+ const antes=planoK();S.config.plano=k;if(k==='agenda')UI.view='agenda';closeModal();save();render();
  toast(k==='agenda'?'Plano só agenda. O menu agora mostra apenas a agenda e os cadastros.':antes==='agenda'?'Plano completo. Os módulos voltaram ao menu.':'Plano completo.')}
-function cardPlanoConfig(){return `<div class="card"><h2>Plano de uso</h2><p class="sub" style="margin-bottom:12px">No plano <b>Só agenda</b> o sistema mostra apenas a agenda, os cadastros de ${esc(SEG().pessoas.toLowerCase())}, os profissionais, os serviços e a confirmação por WhatsApp. O financeiro, o estoque, as comandas e os relatórios ficam fora do menu, e os atendimentos deixam de gerar cobrança. Ao voltar para o completo, tudo reaparece com os dados que já existiam.</p>${planoCards('escolherPlano')}</div>`}
+/* Trava: no plano Só agenda, passar para o completo ou trocar o segmento exige pagamento */
+async function modalLiberar(motivo){await carregarAssinatura();const c=planoInfo('completo'),u=planoInfo('upgrade'),a=planoInfo('agenda');
+ const bt=(x,cls)=>x.link?`<a class="btn ${cls||''}" href="${esc(x.link)}" target="_blank" rel="noopener" onclick="closeModal()">${esc(x.rotulo||('Pagar '+x.preco))}</a>`:'';
+ const contato=(ASSINATURA||{}).contato||'';
+ openModal(`<h3>Liberar o plano completo</h3>
+ <p class="sub" style="margin-top:-4px">${motivo==='segmento'?'O segmento escolhido no cadastro define os módulos do sistema. Para trocar de segmento é preciso estar no plano completo.':'O seu plano hoje é '+esc(a.nome)+', por '+esc(a.preco)+'. O financeiro, o estoque, a comanda, o caixa e os relatórios fazem parte do plano completo.'}</p>
+ <div class="card" style="margin:14px 0 0;background:var(--acc-soft)"><div style="font-size:13px;color:var(--mut)">Plano completo</div><div style="font-size:26px;font-weight:800">${esc(c.preco)}</div>
+  <p class="sub" style="margin:6px 0 12px">Agenda, financeiro com parcelas e recibo, comanda, caixa do dia, estoque, comissões, relatórios e os módulos do seu segmento.</p>
+  <div style="display:flex;flex-direction:column;gap:8px">${bt(Object.assign({},c,{rotulo:'Assinar o plano completo por '+c.preco}))}
+  ${u.link?bt(Object.assign({},u,{rotulo:'Pagar só a diferença deste mês: '+u.preco}),'ghost'):`<div class="note" style="margin:0">Para pagar só a diferença deste mês${u.preco?' ('+esc(u.preco)+')':''}, fale com a gente${contato?' pelo WhatsApp':''}.${contato?` <a class="lnk" href="${esc(contato)}" target="_blank" rel="noopener">abrir conversa</a>`:''}</div>`}</div></div>
+ <p class="sub" style="margin-top:12px">Assim que o pagamento for confirmado, o plano é liberado nesta conta e os módulos aparecem sozinhos ao abrir o sistema de novo.</p>
+ <div class="mact"><button class="btn ghost" onclick="closeModal()">Agora não</button></div>`)}
+function cardPlanoConfig(){const ct=planoContratado();const a=planoInfo('agenda'),c=planoInfo('completo');
+ if(ct==='agenda')return `<div class="card"><h2>Plano de uso</h2>
+  <div class="note" style="margin:0 0 12px"><b>Plano contratado: ${esc(a.nome)}, ${esc(a.preco)}.</b> O menu mostra a agenda, os ${esc(SEG().pessoas.toLowerCase())}, os profissionais, os serviços e a confirmação por WhatsApp. O financeiro, o estoque, a comanda, o caixa e os relatórios fazem parte do plano completo.</div>
+  <div style="display:flex;gap:10px;flex-wrap:wrap"><button class="btn" onclick="modalLiberar('plano')">Liberar o plano completo por ${esc(c.preco)}</button></div></div>`;
+ return `<div class="card"><h2>Plano de uso</h2>${ct==='teste'?`<div class="note" style="margin:0 0 12px">Você está no teste grátis e pode experimentar os dois. Depois do teste, Só agenda custa ${esc(a.preco)} e Completo custa ${esc(c.preco)}.</div>`:''}<p class="sub" style="margin-bottom:12px">No plano <b>Só agenda</b> o sistema mostra apenas a agenda, os cadastros de ${esc(SEG().pessoas.toLowerCase())}, os profissionais, os serviços e a confirmação por WhatsApp. O financeiro, o estoque, as comandas e os relatórios ficam fora do menu, e os atendimentos deixam de gerar cobrança. Ao voltar para o completo, tudo reaparece com os dados que já existiam.</p>${planoCards('escolherPlano')}</div>`}
 function cardSegmentoConfig(){const a=S.config.assinatura||{};
  return `<div class="card"><h2>Segmento do negócio</h2><p class="sub" style="margin-bottom:12px">Escolha o tipo de negócio. O menu, a ficha do ${esc(SEG().pessoa.toLowerCase())} e os módulos mudam conforme o segmento. Nenhum dado é apagado ao trocar.</p>${segCards('escolherSegmento')}
  <div class="note" style="margin-top:14px">Precisa de algo a mais, feito sob medida para o seu negócio? Pedimos a personalização e ela entra como valor adicional na assinatura.${typeof ASSINATURA!=='undefined'&&ASSINATURA&&ASSINATURA.contato?` Fale com a gente: <b>${esc(ASSINATURA.contato)}</b>.`:''}</div>
@@ -1938,7 +1968,7 @@ function agNovo(a,s){if(s==='Desmarcado'||s==='Faltou')return false;const k=a.da
  const hist=c=>S[c].some(x=>x.pacienteId===a.pacienteId&&((x.data||x.vencimento||x.pagamento||'')<a.data)&&(x.data||x.vencimento||x.pagamento));
  return !hist('evolucoes')&&!hist('tratamentos')&&!S.lancamentos.some(l=>l.pacienteId===a.pacienteId&&l.pagamento&&l.pagamento<a.data)}
 /* ============ Atualização: aviso com botão Atualizar agora ============ */
-const VERSAO_APP='1.9.9';const URL_VERSAO_JSON='https://raw.githubusercontent.com/TheIgor12/blacksolutions/main/versao.json';
+const VERSAO_APP='1.9.10';const URL_VERSAO_JSON='https://raw.githubusercontent.com/TheIgor12/blacksolutions/main/versao.json';
 const numV=v=>String(v||'0').split(/\D+/).filter(Boolean).map(Number);
 function versaoMaior(a,b){const x=numV(a),y=numV(b);for(let i=0;i<Math.max(x.length,y.length);i++){const d=(x[i]||0)-(y[i]||0);if(d)return d>0}return false}
 const ATU={nova:null,timer:null};
@@ -2126,10 +2156,16 @@ const COLS=['vouchers','pacientes','lancamentos','tratamentos','anamneses','agen
 const URL_ASSINATURA='https://raw.githubusercontent.com/TheIgor12/blacksolutions/main/assinatura.json';
 let ASSINATURA=null;
 async function carregarAssinatura(){if(ASSINATURA)return ASSINATURA;try{ASSINATURA=await (await fetch(URL_ASSINATURA+'?t='+Date.now(),{cache:'no-store'})).json()}catch(e){ASSINATURA={}}return ASSINATURA}
-function blocoAssinatura(){const a=ASSINATURA||{};const pix=a.link_pix,cartao=a.link_cartao;
- return `<div style="background:var(--acc-soft);border-radius:12px;padding:14px;margin-bottom:6px">${a.preco?`<div style="font-size:13px;color:var(--mut)">Assinatura mensal</div><div style="font-size:26px;font-weight:800;margin-bottom:10px">${esc(a.preco)}</div>`:''}
- ${pix||cartao?`<div style="display:flex;flex-direction:column;gap:8px">${pix?`<a class="btn" href="${esc(pix)}" target="_blank" rel="noopener">Pagar com Pix</a>`:''}${cartao?`<a class="btn ghost" href="${esc(cartao)}" target="_blank" rel="noopener">Pagar com cartão de crédito</a>`:''}</div>`:`<p class="sub" style="margin:0">${esc(a.mensagem||'Para assinar, fale com a Black Solutions pelos canais de atendimento informados no site.')}</p>`}
- ${a.contato?`<p class="sub" style="margin:10px 0 0">${esc(a.contato)}</p>`:''}</div>`}
+function blocoAssinatura(){const a=ASSINATURA||{};const pa=planoInfo('agenda'),pc=planoInfo('completo');
+ const escolhido=planoK();const linkC=pc.link||a.link_pix||a.link_cartao||'';
+ const cx=(x,link,k,texto)=>`<div class="card" style="margin:0 0 10px;padding:14px;background:${escolhido===k?'var(--acc-soft)':'var(--bg2,#f8fafc)'};${escolhido===k?'outline:2px solid var(--acc)':''}">
+  <div style="display:flex;justify-content:space-between;align-items:baseline;gap:10px"><b>${esc(x.nome)}</b><span style="font-size:20px;font-weight:800">${esc(x.preco)}</span></div>
+  <p class="sub" style="margin:6px 0 10px">${texto}</p>
+  ${link?`<a class="btn ${escolhido===k?'':'ghost'}" style="width:100%" href="${esc(link)}" target="_blank" rel="noopener">Assinar ${esc(x.nome.toLowerCase())}</a>`:''}</div>`;
+ return `<div>${cx(pa,pa.link,'agenda','Agenda, clientes, profissionais, serviços e preços, confirmação por WhatsApp e agendamento online.')}
+ ${cx(pc,linkC,'completo','Tudo do Só agenda mais financeiro com parcelas e recibo, comanda, caixa do dia, estoque, comissões e relatórios.')}
+ ${!pa.link&&!linkC?`<p class="sub" style="margin:0">${esc(a.mensagem||'Para assinar, fale com a Black Solutions pelos canais de atendimento informados no site.')}</p>`:''}
+ ${a.contato?`<p class="sub" style="margin:4px 0 0">Dúvidas: <a class="lnk" href="${esc(a.contato)}" target="_blank" rel="noopener">falar com a Black Solutions</a></p>`:''}</div>`}
 function diasTeste(){if(!NV.ativa||NV.plano!=='teste'||!NV.validoAte)return null;return diffDays(todayISO(),NV.validoAte)}
 async function abrirAssinatura(){await carregarAssinatura();const d=diasTeste();openModal(`<h3>Assinatura</h3><p class="sub" style="margin-bottom:14px">${d!=null?`Teste grátis: ${d<=0?'termina hoje':d===1?'falta 1 dia':'faltam '+d+' dias'}. Depois disso, o acesso continua com a assinatura mensal, por Pix ou cartão de crédito.`:NV.validoAte?`Assinatura válida até ${br(NV.validoAte)}.`:'Sua clínica não tem vencimento.'}</p>${blocoAssinatura()}<div class="mact"><button class="btn ghost" onclick="closeModal()">Fechar</button></div>`)}
 function nomeUsuario(){const u=NV.sessao&&NV.sessao.user;return u?((u.user_metadata&&u.user_metadata.nome)||u.email):S.config.usuario}
@@ -2150,7 +2186,22 @@ function vAuth(){const A=UI.auth;const box=c=>`<div class="auth"><div class="aut
  case 'codigo':return box(`<h2>Confirme seu e-mail</h2><p class="sub" style="margin-bottom:14px">Enviamos um e-mail de confirmação para <b>${esc(A.email)}</b>. Se não aparecer, olhe a caixa de spam.<br><br>Se o e-mail trouxer um <b>código</b>, digite abaixo. Se trouxer um <b>link</b>, clique nele, volte aqui e clique em Já confirmei.</p><form onsubmit="authCodigo();return false"><label>Código<input id="au_cod" inputmode="numeric" maxlength="10" autocomplete="one-time-code"></label>${msg}<button class="btn">Confirmar</button></form><button class="btn ghost" style="margin-top:10px" onclick="UI.auth={modo:'entrar',email:'${esc(A.email)}',msg:'Agora entre com o seu e-mail e senha.',ok:true};render()">Já confirmei pelo link</button><div class="authlinks"><button class="lnk" onclick="authReenviar()">Enviar de novo</button><button class="lnk" onclick="UI.auth={modo:'entrar',email:'${esc(A.email)}'};render()">Voltar</button></div>`);
  case 'esqueci':return box(`<h2>Recuperar senha</h2><p class="sub" style="margin-bottom:14px">Informe o e-mail da conta. Vamos enviar um código para criar uma nova senha.</p><form onsubmit="authEsqueci();return false"><label>E-mail<input id="au_email" type="email" value="${esc(A.email||'')}"></label>${msg}<button class="btn">Enviar código</button></form><div class="authlinks"><button class="lnk" onclick="UI.auth={modo:'entrar'};render()">Voltar</button></div>`);
  case 'nova_senha':return box(`<h2>Nova senha</h2><p class="sub" style="margin-bottom:14px">Digite o código enviado para <b>${esc(A.email)}</b> e escolha a nova senha.</p><form onsubmit="authNovaSenha();return false"><label>Código<input id="au_cod" inputmode="numeric" maxlength="10" autocomplete="one-time-code"></label><label>Nova senha<input id="au_senha" type="password" autocomplete="new-password"></label><label>Repita a nova senha<input id="au_senha2" type="password" autocomplete="new-password"></label>${msg}<button class="btn">Salvar nova senha</button></form><div class="authlinks"><button class="lnk" onclick="UI.auth={modo:'entrar'};render()">Voltar</button></div>`);
- case 'clinica':return box(`<h2>Cadastre a sua clínica</h2><p class="sub" style="margin-bottom:14px">Você será o administrador. Depois poderá convidar outras pessoas da equipe.<br>Se você foi convidado por uma clínica, peça ao administrador para conferir se o convite foi feito para <b>${esc(NV.sessao&&NV.sessao.user.email)}</b> e clique em Verificar convites.</p><form onsubmit="authClinica();return false"><label>Nome da clínica<input id="au_clin"></label>${msg}<button class="btn">Criar clínica</button></form><div class="authlinks"><button class="lnk" onclick="entrar(NV.sessao)">Verificar convites</button><button class="lnk" onclick="sair()">Sair</button></div>`);
+ case 'clinica':{const seg=A.seg||'',pl=A.plano||'';const esc2=x=>esc(x);
+  const op=(n,k,p2,t,d,pr)=>`<button type="button" class="aopt ${A.op===n?'on':''}" onclick="authEsc(${n},'${k}','${p2}')"><span><b>${t}</b><small>${d}</small></span><span class="pr">${pr}</span></button>`;
+  const pa=planoInfo('agenda'),pc=planoInfo('completo');const vA=pa.preco.replace(' por mês',''),vC=pc.preco.replace(' por mês','');
+  const escolhido=seg?(pl==='agenda'?pa:pc):null;
+  return box(`<h2>Cadastre o seu negócio</h2><p class="sub" style="margin-bottom:6px">Você será o administrador. Depois poderá convidar a sua equipe.</p>
+  <form onsubmit="authClinica();return false"><label>Nome do negócio<input id="au_clin" value="${esc2(A.clin||'')}" oninput="UI.auth.clin=this.value"></label>
+  <div class="ast">O que você faz?</div>
+  ${op(1,'beleza','agenda','Atendo com hora marcada','Manicure, pedicure, barbearia, cílios, sobrancelha, massagem, depilação e afins.',pl==='completo'&&A.op===1?vC:vA)}
+  ${op(2,'beleza','completo','Salão de beleza','Vários profissionais, comanda, caixa do dia, comissões e estoque.',pl==='agenda'&&A.op===2?vA:vC)}
+  ${op(3,'podologia','completo','Clínica de podologia','Prontuário, anamnese, controle de sessões, evolução e financeiro.',pl==='agenda'&&A.op===3?vA:vC)}
+  ${op(4,'estetica','completo','Clínica de estética','Pacotes de sessões, avaliação, fotos de antes e depois, protocolos e financeiro.',pl==='agenda'&&A.op===4?vA:vC)}
+  <div class="ast">Quer só a agenda, mesmo sendo clínica ou salão?</div>
+  <div style="display:flex;gap:8px;flex-wrap:wrap"><button type="button" class="btn ${pl==='agenda'?'':'ghost'} sm" onclick="authPlano('agenda')">Só agenda ${vA}</button><button type="button" class="btn ${pl==='completo'?'':'ghost'} sm" onclick="authPlano('completo')">Completo ${vC}</button></div>
+  <div class="aresumo">${escolhido?`Depois dos 14 dias de teste grátis, a assinatura fica em <b>${esc2(escolhido.preco)}</b>. Dá para trocar de plano depois, pagando a diferença.`:'Escolha acima o que você faz. O valor da assinatura aparece aqui.'}</div>
+  ${msg}<button class="btn">Criar conta do negócio</button></form>
+  <div class="authlinks"><button class="lnk" onclick="entrar(NV.sessao)">Verificar convites</button><button class="lnk" onclick="sair()">Sair</button></div>`)}
  case 'bloqueado':return box(`<h2>${A.motivo==='teste'?'Seu teste grátis terminou':A.motivo==='suspenso'?'Acesso suspenso':'Assinatura vencida'}</h2><p class="sub" style="margin-bottom:14px">${A.motivo==='teste'?`Os 14 dias de teste da clínica <b>${esc(NV.nomeClinica)}</b> acabaram. Seus dados estão guardados e voltam a aparecer assim que a assinatura for ativada.`:A.motivo==='suspenso'?`O acesso da clínica <b>${esc(NV.nomeClinica)}</b> está suspenso. Entre em contato com o suporte.`:`A assinatura da clínica <b>${esc(NV.nomeClinica)}</b> venceu. Seus dados estão guardados e voltam a aparecer assim que o pagamento for confirmado.`}</p>${A.motivo!=='suspenso'?blocoAssinatura():''}<div class="authlinks"><button class="lnk" onclick="entrar(NV.sessao)">Já paguei, verificar de novo</button><button class="lnk" onclick="sair()">Sair</button></div>`);
  case 'offline':return box(`<h2>Sem conexão</h2><p class="sub" style="margin-bottom:14px">Não foi possível falar com o servidor. Verifique a internet.</p>${A.temCache?`<p class="sub" style="margin-bottom:14px">Você pode abrir os dados salvos neste computador. O que for alterado será enviado quando a internet voltar.</p><button class="btn" onclick="abrirOffline()">Abrir dados salvos neste computador</button><div style="height:10px"></div>`:''}<button class="btn ghost" onclick="location.reload()">Tentar de novo</button>`);
  default:return box(`<h2>Entrar</h2><form onsubmit="authEntrar();return false"><label>E-mail<input id="au_email" type="email" autocomplete="email" value="${esc(A.email||'')}"></label><label>Senha<input id="au_senha" type="password" autocomplete="current-password"></label>${msg}<button class="btn">Entrar</button></form><div class="authlinks"><button class="lnk" onclick="UI.auth={modo:'esqueci',email:val('#au_email')};render()">Esqueci minha senha</button><button class="lnk" onclick="UI.auth={modo:'criar',email:val('#au_email')};render()">Criar conta</button></div>`)}}
@@ -2171,7 +2222,14 @@ async function authEsqueci(){const email=val('#au_email');if(!email){authMsg('In
 async function authNovaSenha(){const cod=val('#au_cod').replace(/\s/g,''),senha=$('#au_senha').value,s2=$('#au_senha2').value;if(senha.length<8){authMsg('A senha precisa ter pelo menos 8 caracteres.');return}if(senha!==s2){authMsg('As senhas não conferem.');return}
  authMsg('Salvando...',true);const r=await NV.sb.auth.verifyOtp({email:UI.auth.email,token:cod,type:'recovery'});if(r.error){authMsg(traduz(r.error));return}
  const u=await NV.sb.auth.updateUser({password:senha});if(u.error){authMsg(traduz(u.error));return}await entrar(r.data.session)}
-async function authClinica(){const nome=val('#au_clin');if(!nome){authMsg('Informe o nome da clínica.');return}authMsg('Criando...',true);const {error}=await NV.sb.rpc('criar_clinica',{p_nome:nome});if(error){authMsg(traduz(error));return}window.BSC&&BSC.evento('clique','clinica_criada');await entrar(NV.sessao)}
+function authEsc(op,seg,plano){UI.auth.clin=val('#au_clin')||UI.auth.clin||'';UI.auth.op=op;UI.auth.seg=seg;UI.auth.plano=plano;render()}
+function authPlano(plano){UI.auth.clin=val('#au_clin')||UI.auth.clin||'';if(!UI.auth.seg){UI.auth.seg='beleza';UI.auth.op=plano==='agenda'?1:2}UI.auth.plano=plano;render()}
+let CAD=null;
+async function authClinica(){const nome=val('#au_clin');if(!nome){authMsg('Informe o nome do negócio.');return}
+ if(!UI.auth.seg){authMsg('Escolha o que você faz.');return}
+ authMsg('Criando...',true);CAD={segmento:UI.auth.seg,plano:UI.auth.plano||'completo'};
+ const {error}=await NV.sb.rpc('criar_clinica',{p_nome:nome});if(error){CAD=null;authMsg(traduz(error));return}
+ window.BSC&&BSC.evento('clique','clinica_criada');await entrar(NV.sessao)}
 async function entrar(sessao){NV.sessao=sessao;NV.offline=false;UI.auth={modo:'carregando'};render();
  try{await NV.sb.rpc('aceitar_convites')}catch(e){}
  const {data:m,error}=await NV.sb.from('membros').select('clinica_id,papel,clinicas(nome,ativa,valido_ate,plano)').eq('user_id',sessao.user.id);

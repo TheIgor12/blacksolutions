@@ -4,5 +4,25 @@
   "link_cartao": "https://www.asaas.com/000/c/99r1jm3tyroucxqv",
   "mensagem": "",
   "contato": "https://wa.me/5547988432859",
-  "whatsapp": "(47) 98843-2859"
+  "whatsapp": "(47) 98843-2859",
+  "planos": {
+    "agenda": {
+      "nome": "Só agenda",
+      "preco": "R$ 29,90 por mês",
+      "valor": 29.9,
+      "link": "https://www.asaas.com/000/c/wwn7pm5w71nfhngw"
+    },
+    "completo": {
+      "nome": "Completo",
+      "preco": "R$ 79,99 por mês",
+      "valor": 79.99,
+      "link": "https://www.asaas.com/000/c/99r1jm3tyroucxqv"
+    },
+    "upgrade": {
+      "nome": "Complemento para o plano completo",
+      "preco": "R$ 50,09",
+      "valor": 50.09,
+      "link": ""
+    }
+  }
 }

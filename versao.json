@@ -1,6 +1,6 @@
 {
-  "versao": "1.9.9",
-  "html": "https://raw.githubusercontent.com/TheIgor12/blacksolutions/main/download/blackflow-1.9.9.html",
-  "novidades": "Novo plano Só agenda, para quem quer apenas a agenda, os clientes e a confirmação por WhatsApp. Troque de plano quando quiser em Configurações.",
+  "versao": "1.9.10",
+  "html": "https://raw.githubusercontent.com/TheIgor12/blacksolutions/main/download/blackflow-1.9.10.html",
+  "novidades": "Escolha do tipo de negócio no cadastro, com o valor do plano na tela, e trava do plano Só agenda com o link de pagamento para liberar o completo.",
   "instalador": "https://blackflow.app.br/download/BlackFlow_Instalador.exe"
 }
