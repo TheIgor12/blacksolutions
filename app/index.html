@@ -536,8 +536,8 @@ const IMPORTERS={
 };
 
 /* ============ Modais ============ */
-function openModal(html,wide){$('#modalRoot').innerHTML=`<div class="modalw" onclick="if(event.target===this)closeModal()"><div class="modal" style="${wide?'max-width:900px':''}">${html}</div></div>`}
-function closeModal(){$('#modalRoot').innerHTML=''}
+function openModal(html,wide){$('#modalRoot').innerHTML=`<div class="modalw" onclick="if(event.target===this)closeModal()"><div class="modal" style="${wide?'max-width:'+(typeof wide==='string'?wide:'900px'):''}">${html}</div></div>`}
+function closeModal(){UI.parcAberta='';$('#modalRoot').innerHTML=''}
 function formModal(title,fields,data,onSave,extra){data=data||{};
  const h=fields.map(f=>{const v=data[f.k]??(f.def??'');let inp;
   if(f.type==='hora15'){const L=[];for(let m=6*60;m<=22*60;m+=15)L.push(pad(Math.floor(m/60))+':'+pad(m%60));if(v&&!L.includes(String(v).slice(0,5)))L.push(String(v).slice(0,5));L.sort();inp=`<select name="${f.k}" class="hora15">${L.map(o=>`<option ${o===String(v).slice(0,5)?'selected':''}>${o}</option>`).join('')}</select>`}
@@ -560,7 +560,7 @@ function shell(content){const c=S.config;
  return `<header class="top"><button class="ico" onclick="toggleDrawer()" aria-label="Menu">${ico('menu')}</button>
  <div class="gsearch"><input id="gs" placeholder="Encontre ${esc(SEG().pessoas.toLowerCase())} ou funções do sistema" oninput="globalSearch(this.value)" onblur="setTimeout(()=>{const r=$('#gsr');if(r)r.classList.remove('on')},200)" autocomplete="off"><div id="gsr" class="gsr"></div></div>
  ${NV.ativa?`<span id="sync" class="sync" title="Sincronização com a nuvem">${syncTxt()}</span>`:''}<button class="ico refr" title="Atualizar: busca os dados novos da nuvem e procura versão nova do sistema" onclick="refrescar(this)">${ico('refresh',17)}</button><div class="user" style="cursor:pointer" onclick="abrirConta()"><span class="av">${esc(initials(nomeUsuario()))}</span><div><b>${esc(nomeUsuario())}</b><small>${esc(c.clinica)}</small></div></div></header>
- <aside class="drawer ${UI.drawer?'open':''}"><div class="brand ${S.config.logo?'':'escuro'}"><img src="${logoClinica()}" alt="${esc(c.clinica)}"></div><div class="prod">BLACKFLOW <span style="font-weight:600">by BlackSolutions</span></div><span class="plan">Versão 1.9.7</span><button class="lnk" style="display:block;margin:6px 16px 0;font-size:12px;text-align:left" onclick="UI.drawer=false;render();atuChecar(true)">Procurar atualização</button><button class="lnk" style="display:block;margin:8px 16px 0;font-size:12px;text-align:left" onclick="UI.drawer=false;perguntarSegmento()">Segmento: <b>${esc(SEG().nome)}</b> · trocar</button>
+ <aside class="drawer ${UI.drawer?'open':''}"><div class="brand ${S.config.logo?'':'escuro'}"><img src="${logoClinica()}" alt="${esc(c.clinica)}"></div><div class="prod">BLACKFLOW <span style="font-weight:600">by BlackSolutions</span></div><span class="plan">Versão 1.9.8</span><button class="lnk" style="display:block;margin:6px 16px 0;font-size:12px;text-align:left" onclick="UI.drawer=false;render();atuChecar(true)">Procurar atualização</button><button class="lnk" style="display:block;margin:8px 16px 0;font-size:12px;text-align:left" onclick="UI.drawer=false;perguntarSegmento()">Segmento: <b>${esc(SEG().nome)}</b> · trocar</button>
  <div class="menu"><button class="${UI.view==='inicio'?'on':''}" onclick="go('inicio')">${ico('home',18)} Início</button>${menuProfs()}<div class="msec">MÓDULOS</div>
  ${menuItens().map(([k,l,i])=>`<button class="${(UI.view===k&&!(k==='agenda'&&UI.agProf))||(k==='pacientes'&&UI.view==='paciente')?'on':''}" onclick="${k==='agenda'?"agProf('')":`go('${k}')`}">${ico(i,18)} ${l}</button>`).join('')}</div>
  <div class="mfoot menu"><button class="${UI.view==='config'?'on':''}" onclick="go('config')">${ico('gear',18)} Configurações</button></div></aside>
@@ -833,8 +833,15 @@ function agForm(id,pacienteId,pre){pre=pre||{};const a=id?S.agendamentos.find(x=
    const ant=a?stAg(a):'';let ag=a;if(a)Object.assign(a,rec);else{ag={id:uid(),origem:'manual',...rec};S.agendamentos.push(ag)}UI.agDate=o.data;if(ant==='Atendido'&&stAg(ag)!=='Atendido')estornarSessao(ag);if(stAg(ag)!=='Atendido')delete ag.semPacote;sincLancAg(ag);if(stAg(ag)==='Atendido'&&ant!=='Atendido'&&precisaPerguntar(ag)){UI.sessAnt=UI.sessAnt||{};UI.sessAnt[ag.id]=ant;setTimeout(()=>perguntarSessao(ag.id),150)}if(lancAgAtivo()){const pr=precoProc(ag.procedimento);if(pr&&!pacoteAtivo(ag)&&['Agendado','Confirmado'].includes(stAg(ag)))setTimeout(()=>toast('Valor de '+money(pr)+' lançado como previsto no financeiro'),60)}},
   a?`<button class="btn danger" style="margin-right:auto" onclick="delRec('agendamentos','${a.id}')">Excluir</button>`:'')}
 function agModal(id){const a=S.agendamentos.find(x=>x.id===id);if(!a)return;const p=pac(a.pacienteId);const l=p?waLink(p.celular):'';
- openModal(`<h3>${esc(p?p.nome:'Paciente')}</h3><div class="row"><span>Data</span><span>${br(a.data)} às ${esc(a.hora)} (${a.duracao||30} min)</span></div><div class="row"><span>Profissional</span><span>${esc(a.profissional||'-')}</span></div><div class="row"><span>Procedimento</span><span>${esc(a.procedimento||'-')}</span></div><div class="row" style="align-items:center"><span><b>Situação</b></span><span><select id="agSt" onchange="setAgSt('${a.id}',this.value)" style="font-size:14px;font-weight:700;padding:8px 12px;border-radius:8px;border:2px solid ${({Agendado:'#e0a800',Confirmado:'#16a34a',Atendido:'#64748b',Faltou:'#dc2626',Desmarcado:'#999'})[stAg(a)]||'#e0a800'};background:${({Agendado:'#fff3bf',Confirmado:'#c9f2d6',Atendido:'#e6ebf3',Faltou:'#fde8e8',Desmarcado:'#eee'})[stAg(a)]||'#fff3bf'}">${['Agendado','Confirmado','Atendido','Faltou','Desmarcado'].map(x=>`<option value="${x}" ${stAg(a)===x?'selected':''}>${x==='Desmarcado'?'Desmarcou':x}</option>`).join('')}</select></span></div>${agNovo(a,stAg(a))?`<div class="row"><span></span><span><i class="evtag" style="font-size:11px;padding:2px 8px">${esc(SEG().pessoa.toUpperCase())} NOVO</i></span></div>`:''}${agSessHTML(a)}${a.obs?`<div class="row"><span>Observação</span><span>${esc(a.obs)}</span></div>`:''}${lancAgAtivo()?agValHTML(a):''}
+ openModal(`<h3>${esc(p?p.nome:'Paciente')}</h3><div class="row"><span>Data</span><span>${br(a.data)} às ${esc(a.hora)} (${a.duracao||30} min)</span></div><div class="row"><span>Profissional</span><span>${esc(a.profissional||'-')}</span></div><div class="row"><span>Procedimento</span><span>${esc(a.procedimento||'-')}</span></div><div class="row" style="align-items:center"><span><b>Situação</b></span><span><select id="agSt" onchange="setAgSt('${a.id}',this.value)" style="font-size:14px;font-weight:700;padding:8px 12px;border-radius:8px;border:2px solid ${({Agendado:'#e0a800',Confirmado:'#16a34a',Atendido:'#64748b',Faltou:'#dc2626',Desmarcado:'#999'})[stAg(a)]||'#e0a800'};background:${({Agendado:'#fff3bf',Confirmado:'#c9f2d6',Atendido:'#e6ebf3',Faltou:'#fde8e8',Desmarcado:'#eee'})[stAg(a)]||'#fff3bf'}">${['Agendado','Confirmado','Atendido','Faltou','Desmarcado'].map(x=>`<option value="${x}" ${stAg(a)===x?'selected':''}>${x==='Desmarcado'?'Desmarcou':x}</option>`).join('')}</select></span></div>${agNovo(a,stAg(a))?`<div class="row"><span></span><span><i class="evtag" style="font-size:11px;padding:2px 8px">${esc(SEG().pessoa.toUpperCase())} NOVO</i></span></div>`:''}${agSessHTML(a)}${a.obs?`<div class="row"><span>Observação</span><span>${esc(a.obs)}</span></div>`:''}${agFinHTML(a)}${lancAgAtivo()?agValHTML(a):''}
  <div class="mact">${l?`<a class="btn green" href="${l}" target="_blank" rel="noopener">WhatsApp</a>`:''}${p?`<button class="btn ghost" onclick="closeModal();go('paciente','${p.id}')">Abrir ficha</button>`:''}${!ehSeg('podologia')&&p?`<button class="btn soft" onclick="comandaDoAgendamento('${a.id}')">Abrir comanda</button>`:''}<button class="btn" onclick="closeModal();agForm('${a.id}')">Editar</button></div>`)}
+/* Situação financeira do atendimento, igual ao selo Financeiro Ok do Clinicorp */
+function agFinHTML(a){const l=lancDoAg(a);if(!l||!(Number(l.valor)>0))return '';const sd=saldoL(l),pn=parcNum(l);
+ return `<div class="row" style="align-items:center"><span>Financeiro</span><span style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+ <b style="display:inline-block;padding:6px 14px;border-radius:999px;background:${sd<=0.004?'#16a34a':'#e0a800'};color:#fff;font-size:13px">${sd<=0.004?'Financeiro Ok':'Falta '+money(sd)}</b>
+ <small style="color:var(--mut)">${money(pagoEf(l))} de ${money(l.valor)}${pn.total>1?' · '+pn.pagas+' de '+pn.total+' parcelas':''}</small>
+ <button class="btn ghost sm" onclick="closeModal();parcelasLanc('${l.id}')">Parcelas</button>
+ ${sd>0.004?`<button class="btn green sm" onclick="closeModal();baixarLanc('${l.id}')">Receber</button>`:''}</span></div>`}
 function setAgSt(id,s){const a=S.agendamentos.find(x=>x.id===id);if(!a){closeModal();return}const ant=stAg(a);a.status=s;
  if(ant==='Atendido'&&s!=='Atendido')estornarSessao(a);if(s!=='Atendido')delete a.semPacote;
  sincLancAg(a);closeModal();save();render();
@@ -890,26 +897,68 @@ function tratForm(id,pacienteId){const t=id?S.tratamentos.find(x=>x.id===id):nul
   t?{...t,statusOrig:stTrat(t)}:{data:todayISO(),sessoesTotal:1,sessoesRealizadas:0,statusOrig:'Em aberto'},
   o=>{o.profissional=ensureProf(o.profissional);const sv=servPorNome(o.procedimento);const fd=new FormData($('#mf'));if(sv&&!t){if(String(fd.get('sessoesTotal'))==='1'&&Number(sv.sessoesPacote)>1)o.sessoesTotal=Number(sv.sessoesPacote);if(String(fd.get('valor')).trim()===''||!(o.valor>0))o.valor=Number(sv.precoPacote)>0?Number(sv.precoPacote):r2((Number(sv.preco)||0)*(Number(o.sessoesTotal)||1))}o.sessoesTotal=o.sessoesTotal||1;if(t)Object.assign(t,o);else S.tratamentos.push({id:uid(),pacienteId:pid,origem:'manual',...o})},
   t?`<button class="btn danger" style="margin-right:auto" onclick="delRec('tratamentos','${t.id}')">Excluir</button>`:'')}
-function pFin(p){const L=S.lancamentos.filter(l=>l.pacienteId===p.id).sort((a,b)=>(a.vencimento||'').localeCompare(b.vencimento||''));const tot=L.reduce((a,l)=>a+saldoL(l),0);
- return `<div class="phead"><h2 style="margin:0">Financeiro</h2><div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn soft" onclick="parcelasForm('${p.id}')">Adicionar parcelamento</button><button class="btn" onclick="lancForm(null,'${p.id}')">${ico('plus',16)} Adicionar Lançamento</button></div></div>
- <div class="card" style="padding:0"><div class="tw"><table class="tbl dark"><thead><tr><th>Vencimento</th><th>Descrição</th><th>Parcela</th><th class="num">Valor a pagar</th><th class="num">Valor pago</th><th class="num">Saldo</th><th>Forma pagto.</th><th>Pagamento</th><th>Status</th><th></th></tr></thead><tbody>
- ${L.map(l=>{const st=stLanc(l);return `<tr><td>${br(l.vencimento)}</td><td>${esc(l.descricao)}</td><td>${esc(l.parcela||'-')}</td><td class="num">${money(l.valor)}</td><td class="num">${money(pagoEf(l))}</td><td class="num" style="color:${saldoL(l)?'var(--info)':'var(--mut)'}">${money(saldoL(l))}</td><td>${esc(formaTxt(l)||'-')}</td><td>${br(l.pagamento)}${pagosL(l).length>1?`<br><button class="lnk" style="font-size:12px" onclick="histLanc('${l.id}')">${pagosL(l).length} pagamentos</button>`:''}</td><td>${badgeFor(st)}</td><td class="num" style="white-space:nowrap">${st!=='Pago'&&st!=='Cancelado'?`<button class="btn soft sm" onclick="cobrarPix('${l.id}')">Pix</button> <button class="btn green sm" onclick="baixarLanc('${l.id}')">Receber</button> `:''}${pagosL(l).length?`<button class="lnk" onclick="histLanc('${l.id}')">Pagamentos</button> `:''}<button class="lnk" onclick="lancForm('${l.id}')">Editar</button></td></tr>`}).join('')||'<tr><td colspan="10" class="empty">Nenhum lançamento.</td></tr>'}</tbody></table></div>
- <div style="text-align:right;padding:12px 16px;font-weight:700">Saldo a pagar ${money(tot)}</div></div>`}
+function lancData(l){return l.criadoEm||l.vencimento||''}
+function lancHora(l){if(l.criadoHora)return l.criadoHora;const a=l.agendamentoId?S.agendamentos.find(x=>x.id===l.agendamentoId):null;return a&&a.hora?a.hora:''}
+function pFin(p){const todos=S.lancamentos.filter(l=>l.pacienteId===p.id);
+ const L=todos.filter(l=>UI.finCancel||stLanc(l)!=='Cancelado').sort((a,b)=>(lancData(a)+'').localeCompare(lancData(b)+''));
+ const tot=L.reduce((a,l)=>a+saldoL(l),0),pago=L.reduce((a,l)=>a+pagoEf(l),0),bruto=L.reduce((a,l)=>a+(Number(l.valor)||0),0);
+ const cred=creditoDe(p);
+ return `<div class="phead"><h2 style="margin:0">Financeiro</h2><div style="display:flex;gap:8px;flex-wrap:wrap">
+  <button class="btn ghost" onclick="creditoForm('${p.id}')">Crédito do paciente${cred>0.004?': '+money(cred):''}</button>
+  <button class="btn soft" onclick="mensalidadesForm('${p.id}')">Adicionar mensalidades</button>
+  <button class="btn" onclick="lancForm(null,'${p.id}')">${ico('plus',16)} Adicionar lançamento</button></div></div>
+ <label style="display:inline-flex;align-items:center;gap:8px;font-size:13px;color:var(--mut);margin:0 0 10px"><input type="checkbox" ${UI.finCancel?'checked':''} onchange="UI.finCancel=this.checked;render()"> Mostrar lançamentos cancelados</label>
+ <div class="card" style="padding:0"><div class="tw"><table class="tbl dark"><thead><tr><th></th><th>Lançamento</th><th>Hora</th><th>Descrição</th><th>Recibo</th><th class="num">Valor a pagar</th><th class="num">Valor pago</th><th class="num">Saldo</th><th>Forma de pagamento</th><th class="num">Parcelas</th><th>Pagamento</th><th>Situação</th><th></th></tr></thead><tbody>
+ ${L.map(l=>{const st=stLanc(l),sd=saldoL(l),pn=parcNum(l),rec=pagosL(l).length;
+  return `<tr><td><span title="${sd<=0.004?'Quitado':'Em aberto'}" style="display:inline-flex;align-items:center;justify-content:center;width:26px;height:26px;border-radius:7px;background:${sd<=0.004&&st!=='Cancelado'?'#16a34a':st==='Cancelado'?'#94a3b8':'#e2e8f0'};color:${sd<=0.004&&st!=='Cancelado'?'#fff':'#475569'};font-weight:800">$</span></td>
+  <td>${br(lancData(l))}</td><td>${esc(lancHora(l)||'-')}</td>
+  <td><button class="lnk" style="text-align:left" onclick="parcelasLanc('${l.id}')">${esc(l.descricao||'Lançamento')}</button>${l.parcela?`<br><small style="color:var(--mut)">${esc(l.parcela)}</small>`:''}</td>
+  <td>${rec?`<button class="lnk" onclick="reciboForm('${l.id}')">Recibo</button>`:'-'}</td>
+  <td class="num">${money(l.valor)}</td><td class="num">${money(pagoEf(l))}</td>
+  <td class="num" style="color:${sd>0.004?'var(--bad)':'var(--mut)'};font-weight:${sd>0.004?'700':'400'}">${money(sd)}</td>
+  <td>${esc(formaTxt(l)||'-')}</td><td class="num">${pn.total}</td><td>${br(l.pagamento)||'-'}</td>
+  <td>${parcBolinhas(l)}</td>
+  <td class="num" style="white-space:nowrap">${sd>0.004?`<button class="btn green sm" onclick="baixarLanc('${l.id}')">Receber</button> `:''}<button class="btn ghost sm" title="Mais ações" onclick="lancMenu('${l.id}')">⋮</button></td></tr>`}).join('')||'<tr><td colspan="13" class="empty">Nenhum lançamento.</td></tr>'}</tbody></table></div>
+ <div style="display:flex;gap:20px;flex-wrap:wrap;justify-content:flex-end;padding:12px 16px;font-weight:600"><span>Total ${money(bruto)}</span><span style="color:var(--ok)">Pago ${money(pago)}</span><span style="color:${tot>0.004?'var(--bad)':'var(--mut)'}">Saldo a pagar ${money(tot)}</span>${cred>0.004?`<span style="color:var(--info)">Crédito ${money(cred)}</span>`:''}</div></div>`}
 function lancForm(id,pacienteId){const l=id?S.lancamentos.find(x=>x.id===id):null;const pid=l?l.pacienteId:pacienteId;const temPg=!!(l&&pagosL(l).length);
  formModal(l?'Editar lançamento':'Novo lançamento',[{k:'descricao',l:'Descrição',req:true,full:true},{k:'valor',l:temPg?'Valor total (já pago '+money(pagoEf(l))+')':'Valor',type:'number',req:true},{k:'vencimento',l:'Vencimento',type:'date',req:true},{k:'parcela',l:'Parcela (ex.: 1/3)'},
   ...(temPg?[]:[{k:'forma',l:'Forma de pagamento',type:'select',opts:['',...FORMAS_PAG]},{k:'valorPago',l:'Valor já pago',type:'number'},{k:'pagamento',l:'Data do pagamento',type:'date'},{k:'statusOrig',l:'Situação',type:'select',opts:['','Pago','Em aberto','Cancelado']}])],
-  l||{vencimento:todayISO(),descricao:'Lançamento de Tratamento'},o=>{if(o.statusOrig==='Em aberto'&&!o.valorPago)o.pagamento='';if(l){Object.assign(l,o);if(temPg)lancRecalc(l)}else S.lancamentos.push({id:uid(),pacienteId:pid,origem:'manual',...o})},
+  l||{vencimento:todayISO(),descricao:'Lançamento de Tratamento'},o=>{if(o.statusOrig==='Em aberto'&&!o.valorPago)o.pagamento='';if(l){Object.assign(l,o);if(temPg)lancRecalc(l)}else{const nl={id:uid(),pacienteId:pid,origem:'manual',criadoEm:todayISO(),criadoHora:new Date().toTimeString().slice(0,5),...o};lancMigra(nl);parcMigra(nl);lancRecalc(nl);S.lancamentos.push(nl)}},
   l?`<button class="btn danger" style="margin-right:auto" onclick="delRec('lancamentos','${l.id}')">Excluir</button>`:'')}
-function parcelasForm(pid){formModal('Adicionar parcelamento',[{k:'descricao',l:'Descrição',req:true,full:true},{k:'total',l:'Valor total',type:'number',req:true},{k:'qtd',l:'Quantidade de parcelas',type:'number',req:true},{k:'primeiro',l:'Primeiro vencimento',type:'date',req:true},{k:'forma',l:'Forma de pagamento',type:'select',opts:['',...FORMAS_PAG]}],{descricao:'Lançamento de Tratamento',qtd:1,primeiro:todayISO()},
- o=>{const n=Math.max(1,Math.round(o.qtd));const base=Math.floor(o.total/n*100)/100;const d0=new Date(o.primeiro+'T00:00');for(let i=0;i<n;i++){const d=new Date(d0);d.setMonth(d0.getMonth()+i);const v=i===n-1?Math.round((o.total-base*(n-1))*100)/100:base;S.lancamentos.push({id:uid(),pacienteId:pid,descricao:o.descricao,valor:v,valorPago:0,vencimento:iso(d),pagamento:'',forma:o.forma,parcela:`${i+1}/${n}`,statusOrig:'',origem:'manual'})}})}
+function mensalidadesForm(pid){formModal('Adicionar mensalidades',[{k:'descricao',l:'Descrição',req:true,full:true},{k:'total',l:'Valor total',type:'number',req:true},{k:'qtd',l:'Quantidade de parcelas',type:'number',req:true},{k:'per',l:'A cada quanto tempo',type:'select',opts:['Mensal','Quinzenal','Semanal']},{k:'primeiro',l:'Primeiro vencimento',type:'date',req:true},{k:'forma',l:'Forma de pagamento prevista',type:'select',opts:['',...FORMAS_PAG]},{k:'modo',l:'Como lançar',type:'select',opts:['Um lançamento com parcelas','Um lançamento para cada parcela']}],
+ {descricao:'Lançamento de Tratamento',qtd:4,per:'Mensal',primeiro:todayISO(),forma:'Dinheiro'},
+ o=>{const n=Math.max(1,Math.round(parseNum(o.qtd)));const total=r2(parseNum(o.total));const base=Math.floor(total/n*100)/100;
+  if(o.modo==='Um lançamento para cada parcela'){for(let i=0;i<n;i++){const v=i===n-1?r2(total-base*(n-1)):base;
+    S.lancamentos.push({id:uid(),pacienteId:pid,descricao:o.descricao,valor:v,valorPago:0,vencimento:somaPeriodo(o.primeiro,i,o.per),pagamento:'',forma:o.forma,parcela:(i+1)+'/'+n,statusOrig:'',origem:'manual',criadoEm:todayISO(),criadoHora:new Date().toTimeString().slice(0,5)})}
+   toast(n+' lançamentos criados');return}
+  const P=[];for(let i=0;i<n;i++)P.push({id:uid(),venc:somaPeriodo(o.primeiro,i,o.per),data:'',receb:'',valor:i===n-1?r2(total-base*(n-1)):base,forma:o.forma||'',obs:'',recibo:null,status:'Em aberto'});
+  const l={id:uid(),pacienteId:pid,descricao:o.descricao,valor:total,valorPago:0,vencimento:P[0].venc,pagamento:'',forma:o.forma,parcela:n+'x',statusOrig:'',origem:'manual',criadoEm:todayISO(),criadoHora:new Date().toTimeString().slice(0,5),parcelas:P};
+  lancRecalc(l);S.lancamentos.push(l);toast(n+' parcelas de '+money(base)+' criadas ('+o.per.toLowerCase()+')')})}
 /* Registrar pagamento: forma, cartão à vista ou parcelado, maquininha, taxa e pagamento em outra data */
 const FORMAS_PAG=['Pix','Dinheiro','Cartão de crédito','Cartão de débito','Boleto','Transferência bancária','Cheque','Link de pagamento','Carteira digital','Vale ou voucher','Crédito do paciente','Convênio ou plano','Permuta','Outra forma'];
 const FORMAS_MAQ=['Cartão de crédito','Cartão de débito','Pix','Link de pagamento','Carteira digital'];
 /* Pagamentos de um lançamento: a lista é a fonte da verdade; os campos antigos viram resumo */
 function pagosL(l){return Array.isArray(l.pagamentos)?l.pagamentos:[]}
+/* Parcelas do lançamento: cada linha é uma parcela, recebida ou em aberto. É a fonte da verdade. */
+function parcL(l){if(!Array.isArray(l.parcelas))parcMigra(l);return l.parcelas}
+function parcRec(x){return !!x&&x.status==='Recebido'}
+function parcSt(x){if(x.status==='Recebido')return 'Recebido';if(x.status==='Cancelado')return 'Cancelado';return (x.venc&&x.venc<todayISO())?'Em atraso':'Em aberto'}
+function parcMigra(l){lancMigra(l);
+ const P=pagosL(l).map(x=>({id:x.id||uid(),venc:x.venc||x.data||l.vencimento||todayISO(),data:x.data||'',receb:x.receb||x.data||'',valor:r2(x.valor),forma:x.forma||'',cartaoModo:x.cartaoModo||'',cartaoParcelas:x.cartaoParcelas||'',maquininha:x.maquininha||'',bandeira:x.bandeira||'',taxa:x.taxa||'',taxaValor:x.taxaValor||'',liquido:x.liquido||'',obs:x.obs||'',recibo:x.recibo||null,status:'Recebido'}));
+ const falta=r2((l.valor||0)-P.reduce((a,x)=>a+(Number(x.valor)||0),0));
+ if(falta>0.004&&stLanc(l)!=='Cancelado')P.push({id:uid(),venc:l.vencimento||todayISO(),data:'',receb:'',valor:falta,forma:l.forma||'',obs:'',recibo:null,status:'Em aberto'});
+ l.parcelas=P;return l}
+function parcNum(l){const P=parcL(l);return {total:P.filter(x=>x.status!=='Cancelado').length,pagas:P.filter(parcRec).length}}
+function parcAbertas(l){return parcL(l).filter(x=>x.status!=='Recebido'&&x.status!=='Cancelado')}
 function lancMigra(l){if(Array.isArray(l.pagamentos))return l;const st=stLanc(l);const v=Number(l.valorPago)||0;const tot=(st==='Pago'&&!v)?(l.valor||0):v;
  l.pagamentos=tot>0.004?[{id:uid(),data:l.pagamento||l.vencimento||todayISO(),valor:r2(tot),forma:l.forma||'',cartaoModo:l.cartaoModo||'',cartaoParcelas:l.cartaoParcelas||'',maquininha:l.maquininha||'',bandeira:l.bandeira||'',taxa:l.taxa||'',taxaValor:l.taxaValor||'',liquido:l.liquido||'',obs:''}]:[];return l}
-function lancRecalc(l){const P=pagosL(l).slice().sort((a,b)=>(a.data||'').localeCompare(b.data||''));l.pagamentos=P;
+function lancRecalc(l){
+ if(Array.isArray(l.parcelas)){const Q=l.parcelas;
+  Q.sort((a,b)=>(a.venc||a.data||'').localeCompare(b.venc||b.data||''));
+  l.pagamentos=Q.filter(parcRec).map(x=>({id:x.id,data:x.data||x.receb||x.venc,valor:r2(x.valor),forma:x.forma||'',cartaoModo:x.cartaoModo||'',cartaoParcelas:x.cartaoParcelas||'',maquininha:x.maquininha||'',bandeira:x.bandeira||'',taxa:x.taxa||'',taxaValor:x.taxaValor||'',liquido:x.liquido||'',obs:x.obs||'',recibo:x.recibo||null}));
+  const ab=Q.filter(x=>x.status!=='Recebido'&&x.status!=='Cancelado').sort((a,b)=>(a.venc||'').localeCompare(b.venc||''));
+  if(ab.length){l.vencimento=ab[0].venc||l.vencimento;l.vencManual=true}}
+ const P=pagosL(l).slice().sort((a,b)=>(a.data||'').localeCompare(b.data||''));l.pagamentos=P;
  const tot=r2(P.reduce((a,x)=>a+(Number(x.valor)||0),0));l.valorPago=tot;const u=P[P.length-1];
  l.pagamento=u?u.data:'';l.forma=u?u.forma:'';l.cartaoModo=u?(u.cartaoModo||''):'';l.cartaoParcelas=u?(u.cartaoParcelas||''):'';l.maquininha=u?(u.maquininha||''):'';l.bandeira=u?(u.bandeira||''):'';l.taxa=u?(u.taxa||''):'';
  const tx=r2(P.reduce((a,x)=>a+(Number(x.taxaValor)||0),0));l.taxaValor=tx||'';l.liquido=tot?r2(tot-tx):'';
@@ -921,27 +970,143 @@ function lancHist(l,compacto){const P=pagosL(l);if(!P.length)return '';
  return `<div class="tw" style="border:1px solid var(--bd);border-radius:10px;margin:0 0 12px"><table class="tbl" style="margin:0"><thead><tr><th>Data</th><th>Forma de pagamento</th><th class="num">Valor</th>${compacto?'':'<th class="num">Taxa</th><th class="num">Líquido</th>'}<th></th></tr></thead><tbody>
  ${P.map((x,i)=>`<tr><td>${br(x.data)}</td><td>${esc(formaTxt(x)||'-')}${x.obs?`<br><small style="color:var(--mut)">${esc(x.obs)}</small>`:''}</td><td class="num">${money(x.valor)}</td>${compacto?'':`<td class="num">${x.taxaValor?money(x.taxaValor):'-'}</td><td class="num">${x.liquido?money(x.liquido):'-'}</td>`}<td class="num"><button class="lnk" style="color:var(--bad)" onclick="pgExcluir('${l.id}','${x.id||i}')">Excluir</button></td></tr>`).join('')}
  </tbody></table><div style="padding:10px 14px;text-align:right;font-size:13px;background:#f8fafc;border-top:1px solid var(--bd)">${P.length} pagamento${P.length>1?'s':''} · Pago ${money(pagoEf(l))} de ${money(l.valor)} · <b style="color:${saldoL(l)>0.004?'var(--info)':'var(--ok)'}">${saldoL(l)>0.004?'falta '+money(saldoL(l)):'quitado'}</b></div></div>`}
-function histLanc(id){const l=S.lancamentos.find(x=>x.id===id);if(!l)return;const p=pac(l.pacienteId);
+function histLanc(id){parcelasLanc(id)}
+function histLancAntigo(id){const l=S.lancamentos.find(x=>x.id===id);if(!l)return;const p=pac(l.pacienteId);
  openModal(`<h3>Pagamentos do lançamento</h3><p class="sub" style="margin-top:-4px">${esc(l.descricao||'')}${p?' · '+esc(p.nome):''}</p>${lancHist(l)||'<div class="empty">Nenhum pagamento registrado ainda.</div>'}
  <div class="mact"><button class="btn ghost" onclick="closeModal()">Fechar</button>${saldoL(l)>0.004||stLanc(l)==='Previsto'?`<button class="btn green" onclick="closeModal();baixarLanc('${l.id}')">Registrar pagamento</button>`:''}</div>`)}
 function pgExcluir(lid,pid){const l=S.lancamentos.find(x=>x.id===lid);if(!l)return;const P=pagosL(l);const i=P.findIndex((x,k)=>String(x.id||k)===String(pid));if(i<0)return;const v=P[i].valor;
  confirmModal('Excluir o pagamento de '+money(v)+' de '+br(P[i].data)+'? O valor volta para o saldo em aberto.',()=>{P.splice(i,1);lancRecalc(l);closeModal();toast('Pagamento excluído. Saldo em aberto: '+money(saldoL(l)))},'Excluir pagamento')}
+/* ====== Parcelas do lançamento, no formato da tela Parcelas do Clinicorp ====== */
+function parcCor(st){return {'Recebido':'#16a34a','Em aberto':'#e0a800','Em atraso':'#dc2626','Cancelado':'#94a3b8'}[st]||'#94a3b8'}
+function parcBolinhas(l){const P=parcL(l).filter(x=>x.status!=='Cancelado');if(!P.length)return '-';
+ const pagas=P.filter(parcRec).length;
+ const dots=P.slice(0,12).map((x,i)=>`<span title="Parcela ${i+1} de ${P.length}: ${parcSt(x)}, ${money(x.valor)}, vence ${br(x.venc)}" style="display:inline-flex;align-items:center;justify-content:center;width:22px;height:22px;border-radius:50%;background:${parcCor(parcSt(x))};color:#fff;font-size:11px;font-weight:700;margin-right:3px">${i+1}</span>`).join('');
+ return `<div style="white-space:nowrap">${dots}${P.length>12?'<span style="font-size:11px;color:var(--mut)">+'+(P.length-12)+'</span>':''}</div><small style="color:var(--mut)">${pagas} de ${P.length} ${pagas===1?'recebida':'recebidas'}</small>`}
+function parcelasLanc(id){const l=S.lancamentos.find(x=>x.id===id);if(!l)return;UI.parcAberta=id;
+ const P=parcL(l),p=pac(l.pacienteId),ativos=P.filter(x=>x.status!=='Cancelado');
+ const recebido=r2(P.filter(parcRec).reduce((a,x)=>a+(Number(x.valor)||0),0));
+ const emAberto=r2(ativos.filter(x=>!parcRec(x)).reduce((a,x)=>a+(Number(x.valor)||0),0));
+ const linhas=P.map((x,i)=>{const st=parcSt(x);const n=ativos.indexOf(x)+1;
+  return `<tr><td>${x.status==='Cancelado'?'-':n}</td><td>${br(x.venc)}</td><td>${br(x.data)||'-'}</td><td>${br(x.receb||x.data)||'-'}</td>
+  <td><span class="badge" style="background:${parcCor(st)};color:#fff">${st}</span></td>
+  <td>${esc(formaTxt(x)||'-')}</td><td class="num">${money(x.valor)}</td><td>${esc(x.obs||'')}</td>
+  <td>${parcRec(x)?`<button class="lnk" onclick="reciboForm('${l.id}','${x.id}')">${x.recibo?'Nº '+esc(x.recibo.numero||''):'Recibo'}</button>`:'-'}</td>
+  <td class="num"><div style="display:flex;gap:6px;justify-content:flex-end;flex-wrap:wrap">${parcRec(x)?`<button class="lnk" onclick="parcCancelarPg('${l.id}','${x.id}')">Cancelar</button>`:`<button class="btn green sm" onclick="baixarLanc('${l.id}','${x.id}')">Receber</button>`}
+   <button class="lnk" onclick="parcEditar('${l.id}','${x.id}')">Editar</button><button class="lnk" style="color:var(--bad)" onclick="parcExcluir('${l.id}','${x.id}')">Excluir</button></div></td></tr>`}).join('');
+ openModal(`<h3>Parcelas</h3><p class="sub" style="margin-top:-4px">${esc(l.descricao||'Lançamento')}${p?' · '+esc(p.nome):''} · total ${money(l.valor)}</p>
+ <div class="tw" style="border:1px solid var(--bd);border-radius:10px"><table class="tbl" style="margin:0"><thead><tr><th>Parcela</th><th>Vencimento</th><th>Pagamento</th><th>Recebimento</th><th>Situação</th><th>Forma de pagamento</th><th class="num">Valor</th><th>Observação</th><th>Recibo</th><th></th></tr></thead><tbody>${linhas||'<tr><td colspan="10" class="empty">Nenhuma parcela.</td></tr>'}</tbody></table></div>
+ <div style="display:flex;gap:18px;flex-wrap:wrap;justify-content:flex-end;padding:12px 4px;font-size:14px"><span>Total do lançamento <b>${money(l.valor)}</b></span><span>Recebido <b style="color:var(--ok)">${money(recebido)}</b></span><span>Em aberto <b style="color:${emAberto>0.004?'var(--info)':'var(--mut)'}">${money(emAberto)}</b></span></div>
+ <div class="mact"><button class="btn ghost" style="margin-right:auto" onclick="closeModal();render()">Fechar</button><button class="btn soft" onclick="parcDividir('${l.id}')">Dividir o saldo em parcelas</button><button class="btn soft" onclick="parcAdd('${l.id}')">Adicionar parcela</button>${emAberto>0.004?`<button class="btn green" onclick="baixarLanc('${l.id}')">Receber a próxima</button>`:''}</div>`,'1120px')}
+function parcAtualiza(l){lancRecalc(l);save();const id=l.id,volta=UI.parcAberta===id;setTimeout(()=>{if(volta)parcelasLanc(id);else render()},0)}
+function parcAdd(id){const l=S.lancamentos.find(x=>x.id===id);if(!l)return;
+ formModal('Adicionar parcela',[{k:'venc',l:'Vencimento',type:'date',req:true},{k:'valor',l:'Valor',type:'number',req:true},{k:'forma',l:'Forma de pagamento prevista',type:'select',opts:['',...FORMAS_PAG]},{k:'obs',l:'Observação',full:true}],
+  {venc:todayISO(),valor:r2(saldoL(l))||''},o=>{const P=parcL(l);P.push({id:uid(),venc:o.venc,data:'',receb:'',valor:r2(parseNum(o.valor)),forma:o.forma||'',obs:o.obs||'',recibo:null,status:'Em aberto'});
+   const soma=r2(P.filter(x=>x.status!=='Cancelado').reduce((a,x)=>a+(Number(x.valor)||0),0));if(soma>(l.valor||0)+0.004)l.valor=soma;
+   parcAtualiza(l);toast('Parcela adicionada');return 'skip'})}
+function parcEditar(id,pid){const l=S.lancamentos.find(x=>x.id===id);if(!l)return;const x=parcL(l).find(y=>y.id===pid);if(!x)return;
+ formModal('Editar parcela',[{k:'venc',l:'Vencimento',type:'date',req:true},{k:'valor',l:'Valor',type:'number',req:true},{k:'forma',l:'Forma de pagamento',type:'select',opts:['',...FORMAS_PAG]},...(parcRec(x)?[{k:'data',l:'Data do pagamento',type:'date'}]:[]),{k:'obs',l:'Observação',full:true}],
+  {venc:x.venc,valor:x.valor,forma:x.forma||'',data:x.data||'',obs:x.obs||''},o=>{x.venc=o.venc;x.valor=r2(parseNum(o.valor));x.forma=o.forma;x.obs=o.obs;if(parcRec(x)&&o.data){x.data=o.data;x.receb=o.data}
+   if(x.taxa)x.taxaValor=r2(x.valor*parseNum(x.taxa)/100),x.liquido=r2(x.valor-x.taxaValor);
+   parcAtualiza(l);toast('Parcela alterada');return 'skip'})}
+function parcExcluir(id,pid){const l=S.lancamentos.find(x=>x.id===id);if(!l)return;const P=parcL(l),i=P.findIndex(y=>y.id===pid);if(i<0)return;const x=P[i];
+ confirmModal(parcRec(x)?'Excluir a parcela recebida de '+money(x.valor)+' de '+br(x.data)+'? O valor sai do caixa e volta para o saldo em aberto.':'Excluir a parcela de '+money(x.valor)+' com vencimento em '+br(x.venc)+'?',
+  ()=>{P.splice(i,1);lancRecalc(l);save();if(UI.parcAberta===l.id)setTimeout(()=>parcelasLanc(l.id),10)},'Excluir parcela')}
+function parcCancelarPg(id,pid){const l=S.lancamentos.find(x=>x.id===id);if(!l)return;const x=parcL(l).find(y=>y.id===pid);if(!x)return;
+ confirmModal('Cancelar o pagamento de '+money(x.valor)+' recebido em '+br(x.data)+'? A parcela volta para em aberto e o valor sai do caixa do dia.',
+  ()=>{x.status='Em aberto';x.data='';x.receb='';x.taxaValor='';x.liquido='';lancRecalc(l);save();if(UI.parcAberta===l.id)setTimeout(()=>parcelasLanc(l.id),10)},'Cancelar pagamento')}
+function somaPeriodo(d0,i,per){const d=new Date(d0+'T00:00');if(per==='Semanal')d.setDate(d.getDate()+7*i);else if(per==='Quinzenal')d.setDate(d.getDate()+15*i);else d.setMonth(d.getMonth()+i);return iso(d)}
+function parcDividir(id){const l=S.lancamentos.find(x=>x.id===id);if(!l)return;const saldo=r2(saldoL(l));
+ if(saldo<=0.004){toast('Este lançamento já está quitado.');return}
+ formModal('Dividir o saldo em parcelas',[{k:'qtd',l:'Em quantas parcelas',type:'number',req:true},{k:'per',l:'A cada quanto tempo',type:'select',opts:['Semanal','Quinzenal','Mensal']},{k:'primeiro',l:'Vencimento da primeira',type:'date',req:true},{k:'forma',l:'Forma de pagamento prevista',type:'select',opts:['',...FORMAS_PAG]}],
+  {qtd:6,per:'Semanal',primeiro:todayISO(),forma:'Dinheiro'},o=>{const n=Math.max(1,Math.round(parseNum(o.qtd)));const base=Math.floor(saldo/n*100)/100;const P=parcL(l);
+   for(let i=P.length-1;i>=0;i--)if(!parcRec(P[i]))P.splice(i,1);
+   for(let i=0;i<n;i++)P.push({id:uid(),venc:somaPeriodo(o.primeiro,i,o.per),data:'',receb:'',valor:i===n-1?r2(saldo-base*(n-1)):base,forma:o.forma||'',obs:'',recibo:null,status:'Em aberto'});
+   parcAtualiza(l);toast(n+' parcelas de '+money(base)+' criadas ('+o.per.toLowerCase()+')');return 'skip'})}
+
+/* ====== Menu de ações do lançamento ====== */
+function lancMenu(id){const l=S.lancamentos.find(x=>x.id===id);if(!l)return;const st=stLanc(l),rec=pagosL(l).length;
+ const b=(txt,fn,cls)=>`<button class="btn ${cls||'ghost'}" style="width:100%;justify-content:flex-start;margin-bottom:8px" onclick="${fn}">${txt}</button>`;
+ openModal(`<h3>${esc(l.descricao||'Lançamento')}</h3><p class="sub" style="margin-top:-4px">${money(l.valor)} · vencimento ${br(l.vencimento)} · ${st}${saldoL(l)>0.004?' · falta '+money(saldoL(l)):''}</p>
+ ${saldoL(l)>0.004||st==='Previsto'?b('Registrar pagamento',`closeModal();baixarLanc('${l.id}')`,'green'):''}
+ ${b('Parcelas',`closeModal();parcelasLanc('${l.id}')`,'soft')}
+ ${rec?b('Recibo',`closeModal();reciboForm('${l.id}')`):''}
+ ${rec?b('Cancelar pagamento',`closeModal();parcCancelarPg('${l.id}','${(pagosL(l)[pagosL(l).length-1]||{}).id}')`):''}
+ ${st!=='Pago'&&st!=='Cancelado'?b('Cobrar por Pix',`closeModal();cobrarPix('${l.id}')`):''}
+ ${b('Editar lançamento',`closeModal();lancForm('${l.id}')`)}
+ ${b('Excluir lançamento',`closeModal();delRec('lancamentos','${l.id}')`,'danger')}
+ <div class="mact"><button class="btn ghost" onclick="closeModal()">Fechar</button></div>`)}
+
+/* ====== Recibo ====== */
+function reciboNum(){const n=(Number(S.config.reciboSeq)||0)+1;S.config.reciboSeq=n;return String(n).padStart(4,'0')}
+function reciboForm(id,pid){const l=S.lancamentos.find(x=>x.id===id);if(!l)return;const P=parcL(l);
+ const x=(pid?P.find(y=>y.id===pid):null)||P.filter(parcRec).slice(-1)[0]||P[0];if(!x){toast('Nenhuma parcela para gerar o recibo.');return}
+ const p=pac(l.pacienteId),c=S.config,r=x.recibo||{};
+ const prof=l.profissional||(S.agendamentos.find(a=>a.id===l.agendamentoId)||{}).profissional||(S.profissionais[0]||{}).nome||'';
+ formModal('Recibo',[{k:'numero',l:'Número'},{k:'clinica',l:'Clínica',req:true},{k:'cnpj',l:'CNPJ ou CPF da clínica'},{k:'profissional',l:'Profissional'},{k:'profCpf',l:'CPF do profissional'},
+  {k:'endereco',l:'Endereço',full:true},{k:'telefone',l:'Telefone'},{k:'telefone2',l:'Telefone adicional'},
+  {k:'beneficiario',l:'Beneficiário',req:true},{k:'benCpf',l:'CPF do beneficiário'},{k:'responsavel',l:'Responsável'},{k:'respCpf',l:'CPF do responsável'},
+  {k:'data',l:'Data',type:'date',req:true},{k:'valor',l:'Valor',type:'number',req:true},{k:'referente',l:'Referente a',full:true},{k:'obs',l:'Observações',full:true}],
+  {numero:r.numero||'',clinica:r.clinica||c.clinica||'',cnpj:r.cnpj||c.cnpj||'',profissional:r.profissional||prof,profCpf:r.profCpf||c.profCpf||'',endereco:r.endereco||c.endereco||'',telefone:r.telefone||c.telefone||'',telefone2:r.telefone2||'',
+   beneficiario:r.beneficiario||(p?p.nome:''),benCpf:r.benCpf||(p?p.cpf||'':''),responsavel:r.responsavel||'',respCpf:r.respCpf||'',data:r.data||x.data||todayISO(),valor:r.valor!=null?r.valor:x.valor,referente:r.referente||l.descricao||'Tratamento',obs:r.obs||''},
+  o=>{if(!o.numero)o.numero=reciboNum();o.valor=r2(parseNum(o.valor));x.recibo=o;
+   S.config.cnpj=o.cnpj;S.config.endereco=o.endereco;S.config.telefone=o.telefone;S.config.profCpf=o.profCpf;
+   save();reciboImprimir(l.id,x.id);return 'skip'})}
+function reciboImprimir(id,pid){const l=S.lancamentos.find(x=>x.id===id);if(!l)return;const x=parcL(l).find(y=>y.id===pid);if(!x||!x.recibo)return;const r=x.recibo;
+ const w=window.open('','_blank');if(!w){toast('Recibo salvo. Libere as janelas para imprimir.');return}
+ const ext=valorExtenso(r.valor);
+ w.document.write(`<html><head><meta charset="utf-8"><title>Recibo ${esc(r.numero)}</title><style>body{font-family:Arial,Helvetica,sans-serif;color:#111;padding:36px;max-width:720px;margin:0 auto}h1{font-size:20px;margin:0 0 2px}.cab{display:flex;justify-content:space-between;align-items:flex-start;border-bottom:2px solid #111;padding-bottom:10px;margin-bottom:18px}.n{font-size:13px;text-align:right}.v{font-size:26px;font-weight:800;margin:14px 0}p{line-height:1.6;font-size:14px}.ass{margin-top:60px;text-align:center}.ass div{border-top:1px solid #111;display:inline-block;padding-top:6px;min-width:320px}small{color:#555}</style></head><body>
+ <div class="cab"><div><h1>${esc(r.clinica)}</h1><small>${esc(r.cnpj?'CNPJ ou CPF '+r.cnpj:'')}${r.endereco?' · '+esc(r.endereco):''}${r.telefone?' · '+esc(r.telefone):''}${r.telefone2?' · '+esc(r.telefone2):''}</small></div><div class="n"><b>RECIBO</b><br>Número ${esc(r.numero)}<br>${br(r.data)}</div></div>
+ <div class="v">${money(r.valor)}</div>
+ <p>Recebi de <b>${esc(r.beneficiario)}</b>${r.benCpf?', CPF '+esc(r.benCpf):''}${r.responsavel?', por meio de '+esc(r.responsavel)+(r.respCpf?', CPF '+esc(r.respCpf):''):''} a quantia de <b>${esc(ext)}</b>, referente a ${esc(r.referente||'serviços prestados')}, dando plena e geral quitação do valor recebido.</p>
+ ${r.obs?`<p><small>${esc(r.obs)}</small></p>`:''}
+ <p>${esc(cidadeClinica())}, ${br(r.data)}.</p>
+ <div class="ass"><div>${esc(r.profissional||r.clinica)}${r.profCpf?'<br><small>CPF '+esc(r.profCpf)+'</small>':''}</div></div>
+ <script>setTimeout(()=>window.print(),400)<\/script></body></html>`);w.document.close();
+ const volta=UI.parcAberta===l.id;setTimeout(()=>{if(volta)parcelasLanc(l.id);else render()},0);toast('Recibo '+r.numero+' gerado')}
+function cidadeClinica(){return S.config.pixCidade||S.config.cidade||(String(S.config.endereco||'').split(',').pop()||'').trim()||''}
+function valorExtenso(v){v=r2(Math.abs(Number(v)||0));const i=Math.floor(v),c=Math.round((v-i)*100);
+ const U=['zero','um','dois','três','quatro','cinco','seis','sete','oito','nove','dez','onze','doze','treze','catorze','quinze','dezesseis','dezessete','dezoito','dezenove'],D=['','','vinte','trinta','quarenta','cinquenta','sessenta','setenta','oitenta','noventa'],C=['','cento','duzentos','trezentos','quatrocentos','quinhentos','seiscentos','setecentos','oitocentos','novecentos'];
+ const ate999=n=>{if(n===0)return '';if(n===100)return 'cem';const c3=Math.floor(n/100),r=n%100;const p1=c3?C[c3]:'';const p2=r<20?(r?U[r]:''):(D[Math.floor(r/10)]+(r%10?' e '+U[r%10]:''));return [p1,p2].filter(Boolean).join(' e ')};
+ const mil=Math.floor(i/1000),res=i%1000;let t='';
+ if(mil)t=(mil===1?'mil':ate999(mil)+' mil')+(res?((res<100||res%100===0)?' e ':' ')+ate999(res):'');else t=ate999(i);
+ let out=i===0?'zero reais':t+(i===1?' real':' reais');
+ if(c)out+=' e '+ate999(c)+(c===1?' centavo':' centavos');
+ return out}
+
+/* ====== Crédito do paciente ====== */
+function creditoDe(p){return r2(Number(p.credito)||0)}
+function creditoForm(pid){const p=pac(pid);if(!p)return;
+ formModal('Crédito do paciente',[{k:'valor',l:'Valor a adicionar ao crédito',type:'number',req:true},{k:'obs',l:'Observação',full:true}],{valor:''},
+  o=>{p.credito=r2(creditoDe(p)+parseNum(o.valor));p.creditoObs=o.obs||'';toast('Crédito do paciente: '+money(p.credito))})}
+function creditoUsar(lid){const l=S.lancamentos.find(x=>x.id===lid);if(!l)return;const p=pac(l.pacienteId);if(!p)return;
+ const cred=creditoDe(p),saldo=r2(saldoL(l));
+ if(cred<=0.004){toast('Este paciente não tem crédito.');return}
+ const usa=Math.min(cred,saldo);
+ confirmModal('Usar '+money(usa)+' do crédito do paciente para abater este lançamento?',()=>{
+  const P=parcL(l);let alvo=P.find(x=>x.status!=='Recebido'&&x.status!=='Cancelado');
+  if(!alvo){alvo={id:uid(),venc:todayISO(),valor:usa,obs:'',recibo:null,status:'Em aberto'};P.push(alvo)}
+  const prev=r2(Number(alvo.valor)||0);
+  Object.assign(alvo,{data:todayISO(),receb:todayISO(),valor:usa,forma:'Crédito do paciente',status:'Recebido'});
+  if(prev-usa>0.004)P.push({id:uid(),venc:alvo.venc,data:'',receb:'',valor:r2(prev-usa),forma:'',obs:'Saldo da parcela',recibo:null,status:'Em aberto'});
+  p.credito=r2(cred-usa);lancRecalc(l)},'Usar crédito')}
 function formaTxt(l){if(!l||!l.forma)return '';let t=l.forma;if(l.forma==='Cartão de crédito')t+=(Number(l.cartaoParcelas)>1?' em '+l.cartaoParcelas+'x':(l.cartaoModo?' à vista':''));if(l.maquininha&&l.maquininha!=='Sem maquininha')t+=' ('+l.maquininha+(l.bandeira?', '+l.bandeira:'')+')';return t}
 function taxaChave(f,n){return f==='Cartão de crédito'?f+'|'+(Number(n)>1?n:1):f}
 function taxaSalva(f,n){const t=(S.config.taxasMaq||{})[taxaChave(f,n)];return t==null?'':String(t).replace('.',',')}
-function baixarLanc(id){const l=S.lancamentos.find(x=>x.id===id);if(!l)return;
- const pagoAntes=pagoEf(l),saldo=r2(Math.max(0,(l.valor||0)-pagoAntes))||r2(l.valor||0);const f0=l.forma||'Pix';
+function baixarLanc(id,pid){const l=S.lancamentos.find(x=>x.id===id);if(!l)return;
+ const A=parcAbertas(l);const alvo=(pid?parcL(l).find(x=>x.id===pid&&!parcRec(x)):null)||A[0]||null;
+ window._pgAlvo=alvo?alvo.id:'';
+ const pagoAntes=pagoEf(l),saldo=alvo?r2(alvo.valor):(r2(Math.max(0,(l.valor||0)-pagoAntes))||r2(l.valor||0));const f0=(alvo&&alvo.forma)||l.forma||'Pix';
  const opt=(L,v)=>L.map(o=>`<option ${String(o)===String(v)?'selected':''}>${esc(o)}</option>`).join('');
  const parc=[];for(let k=2;k<=12;k++)parc.push(k);
  openModal(`<h3>Registrar pagamento</h3>
- <p class="sub" style="margin-top:-4px">${esc(l.descricao||'Lançamento')}: ${money(l.valor)}${pagoAntes>0?`, já pago ${money(pagoAntes)}, falta ${money(saldo)}`:''}. Vencimento ${br(l.vencimento)}.</p>
+ <p class="sub" style="margin-top:-4px">${esc(l.descricao||'Lançamento')}: ${money(l.valor)}${pagoAntes>0?`, já pago ${money(pagoAntes)}`:''}${A.length>1&&alvo?`. Parcela ${parcL(l).filter(x=>x.status!=='Cancelado').indexOf(alvo)+1} de ${parcL(l).filter(x=>x.status!=='Cancelado').length}, de ${money(alvo.valor)}`:''}. Vencimento ${br(alvo?alvo.venc:l.vencimento)}.</p>
  ${pagosL(l).length?`<div style="margin-bottom:10px"><b style="font-size:13px">Pagamentos já registrados</b>${lancHist(l,true)}</div>`:''}
  <div class="fgrid">
   <label class="full"><span>O que aconteceu?</span><select id="pgQuando" onchange="pgMostra()"><option value="agora">O paciente pagou</option><option value="depois">Vai pagar em outra data</option></select></label>
  </div>
  <div class="fgrid" id="pgAgora">
   <label><span>Data do pagamento *</span><input type="date" id="pgData" value="${todayISO()}"></label>
-  <label><span>Valor recebido agora *</span><input type="number" step="0.01" id="pgValor" value="${saldo}" oninput="pgMostra()"><small class="sub" style="font-size:12px">Pode receber em partes. Cada valor reduz o saldo.</small></label>
+  <label><span>Valor recebido agora *</span><input type="number" step="0.01" id="pgValor" value="${saldo}" oninput="pgMostra()"><small class="sub" style="font-size:12px">Pode receber em partes. O que faltar vira uma nova parcela em aberto.</small></label>
   <label><span>Forma de pagamento *</span><select id="pgForma" onchange="pgMostra(1)">${opt(FORMAS_PAG,f0)}</select></label>
   <label id="pgModoL"><span>Como foi no crédito?</span><select id="pgModo" onchange="pgMostra(2)">${opt(['À vista','Parcelado'],Number(l.cartaoParcelas)>1?'Parcelado':'À vista')}</select></label>
   <label id="pgParcL"><span>Em quantas parcelas?</span><select id="pgParc" onchange="pgMostra(2)">${opt(parc,Number(l.cartaoParcelas)>1?l.cartaoParcelas:2)}</select></label>
@@ -971,6 +1136,7 @@ function pgMostra(trocouForma){const v=id=>{const e=$('#'+id);return e?e.value:'
  const falta=r2((window._pgSaldo||0)-valor);vis('pgResto',!depois&&falta>0.004);const tt=$('#pgRestoTit');if(tt)tt.textContent='Falta pagar '+money(falta)+'. O restante continua em aberto no financeiro.'}
 function pgSalvar(id){const l=S.lancamentos.find(x=>x.id===id);if(!l)return;const v=k=>{const e=$('#'+k);return e?e.value:''};
  if(v('pgQuando')==='depois'){const venc=v('pgVenc');if(!venc){toast('Informe a nova data de vencimento.');return}
+  const al=window._pgAlvo?parcL(l).find(x=>x.id===window._pgAlvo):null;if(al){al.venc=venc;if(v('pgFormaPrev'))al.forma=v('pgFormaPrev')}
   const ant=l.vencimento;l.vencimento=venc;l.vencManual=true;if(v('pgFormaPrev'))l.forma=v('pgFormaPrev');
   if(!pagoEf(l))l.statusOrig='Em aberto';l.obs=((l.obs?l.obs+' | ':'')+'Vencimento de '+br(ant)+' passou para '+br(venc)+(v('pgObs')?': '+v('pgObs'):'')).slice(0,500);
   save();closeModal();render();toast('Novo vencimento: '+br(venc));return}
@@ -979,13 +1145,22 @@ function pgSalvar(id){const l=S.lancamentos.find(x=>x.id===id);if(!l)return;cons
  const maq=FORMAS_MAQ.includes(f)?v('pgMaq'):'',usaMaq=maq&&maq!=='Sem maquininha',taxa=usaMaq?r2(parseNum(v('pgTaxa'))):0;
  if(usaMaq&&taxa>0){S.config.taxasMaq=S.config.taxasMaq||{};S.config.taxasMaq[taxaChave(f,parc)]=taxa}
  if(cartao&&maq)S.config.maqPadrao=maq;
- lancMigra(l);
- l.pagamentos.push({id:uid(),data,valor,forma:f,cartaoModo:cred?(parc>1?'Parcelado':'À vista'):'',cartaoParcelas:cred?parc:'',maquininha:maq||'',bandeira:cartao?v('pgBand'):'',taxa:usaMaq?taxa:'',taxaValor:usaMaq?r2(valor*taxa/100):'',liquido:r2(valor-(usaMaq?valor*taxa/100:0)),obs:''});
+ const P=parcL(l);let alvo=window._pgAlvo?P.find(x=>x.id===window._pgAlvo&&!parcRec(x)):null;
+ if(!alvo)alvo=P.find(x=>x.status!=='Recebido'&&x.status!=='Cancelado');
+ if(!alvo){alvo={id:uid(),venc:data,valor,obs:'',recibo:null,status:'Em aberto'};P.push(alvo)}
+ const prev=r2(Number(alvo.valor)||0);
+ Object.assign(alvo,{data,receb:data,valor,forma:f,cartaoModo:cred?(parc>1?'Parcelado':'À vista'):'',cartaoParcelas:cred?parc:'',maquininha:maq||'',bandeira:cartao?v('pgBand'):'',taxa:usaMaq?taxa:'',taxaValor:usaMaq?r2(valor*taxa/100):'',liquido:r2(valor-(usaMaq?valor*taxa/100:0)),status:'Recebido'});
+ let resto=r2(prev-valor);
+ const elR=$('#pgResto'),mostrouResto=!!elR&&elR.style.display!=='none';
+ if(resto>0.004)P.push({id:uid(),venc:(mostrouResto&&v('pgRestoData'))||alvo.venc||data,data:'',receb:'',valor:resto,forma:(mostrouResto&&v('pgRestoForma'))||'',obs:'Saldo da parcela de '+br(alvo.venc),recibo:null,status:'Em aberto'});
+ else if(resto<-0.004){let sobra=r2(-resto);P.filter(x=>x!==alvo&&x.status!=='Recebido'&&x.status!=='Cancelado').sort((a,b)=>(a.venc||'').localeCompare(b.venc||'')).forEach(x=>{if(sobra<=0.004)return;const t=Math.min(sobra,Number(x.valor)||0);x.valor=r2((Number(x.valor)||0)-t);sobra=r2(sobra-t)});
+  for(let i=P.length-1;i>=0;i--)if(P[i]!==alvo&&P[i].status!=='Recebido'&&(Number(P[i].valor)||0)<=0.004)P.splice(i,1)}
  lancRecalc(l);
  if(cred&&parc>1&&!l.parcela)l.parcela=parc+'x no cartão';
- const falta=saldoL(l),n=pagosL(l).length;
- if(falta>0.004){const rd=v('pgRestoData');if(rd){const ant=l.vencimento;l.vencimento=rd;l.vencManual=true;l.obs=((l.obs?l.obs+' | ':'')+'Pagou '+money(valor)+' em '+br(data)+'. Restante de '+money(falta)+' para '+br(rd)+(v('pgRestoForma')?' no '+v('pgRestoForma'):'')).slice(0,500);if(v('pgRestoForma'))l.formaRestante=v('pgRestoForma')}}
- save();closeModal();render();toast(falta>0.004?'Pagamento '+n+' registrado: '+money(valor)+'. Falta '+money(falta)+'.':'Quitado. '+money(pagoEf(l))+' em '+n+' pagamento'+(n>1?'s':''))}
+ const falta=saldoL(l),n=pagosL(l).length,pn=parcNum(l);
+ if(falta>0.004&&mostrouResto&&v('pgRestoForma'))l.formaRestante=v('pgRestoForma');
+ const volta=UI.parcAberta===l.id;save();closeModal();if(volta)setTimeout(()=>parcelasLanc(l.id),0);else render();
+ toast(falta>0.004?'Recebido '+money(valor)+'. Parcela '+pn.pagas+' de '+pn.total+'. Falta '+money(falta)+'.':'Quitado. '+money(pagoEf(l))+' em '+n+' pagamento'+(n>1?'s':''))}
 
 function pSess(p){const L=S.tratamentos.filter(t=>t.pacienteId===p.id&&!['Reprovado','Em aberto','Em follow up'].includes(stTrat(t)));
  return `<div class="card">${ehSeg('podologia')?'<h2>Planos de Tratamento Aprovados</h2>':`<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px"><h2 style="margin:0">${ehSeg('beleza')?'Pacotes e assinaturas':'Pacotes de sessões'}</h2><button class="btn sm" onclick="pacoteForm('${p.id}')">${ico('plus',14)} Novo pacote</button></div>`}${L.map(t=>{const st=stTrat(t);return `<div class="row"><span>${esc(t.procedimento)}<br><small style="color:var(--mut);font-weight:400">${br(t.data)} ${esc(t.profissional||'')}${t.validade?` · válido até ${br(t.validade)}`:''}${!ehSeg('podologia')&&st!=='Concluído'?` · saldo: ${Math.max(0,(t.sessoesTotal||1)-(t.sessoesRealizadas||0))} ${Math.max(0,(t.sessoesTotal||1)-(t.sessoesRealizadas||0))===1?'sessão':'sessões'}`:''}</small></span><span style="display:flex;gap:14px;align-items:center;flex-wrap:wrap;justify-content:flex-end"><b style="color:var(--ink)">${t.sessoesRealizadas||0}/${t.sessoesTotal||1}</b>${badgeFor(st)}<span style="color:var(--ok)">${money(t.valor)}</span>${st!=='Concluído'?`<button class="btn sm" onclick="addSessao('${t.id}')">+ Sessão realizada</button>`:''}</span></div>`}).join('')||`<div class="mini-empty">${ehSeg('podologia')?'Nenhum plano de tratamento aprovado.':'Nenhum pacote ativo.'}</div>`}</div>`}
@@ -1048,8 +1223,8 @@ function fReceber(){const t=todayISO();let L=S.lancamentos.filter(l=>{const st=s
  const tot=L.reduce((a,l)=>a+(UI.crStatus==='pago'?pagoEf(l):saldoL(l)),0);
  return `<div class="phead"><div><h1>Contas a Receber</h1><p class="sub">Parcelas dos pacientes. Em aberto inclui as vencidas antes do período.</p></div><button class="btn ghost" onclick="exportRows('contas_a_receber',['Status','Vencimento','Paciente','Descrição','Parcela','Forma','Valor','Saldo'],window._cr)">${ico('down',16)} Exportar Excel</button></div>
  <div class="card" style="margin-bottom:16px">${rangeFilters(`<label>Situação<select onchange="UI.crStatus=this.value;render()"><option value="aberto" ${UI.crStatus==='aberto'?'selected':''}>Em aberto</option><option value="pago" ${UI.crStatus==='pago'?'selected':''}>Recebidas</option><option value="todos" ${UI.crStatus==='todos'?'selected':''}>Todas do período</option></select></label>`)}</div>
- <div class="card" style="padding:0"><div class="tw"><table class="tbl dark"><thead><tr><th>Status</th><th>Vencimento</th><th>Nome</th><th>Descrição</th><th>Parcela</th><th>Forma de Pagamento</th><th class="num">Valor</th><th class="num">Saldo</th><th>Confirmar</th></tr></thead><tbody>
- ${(window._cr=L.map(l=>{const p=pac(l.pacienteId);return [stLanc(l),br(l.vencimento),p?p.nome:'',l.descricao,l.parcela||'',l.forma||'',l.valor,saldoL(l)]}),L).map(l=>{const p=pac(l.pacienteId);const st=stLanc(l);return `<tr><td>${badgeFor(st)}</td><td>${br(l.vencimento)}</td><td><button class="lnk" onclick="go('paciente','${l.pacienteId}');UI.pacTab='financeiro';render()">${esc(p?p.nome:'?')}</button></td><td>${esc(l.descricao)}</td><td>${esc(l.parcela||'-')}</td><td>${esc(formaTxt(l)||'-')}</td><td class="num">${money(l.valor)}</td><td class="num">${money(saldoL(l))}</td><td style="white-space:nowrap">${st!=='Pago'?`<button class="btn soft sm" onclick="cobrarPix('${l.id}')">Pix</button> <button class="btn green sm" onclick="baixarLanc('${l.id}')">Receber</button> `:''}${pagosL(l).length?`<button class="lnk" onclick="histLanc('${l.id}')">${pagosL(l).length}x</button>`:''}</td></tr>`}).join('')||'<tr><td colspan="9" class="empty">Sem registros</td></tr>'}</tbody></table></div>
+ <div class="card" style="padding:0"><div class="tw"><table class="tbl dark"><thead><tr><th>Status</th><th>Vencimento</th><th>Nome</th><th>Descrição</th><th>Parcela</th><th>Forma de Pagamento</th><th class="num">Valor</th><th class="num">Saldo</th><th>Parcelas</th><th>Confirmar</th></tr></thead><tbody>
+ ${(window._cr=L.map(l=>{const p=pac(l.pacienteId);return [stLanc(l),br(l.vencimento),p?p.nome:'',l.descricao,l.parcela||'',l.forma||'',l.valor,saldoL(l)]}),L).map(l=>{const p=pac(l.pacienteId);const st=stLanc(l);return `<tr><td>${badgeFor(st)}</td><td>${br(l.vencimento)}</td><td><button class="lnk" onclick="go('paciente','${l.pacienteId}');UI.pacTab='financeiro';render()">${esc(p?p.nome:'?')}</button></td><td>${esc(l.descricao)}</td><td>${esc(l.parcela||'-')}</td><td>${esc(formaTxt(l)||'-')}</td><td class="num">${money(l.valor)}</td><td class="num">${money(saldoL(l))}</td><td>${parcBolinhas(l)}</td><td style="white-space:nowrap">${st!=='Pago'?`<button class="btn soft sm" onclick="cobrarPix('${l.id}')">Pix</button> <button class="btn green sm" onclick="baixarLanc('${l.id}')">Receber</button> `:''}<button class="btn ghost sm" title="Mais ações" onclick="lancMenu('${l.id}')">⋮</button></td></tr>`}).join('')||'<tr><td colspan="10" class="empty">Sem registros</td></tr>'}</tbody></table></div>
  <div style="text-align:right;padding:12px 16px;font-weight:700">Total ${money(tot)}</div></div>`}
 function fInad(){const L=inadList();const tot=L.reduce((a,o)=>a+o.valor,0);
  window._inad=L.map(o=>[o.p.nome,o.p.celular||'',o.qtd,br(o.maisAntigo),o.dias,o.valor,o.totalAberto]);
@@ -1739,7 +1914,7 @@ function agNovo(a,s){if(s==='Desmarcado'||s==='Faltou')return false;const k=a.da
  const hist=c=>S[c].some(x=>x.pacienteId===a.pacienteId&&((x.data||x.vencimento||x.pagamento||'')<a.data)&&(x.data||x.vencimento||x.pagamento));
  return !hist('evolucoes')&&!hist('tratamentos')&&!S.lancamentos.some(l=>l.pacienteId===a.pacienteId&&l.pagamento&&l.pagamento<a.data)}
 /* ============ Atualização: aviso com botão Atualizar agora ============ */
-const VERSAO_APP='1.9.7';const URL_VERSAO_JSON='https://raw.githubusercontent.com/TheIgor12/blacksolutions/main/versao.json';
+const VERSAO_APP='1.9.8';const URL_VERSAO_JSON='https://raw.githubusercontent.com/TheIgor12/blacksolutions/main/versao.json';
 const numV=v=>String(v||'0').split(/\D+/).filter(Boolean).map(Number);
 function versaoMaior(a,b){const x=numV(a),y=numV(b);for(let i=0;i<Math.max(x.length,y.length);i++){const d=(x[i]||0)-(y[i]||0);if(d)return d>0}return false}
 const ATU={nova:null,timer:null};
@@ -1861,7 +2036,7 @@ function sincLancAg(a){if(!a||!lancAgAtivo())return;const st=stAg(a);let l=lancD
  const preco=valorAg(a);
  if(st==='Faltou'||st==='Desmarcado'||!preco){if(l&&!pago)S.lancamentos=S.lancamentos.filter(x=>x!==l);return}
  if(pago)return;
- if(!l){l={id:'ag_'+a.id,pacienteId:a.pacienteId,valor:0,valorPago:0,pagamento:'',forma:'',parcela:'',profissional:a.profissional||'',origem:'agenda',agendamentoId:a.id};S.lancamentos.push(l)}
+ if(!l){l={id:'ag_'+a.id,pacienteId:a.pacienteId,valor:0,valorPago:0,pagamento:'',forma:'',parcela:'',profissional:a.profissional||'',origem:'agenda',agendamentoId:a.id,criadoEm:a.data||todayISO(),criadoHora:a.hora||''};S.lancamentos.push(l)}
  l.pacienteId=a.pacienteId;if(!l.vencManual)l.vencimento=a.data;l.profissional=a.profissional||'';l.valor=preco;
  l.descricao=(a.procedimento||'Atendimento')+((a.extras||[]).filter(e=>e.desc).length?' + '+a.extras.filter(e=>e.desc).map(e=>e.desc).join(' + '):'')+(st==='Atendido'?' (atendido em '+br(a.data)+')':' (agendado para '+br(a.data)+')');
  l.statusOrig=st==='Atendido'?'Em aberto':'Previsto'}
@@ -1889,7 +2064,8 @@ async function fotoAddRef(pid,tipo,id,input){const fs=[...input.files];input.val
 /* ============ Configurações ============ */
 function vConfig(){const c=S.config;const tot=S.pacientes.length+S.lancamentos.length+S.tratamentos.length+S.agendamentos.length+S.anamneses.length+S.contasPagar.length;
  return `<div class="page" style="max-width:900px"><div class="phead"><div><h1>Configurações</h1><p class="sub">Dados da clínica, mensagens, backup e exportação.</p></div></div>
- <div class="card"><h2>Clínica</h2><div class="fgrid" id="cfgF"><label>Nome da clínica<input name="clinica" value="${esc(c.clinica)}"></label><label>Nome do usuário<input name="usuario" value="${esc(c.usuario)}"></label><label>Cor principal (botões e destaques)<input name="cor" type="color" value="${esc(c.cor)}"></label><label>Cor da barra superior<input name="corTopo" type="color" value="${esc(c.corTopo||'#14306b')}"></label><label>Prazo do alerta de retorno (dias)<input name="diasRetorno" type="number" value="${esc(c.diasRetorno)}"></label><label>Aviso na tela 15 e 5 minutos antes do atendimento<select name="avisoAgenda"><option value="sim" ${c.avisoAgenda!==false?'selected':''}>Ligado</option><option value="nao" ${c.avisoAgenda===false?'selected':''}>Desligado</option></select></label>
+ <div class="card"><h2>Clínica</h2><div class="fgrid" id="cfgF"><label>Nome da clínica<input name="clinica" value="${esc(c.clinica)}"></label><label>Nome do usuário<input name="usuario" value="${esc(c.usuario)}"></label><label>Cor principal (botões e destaques)<input name="cor" type="color" value="${esc(c.cor)}"></label><label>Cor da barra superior<input name="corTopo" type="color" value="${esc(c.corTopo||'#14306b')}"></label><label>Prazo do alerta de retorno (dias)<input name="diasRetorno" type="number" value="${esc(c.diasRetorno)}"></label>
+ <label>CNPJ ou CPF da clínica (sai no recibo)<input name="cnpj" value="${esc(c.cnpj||'')}"></label><label>Telefone da clínica<input name="telefone" value="${esc(c.telefone||'')}"></label><label class="full">Endereço da clínica<input name="endereco" value="${esc(c.endereco||'')}"></label><label>CPF do profissional que assina o recibo<input name="profCpf" value="${esc(c.profCpf||'')}"></label><label>Aviso na tela 15 e 5 minutos antes do atendimento<select name="avisoAgenda"><option value="sim" ${c.avisoAgenda!==false?'selected':''}>Ligado</option><option value="nao" ${c.avisoAgenda===false?'selected':''}>Desligado</option></select></label>
  <label class="full">Mensagem de cobrança (variáveis: {nome}, {clinica}, {valor}, {vencimento})<textarea name="msgCobranca" rows="3">${esc(c.msgCobranca)}</textarea></label>
  <label class="full">Mensagem de retorno (variáveis: {nome}, {clinica})<textarea name="msgRetorno" rows="3">${esc(c.msgRetorno)}</textarea></label></div>
  <div class="mact"><button class="btn" onclick="saveCfg()">Salvar configurações</button></div></div>

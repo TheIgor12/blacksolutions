@@ -1,6 +1,6 @@
 {
-  "versao": "1.9.7",
-  "html": "https://raw.githubusercontent.com/TheIgor12/blacksolutions/main/download/blackflow-1.9.7.html",
-  "novidades": "Financeiro mais completo: todas as formas de pagamento, pagamento de pacote em partes com histórico, taxa e valor líquido. Na agenda, clique em um horário livre para agendar.",
+  "versao": "1.9.8",
+  "html": "https://raw.githubusercontent.com/TheIgor12/blacksolutions/main/download/blackflow-1.9.8.html",
+  "novidades": "Financeiro no formato do Clinicorp: tela de Parcelas por lançamento, pacote dividido em parcelas semanais ou mensais com baixa manual, recebimento parcial, recibo para imprimir, crédito do paciente e selo Financeiro Ok no agendamento.",
   "instalador": "https://blackflow.app.br/download/BlackFlow_Instalador.exe"
 }
