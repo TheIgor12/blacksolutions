@@ -1,6 +1,6 @@
 {
-  "versao": "1.9.6",
-  "html": "https://raw.githubusercontent.com/TheIgor12/blacksolutions/main/download/blackflow-1.9.6.html",
-  "novidades": "No Registrar pagamento: cartão à vista ou parcelado e em quantas vezes, maquininha Ton, bandeira, taxa e valor líquido. Opção de pagar em outra data, com novo vencimento.",
+  "versao": "1.9.7",
+  "html": "https://raw.githubusercontent.com/TheIgor12/blacksolutions/main/download/blackflow-1.9.7.html",
+  "novidades": "Financeiro mais completo: todas as formas de pagamento, pagamento de pacote em partes com histórico, taxa e valor líquido. Na agenda, clique em um horário livre para agendar.",
   "instalador": "https://blackflow.app.br/download/BlackFlow_Instalador.exe"
 }

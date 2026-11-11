@@ -139,7 +139,9 @@ a.btn{text-decoration:none}
 .aghead.today{background:var(--acc);color:#fff;font-weight:600}
 .agtime{position:relative;font-size:11px;color:var(--mut);text-align:right;padding-right:6px}
 .agtime div{position:absolute;right:6px;transform:translateY(-6px)}.agtime div:first-child{transform:none}
-.agcol{position:relative;border-left:1px solid var(--line);background:repeating-linear-gradient(to bottom,#fff 0,#fff 31px,#f1f1f1 31px,#f1f1f1 32px)}
+.agcol{position:relative;border-left:1px solid var(--line);background:repeating-linear-gradient(to bottom,#fff 0,#fff 31px,#f1f1f1 31px,#f1f1f1 32px);cursor:copy}
+.agcol:hover{background:repeating-linear-gradient(to bottom,#fcfdff 0,#fcfdff 31px,#eef2f8 31px,#eef2f8 32px)}
+.agmarca{position:absolute;left:2px;right:2px;height:30px;border:1px dashed var(--acc);border-radius:4px;background:rgba(39,99,215,.08);pointer-events:none;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:var(--acc)}
 .agcol.wk{background-color:#fafafa}
 .ev{position:absolute;background:#e3ebfd;border-left:3px solid var(--acc);border-radius:3px;padding:2px 5px;font-size:11px;overflow:hidden;cursor:pointer;line-height:1.25;box-shadow:0 1px 2px rgba(0,0,0,.08)}
 .ev b{display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-size:11px}
@@ -418,7 +420,7 @@ function stLanc(l){const s=norm(l.statusOrig);if(/cancel|estorn/.test(s))return 
  const pagoTxt=!aberto&&/(^| )(pago|paga|quitad|recebid|baixad|liquidad|confirmad)/.test(s);
  if(pagoTxt||(!aberto&&l.pagamento)||(l.valor>0&&l.valorPago>=l.valor-0.005))return 'Pago';
  if(l.vencimento&&l.vencimento<todayISO())return 'Em atraso';return 'A vencer'}
-function pagoEf(l){const st=stLanc(l);if(st==='Cancelado')return 0;if(st==='Pago')return l.valorPago||l.valor||0;return l.valorPago||0}
+function pagoEf(l){const st=stLanc(l);if(st==='Cancelado')return 0;if(Array.isArray(l.pagamentos))return r2(l.pagamentos.reduce((a,x)=>a+(Number(x.valor)||0),0));if(st==='Pago')return l.valorPago||l.valor||0;return l.valorPago||0}
 function saldoL(l){return ['Cancelado','Previsto'].includes(stLanc(l))?0:Math.max(0,(l.valor||0)-pagoEf(l))}
 function stConta(c){const s=norm(c.statusOrig);if(/cancel/.test(s))return 'Cancelado';const ab=/aberto|pendente|a pagar|nao pag/.test(s);
  if((!ab&&(c.pagamento||/(^| )(pago|paga|quitad|baixad|liquidad)/.test(s)))||(c.valor>0&&c.valorPago>=c.valor-0.005))return 'Pago';
@@ -429,7 +431,9 @@ function stTrat(t){const s=norm(t.statusOrig);if(/conclu|finaliz|executad/.test(
 function stAg(a){const s=norm(a.status);if(/falt|nao compareceu|ausen/.test(s))return 'Faltou';if(/desmarc|cancel|remarc/.test(s))return 'Desmarcado';
  if(/atendid|conclu|finaliz|realizad/.test(s))return 'Atendido';if(/confirm/.test(s))return 'Confirmado';return 'Agendado'}
 function badgeFor(st){const m={'Pago':'b-ok','Concluído':'b-ok','Atendido':'b-ok','Aprovado':'b-ok','Ativo':'b-ok','Confirmado':'b-info','A vencer':'b-info','Agendado':'b-info','Em aberto':'b-warn','Em follow up':'b-warn','Em atraso':'b-bad','Previsto':'b-warn','Faltou':'b-bad','Reprovado':'b-bad','Inativo':'b-mut','Cancelado':'b-mut','Desmarcado':'b-mut'};return `<span class="badge ${m[st]||'b-mut'}">${esc(st)}</span>`}
-function entradasList(){return S.lancamentos.filter(l=>pagoEf(l)>0).map(l=>({data:l.pagamento||l.vencimento,valor:pagoEf(l),l}))}
+function entradasList(){const out=[];S.lancamentos.forEach(l=>{if(stLanc(l)==='Cancelado')return;const P=pagosL(l);
+ if(P.length)P.forEach(x=>{const v=Number(x.valor)||0;if(v>0.004)out.push({data:x.data||l.vencimento,valor:r2(v),l,pg:x})});
+ else if(pagoEf(l)>0)out.push({data:l.pagamento||l.vencimento,valor:pagoEf(l),l});});return out}
 function saidasList(){return S.contasPagar.filter(c=>stConta(c)==='Pago').map(c=>({data:c.pagamento||c.vencimento,valor:c.valorPago||c.valor,c}))}
 function lastApptMap(){const m={};const t=todayISO();S.agendamentos.forEach(a=>{const sa=stAg(a);if(sa==='Desmarcado'||(sa==='Faltou'&&a.data<=t))return;const o=m[a.pacienteId]||(m[a.pacienteId]={last:'',next:''});if(a.data<=t){if(a.data>o.last)o.last=a.data}else{if(!o.next||a.data<o.next)o.next=a.data}});return m}
 function retornoList(){const m=lastApptMap(),t=todayISO(),lim=Number(S.config.diasRetorno)||90;return S.pacientes.filter(p=>p.status!=='Inativo').map(p=>({p,o:m[p.id]})).filter(x=>x.o&&x.o.last&&!x.o.next&&diffDays(x.o.last,t)>=lim).map(x=>({p:x.p,last:x.o.last,dias:diffDays(x.o.last,t)})).sort((a,b)=>a.dias-b.dias)}
@@ -556,7 +560,7 @@ function shell(content){const c=S.config;
  return `<header class="top"><button class="ico" onclick="toggleDrawer()" aria-label="Menu">${ico('menu')}</button>
  <div class="gsearch"><input id="gs" placeholder="Encontre ${esc(SEG().pessoas.toLowerCase())} ou funções do sistema" oninput="globalSearch(this.value)" onblur="setTimeout(()=>{const r=$('#gsr');if(r)r.classList.remove('on')},200)" autocomplete="off"><div id="gsr" class="gsr"></div></div>
  ${NV.ativa?`<span id="sync" class="sync" title="Sincronização com a nuvem">${syncTxt()}</span>`:''}<button class="ico refr" title="Atualizar: busca os dados novos da nuvem e procura versão nova do sistema" onclick="refrescar(this)">${ico('refresh',17)}</button><div class="user" style="cursor:pointer" onclick="abrirConta()"><span class="av">${esc(initials(nomeUsuario()))}</span><div><b>${esc(nomeUsuario())}</b><small>${esc(c.clinica)}</small></div></div></header>
- <aside class="drawer ${UI.drawer?'open':''}"><div class="brand ${S.config.logo?'':'escuro'}"><img src="${logoClinica()}" alt="${esc(c.clinica)}"></div><div class="prod">BLACKFLOW <span style="font-weight:600">by BlackSolutions</span></div><span class="plan">Versão 1.9.6</span><button class="lnk" style="display:block;margin:6px 16px 0;font-size:12px;text-align:left" onclick="UI.drawer=false;render();atuChecar(true)">Procurar atualização</button><button class="lnk" style="display:block;margin:8px 16px 0;font-size:12px;text-align:left" onclick="UI.drawer=false;perguntarSegmento()">Segmento: <b>${esc(SEG().nome)}</b> · trocar</button>
+ <aside class="drawer ${UI.drawer?'open':''}"><div class="brand ${S.config.logo?'':'escuro'}"><img src="${logoClinica()}" alt="${esc(c.clinica)}"></div><div class="prod">BLACKFLOW <span style="font-weight:600">by BlackSolutions</span></div><span class="plan">Versão 1.9.7</span><button class="lnk" style="display:block;margin:6px 16px 0;font-size:12px;text-align:left" onclick="UI.drawer=false;render();atuChecar(true)">Procurar atualização</button><button class="lnk" style="display:block;margin:8px 16px 0;font-size:12px;text-align:left" onclick="UI.drawer=false;perguntarSegmento()">Segmento: <b>${esc(SEG().nome)}</b> · trocar</button>
  <div class="menu"><button class="${UI.view==='inicio'?'on':''}" onclick="go('inicio')">${ico('home',18)} Início</button>${menuProfs()}<div class="msec">MÓDULOS</div>
  ${menuItens().map(([k,l,i])=>`<button class="${(UI.view===k&&!(k==='agenda'&&UI.agProf))||(k==='pacientes'&&UI.view==='paciente')?'on':''}" onclick="${k==='agenda'?"agProf('')":`go('${k}')`}">${ico(i,18)} ${l}</button>`).join('')}</div>
  <div class="mfoot menu"><button class="${UI.view==='config'?'on':''}" onclick="go('config')">${ico('gear',18)} Configurações</button></div></aside>
@@ -776,7 +780,7 @@ function vAgendaCel(){const d=UI.agDate;const base=new Date(d+'T00:00');const t=
  return `<div class="agc">
   <div class="agc-top">
    <button class="agc-dia" onclick="agEscolherDia()"><span><b>${esc(titulo)}</b><small>${base.getDate()} de ${MESES[base.getMonth()].toLowerCase()} de ${base.getFullYear()}</small></span>${ico('cal',18)}<em>Trocar dia</em></button>
-   <button class="btn sm" onclick="${ehSeg('podologia')?'agForm()':'atendForm()'}">${ico('plus',16)} Agendar</button>
+   <button class="btn sm" onclick="${ehSeg('podologia')?`agForm(null,null,{data:'${d}'})`:'atendForm()'}">${ico('plus',16)} Agendar</button>
   </div>
   <div class="agc-n">${evs.length?evs.length+(evs.length===1?' agendamento':' agendamentos'):''}</div>
   ${evs.length?evs.map(a=>{const p=pac(a.pacienteId);const c=agClasse(a);return `<button class="agc-it ${c}" onclick="agModal('${a.id}')"><span class="agc-h">${esc(a.hora||'')}</span><span class="agc-x"><b>${esc(p?p.nome:'?')}</b><small>${esc(a.procedimento||'')}${a.profissional?' · '+esc(a.profissional):''}</small></span><span class="agc-st">${rot[c]}</span></button>`}).join(''):`<div class="agc-vazio">Nenhum agendamento neste dia.</div>`}
@@ -799,7 +803,7 @@ function vAgenda(){if(ehCel())return vAgendaCel();const H0=6,H1=22,PX=64;const b
   const html=pos.map(it=>{const {a,st,L}=it;const p=pac(a.pacienteId);const top=Math.max(0,(st/60-H0)*PX);const hgt=Math.max(30,(a.duracao||30)/60*PX-2);const s=stAg(a);const novo=agNovo(a,s);const cls=s==='Faltou'?'falta':s==='Desmarcado'?'desm':s==='Atendido'?'ok':novo?'novo':s==='Confirmado'?'conf':'agd';
    return `<div class="ev ${cls}" style="top:${top}px;height:${hgt}px;${agEstilo(it,pos,nL)}" onclick="agModal('${a.id}')" title="${esc(a.hora+' '+(p?p.nome:'')+' · '+(novo?'Paciente novo · ':'')+s+(s==='Desmarcado'?' · horário livre':''))}"><b>${esc(a.hora)} ${esc(p?p.nome:'?')}</b><span>${novo?`<i class="evtag">NOVO${s==='Confirmado'?' ✓':''}</i>`:''}${sessTagAg(a)}<i class="evdot" style="background:${profColor(a.profissional)}"></i>${esc(a.profissional||'')}</span><span>${esc(a.procedimento||'')}</span></div>`}).join('');
   let now='';if(ds===t){const n=new Date();const mm=n.getHours()*60+n.getMinutes();if(mm>=H0*60&&mm<=H1*60)now=`<div class="nowline" style="top:${(mm/60-H0)*PX}px"></div>`}
-  return {d,ds,lab,html:html+now}}).filter(c=>!profCols||c.lab!=='Sem profissional'||c.html.includes('class="ev'));
+  return {d,ds,lab,prof,html:html+now}}).filter(c=>!profCols||c.lab!=='Sem profissional'||c.html.includes('class="ev'));
  const rets=retornoList().slice(0,12);
  return `<div class="ag"><div class="agside">
   <label class="filters" style="margin:0"><span style="font-size:12px;color:var(--mut)">Ir para a data</span><input type="date" value="${UI.agDate}" onchange="UI.agDate=this.value||todayISO();render()"></label>
@@ -813,8 +817,15 @@ function vAgenda(){if(ehCel())return vAgendaCel();const H0=6,H1=22,PX=64;const b
   <div class="ttl">${esc(title)}</div><button class="ico" style="color:var(--mut)" onclick="window.print()" title="Imprimir">${ico('print',18)}</button></div>
   <div class="agscroll"><div class="agrid" style="grid-template-columns:56px repeat(${cols.length},minmax(110px,1fr))">
    <div class="aghead"></div>${cols.map(c=>`<div class="aghead ${c.ds===t&&!c.lab?'today':''}">${c.lab?esc(c.lab):`${c.d.getDate()} - ${DIAS[c.d.getDay()]}`}</div>`).join('')}
-   <div class="agtime" style="height:${H}px">${times}</div>${cols.map(c=>`<div class="agcol ${c.d.getDay()===0?'wk':''}" style="height:${H}px">${c.html}</div>`).join('')}
+   <div class="agtime" style="height:${H}px">${times}</div>${cols.map(c=>`<div class="agcol ${c.d.getDay()===0?'wk':''}" data-dia="${c.ds}" data-prof="${esc(c.prof||'')}" title="Clique em um horário livre para agendar" onclick="agClique(event,this)">${c.html}</div>`).join('')}
   </div></div></div></div>`}
+/* Clique em qualquer horário livre da agenda: abre o agendamento já com o dia, a hora e o profissional */
+const AG_H0=6,AG_PX=64;
+function agClique(e,el){if(e.target!==el)return;const r=el.getBoundingClientRect();const y=e.clientY-r.top+el.scrollTop;
+ let mm=Math.round((AG_H0*60+y/AG_PX*60)/15)*15;mm=Math.max(AG_H0*60,Math.min(21*60+45,mm));
+ const hora=pad(Math.floor(mm/60))+':'+pad(mm%60),dia=el.dataset.dia||UI.agDate;
+ const mk=document.createElement('div');mk.className='agmarca';mk.style.top=((mm/60-AG_H0)*AG_PX)+'px';mk.textContent=hora;el.appendChild(mk);setTimeout(()=>mk.remove(),2500);
+ agForm(null,null,{data:dia,hora,profissional:el.dataset.prof||''})}
 function agForm(id,pacienteId,pre){pre=pre||{};const a=id?S.agendamentos.find(x=>x.id===id):null;const p=a?pac(a.pacienteId):(pacienteId?pac(pacienteId):null);
  formModal(a?'Editar agendamento':'Novo agendamento',[{k:'paciente',l:SEG().pessoa,req:true,list:'dlPac',full:true},{k:'data',l:'Data',type:'date',req:true},{k:'hora',l:'Hora',type:'hora15',req:true},{k:'duracao',l:'Duração (minutos)',type:'number'},{k:'profissional',l:'Profissional',list:'dlProf'},{k:'procedimento',l:ehSeg('podologia')?'Procedimento':'Serviço',full:true,list:'dlServ'},{k:'status',l:'Status',type:'select',opts:['Agendado','Confirmado','Atendido','Faltou','Desmarcado']},{k:'obs',l:'Observação',type:'textarea',rows:2,full:true}],
   a?{...a,paciente:p?p.nome:'',status:stAg(a)}:{paciente:p?p.nome:'',data:pre.data||UI.agDate,hora:pre.hora||'09:00',duracao:pre.duracao||30,profissional:pre.profissional||'',status:'Agendado'},
@@ -882,16 +893,39 @@ function tratForm(id,pacienteId){const t=id?S.tratamentos.find(x=>x.id===id):nul
 function pFin(p){const L=S.lancamentos.filter(l=>l.pacienteId===p.id).sort((a,b)=>(a.vencimento||'').localeCompare(b.vencimento||''));const tot=L.reduce((a,l)=>a+saldoL(l),0);
  return `<div class="phead"><h2 style="margin:0">Financeiro</h2><div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn soft" onclick="parcelasForm('${p.id}')">Adicionar parcelamento</button><button class="btn" onclick="lancForm(null,'${p.id}')">${ico('plus',16)} Adicionar Lançamento</button></div></div>
  <div class="card" style="padding:0"><div class="tw"><table class="tbl dark"><thead><tr><th>Vencimento</th><th>Descrição</th><th>Parcela</th><th class="num">Valor a pagar</th><th class="num">Valor pago</th><th class="num">Saldo</th><th>Forma pagto.</th><th>Pagamento</th><th>Status</th><th></th></tr></thead><tbody>
- ${L.map(l=>{const st=stLanc(l);return `<tr><td>${br(l.vencimento)}</td><td>${esc(l.descricao)}</td><td>${esc(l.parcela||'-')}</td><td class="num">${money(l.valor)}</td><td class="num">${money(pagoEf(l))}</td><td class="num" style="color:${saldoL(l)?'var(--info)':'var(--mut)'}">${money(saldoL(l))}</td><td>${esc(formaTxt(l)||'-')}</td><td>${br(l.pagamento)}</td><td>${badgeFor(st)}</td><td class="num" style="white-space:nowrap">${st!=='Pago'&&st!=='Cancelado'?`<button class="btn soft sm" onclick="cobrarPix('${l.id}')">Pix</button> <button class="btn green sm" onclick="baixarLanc('${l.id}')">Baixar</button> `:''}<button class="lnk" onclick="lancForm('${l.id}')">Editar</button></td></tr>`}).join('')||'<tr><td colspan="10" class="empty">Nenhum lançamento.</td></tr>'}</tbody></table></div>
+ ${L.map(l=>{const st=stLanc(l);return `<tr><td>${br(l.vencimento)}</td><td>${esc(l.descricao)}</td><td>${esc(l.parcela||'-')}</td><td class="num">${money(l.valor)}</td><td class="num">${money(pagoEf(l))}</td><td class="num" style="color:${saldoL(l)?'var(--info)':'var(--mut)'}">${money(saldoL(l))}</td><td>${esc(formaTxt(l)||'-')}</td><td>${br(l.pagamento)}${pagosL(l).length>1?`<br><button class="lnk" style="font-size:12px" onclick="histLanc('${l.id}')">${pagosL(l).length} pagamentos</button>`:''}</td><td>${badgeFor(st)}</td><td class="num" style="white-space:nowrap">${st!=='Pago'&&st!=='Cancelado'?`<button class="btn soft sm" onclick="cobrarPix('${l.id}')">Pix</button> <button class="btn green sm" onclick="baixarLanc('${l.id}')">Receber</button> `:''}${pagosL(l).length?`<button class="lnk" onclick="histLanc('${l.id}')">Pagamentos</button> `:''}<button class="lnk" onclick="lancForm('${l.id}')">Editar</button></td></tr>`}).join('')||'<tr><td colspan="10" class="empty">Nenhum lançamento.</td></tr>'}</tbody></table></div>
  <div style="text-align:right;padding:12px 16px;font-weight:700">Saldo a pagar ${money(tot)}</div></div>`}
-function lancForm(id,pacienteId){const l=id?S.lancamentos.find(x=>x.id===id):null;const pid=l?l.pacienteId:pacienteId;
- formModal(l?'Editar lançamento':'Novo lançamento',[{k:'descricao',l:'Descrição',req:true,full:true},{k:'valor',l:'Valor',type:'number',req:true},{k:'vencimento',l:'Vencimento',type:'date',req:true},{k:'parcela',l:'Parcela (ex.: 1/3)'},{k:'forma',l:'Forma de pagamento',type:'select',opts:['','Pix','Dinheiro','Cartão de crédito','Cartão de débito','Boleto','Transferência','Cheque']},{k:'valorPago',l:'Valor já pago',type:'number'},{k:'pagamento',l:'Data do pagamento',type:'date'},{k:'statusOrig',l:'Situação',type:'select',opts:['','Pago','Em aberto','Cancelado']}],
-  l||{vencimento:todayISO(),descricao:'Lançamento de Tratamento'},o=>{if(o.statusOrig==='Em aberto'&&!o.valorPago)o.pagamento='';if(l)Object.assign(l,o);else S.lancamentos.push({id:uid(),pacienteId:pid,origem:'manual',...o})},
+function lancForm(id,pacienteId){const l=id?S.lancamentos.find(x=>x.id===id):null;const pid=l?l.pacienteId:pacienteId;const temPg=!!(l&&pagosL(l).length);
+ formModal(l?'Editar lançamento':'Novo lançamento',[{k:'descricao',l:'Descrição',req:true,full:true},{k:'valor',l:temPg?'Valor total (já pago '+money(pagoEf(l))+')':'Valor',type:'number',req:true},{k:'vencimento',l:'Vencimento',type:'date',req:true},{k:'parcela',l:'Parcela (ex.: 1/3)'},
+  ...(temPg?[]:[{k:'forma',l:'Forma de pagamento',type:'select',opts:['',...FORMAS_PAG]},{k:'valorPago',l:'Valor já pago',type:'number'},{k:'pagamento',l:'Data do pagamento',type:'date'},{k:'statusOrig',l:'Situação',type:'select',opts:['','Pago','Em aberto','Cancelado']}])],
+  l||{vencimento:todayISO(),descricao:'Lançamento de Tratamento'},o=>{if(o.statusOrig==='Em aberto'&&!o.valorPago)o.pagamento='';if(l){Object.assign(l,o);if(temPg)lancRecalc(l)}else S.lancamentos.push({id:uid(),pacienteId:pid,origem:'manual',...o})},
   l?`<button class="btn danger" style="margin-right:auto" onclick="delRec('lancamentos','${l.id}')">Excluir</button>`:'')}
-function parcelasForm(pid){formModal('Adicionar parcelamento',[{k:'descricao',l:'Descrição',req:true,full:true},{k:'total',l:'Valor total',type:'number',req:true},{k:'qtd',l:'Quantidade de parcelas',type:'number',req:true},{k:'primeiro',l:'Primeiro vencimento',type:'date',req:true},{k:'forma',l:'Forma de pagamento',type:'select',opts:['','Pix','Dinheiro','Cartão de crédito','Boleto','Cheque']}],{descricao:'Lançamento de Tratamento',qtd:1,primeiro:todayISO()},
+function parcelasForm(pid){formModal('Adicionar parcelamento',[{k:'descricao',l:'Descrição',req:true,full:true},{k:'total',l:'Valor total',type:'number',req:true},{k:'qtd',l:'Quantidade de parcelas',type:'number',req:true},{k:'primeiro',l:'Primeiro vencimento',type:'date',req:true},{k:'forma',l:'Forma de pagamento',type:'select',opts:['',...FORMAS_PAG]}],{descricao:'Lançamento de Tratamento',qtd:1,primeiro:todayISO()},
  o=>{const n=Math.max(1,Math.round(o.qtd));const base=Math.floor(o.total/n*100)/100;const d0=new Date(o.primeiro+'T00:00');for(let i=0;i<n;i++){const d=new Date(d0);d.setMonth(d0.getMonth()+i);const v=i===n-1?Math.round((o.total-base*(n-1))*100)/100:base;S.lancamentos.push({id:uid(),pacienteId:pid,descricao:o.descricao,valor:v,valorPago:0,vencimento:iso(d),pagamento:'',forma:o.forma,parcela:`${i+1}/${n}`,statusOrig:'',origem:'manual'})}})}
 /* Registrar pagamento: forma, cartão à vista ou parcelado, maquininha, taxa e pagamento em outra data */
-const FORMAS_PAG=['Pix','Dinheiro','Cartão de crédito','Cartão de débito','Boleto','Transferência','Cheque'];
+const FORMAS_PAG=['Pix','Dinheiro','Cartão de crédito','Cartão de débito','Boleto','Transferência bancária','Cheque','Link de pagamento','Carteira digital','Vale ou voucher','Crédito do paciente','Convênio ou plano','Permuta','Outra forma'];
+const FORMAS_MAQ=['Cartão de crédito','Cartão de débito','Pix','Link de pagamento','Carteira digital'];
+/* Pagamentos de um lançamento: a lista é a fonte da verdade; os campos antigos viram resumo */
+function pagosL(l){return Array.isArray(l.pagamentos)?l.pagamentos:[]}
+function lancMigra(l){if(Array.isArray(l.pagamentos))return l;const st=stLanc(l);const v=Number(l.valorPago)||0;const tot=(st==='Pago'&&!v)?(l.valor||0):v;
+ l.pagamentos=tot>0.004?[{id:uid(),data:l.pagamento||l.vencimento||todayISO(),valor:r2(tot),forma:l.forma||'',cartaoModo:l.cartaoModo||'',cartaoParcelas:l.cartaoParcelas||'',maquininha:l.maquininha||'',bandeira:l.bandeira||'',taxa:l.taxa||'',taxaValor:l.taxaValor||'',liquido:l.liquido||'',obs:''}]:[];return l}
+function lancRecalc(l){const P=pagosL(l).slice().sort((a,b)=>(a.data||'').localeCompare(b.data||''));l.pagamentos=P;
+ const tot=r2(P.reduce((a,x)=>a+(Number(x.valor)||0),0));l.valorPago=tot;const u=P[P.length-1];
+ l.pagamento=u?u.data:'';l.forma=u?u.forma:'';l.cartaoModo=u?(u.cartaoModo||''):'';l.cartaoParcelas=u?(u.cartaoParcelas||''):'';l.maquininha=u?(u.maquininha||''):'';l.bandeira=u?(u.bandeira||''):'';l.taxa=u?(u.taxa||''):'';
+ const tx=r2(P.reduce((a,x)=>a+(Number(x.taxaValor)||0),0));l.taxaValor=tx||'';l.liquido=tot?r2(tot-tx):'';
+ if(l.statusOrig!=='Cancelado'&&l.statusOrig!=='Previsto'||tot>0.004){
+  if(tot<=0.004)l.statusOrig=l.statusOrig==='Cancelado'?'Cancelado':(l.statusOrig==='Previsto'?'Previsto':'Em aberto');
+  else if(tot>=(l.valor||0)-0.005)l.statusOrig='Pago';else l.statusOrig='Parcial'}
+ return l}
+function lancHist(l,compacto){const P=pagosL(l);if(!P.length)return '';
+ return `<div class="tw" style="border:1px solid var(--bd);border-radius:10px;margin:0 0 12px"><table class="tbl" style="margin:0"><thead><tr><th>Data</th><th>Forma de pagamento</th><th class="num">Valor</th>${compacto?'':'<th class="num">Taxa</th><th class="num">Líquido</th>'}<th></th></tr></thead><tbody>
+ ${P.map((x,i)=>`<tr><td>${br(x.data)}</td><td>${esc(formaTxt(x)||'-')}${x.obs?`<br><small style="color:var(--mut)">${esc(x.obs)}</small>`:''}</td><td class="num">${money(x.valor)}</td>${compacto?'':`<td class="num">${x.taxaValor?money(x.taxaValor):'-'}</td><td class="num">${x.liquido?money(x.liquido):'-'}</td>`}<td class="num"><button class="lnk" style="color:var(--bad)" onclick="pgExcluir('${l.id}','${x.id||i}')">Excluir</button></td></tr>`).join('')}
+ </tbody></table><div style="padding:10px 14px;text-align:right;font-size:13px;background:#f8fafc;border-top:1px solid var(--bd)">${P.length} pagamento${P.length>1?'s':''} · Pago ${money(pagoEf(l))} de ${money(l.valor)} · <b style="color:${saldoL(l)>0.004?'var(--info)':'var(--ok)'}">${saldoL(l)>0.004?'falta '+money(saldoL(l)):'quitado'}</b></div></div>`}
+function histLanc(id){const l=S.lancamentos.find(x=>x.id===id);if(!l)return;const p=pac(l.pacienteId);
+ openModal(`<h3>Pagamentos do lançamento</h3><p class="sub" style="margin-top:-4px">${esc(l.descricao||'')}${p?' · '+esc(p.nome):''}</p>${lancHist(l)||'<div class="empty">Nenhum pagamento registrado ainda.</div>'}
+ <div class="mact"><button class="btn ghost" onclick="closeModal()">Fechar</button>${saldoL(l)>0.004||stLanc(l)==='Previsto'?`<button class="btn green" onclick="closeModal();baixarLanc('${l.id}')">Registrar pagamento</button>`:''}</div>`)}
+function pgExcluir(lid,pid){const l=S.lancamentos.find(x=>x.id===lid);if(!l)return;const P=pagosL(l);const i=P.findIndex((x,k)=>String(x.id||k)===String(pid));if(i<0)return;const v=P[i].valor;
+ confirmModal('Excluir o pagamento de '+money(v)+' de '+br(P[i].data)+'? O valor volta para o saldo em aberto.',()=>{P.splice(i,1);lancRecalc(l);closeModal();toast('Pagamento excluído. Saldo em aberto: '+money(saldoL(l)))},'Excluir pagamento')}
 function formaTxt(l){if(!l||!l.forma)return '';let t=l.forma;if(l.forma==='Cartão de crédito')t+=(Number(l.cartaoParcelas)>1?' em '+l.cartaoParcelas+'x':(l.cartaoModo?' à vista':''));if(l.maquininha&&l.maquininha!=='Sem maquininha')t+=' ('+l.maquininha+(l.bandeira?', '+l.bandeira:'')+')';return t}
 function taxaChave(f,n){return f==='Cartão de crédito'?f+'|'+(Number(n)>1?n:1):f}
 function taxaSalva(f,n){const t=(S.config.taxasMaq||{})[taxaChave(f,n)];return t==null?'':String(t).replace('.',',')}
@@ -901,12 +935,13 @@ function baixarLanc(id){const l=S.lancamentos.find(x=>x.id===id);if(!l)return;
  const parc=[];for(let k=2;k<=12;k++)parc.push(k);
  openModal(`<h3>Registrar pagamento</h3>
  <p class="sub" style="margin-top:-4px">${esc(l.descricao||'Lançamento')}: ${money(l.valor)}${pagoAntes>0?`, já pago ${money(pagoAntes)}, falta ${money(saldo)}`:''}. Vencimento ${br(l.vencimento)}.</p>
+ ${pagosL(l).length?`<div style="margin-bottom:10px"><b style="font-size:13px">Pagamentos já registrados</b>${lancHist(l,true)}</div>`:''}
  <div class="fgrid">
   <label class="full"><span>O que aconteceu?</span><select id="pgQuando" onchange="pgMostra()"><option value="agora">O paciente pagou</option><option value="depois">Vai pagar em outra data</option></select></label>
  </div>
  <div class="fgrid" id="pgAgora">
   <label><span>Data do pagamento *</span><input type="date" id="pgData" value="${todayISO()}"></label>
-  <label><span>Valor recebido agora *</span><input type="number" step="0.01" id="pgValor" value="${saldo}" oninput="pgMostra()"></label>
+  <label><span>Valor recebido agora *</span><input type="number" step="0.01" id="pgValor" value="${saldo}" oninput="pgMostra()"><small class="sub" style="font-size:12px">Pode receber em partes. Cada valor reduz o saldo.</small></label>
   <label><span>Forma de pagamento *</span><select id="pgForma" onchange="pgMostra(1)">${opt(FORMAS_PAG,f0)}</select></label>
   <label id="pgModoL"><span>Como foi no crédito?</span><select id="pgModo" onchange="pgMostra(2)">${opt(['À vista','Parcelado'],Number(l.cartaoParcelas)>1?'Parcelado':'À vista')}</select></label>
   <label id="pgParcL"><span>Em quantas parcelas?</span><select id="pgParc" onchange="pgMostra(2)">${opt(parc,Number(l.cartaoParcelas)>1?l.cartaoParcelas:2)}</select></label>
@@ -928,9 +963,9 @@ function baixarLanc(id){const l=S.lancamentos.find(x=>x.id===id);if(!l)return;
 function pgMostra(trocouForma){const v=id=>{const e=$('#'+id);return e?e.value:''};const vis=(id,b)=>{const e=$('#'+id);if(e)e.style.display=b?'':'none'};
  const depois=v('pgQuando')==='depois';vis('pgAgora',!depois);vis('pgDepois',depois);
  const f=v('pgForma'),cred=f==='Cartão de crédito',cartao=cred||f==='Cartão de débito',parcelado=cred&&v('pgModo')==='Parcelado';
- const usaMaq=(cartao||f==='Pix')&&v('pgMaq')!=='Sem maquininha';
- vis('pgModoL',cred);vis('pgParcL',parcelado);vis('pgMaqL',cartao||f==='Pix');vis('pgBandL',cartao);vis('pgTaxaL',usaMaq);
- if(trocouForma===1){const m=$('#pgMaq');if(m){m.value=f==='Pix'?'Sem maquininha':(S.config.maqPadrao||'Ton')}return pgMostra(2)}if(trocouForma&&usaMaq){const t=$('#pgTaxa');if(t)t.value=taxaSalva(f,parcelado?v('pgParc'):1)}
+ const comMaq=FORMAS_MAQ.includes(f),usaMaq=comMaq&&v('pgMaq')!=='Sem maquininha';
+ vis('pgModoL',cred);vis('pgParcL',parcelado);vis('pgMaqL',comMaq);vis('pgBandL',cartao);vis('pgTaxaL',usaMaq);
+ if(trocouForma===1){const m=$('#pgMaq');if(m){m.value=cartao?(S.config.maqPadrao||'Ton'):'Sem maquininha'}return pgMostra(2)}if(trocouForma&&usaMaq){const t=$('#pgTaxa');if(t)t.value=taxaSalva(f,parcelado?v('pgParc'):1)}
  const valor=parseNum(v('pgValor')),taxa=usaMaq?parseNum(v('pgTaxa')):0;const liq=$('#pgLiq');
  if(liq)liq.innerHTML=usaMaq&&taxa>0&&valor>0?`Taxa de ${String(taxa).replace('.',',')}%: ${money(r2(valor*taxa/100))}. A clínica recebe <b>${money(r2(valor-valor*taxa/100))}</b>${parcelado?` (o paciente paga em ${v('pgParc')}x no cartão; a dívida dele com a clínica fica quitada)`:''}.`:parcelado?`O paciente paga em ${v('pgParc')}x no cartão. Para a clínica, a dívida dele fica quitada.`:'';
  const falta=r2((window._pgSaldo||0)-valor);vis('pgResto',!depois&&falta>0.004);const tt=$('#pgRestoTit');if(tt)tt.textContent='Falta pagar '+money(falta)+'. O restante continua em aberto no financeiro.'}
@@ -941,16 +976,16 @@ function pgSalvar(id){const l=S.lancamentos.find(x=>x.id===id);if(!l)return;cons
   save();closeModal();render();toast('Novo vencimento: '+br(venc));return}
  const data=v('pgData'),valor=r2(parseNum(v('pgValor')));if(!data){toast('Informe a data do pagamento.');return}if(!(valor>0)){toast('Informe o valor recebido.');return}
  const f=v('pgForma'),cred=f==='Cartão de crédito',cartao=cred||f==='Cartão de débito',parc=cred&&v('pgModo')==='Parcelado'?Math.max(2,parseInt(v('pgParc'),10)||2):1;
- const maq=(cartao||f==='Pix')?v('pgMaq'):'',usaMaq=maq&&maq!=='Sem maquininha',taxa=usaMaq?r2(parseNum(v('pgTaxa'))):0;
+ const maq=FORMAS_MAQ.includes(f)?v('pgMaq'):'',usaMaq=maq&&maq!=='Sem maquininha',taxa=usaMaq?r2(parseNum(v('pgTaxa'))):0;
  if(usaMaq&&taxa>0){S.config.taxasMaq=S.config.taxasMaq||{};S.config.taxasMaq[taxaChave(f,parc)]=taxa}
  if(cartao&&maq)S.config.maqPadrao=maq;
- const pagoAntes=pagoEf(l),total=r2(pagoAntes+valor);
- Object.assign(l,{pagamento:data,valorPago:total,forma:f,cartaoModo:cred?(parc>1?'Parcelado':'À vista'):'',cartaoParcelas:cred?parc:'',maquininha:maq||'',bandeira:cartao?v('pgBand'):'',taxa:usaMaq?taxa:'',taxaValor:usaMaq?r2(valor*taxa/100):'',liquido:r2(valor-(usaMaq?valor*taxa/100:0))});
+ lancMigra(l);
+ l.pagamentos.push({id:uid(),data,valor,forma:f,cartaoModo:cred?(parc>1?'Parcelado':'À vista'):'',cartaoParcelas:cred?parc:'',maquininha:maq||'',bandeira:cartao?v('pgBand'):'',taxa:usaMaq?taxa:'',taxaValor:usaMaq?r2(valor*taxa/100):'',liquido:r2(valor-(usaMaq?valor*taxa/100:0)),obs:''});
+ lancRecalc(l);
  if(cred&&parc>1&&!l.parcela)l.parcela=parc+'x no cartão';
- const falta=r2((l.valor||0)-total);
- if(falta>0.004){l.statusOrig='Parcial';const rd=v('pgRestoData');if(rd){const ant=l.vencimento;l.vencimento=rd;l.vencManual=true;l.obs=((l.obs?l.obs+' | ':'')+'Pagou '+money(valor)+' em '+br(data)+'. Restante de '+money(falta)+' para '+br(rd)+(v('pgRestoForma')?' no '+v('pgRestoForma'):'')).slice(0,500);if(v('pgRestoForma'))l.formaRestante=v('pgRestoForma')}}
- else l.statusOrig='Pago';
- save();closeModal();render();toast(falta>0.004?'Pagamento parcial registrado. Falta '+money(falta)+'.':'Pagamento registrado: '+formaTxt(l))}
+ const falta=saldoL(l),n=pagosL(l).length;
+ if(falta>0.004){const rd=v('pgRestoData');if(rd){const ant=l.vencimento;l.vencimento=rd;l.vencManual=true;l.obs=((l.obs?l.obs+' | ':'')+'Pagou '+money(valor)+' em '+br(data)+'. Restante de '+money(falta)+' para '+br(rd)+(v('pgRestoForma')?' no '+v('pgRestoForma'):'')).slice(0,500);if(v('pgRestoForma'))l.formaRestante=v('pgRestoForma')}}
+ save();closeModal();render();toast(falta>0.004?'Pagamento '+n+' registrado: '+money(valor)+'. Falta '+money(falta)+'.':'Quitado. '+money(pagoEf(l))+' em '+n+' pagamento'+(n>1?'s':''))}
 
 function pSess(p){const L=S.tratamentos.filter(t=>t.pacienteId===p.id&&!['Reprovado','Em aberto','Em follow up'].includes(stTrat(t)));
  return `<div class="card">${ehSeg('podologia')?'<h2>Planos de Tratamento Aprovados</h2>':`<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px"><h2 style="margin:0">${ehSeg('beleza')?'Pacotes e assinaturas':'Pacotes de sessões'}</h2><button class="btn sm" onclick="pacoteForm('${p.id}')">${ico('plus',14)} Novo pacote</button></div>`}${L.map(t=>{const st=stTrat(t);return `<div class="row"><span>${esc(t.procedimento)}<br><small style="color:var(--mut);font-weight:400">${br(t.data)} ${esc(t.profissional||'')}${t.validade?` · válido até ${br(t.validade)}`:''}${!ehSeg('podologia')&&st!=='Concluído'?` · saldo: ${Math.max(0,(t.sessoesTotal||1)-(t.sessoesRealizadas||0))} ${Math.max(0,(t.sessoesTotal||1)-(t.sessoesRealizadas||0))===1?'sessão':'sessões'}`:''}</small></span><span style="display:flex;gap:14px;align-items:center;flex-wrap:wrap;justify-content:flex-end"><b style="color:var(--ink)">${t.sessoesRealizadas||0}/${t.sessoesTotal||1}</b>${badgeFor(st)}<span style="color:var(--ok)">${money(t.valor)}</span>${st!=='Concluído'?`<button class="btn sm" onclick="addSessao('${t.id}')">+ Sessão realizada</button>`:''}</span></div>`}).join('')||`<div class="mini-empty">${ehSeg('podologia')?'Nenhum plano de tratamento aprovado.':'Nenhum pacote ativo.'}</div>`}</div>`}
@@ -1014,7 +1049,7 @@ function fReceber(){const t=todayISO();let L=S.lancamentos.filter(l=>{const st=s
  return `<div class="phead"><div><h1>Contas a Receber</h1><p class="sub">Parcelas dos pacientes. Em aberto inclui as vencidas antes do período.</p></div><button class="btn ghost" onclick="exportRows('contas_a_receber',['Status','Vencimento','Paciente','Descrição','Parcela','Forma','Valor','Saldo'],window._cr)">${ico('down',16)} Exportar Excel</button></div>
  <div class="card" style="margin-bottom:16px">${rangeFilters(`<label>Situação<select onchange="UI.crStatus=this.value;render()"><option value="aberto" ${UI.crStatus==='aberto'?'selected':''}>Em aberto</option><option value="pago" ${UI.crStatus==='pago'?'selected':''}>Recebidas</option><option value="todos" ${UI.crStatus==='todos'?'selected':''}>Todas do período</option></select></label>`)}</div>
  <div class="card" style="padding:0"><div class="tw"><table class="tbl dark"><thead><tr><th>Status</th><th>Vencimento</th><th>Nome</th><th>Descrição</th><th>Parcela</th><th>Forma de Pagamento</th><th class="num">Valor</th><th class="num">Saldo</th><th>Confirmar</th></tr></thead><tbody>
- ${(window._cr=L.map(l=>{const p=pac(l.pacienteId);return [stLanc(l),br(l.vencimento),p?p.nome:'',l.descricao,l.parcela||'',l.forma||'',l.valor,saldoL(l)]}),L).map(l=>{const p=pac(l.pacienteId);const st=stLanc(l);return `<tr><td>${badgeFor(st)}</td><td>${br(l.vencimento)}</td><td><button class="lnk" onclick="go('paciente','${l.pacienteId}');UI.pacTab='financeiro';render()">${esc(p?p.nome:'?')}</button></td><td>${esc(l.descricao)}</td><td>${esc(l.parcela||'-')}</td><td>${esc(formaTxt(l)||'-')}</td><td class="num">${money(l.valor)}</td><td class="num">${money(saldoL(l))}</td><td style="white-space:nowrap">${st!=='Pago'?`<button class="btn soft sm" onclick="cobrarPix('${l.id}')">Pix</button> <button class="btn green sm" onclick="baixarLanc('${l.id}')">Baixar</button>`:''}</td></tr>`}).join('')||'<tr><td colspan="9" class="empty">Sem registros</td></tr>'}</tbody></table></div>
+ ${(window._cr=L.map(l=>{const p=pac(l.pacienteId);return [stLanc(l),br(l.vencimento),p?p.nome:'',l.descricao,l.parcela||'',l.forma||'',l.valor,saldoL(l)]}),L).map(l=>{const p=pac(l.pacienteId);const st=stLanc(l);return `<tr><td>${badgeFor(st)}</td><td>${br(l.vencimento)}</td><td><button class="lnk" onclick="go('paciente','${l.pacienteId}');UI.pacTab='financeiro';render()">${esc(p?p.nome:'?')}</button></td><td>${esc(l.descricao)}</td><td>${esc(l.parcela||'-')}</td><td>${esc(formaTxt(l)||'-')}</td><td class="num">${money(l.valor)}</td><td class="num">${money(saldoL(l))}</td><td style="white-space:nowrap">${st!=='Pago'?`<button class="btn soft sm" onclick="cobrarPix('${l.id}')">Pix</button> <button class="btn green sm" onclick="baixarLanc('${l.id}')">Receber</button> `:''}${pagosL(l).length?`<button class="lnk" onclick="histLanc('${l.id}')">${pagosL(l).length}x</button>`:''}</td></tr>`}).join('')||'<tr><td colspan="9" class="empty">Sem registros</td></tr>'}</tbody></table></div>
  <div style="text-align:right;padding:12px 16px;font-weight:700">Total ${money(tot)}</div></div>`}
 function fInad(){const L=inadList();const tot=L.reduce((a,o)=>a+o.valor,0);
  window._inad=L.map(o=>[o.p.nome,o.p.celular||'',o.qtd,br(o.maisAntigo),o.dias,o.valor,o.totalAberto]);
@@ -1482,7 +1517,7 @@ function cmdImprimir(cid){const c=S.comandas.find(x=>x.id===cid);const p=pac(c.c
 
 /* ============ Caixa do dia ============ */
 function caixaDo(d){return S.caixas.find(c=>c.data===d)}
-function esperadoCaixa(d){const g={};S.lancamentos.filter(l=>l.pagamento===d&&pagoEf(l)>0).forEach(l=>{const f=l.forma||'Não informado';g[f]=r2((g[f]||0)+pagoEf(l))});return g}
+function esperadoCaixa(d){const g={};entradasList().filter(x=>x.data===d).forEach(x=>{const f=(x.pg&&x.pg.forma)||x.l.forma||'Não informado';g[f]=r2((g[f]||0)+x.valor)});return g}
 function vCaixa(){const d=UI.caixaData||todayISO();const cx=caixaDo(d);const esp=esperadoCaixa(d);const formas=[...new Set(['Dinheiro','Pix','Cartão de crédito','Cartão de débito',...Object.keys(esp)])];
  const movs=cx?cx.movs||[]:[];const sang=movs.filter(m=>m.tipo==='Sangria').reduce((a,m)=>a+m.valor,0),sup=movs.filter(m=>m.tipo==='Suprimento').reduce((a,m)=>a+m.valor,0);
  const dinEsp=r2((cx?Number(cx.abertura)||0:0)+(esp['Dinheiro']||0)+sup-sang);const totEnt=Object.values(esp).reduce((a,v)=>a+v,0);
@@ -1646,7 +1681,7 @@ function irDados(ano){const a=String(ano);const E=entradasList().filter(x=>(x.da
  const meses=Array.from({length:12},(_,i)=>({m:i+1,ent:0,sai:0}));E.forEach(x=>{meses[+x.data.slice(5,7)-1].ent+=x.valor});Sa.forEach(x=>{meses[+x.data.slice(5,7)-1].sai+=x.valor});
  const porPac={};E.forEach(x=>{const p=pac(x.l.pacienteId);const k=p?p.id:'?';const o=porPac[k]||(porPac[k]={p,total:0,n:0,meses:{}});o.total+=x.valor;o.n++;const mm=x.data.slice(5,7);o.meses[mm]=(o.meses[mm]||0)+x.valor});
  const porCat={};Sa.forEach(x=>{const k=x.c.categoria||'Sem categoria';porCat[k]=(porCat[k]||0)+x.valor});
- const porForma={};E.forEach(x=>{const k=x.l.forma||'Não informada';porForma[k]=(porForma[k]||0)+x.valor});
+ const porForma={};E.forEach(x=>{const k=(x.pg&&x.pg.forma)||x.l.forma||'Não informada';porForma[k]=(porForma[k]||0)+x.valor});
  return {E,Sa,meses,porPac:Object.values(porPac).sort((a,b)=>b.total-a.total),porCat:Object.entries(porCat).sort((a,b)=>b[1]-a[1]),porForma:Object.entries(porForma).sort((a,b)=>b[1]-a[1]),tE:E.reduce((a,x)=>a+x.valor,0),tS:Sa.reduce((a,x)=>a+x.valor,0)}}
 function fIR(){const ano=UI.irAno||new Date().getFullYear()-1;const D=irDados(ano);const semCpf=D.porPac.filter(o=>!o.p||!keyCPF(o.p.cpf));
  const anos=[...new Set([new Date().getFullYear(),new Date().getFullYear()-1,...entradasList().map(x=>+(x.data||'').slice(0,4)).filter(Boolean)])].sort((a,b)=>b-a);
@@ -1704,7 +1739,7 @@ function agNovo(a,s){if(s==='Desmarcado'||s==='Faltou')return false;const k=a.da
  const hist=c=>S[c].some(x=>x.pacienteId===a.pacienteId&&((x.data||x.vencimento||x.pagamento||'')<a.data)&&(x.data||x.vencimento||x.pagamento));
  return !hist('evolucoes')&&!hist('tratamentos')&&!S.lancamentos.some(l=>l.pacienteId===a.pacienteId&&l.pagamento&&l.pagamento<a.data)}
 /* ============ Atualização: aviso com botão Atualizar agora ============ */
-const VERSAO_APP='1.9.6';const URL_VERSAO_JSON='https://raw.githubusercontent.com/TheIgor12/blacksolutions/main/versao.json';
+const VERSAO_APP='1.9.7';const URL_VERSAO_JSON='https://raw.githubusercontent.com/TheIgor12/blacksolutions/main/versao.json';
 const numV=v=>String(v||'0').split(/\D+/).filter(Boolean).map(Number);
 function versaoMaior(a,b){const x=numV(a),y=numV(b);for(let i=0;i<Math.max(x.length,y.length);i++){const d=(x[i]||0)-(y[i]||0);if(d)return d>0}return false}
 const ATU={nova:null,timer:null};
