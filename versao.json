@@ -1,6 +1,6 @@
 {
-  "versao": "1.9.11",
-  "html": "https://raw.githubusercontent.com/TheIgor12/blacksolutions/main/download/blackflow-1.9.11.html",
-  "novidades": "Estoque mais simples, com a quantidade no cadastro do produto e o botão Conferir. Perfis de acesso para recepção, secretária e estoque. Configurações organizadas em abas.",
+  "versao": "1.9.12",
+  "html": "https://raw.githubusercontent.com/TheIgor12/blacksolutions/main/download/blackflow-1.9.12.html",
+  "novidades": "A degustação passou a ser de 7 dias, e quem precisar de mais tempo pede pelo botão na própria tela de teste vencido, sem falar com ninguém. O prazo agora fica na nuvem e muda sem instalar versão nova.",
   "instalador": "https://blackflow.app.br/download/BlackFlow_Instalador.exe"
 }

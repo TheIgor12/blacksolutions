@@ -1998,7 +1998,7 @@ function agNovo(a,s){if(s==='Desmarcado'||s==='Faltou')return false;const k=a.da
  const hist=c=>S[c].some(x=>x.pacienteId===a.pacienteId&&((x.data||x.vencimento||x.pagamento||'')<a.data)&&(x.data||x.vencimento||x.pagamento));
  return !hist('evolucoes')&&!hist('tratamentos')&&!S.lancamentos.some(l=>l.pacienteId===a.pacienteId&&l.pagamento&&l.pagamento<a.data)}
 /* ============ Atualização: aviso com botão Atualizar agora ============ */
-const VERSAO_APP='1.9.11';const URL_VERSAO_JSON='https://raw.githubusercontent.com/TheIgor12/blacksolutions/main/versao.json';
+const VERSAO_APP='1.9.12';const URL_VERSAO_JSON='https://raw.githubusercontent.com/TheIgor12/blacksolutions/main/versao.json';
 const numV=v=>String(v||'0').split(/\D+/).filter(Boolean).map(Number);
 function versaoMaior(a,b){const x=numV(a),y=numV(b);for(let i=0;i<Math.max(x.length,y.length);i++){const d=(x[i]||0)-(y[i]||0);if(d)return d>0}return false}
 const ATU={nova:null,timer:null};
@@ -2239,6 +2239,11 @@ const NV={ativa:!!(NUVEM.url&&NUVEM.chave),sb:null,sessao:null,clinicaId:null,pa
 const COLS=['vouchers','pacientes','lancamentos','tratamentos','anamneses','agendamentos','contasPagar','evolucoes','profissionais','importacoes','servicos','produtos','movEstoque','comandas','caixas','avaliacoes','fotos','termos','fichas','protocolos','equipamentos'];
 const URL_ASSINATURA='https://raw.githubusercontent.com/TheIgor12/blacksolutions/main/assinatura.json';
 let ASSINATURA=null;
+/* O prazo da degustação fica em um lugar só, no assinatura.json, para mudar
+   sem publicar versão nova do sistema. */
+const TESTE_DIAS_PADRAO=7;
+function testeDias(){const n=parseInt((ASSINATURA||{}).teste_dias,10);return n>0?n:TESTE_DIAS_PADRAO}
+function testeDiasTxt(){const n=testeDias();return n===1?'1 dia':n+' dias'}
 async function carregarAssinatura(){if(ASSINATURA)return ASSINATURA;try{ASSINATURA=await (await fetch(URL_ASSINATURA+'?t='+Date.now(),{cache:'no-store'})).json()}catch(e){ASSINATURA={}}return ASSINATURA}
 function blocoAssinatura(){const a=ASSINATURA||{};const pa=planoInfo('agenda'),pc=planoInfo('completo');
  const escolhido=planoK();const linkC=pc.link||a.link_pix||a.link_cartao||'';
@@ -2250,6 +2255,17 @@ function blocoAssinatura(){const a=ASSINATURA||{};const pa=planoInfo('agenda'),p
  ${cx(pc,linkC,'completo','Tudo do Só agenda mais financeiro com parcelas e recibo, comanda, caixa do dia, estoque, comissões e relatórios.')}
  ${!pa.link&&!linkC?`<p class="sub" style="margin:0">${esc(a.mensagem||'Para assinar, fale com a Black Solutions pelos canais de atendimento informados no site.')}</p>`:''}
  ${a.contato?`<p class="sub" style="margin:4px 0 0">Dúvidas: <a class="lnk" href="${esc(a.contato)}" target="_blank" rel="noopener">falar com a Black Solutions</a></p>`:''}</div>`}
+/* Quem está no fim da degustação pede mais alguns dias por aqui. O banco
+   concede sozinho na primeira vez e registra o pedido para nós. */
+async function pedirPrazo(b){if(!NV.sb||!NV.sessao){toast('Entre na sua conta para pedir mais prazo.');return}
+ const t0=b.textContent;b.disabled=true;b.textContent='Pedindo...';
+ try{const {data,error}=await NV.sb.rpc('bs_pedir_prazo');
+  if(error){toast(traduz(error));b.disabled=false;b.textContent=t0;return}
+  const r=Array.isArray(data)?data[0]:data;
+  if(r&&r.concedido){toast('Pronto. Você ganhou mais '+(r.dias===1?'1 dia':r.dias+' dias') +' de teste.');await entrar(NV.sessao);return}
+  b.textContent='Pedido enviado';
+  toast((r&&r.aviso)||'Seu pedido foi registrado. Vamos avaliar e avisar por WhatsApp.')}
+ catch(e){toast('Não foi possível enviar o pedido agora.');b.disabled=false;b.textContent=t0}}
 function diasTeste(){if(!NV.ativa||NV.plano!=='teste'||!NV.validoAte)return null;return diffDays(todayISO(),NV.validoAte)}
 async function abrirAssinatura(){await carregarAssinatura();const d=diasTeste();openModal(`<h3>Assinatura</h3><p class="sub" style="margin-bottom:14px">${d!=null?`Teste grátis: ${d<=0?'termina hoje':d===1?'falta 1 dia':'faltam '+d+' dias'}. Depois disso, o acesso continua com a assinatura mensal, por Pix ou cartão de crédito.`:NV.validoAte?`Assinatura válida até ${br(NV.validoAte)}.`:'Sua clínica não tem vencimento.'}</p>${blocoAssinatura()}<div class="mact"><button class="btn ghost" onclick="closeModal()">Fechar</button></div>`)}
 function nomeUsuario(){const u=NV.sessao&&NV.sessao.user;return u?((u.user_metadata&&u.user_metadata.nome)||u.email):S.config.usuario}
@@ -2283,10 +2299,10 @@ function vAuth(){const A=UI.auth;const box=c=>`<div class="auth"><div class="aut
   ${op(4,'estetica','completo','Clínica de estética','Pacotes de sessões, avaliação, fotos de antes e depois, protocolos e financeiro.',pl==='agenda'&&A.op===4?vA:vC)}
   <div class="ast">Quer só a agenda, mesmo sendo clínica ou salão?</div>
   <div style="display:flex;gap:8px;flex-wrap:wrap"><button type="button" class="btn ${pl==='agenda'?'':'ghost'} sm" onclick="authPlano('agenda')">Só agenda ${vA}</button><button type="button" class="btn ${pl==='completo'?'':'ghost'} sm" onclick="authPlano('completo')">Completo ${vC}</button></div>
-  <div class="aresumo">${escolhido?`Depois dos 14 dias de teste grátis, a assinatura fica em <b>${esc2(escolhido.preco)}</b>. Dá para trocar de plano depois, pagando a diferença.`:'Escolha acima o que você faz. O valor da assinatura aparece aqui.'}</div>
+  <div class="aresumo">${escolhido?`Depois dos ${testeDiasTxt()} de teste grátis, a assinatura fica em <b>${esc2(escolhido.preco)}</b>. Dá para trocar de plano depois, pagando a diferença.`:'Escolha acima o que você faz. O valor da assinatura aparece aqui.'}</div>
   ${msg}<button class="btn">Criar conta do negócio</button></form>
   <div class="authlinks"><button class="lnk" onclick="entrar(NV.sessao)">Verificar convites</button><button class="lnk" onclick="sair()">Sair</button></div>`)}
- case 'bloqueado':return box(`<h2>${A.motivo==='teste'?'Seu teste grátis terminou':A.motivo==='suspenso'?'Acesso suspenso':'Assinatura vencida'}</h2><p class="sub" style="margin-bottom:14px">${A.motivo==='teste'?`Os 14 dias de teste da clínica <b>${esc(NV.nomeClinica)}</b> acabaram. Seus dados estão guardados e voltam a aparecer assim que a assinatura for ativada.`:A.motivo==='suspenso'?`O acesso da clínica <b>${esc(NV.nomeClinica)}</b> está suspenso. Entre em contato com o suporte.`:`A assinatura da clínica <b>${esc(NV.nomeClinica)}</b> venceu. Seus dados estão guardados e voltam a aparecer assim que o pagamento for confirmado.`}</p>${A.motivo!=='suspenso'?blocoAssinatura():''}<div class="authlinks"><button class="lnk" onclick="entrar(NV.sessao)">Já paguei, verificar de novo</button><button class="lnk" onclick="sair()">Sair</button></div>`);
+ case 'bloqueado':return box(`<h2>${A.motivo==='teste'?'Seu teste grátis terminou':A.motivo==='suspenso'?'Acesso suspenso':'Assinatura vencida'}</h2><p class="sub" style="margin-bottom:14px">${A.motivo==='teste'?`Os ${testeDiasTxt()} de teste da clínica <b>${esc(NV.nomeClinica)}</b> acabaram. Seus dados estão guardados e voltam a aparecer assim que a assinatura for ativada.`:A.motivo==='suspenso'?`O acesso da clínica <b>${esc(NV.nomeClinica)}</b> está suspenso. Entre em contato com o suporte.`:`A assinatura da clínica <b>${esc(NV.nomeClinica)}</b> venceu. Seus dados estão guardados e voltam a aparecer assim que o pagamento for confirmado.`}</p>${A.motivo!=='suspenso'?blocoAssinatura():''}<div class="authlinks">${A.motivo==='teste'?`<button class="lnk" id="btPrazo" onclick="pedirPrazo(this)">Preciso de mais alguns dias</button>`:''}<button class="lnk" onclick="entrar(NV.sessao)">Já paguei, verificar de novo</button><button class="lnk" onclick="sair()">Sair</button></div>`);
  case 'offline':return box(`<h2>Sem conexão</h2><p class="sub" style="margin-bottom:14px">Não foi possível falar com o servidor. Verifique a internet.</p>${A.temCache?`<p class="sub" style="margin-bottom:14px">Você pode abrir os dados salvos neste computador. O que for alterado será enviado quando a internet voltar.</p><button class="btn" onclick="abrirOffline()">Abrir dados salvos neste computador</button><div style="height:10px"></div>`:''}<button class="btn ghost" onclick="location.reload()">Tentar de novo</button>`);
  default:return box(`<h2>Entrar</h2><form onsubmit="authEntrar();return false"><label>E-mail<input id="au_email" type="email" autocomplete="email" value="${esc(A.email||'')}"></label><label>Senha<input id="au_senha" type="password" autocomplete="current-password"></label>${msg}<button class="btn">Entrar</button></form><div class="authlinks"><button class="lnk" onclick="UI.auth={modo:'esqueci',email:val('#au_email')};render()">Esqueci minha senha</button><button class="lnk" onclick="UI.auth={modo:'criar',email:val('#au_email')};render()">Criar conta</button></div>`)}}
 async function authEntrar(){const email=val('#au_email'),senha=$('#au_senha').value;if(!email||!senha){authMsg('Informe e-mail e senha.');return}authMsg('Entrando...',true);
