@@ -1,4 +1,4 @@
 {
-  "versao": "1.9.15",
-  "novidades": "Nova aba Conferência dentro do Financeiro: a clínica joga a planilha do Clinicorp e o sistema mostra, paciente por paciente, onde os valores divergem, com o botão para acertar cada um ou todos de uma vez."
+  "versao": "1.9.16",
+  "novidades": "No agendamento, ao digitar um nome que não está no cadastro, o sistema avisa que é paciente novo, mostra os nomes parecidos já cadastrados para evitar ficha repetida e abre o campo de celular ali mesmo. Paciente antigo sem celular na ficha também ganha o campo, e o número fica salvo no cadastro."
 }

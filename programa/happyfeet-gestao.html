@@ -107,6 +107,10 @@ a.btn{text-decoration:none}
 .filters input:focus,.fgrid input:focus,.fgrid select:focus,.fgrid textarea:focus,.inp:focus{border-color:var(--acc)}
 .fgrid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
 .fgrid .full{grid-column:1/-1}
+.fhint{font-size:11.5px;line-height:1.5;color:var(--mut);background:#f6f8fb;border:1px solid var(--line);border-radius:6px;padding:7px 9px;margin-top:3px}
+.fhint b.ok{color:#15803d}
+.fhint b.novo{color:#b45309}
+.fhint .lnk{font-size:11.5px;margin-right:8px}
 .fgrid input[type=color]{width:96px;height:40px;padding:3px;cursor:pointer}.fgrid input[type=color]::-webkit-color-swatch-wrapper{padding:0}.fgrid input[type=color]::-webkit-color-swatch{border:0;border-radius:5px}
 .modalw{position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:60;display:flex;align-items:flex-start;justify-content:center;padding:40px 16px;overflow:auto}
 .modal{background:#fff;border-radius:12px;width:100%;max-width:640px;padding:20px;box-shadow:0 20px 50px rgba(0,0,0,.25)}
@@ -421,6 +425,37 @@ function findPatient(nome,cpf,codigo){const k=keyCPF(cpf);if(k){const p=S.pacien
 function ensurePatient(nomeRaw,cpf){const {nome,codigo}=splitNome(nomeRaw);let p=findPatient(nome,cpf,codigo);
  if(!p&&nome){p={id:uid(),codigo:codigo||nextCodigo(),nome,cpf:str(cpf),status:'Ativo',criadoPorImportacao:true};S.pacientes.push(p)}return p}
 const pac=id=>S.pacientes.find(p=>p.id===id);
+/* ---- Apoio para digitar o nome do paciente em qualquer tela ---- */
+function acharPac(v){const {nome,codigo}=splitNome(v||'');return nome?findPatient(nome,'',codigo):null}
+function levCurto(a,b){const n=a.length,m=b.length;if(Math.abs(n-m)>2)return 9;
+ let ant=Array.from({length:m+1},(_,j)=>j);
+ for(let i=1;i<=n;i++){const at=[i];let min=i;
+  for(let j=1;j<=m;j++){const c=Math.min(ant[j]+1,at[j-1]+1,ant[j-1]+(a[i-1]===b[j-1]?0:1));at[j]=c;if(c<min)min=c}
+  if(min>2)return 9;ant=at}
+ return ant[m]}
+/* Nomes parecidos ja cadastrados, para o erro de digitacao nao virar cadastro repetido. */
+function pacParecidos(v,lim){const n=norm(splitNome(v||'').nome);if(n.length<3)return [];
+ const toks=n.split(' ').filter(x=>x.length>2);const out=[];
+ for(const p of S.pacientes){const q=norm(p.nome);if(!q||q===n)continue;
+  let s=0;
+  if(q.indexOf(n)>=0||n.indexOf(q)>=0)s=4;
+  else{const qt=q.split(' ');const c=toks.filter(t=>qt.some(x=>x===t||(x.length>3&&t.length>3&&(x.indexOf(t)===0||t.indexOf(x)===0))));
+   if(c.length)s=c.length;else if(levCurto(n,q)<=2)s=1}
+  if(s)out.push({p,s});if(out.length>400)break}
+ return out.sort((a,b)=>b.s-a.s).slice(0,lim||4).map(x=>x.p)}
+/* O campo de celular so aparece quando serve para alguma coisa:
+   paciente novo, ou paciente ja cadastrado que esta sem celular. */
+function pacPedeCelular(v){const nome=splitNome(v||'').nome;if(!nome||nome.length<3)return false;
+ const p=acharPac(v);return !p||!str(p.celular)}
+function avisoPaciente(v){const nome=splitNome(v||'').nome;if(!nome)return '';
+ const p=acharPac(v);
+ if(p)return str(p.celular)
+   ? `<b class="ok">J\u00e1 cadastrado</b> ${esc(p.nome)}${p.codigo?' \u00b7 c\u00f3digo '+esc(p.codigo):''} \u00b7 ${esc(p.celular)}`
+   : `<b class="ok">J\u00e1 cadastrado</b> ${esc(p.nome)}${p.codigo?' \u00b7 c\u00f3digo '+esc(p.codigo):''}. Est\u00e1 sem celular na ficha; se preencher abaixo, fica salvo no cadastro.`;
+ if(nome.length<3)return '';
+ const par=pacParecidos(v,4);
+ return `<b class="novo">${esc(SEG().pessoa)} novo</b> Esse nome n\u00e3o est\u00e1 no cadastro. Ao salvar, o sistema cria a ficha com o nome e o celular informados.`
+  +(par.length?`<div style="margin-top:5px">J\u00e1 cadastrados parecidos: ${par.map(x=>`<button class="lnk" type="button" data-mfset="paciente" data-mfval="${esc(x.nome)}">${esc(x.nome)}</button>`).join('')}</div>`:'')}
 function stLanc(l){const s=norm(l.statusOrig);if(/cancel|estorn/.test(s))return 'Cancelado';if(s==='previsto'&&!l.pagamento&&!(l.valorPago>0))return 'Previsto';
  const aberto=/(nao|n o) pag|aberto|pendente|parcial|a receber|vencid|atras/.test(s);
  const pagoTxt=!aberto&&/(^| )(pago|paga|quitad|recebid|baixad|liquidad|confirmad)/.test(s);
@@ -550,10 +585,23 @@ function formModal(title,fields,data,onSave,extra){data=data||{};
   else if(f.type==='select')inp=`<select name="${f.k}">${f.opts.map(o=>`<option ${String(o)===String(v)?'selected':''}>${esc(o)}</option>`).join('')}</select>`;
   else if(f.type==='textarea')inp=`<textarea name="${f.k}" rows="${f.rows||4}">${esc(v)}</textarea>`;
   else inp=`<input name="${f.k}" type="${f.type||'text'}" ${f.type==='number'?'step="0.01"':''} value="${esc(v)}" ${f.list?`list="${f.list}"`:''} autocomplete="off">`;
-  return `<label class="${f.full?'full':''}"><span>${esc(f.l)}${f.req?' *':''}</span>${inp}</label>`}).join('');
+  return `<label class="${f.full?'full':''}" id="mfL_${f.k}"><span>${esc(f.l)}${f.req?' *':''}</span>${inp}</label>`
+   +(f.aviso?`<div class="fhint full" id="mfH_${f.k}" style="display:none"></div>`:'')}).join('');
  openModal(`<h3>${esc(title)}</h3><form id="mf" class="fgrid" onsubmit="return false">${h}</form><div class="mact">${extra||''}<button class="btn ghost" onclick="closeModal()">Cancelar</button><button class="btn" id="mfSave">Salvar</button></div>`);
+ /* Campos que aparecem conforme o que foi digitado, e avisos embaixo do campo.
+    mostrarSe(valores) decide se o campo fica na tela. aviso(valores) devolve o texto. */
+ const mfVals=()=>{const fd=new FormData($('#mf'));const o={};fields.forEach(f=>{const v=fd.get(f.k);o[f.k]=typeof v==='string'?v.trim():(v??'')});return o};
+ function mfPintar(){const o=mfVals();
+  fields.forEach(f=>{const L=document.getElementById('mfL_'+f.k);if(!L)return;
+   if(f.mostrarSe){const ok=!!f.mostrarSe(o);L.style.display=ok?'':'none';f.__off=!ok}
+   if(f.aviso){const H=document.getElementById('mfH_'+f.k);if(H){const t=f.aviso(o)||'';H.innerHTML=t;H.style.display=t?'':'none'}}})}
+ window.mfSet=(k,v)=>{const el=$('#mf [name="'+k+'"]');if(!el)return;el.value=v;mfPintar();const f=$('#mf [name="celular"]');if(f&&f.offsetParent)f.focus()};
+ if(fields.some(f=>f.aviso||f.mostrarSe)){const F=$('#mf');F.addEventListener('input',mfPintar);F.addEventListener('change',mfPintar);
+  F.addEventListener('click',e=>{const b=e.target.closest('[data-mfset]');if(!b)return;e.preventDefault();mfSet(b.getAttribute('data-mfset'),b.getAttribute('data-mfval'))});
+  mfPintar()}
  $('#mfSave').onclick=()=>{const fd=new FormData($('#mf'));const o={};fields.forEach(f=>{let v=fd.get(f.k);if(f.type==='number')v=parseNum(v);o[f.k]=typeof v==='string'?v.trim():v});
-  const miss=fields.find(f=>f.req&&!o[f.k]);if(miss){toast('Preencha o campo: '+miss.l);return}
+  fields.forEach(f=>{if(f.__off)o[f.k]=f.type==='number'?0:''});
+  const miss=fields.find(f=>f.req&&!f.__off&&!o[f.k]);if(miss){toast('Preencha o campo: '+miss.l);return}
   if(onSave(o)===false)return;closeModal();save();render()}}
 function confirmModal(msg,onYes,label){openModal(`<h3>Confirmar</h3><p>${msg}</p><div class="mact"><button class="btn ghost" onclick="closeModal()">Cancelar</button><button class="btn danger" id="cfY">${esc(label||'Confirmar')}</button></div>`);$('#cfY').onclick=()=>{onYes();closeModal();save();render()}}
 
@@ -836,9 +884,13 @@ function agClique(e,el){if(e.target!==el)return;const r=el.getBoundingClientRect
  const mk=document.createElement('div');mk.className='agmarca';mk.style.top=((mm/60-AG_H0)*AG_PX)+'px';mk.textContent=hora;el.appendChild(mk);setTimeout(()=>mk.remove(),2500);
  agForm(null,null,{data:dia,hora,profissional:el.dataset.prof||''})}
 function agForm(id,pacienteId,pre){pre=pre||{};const a=id?S.agendamentos.find(x=>x.id===id):null;const p=a?pac(a.pacienteId):(pacienteId?pac(pacienteId):null);
- formModal(a?'Editar agendamento':'Novo agendamento',[{k:'paciente',l:SEG().pessoa,req:true,list:'dlPac',full:true},{k:'data',l:'Data',type:'date',req:true},{k:'hora',l:'Hora',type:'hora15',req:true},{k:'duracao',l:'Duração (minutos)',type:'number'},{k:'profissional',l:'Profissional',list:'dlProf'},{k:'procedimento',l:ehSeg('podologia')?'Procedimento':'Serviço',full:true,list:'dlServ'},{k:'status',l:'Status',type:'select',opts:['Agendado','Confirmado','Atendido','Faltou','Desmarcado']},{k:'obs',l:'Observação',type:'textarea',rows:2,full:true}],
-  a?{...a,paciente:p?p.nome:'',status:stAg(a)}:{paciente:p?p.nome:'',data:pre.data||UI.agDate,hora:pre.hora||'09:00',duracao:pre.duracao||30,profissional:pre.profissional||'',status:'Agendado'},
-  o=>{const pp=ensurePatient(o.paciente);if(!pp){toast('Informe o paciente');return false}const rec={pacienteId:pp.id,data:o.data,hora:o.hora,duracao:o.duracao||30,profissional:ensureProf(o.profissional),procedimento:o.procedimento,status:o.status,obs:o.obs};
+ formModal(a?'Editar agendamento':'Novo agendamento',[{k:'paciente',l:SEG().pessoa,req:true,list:'dlPac',full:true,aviso:o=>avisoPaciente(o.paciente)},{k:'celular',l:'Celular / WhatsApp',full:true,req:true,mostrarSe:o=>pacPedeCelular(o.paciente)},{k:'data',l:'Data',type:'date',req:true},{k:'hora',l:'Hora',type:'hora15',req:true},{k:'duracao',l:'Duração (minutos)',type:'number'},{k:'profissional',l:'Profissional',list:'dlProf'},{k:'procedimento',l:ehSeg('podologia')?'Procedimento':'Serviço',full:true,list:'dlServ'},{k:'status',l:'Status',type:'select',opts:['Agendado','Confirmado','Atendido','Faltou','Desmarcado']},{k:'obs',l:'Observação',type:'textarea',rows:2,full:true}],
+  a?{...a,paciente:p?p.nome:'',celular:p?str(p.celular):'',status:stAg(a)}:{paciente:p?p.nome:'',celular:p?str(p.celular):'',data:pre.data||UI.agDate,hora:pre.hora||'09:00',duracao:pre.duracao||30,profissional:pre.profissional||'',status:'Agendado'},
+  o=>{const jaExistia=!!acharPac(o.paciente);const pp=ensurePatient(o.paciente);if(!pp){toast('Informe o '+SEG().pessoa.toLowerCase());return false}
+   if(!jaExistia)pp.criadoPorImportacao=false;
+   if(o.celular&&str(o.celular)!==str(pp.celular))pp.celular=str(o.celular);
+   if(!jaExistia)setTimeout(()=>toast(SEG().pessoa+' novo cadastrado: '+pp.nome),80);
+   const rec={pacienteId:pp.id,data:o.data,hora:o.hora,duracao:o.duracao||30,profissional:ensureProf(o.profissional),procedimento:o.procedimento,status:o.status,obs:o.obs};
    const ant=a?stAg(a):'';let ag=a;if(a)Object.assign(a,rec);else{ag={id:uid(),origem:'manual',...rec};S.agendamentos.push(ag)}UI.agDate=o.data;if(ant==='Atendido'&&stAg(ag)!=='Atendido')estornarSessao(ag);if(stAg(ag)!=='Atendido')delete ag.semPacote;sincLancAg(ag);if(stAg(ag)==='Atendido'&&ant!=='Atendido'&&precisaPerguntar(ag)){UI.sessAnt=UI.sessAnt||{};UI.sessAnt[ag.id]=ant;setTimeout(()=>perguntarSessao(ag.id),150)}if(lancAgAtivo()){const pr=precoProc(ag.procedimento);if(pr&&!pacoteAtivo(ag)&&['Agendado','Confirmado'].includes(stAg(ag)))setTimeout(()=>toast('Valor de '+money(pr)+' lançado como previsto no financeiro'),60)}},
   a?`<button class="btn danger" style="margin-right:auto" onclick="delRec('agendamentos','${a.id}')">Excluir</button>`:'')}
 function agModal(id){const a=S.agendamentos.find(x=>x.id===id);if(!a)return;const p=pac(a.pacienteId);const l=p?waLink(p.celular):'';
@@ -1893,13 +1945,27 @@ function expComissoes(){const L=calcComissoes(UI.de,UI.ate);const rows=[];L.forE
 function atendForm(clienteNome,data){UI.atend={cliente:clienteNome||'',data:data||UI.agDate,itens:[{servico:'',profissional:'',hora:'09:00',duracao:30}]};atendModal()}
 function atendModal(){const A=UI.atend;const profs=S.profissionais.filter(x=>x.ativo!==false).map(x=>x.nome);
  openModal(`<h3>Novo atendimento</h3><p class="sub" style="margin-bottom:10px">Junte vários serviços e profissionais no mesmo atendimento. O horário de cada serviço começa quando o anterior termina, mas pode ser mudado para fazer ao mesmo tempo.</p>
- <div class="fgrid"><label class="full"><span>${esc(SEG().pessoa)} *</span><input id="atCli" list="dlPac" value="${esc(A.cliente)}" autocomplete="off" onchange="UI.atend.cliente=this.value"></label><label><span>Data *</span><input id="atData" type="date" value="${A.data}" onchange="UI.atend.data=this.value"></label></div>
+ <div class="fgrid"><label class="full"><span>${esc(SEG().pessoa)} *</span><input id="atCli" list="dlPac" value="${esc(A.cliente)}" autocomplete="off" oninput="UI.atend.cliente=this.value;atendAviso()" onchange="UI.atend.cliente=this.value;atendAviso()"></label>
+ <div class="fhint full" id="atHint" style="display:none"></div>
+ <label class="full" id="atCelL" style="display:none"><span>Celular / WhatsApp *</span><input id="atCel" value="${esc(A.celular||'')}" autocomplete="off" oninput="UI.atend.celular=this.value"></label><label><span>Data *</span><input id="atData" type="date" value="${A.data}" onchange="UI.atend.data=this.value"></label></div>
  <table class="tbl mini"><tr><th>Serviço</th><th>Profissional</th><th>Hora</th><th>Duração</th><th></th></tr>${A.itens.map((it,k)=>`<tr><td><input list="dlServ" value="${esc(it.servico)}" onchange="atendSet(${k},'servico',this.value)" style="width:100%"></td><td><select onchange="atendSet(${k},'profissional',this.value)">${optList(['',...profs],it.profissional)}</select></td><td><input type="time" value="${it.hora}" onchange="atendSet(${k},'hora',this.value)"></td><td><input id="atDur${k}" type="number" value="${it.duracao}" style="width:70px" onchange="atendSet(${k},'duracao',this.value)"> min</td><td>${A.itens.length>1?`<button class="lnk" style="color:var(--bad)" onclick="UI.atend.itens.splice(${k},1);atendModal()">Tirar</button>`:''}</td></tr>`).join('')}</table>
  <div class="mact" style="justify-content:flex-start"><button class="btn ghost sm" onclick="atendMais()">${ico('plus',14)} Mais um serviço</button></div>
- <div class="mact"><button class="btn ghost" onclick="closeModal()">Cancelar</button><button class="btn" onclick="atendSalvar()">Agendar</button></div>`,true)}
+ <div class="mact"><button class="btn ghost" onclick="closeModal()">Cancelar</button><button class="btn" onclick="atendSalvar()">Agendar</button></div>`,true);setTimeout(atendAviso,0)}
 function atendSet(k,f,v){const it=UI.atend.itens[k];it[f]=f==='duracao'?(parseInt(v,10)||30):v;if(f==='servico'){const s=servPorNome(v);if(s){it.duracao=Number(s.duracao)||30;const d=$('#atDur'+k);if(d)d.value=it.duracao}}}
 function atendMais(){const A=UI.atend;A.cliente=$('#atCli').value;A.data=$('#atData').value;const u=A.itens[A.itens.length-1];const [h,m]=(u.hora||'09:00').split(':').map(Number);const t=h*60+m+(Number(u.duracao)||30);A.itens.push({servico:'',profissional:u.profissional,hora:pad(Math.floor(t/60)%24)+':'+pad(t%60),duracao:30});atendModal()}
-function atendSalvar(){const A=UI.atend;A.cliente=$('#atCli').value;A.data=$('#atData').value;const p=ensurePatient(A.cliente);if(!p){toast('Informe o cliente');return}if(!A.data){toast('Informe a data');return}
+/* Aviso embaixo do campo do cliente, igual ao do agendamento. */
+function atendAviso(){const A=UI.atend;if(!A)return;const H=$('#atHint'),L=$('#atCelL');if(!H||!L)return;
+ const t=avisoPaciente(A.cliente||'');H.innerHTML=t;H.style.display=t?'':'none';
+ L.style.display=pacPedeCelular(A.cliente||'')?'':'none'}
+document.addEventListener('click',e=>{const b=e.target.closest&&e.target.closest('#atHint [data-mfset]');if(!b)return;
+ e.preventDefault();const i=$('#atCli');if(!i)return;i.value=b.getAttribute('data-mfval');UI.atend.cliente=i.value;atendAviso()});
+function atendSalvar(){const A=UI.atend;A.cliente=$('#atCli').value;A.data=$('#atData').value;
+ const celEl=$('#atCel');if(celEl)A.celular=celEl.value;
+ const jaExistia=!!acharPac(A.cliente);
+ if(!jaExistia&&str(A.cliente)&&!str(A.celular)){toast('Informe o celular do '+SEG().pessoa.toLowerCase()+' novo');return}
+ const p=ensurePatient(A.cliente);if(!p){toast('Informe o cliente');return}if(!A.data){toast('Informe a data');return}
+ if(!jaExistia)p.criadoPorImportacao=false;
+ if(A.celular&&str(A.celular)!==str(p.celular))p.celular=str(A.celular);
  const itens=A.itens.filter(i=>str(i.servico));if(!itens.length){toast('Informe pelo menos um serviço');return}const g=uid();
  itens.forEach(i=>{const s=servPorNome(i.servico);S.agendamentos.push({id:uid(),pacienteId:p.id,data:A.data,hora:i.hora||'09:00',duracao:Number(i.duracao)||30,profissional:i.profissional?ensureProf(i.profissional):'',procedimento:s?s.nome:str(i.servico),servicoId:s?s.id:'',status:'Agendado',obs:'',grupoId:itens.length>1?g:'',origem:'manual'})});
  UI.agDate=A.data;UI.atend=null;closeModal();save();render();toast(itens.length>1?itens.length+' serviços agendados no mesmo atendimento':'Agendado')}
@@ -2083,7 +2149,7 @@ function agNovo(a,s){if(s==='Desmarcado'||s==='Faltou')return false;const k=a.da
  const hist=c=>S[c].some(x=>x.pacienteId===a.pacienteId&&((x.data||x.vencimento||x.pagamento||'')<a.data)&&(x.data||x.vencimento||x.pagamento));
  return !hist('evolucoes')&&!hist('tratamentos')&&!S.lancamentos.some(l=>l.pacienteId===a.pacienteId&&l.pagamento&&l.pagamento<a.data)}
 /* ============ Atualização: aviso com botão Atualizar agora ============ */
-const VERSAO_APP='1.9.15';const URL_VERSAO_JSON='https://raw.githubusercontent.com/TheIgor12/blacksolutions/main/versao.json';
+const VERSAO_APP='1.9.16';const URL_VERSAO_JSON='https://raw.githubusercontent.com/TheIgor12/blacksolutions/main/versao.json';
 const numV=v=>String(v||'0').split(/\D+/).filter(Boolean).map(Number);
 function versaoMaior(a,b){const x=numV(a),y=numV(b);for(let i=0;i<Math.max(x.length,y.length);i++){const d=(x[i]||0)-(y[i]||0);if(d)return d>0}return false}
 const ATU={nova:null,timer:null};
