@@ -1,6 +1,6 @@
 {
-  "versao": "1.9.12",
-  "html": "https://raw.githubusercontent.com/TheIgor12/blacksolutions/main/download/blackflow-1.9.12.html",
-  "novidades": "A degustação passou a ser de 7 dias, e quem precisar de mais tempo pede pelo botão na própria tela de teste vencido, sem falar com ninguém. O prazo agora fica na nuvem e muda sem instalar versão nova.",
+  "versao": "1.9.13",
+  "html": "https://raw.githubusercontent.com/TheIgor12/blacksolutions/main/download/blackflow-1.9.13.html",
+  "novidades": "A versão que aparece no menu lateral e em Minha conta passou a ser a versão real do sistema, em vez de um número escrito à mão que ficava para trás a cada atualização.",
   "instalador": "https://blackflow.app.br/download/BlackFlow_Instalador.exe"
 }
