@@ -458,6 +458,20 @@ function pacPedeCelular(v){const nome=splitNome(v||'').nome;if(!nome||nome.lengt
    casa o paciente com a planilha do Clinicorp na confer\u00eancia do financeiro. */
 function pacPedeCPF(v){const nome=splitNome(v||'').nome;if(!nome||nome.length<3)return false;
  const p=acharPac(v);return !p||!str(p.cpf)}
+/* Endere\u00e7o e trabalho: aparecem quando a ficha ainda n\u00e3o tem.
+   Sem endere\u00e7o e sem CPF n\u00e3o se protesta nem se executa quem n\u00e3o paga. */
+function pacPedeEndereco(v){const nome=splitNome(v||'').nome;if(!nome||nome.length<3)return false;
+ const p=acharPac(v);return !p||!str(p.endereco)||!str(p.cep)}
+function pacPedeTrabalho(v){const nome=splitNome(v||'').nome;if(!nome||nome.length<3)return false;
+ const p=acharPac(v);return !p||(!str(p.profissao)&&!str(p.empresa))}
+/* Endere\u00e7o em uma linha, do jeito que se escreve em peti\u00e7\u00e3o. */
+/* Dados de cadastro que o agendamento tamb\u00e9m aproveita. */
+function fmtCEP(v){const c=str(v).replace(/\D/g,'');return c.length===8?c.replace(/(\d{5})(\d{3})/,'$1-$2'):str(v)}
+function fichaDe(p){const o={};['cep','endereco','numero','bairro','cidade','uf','profissao','empresa'].forEach(k=>o[k]=p?str(p[k]):'');return o}
+function enderecoDe(p){if(!p)return '';
+ const rua=[str(p.endereco),str(p.numero)].filter(Boolean).join(', ');
+ const cid=[str(p.cidade),str(p.uf)].filter(Boolean).join('/');
+ return [rua,str(p.complemento),str(p.bairro),cid,str(p.cep)].filter(Boolean).join(' \u00b7 ')}
 /* Quantas anamneses a pessoa tem e quando foi a \u00faltima. */
 function resumoAnamnese(p){if(!p)return '';
  const L=S.anamneses.filter(a=>a.pacienteId===p.id).sort((a,b)=>str(b.data).localeCompare(str(a.data)));
@@ -468,6 +482,7 @@ function avisoPaciente(v){const nome=splitNome(v||'').nome;if(!nome)return '';
   const falta=str(p.celular)?'':' Est\u00e1 sem celular na ficha; se preencher abaixo, fica salvo no cadastro.';
   return `<div style="display:flex;gap:10px;align-items:flex-start">${avatarPac(p,'lg')}<div style="flex:1">`
    +`<b class="ok">J\u00e1 cadastrado</b> ${esc(p.nome)}${p.codigo?' \u00b7 c\u00f3digo '+esc(p.codigo):''}${cel} \u00b7 ${esc(resumoAnamnese(p))}.${falta}`
+   +(str(p.cpf)||enderecoDe(p)?`<div style="margin-top:3px">${str(p.cpf)?'CPF '+esc(fmtCPF(p.cpf)):''}${str(p.cpf)&&enderecoDe(p)?' \u00b7 ':''}${esc(enderecoDe(p))}</div>`:'')
    +`<div style="margin-top:6px;display:flex;gap:6px;flex-wrap:wrap">`
    +`<button class="btn ghost sm" type="button" onclick="fotoPerfil('${p.id}')">${p.foto?'Trocar foto':'Inserir foto'}</button>`
    +`<button class="btn ghost sm" type="button" onclick="anaRapida('${p.id}')">Anamnese</button>`
@@ -627,6 +642,7 @@ function anaRapida(pid){const p=pac(pid);if(!p)return;
   <div class="mact"><button class="btn ghost" style="margin-right:auto" onclick="fecha2();fotoPerfil('${pid}')">${p.foto?'Trocar foto':'Inserir foto'}</button>
    <button class="btn ghost" onclick="fecha2()">Fechar</button>
    ${ocupado?'':`<button class="btn" onclick="fecha2();anaForm('${pid}')">Nova anamnese</button>`}</div>`)}
+const FM_CEP={};
 function formModal(title,fields,data,onSave,extra){data=data||{};
  const h=fields.map(f=>{const v=data[f.k]??(f.def??'');let inp;
   if(f.type==='hora15'){const L=[];for(let m=6*60;m<=22*60;m+=15)L.push(pad(Math.floor(m/60))+':'+pad(m%60));if(v&&!L.includes(String(v).slice(0,5)))L.push(String(v).slice(0,5));L.sort();inp=`<select name="${f.k}" class="hora15">${L.map(o=>`<option ${o===String(v).slice(0,5)?'selected':''}>${o}</option>`).join('')}</select>`}
@@ -651,6 +667,23 @@ function formModal(title,fields,data,onSave,extra){data=data||{};
     if(novo===''){if(el.dataset.auto==='1'){el.value='';delete el.dataset.auto}return}
     if(!String(el.value).trim()||el.dataset.auto==='1'){el.value=novo;el.dataset.auto='1'}})})}
  window.mfPintarGlobal=mfPintar;
+ /* CEP: ao completar oito d\u00edgitos, busca o endere\u00e7o e preenche os campos que
+    estiverem vazios. O que a pessoa digitou na m\u00e3o nunca e sobrescrito. */
+ async function mfCep(f){const el=$('#mf [name="'+f.k+'"]');if(!el)return;
+  const c=String(el.value||'').replace(/\D/g,'');
+  if(c.length!==8||el.dataset.cepUlt===c)return;el.dataset.cepUlt=c;
+  let j;try{j=FM_CEP[c]||await fetch('https://viacep.com.br/ws/'+c+'/json/').then(r=>r.json())}
+  catch(e){toast('N\u00e3o consegui consultar o CEP agora. Confira a internet ou preencha o endere\u00e7o \u00e0 m\u00e3o');return}
+  if(!j||j.erro){toast('CEP n\u00e3o encontrado. Confira o n\u00famero');return}
+  FM_CEP[c]=j;el.value=c.replace(/(\d{5})(\d{3})/,'$1-$2');
+  const m=f.cep||{};
+  const por=(k,v)=>{if(!v)return;const e2=$('#mf [name="'+k+'"]');if(!e2)return;
+   if(!String(e2.value).trim()||e2.dataset.auto==='1'){e2.value=v;e2.dataset.auto='1'}};
+  por(m.rua||'endereco',j.logradouro);por(m.bairro||'bairro',j.bairro);
+  por(m.cidade||'cidade',j.localidade);por(m.uf||'uf',j.uf);
+  mfPintar();const alvo=$('#mf [name="'+(m.numero||'numero')+'"]');if(alvo)alvo.focus();
+  toast('Endere\u00e7o preenchido pelo CEP')}
+ fields.filter(f=>f.cep).forEach(f=>{const el=$('#mf [name="'+f.k+'"]');if(el)el.addEventListener('input',()=>mfCep(f))});
  window.mfSet=(k,v)=>{const el=$('#mf [name="'+k+'"]');if(!el)return;el.value=v;mfPintar();const f=$('#mf [name="celular"]');if(f&&f.offsetParent)f.focus()};
  if(fields.some(f=>f.aviso||f.mostrarSe||f.auto)){const F=$('#mf');
   F.addEventListener('input',e=>{if(e.target&&e.target.dataset&&e.target.dataset.auto==='1')delete e.target.dataset.auto;mfPintar()});
@@ -950,19 +983,28 @@ function agClique(e,el){if(e.target!==el)return;const r=el.getBoundingClientRect
 function agForm(id,pacienteId,pre){pre=pre||{};const a=id?S.agendamentos.find(x=>x.id===id):null;const p=a?pac(a.pacienteId):(pacienteId?pac(pacienteId):null);
  formModal(a?'Editar agendamento':'Novo agendamento',[{k:'paciente',l:SEG().pessoa,req:true,list:'dlPac',full:true,aviso:o=>avisoPaciente(o.paciente)},{k:'celular',l:'Celular / WhatsApp',full:true,req:true,mostrarSe:o=>pacPedeCelular(o.paciente)},
    {k:'cpf',l:'CPF',mostrarSe:o=>pacPedeCPF(o.paciente)},
-   {k:'nascimento',l:'Data de nascimento',type:'date',mostrarSe:o=>pacPedeCPF(o.paciente)},{k:'data',l:'Data',type:'date',req:true},{k:'hora',l:'Hora',type:'hora15',req:true},{k:'duracao',l:'Duração (minutos)',type:'select',opts:[15,30,45,60,75,90,120,150,180]},{k:'profissional',l:'Profissional',list:'dlProf'},{k:'procedimento',l:ehSeg('podologia')?'Procedimento':'Serviço',full:true,list:'dlServ'},{k:'status',l:'Status',type:'select',opts:['Agendado','Confirmado','Atendido','Faltou','Desmarcado']},{k:'obs',l:'Observação',type:'textarea',rows:2,full:true}],
-  a?{...a,paciente:p?p.nome:'',celular:p?str(p.celular):'',cpf:p?str(p.cpf):'',nascimento:p?str(p.nascimento):'',status:stAg(a)}:{paciente:p?p.nome:'',celular:p?str(p.celular):'',cpf:p?str(p.cpf):'',nascimento:p?str(p.nascimento):'',data:pre.data||UI.agDate,hora:pre.hora||'09:00',duracao:pre.duracao||30,profissional:pre.profissional||'',status:'Agendado'},
+   {k:'nascimento',l:'Data de nascimento',type:'date',mostrarSe:o=>pacPedeCPF(o.paciente)},{k:'data',l:'Data',type:'date',req:true},{k:'hora',l:'Hora',type:'hora15',req:true},{k:'duracao',l:'Duração (minutos)',type:'select',opts:[15,30,45,60,75,90,120,150,180]},{k:'profissional',l:'Profissional',list:'dlProf'},{k:'procedimento',l:ehSeg('podologia')?'Procedimento':'Serviço',full:true,list:'dlServ'},{k:'status',l:'Status',type:'select',opts:['Agendado','Confirmado','Atendido','Faltou','Desmarcado']},{k:'obs',l:'Observação',type:'textarea',rows:2,full:true},
+   {k:'cep',l:'CEP (preenche o endereço sozinho)',cep:{},mostrarSe:o=>pacPedeEndereco(o.paciente)},
+   {k:'endereco',l:'Endereço',full:true,mostrarSe:o=>pacPedeEndereco(o.paciente)},
+   {k:'numero',l:'Número',mostrarSe:o=>pacPedeEndereco(o.paciente)},
+   {k:'bairro',l:'Bairro',mostrarSe:o=>pacPedeEndereco(o.paciente)},
+   {k:'cidade',l:'Cidade',mostrarSe:o=>pacPedeEndereco(o.paciente)},
+   {k:'uf',l:'UF',mostrarSe:o=>pacPedeEndereco(o.paciente)},
+   {k:'profissao',l:'Profissão',mostrarSe:o=>pacPedeTrabalho(o.paciente)},
+   {k:'empresa',l:'Empresa onde trabalha',mostrarSe:o=>pacPedeTrabalho(o.paciente)}],
+  a?{...a,paciente:p?p.nome:'',celular:p?str(p.celular):'',cpf:p?str(p.cpf):'',nascimento:p?str(p.nascimento):'',...fichaDe(p),status:stAg(a)}:{paciente:p?p.nome:'',celular:p?str(p.celular):'',cpf:p?str(p.cpf):'',nascimento:p?str(p.nascimento):'',...fichaDe(p),data:pre.data||UI.agDate,hora:pre.hora||'09:00',duracao:pre.duracao||30,profissional:pre.profissional||'',status:'Agendado'},
   o=>{const jaExistia=!!acharPac(o.paciente);const pp=ensurePatient(o.paciente);if(!pp){toast('Informe o '+SEG().pessoa.toLowerCase());return false}
    if(!jaExistia)pp.criadoPorImportacao=false;
    if(o.celular&&str(o.celular)!==str(pp.celular))pp.celular=str(o.celular);
    if(o.cpf&&str(o.cpf)!==str(pp.cpf))pp.cpf=str(o.cpf);
    if(o.nascimento&&str(o.nascimento)!==str(pp.nascimento))pp.nascimento=str(o.nascimento);
+   ['cep','endereco','numero','bairro','cidade','uf','profissao','empresa'].forEach(k=>{const v=k==='cep'?fmtCEP(o[k]):str(o[k]);if(v&&v!==str(pp[k]))pp[k]=v});
    if(!jaExistia)setTimeout(()=>{toast(SEG().pessoa+' novo cadastrado: '+pp.nome);convidarAnamnese(pp.id)},120);
    const rec={pacienteId:pp.id,data:o.data,hora:o.hora,duracao:o.duracao||30,profissional:ensureProf(o.profissional),procedimento:o.procedimento,status:o.status,obs:o.obs};
    const ant=a?stAg(a):'';let ag=a;if(a)Object.assign(a,rec);else{ag={id:uid(),origem:'manual',...rec};S.agendamentos.push(ag)}UI.agDate=o.data;if(ant==='Atendido'&&stAg(ag)!=='Atendido')estornarSessao(ag);if(stAg(ag)!=='Atendido')delete ag.semPacote;sincLancAg(ag);if(stAg(ag)==='Atendido'&&ant!=='Atendido'&&precisaPerguntar(ag)){UI.sessAnt=UI.sessAnt||{};UI.sessAnt[ag.id]=ant;setTimeout(()=>perguntarSessao(ag.id),150)}if(lancAgAtivo()){const pr=precoProc(ag.procedimento);if(pr&&!pacoteAtivo(ag)&&['Agendado','Confirmado'].includes(stAg(ag)))setTimeout(()=>toast('Valor de '+money(pr)+' lançado como previsto no financeiro'),60)}},
   a?`<button class="btn danger" style="margin-right:auto" onclick="delRec('agendamentos','${a.id}')">Excluir</button>`:'')}
 function agModal(id){const a=S.agendamentos.find(x=>x.id===id);if(!a)return;const p=pac(a.pacienteId);const l=p?waLink(p.celular):'';
- openModal(`<h3 style="display:flex;align-items:center;gap:10px">${p?avatarPac(p,'lg'):''}<span>${esc(p?p.nome:'Paciente')}</span></h3>${p?`<div class="row"><span>Anamnese</span><span>${esc(resumoAnamnese(p))}</span></div>`:''}<div class="row"><span>Data</span><span>${br(a.data)} às ${esc(a.hora)} (${a.duracao||30} min)</span></div><div class="row"><span>Profissional</span><span>${esc(a.profissional||'-')}</span></div><div class="row"><span>Procedimento</span><span>${esc(a.procedimento||'-')}</span></div><div class="row" style="align-items:center"><span><b>Situação</b></span><span><select id="agSt" onchange="setAgSt('${a.id}',this.value)" style="font-size:14px;font-weight:700;padding:8px 12px;border-radius:8px;border:2px solid ${({Agendado:'#e0a800',Confirmado:'#16a34a',Atendido:'#64748b',Faltou:'#dc2626',Desmarcado:'#999'})[stAg(a)]||'#e0a800'};background:${({Agendado:'#fff3bf',Confirmado:'#c9f2d6',Atendido:'#e6ebf3',Faltou:'#fde8e8',Desmarcado:'#eee'})[stAg(a)]||'#fff3bf'}">${['Agendado','Confirmado','Atendido','Faltou','Desmarcado'].map(x=>`<option value="${x}" ${stAg(a)===x?'selected':''}>${x==='Desmarcado'?'Desmarcou':x}</option>`).join('')}</select></span></div>${agNovo(a,stAg(a))?`<div class="row"><span></span><span><i class="evtag" style="font-size:11px;padding:2px 8px">${esc(SEG().pessoa.toUpperCase())} NOVO</i></span></div>`:''}${agSessHTML(a)}${a.obs?`<div class="row"><span>Observação</span><span>${esc(a.obs)}</span></div>`:''}${agFinHTML(a)}${lancAgAtivo()?agValHTML(a):''}
+ openModal(`<h3 style="display:flex;align-items:center;gap:10px">${p?avatarPac(p,'lg'):''}<span>${esc(p?p.nome:'Paciente')}</span></h3>${p?`<div class="row"><span>Anamnese</span><span>${esc(resumoAnamnese(p))}</span></div>`:''}${p&&str(p.cpf)?`<div class="row"><span>CPF</span><span>${esc(fmtCPF(p.cpf))}</span></div>`:''}${p&&enderecoDe(p)?`<div class="row"><span>Endereço</span><span>${esc(enderecoDe(p))}</span></div>`:''}${p&&(str(p.profissao)||str(p.empresa))?`<div class="row"><span>Trabalho</span><span>${esc([str(p.profissao),str(p.empresa)].filter(Boolean).join(' · '))}</span></div>`:''}<div class="row"><span>Data</span><span>${br(a.data)} às ${esc(a.hora)} (${a.duracao||30} min)</span></div><div class="row"><span>Profissional</span><span>${esc(a.profissional||'-')}</span></div><div class="row"><span>Procedimento</span><span>${esc(a.procedimento||'-')}</span></div><div class="row" style="align-items:center"><span><b>Situação</b></span><span><select id="agSt" onchange="setAgSt('${a.id}',this.value)" style="font-size:14px;font-weight:700;padding:8px 12px;border-radius:8px;border:2px solid ${({Agendado:'#e0a800',Confirmado:'#16a34a',Atendido:'#64748b',Faltou:'#dc2626',Desmarcado:'#999'})[stAg(a)]||'#e0a800'};background:${({Agendado:'#fff3bf',Confirmado:'#c9f2d6',Atendido:'#e6ebf3',Faltou:'#fde8e8',Desmarcado:'#eee'})[stAg(a)]||'#fff3bf'}">${['Agendado','Confirmado','Atendido','Faltou','Desmarcado'].map(x=>`<option value="${x}" ${stAg(a)===x?'selected':''}>${x==='Desmarcado'?'Desmarcou':x}</option>`).join('')}</select></span></div>${agNovo(a,stAg(a))?`<div class="row"><span></span><span><i class="evtag" style="font-size:11px;padding:2px 8px">${esc(SEG().pessoa.toUpperCase())} NOVO</i></span></div>`:''}${agSessHTML(a)}${a.obs?`<div class="row"><span>Observação</span><span>${esc(a.obs)}</span></div>`:''}${agFinHTML(a)}${lancAgAtivo()?agValHTML(a):''}
  <div class="mact">${l?`<a class="btn green" href="${l}" target="_blank" rel="noopener">WhatsApp</a>`:''}${p?`<button class="btn ghost" onclick="anaRapida('${p.id}')">Anamnese</button><button class="btn ghost" onclick="fotoPerfil('${p.id}')">${p.foto?'Trocar foto':'Inserir foto'}</button><button class="btn ghost" onclick="closeModal();go('paciente','${p.id}')">Abrir ficha</button>`:''}${!ehSeg('podologia')&&!soAgenda()&&p?`<button class="btn soft" onclick="comandaDoAgendamento('${a.id}')">Abrir comanda</button>`:''}<button class="btn" onclick="closeModal();agForm('${a.id}')">Editar</button></div>`)}
 /* Situação financeira do atendimento, igual ao selo Financeiro Ok do Clinicorp */
 function agFinHTML(a){const l=lancDoAg(a);if(!l||!(Number(l.valor)>0))return '';const sd=saldoL(l),pn=parcNum(l);
@@ -994,8 +1036,8 @@ function vPacientes(){return `<div class="page"><div class="phead"><div><h1>${SE
  <div class="card"><input class="inp" style="width:100%;max-width:420px;margin-bottom:12px" placeholder="Pesquise por nome, CPF, celular ou código (use % antes para sobrenome)" value="${esc(UI.pacQuery)}" oninput="UI.pacQuery=this.value;UI.pacPage=0;refreshPac()"><div id="pacT">${pacTable()}</div></div></div>`}
 function pacForm(id){const p=id?pac(id):null;
  formModal(p?'Editar cadastro':'Novo '+SEG().pessoa.toLowerCase(),[{k:'nome',l:'Nome completo',req:true,full:true},{k:'celular',l:'Celular / WhatsApp',req:!p},{k:'nascimento',l:'Data de nascimento',type:'date'},{k:'cpf',l:'CPF'},{k:'telefone',l:'Telefone fixo'},{k:'email',l:'E-mail',type:'email'},{k:'rg',l:'RG'},{k:'sexo',l:'Sexo',type:'select',opts:['','Feminino','Masculino','Outro']},{k:'estadoCivil',l:'Estado civil'},{k:'profissao',l:'Profissão'},{k:'comoConheceu',l:'Como conheceu',type:'select',opts:['','Google','Instagram','Facebook','Indicado por','Passou em frente','Outros']},{k:'indicadoPor',l:'Indicado por (nome de quem indicou)',list:'dlPac'},
-  {k:'cep',l:'CEP'},{k:'endereco',l:'Endereço'},{k:'numero',l:'Número'},{k:'complemento',l:'Complemento'},{k:'bairro',l:'Bairro'},{k:'cidade',l:'Cidade'},{k:'uf',l:'UF'},{k:'plano',l:'Plano ou convênio'},{k:'responsavel',l:'Responsável'},{k:'status',l:'Status',type:'select',opts:['Ativo','Inativo']},{k:'observacoes',l:'Observações',type:'textarea',full:true,rows:3}],
-  p||{status:'Ativo'},o=>{if(o.indicadoPor){const q=S.pacientes.find(x=>norm(x.nome)===norm(o.indicadoPor)&&(!p||x.id!==p.id));o.indicadoPorId=q?q.id:'';if(!o.comoConheceu)o.comoConheceu='Indicado por'}else o.indicadoPorId='';if(p)Object.assign(p,o);else{const n={id:uid(),codigo:nextCodigo(),...o};S.pacientes.push(n);setTimeout(()=>go('paciente',n.id),0)}})}
+  {k:'empresa',l:'Empresa onde trabalha'},{k:'cep',l:'CEP (preenche o endereço sozinho)',cep:{}},{k:'endereco',l:'Endereço'},{k:'numero',l:'Número'},{k:'complemento',l:'Complemento'},{k:'bairro',l:'Bairro'},{k:'cidade',l:'Cidade'},{k:'uf',l:'UF'},{k:'plano',l:'Plano ou convênio'},{k:'responsavel',l:'Responsável'},{k:'status',l:'Status',type:'select',opts:['Ativo','Inativo']},{k:'observacoes',l:'Observações',type:'textarea',full:true,rows:3}],
+  p||{status:'Ativo'},o=>{o.cep=fmtCEP(o.cep);if(o.indicadoPor){const q=S.pacientes.find(x=>norm(x.nome)===norm(o.indicadoPor)&&(!p||x.id!==p.id));o.indicadoPorId=q?q.id:'';if(!o.comoConheceu)o.comoConheceu='Indicado por'}else o.indicadoPorId='';if(p)Object.assign(p,o);else{const n={id:uid(),codigo:nextCodigo(),...o};S.pacientes.push(n);setTimeout(()=>go('paciente',n.id),0)}})}
 
 function vPaciente(){const p=pac(UI.param);if(!p)return `<div class="page"><div class="card">Paciente não encontrado. <button class="lnk" onclick="go('pacientes')">Voltar</button></div></div>`;
  const tabs=abasCliente();if(!tabs.some(([k])=>k===UI.pacTab))UI.pacTab='geral';
@@ -1011,7 +1053,7 @@ function pGeral(p){const m=lastApptMap()[p.id]||{};const prox=S.agendamentos.fil
  const ana=S.anamneses.filter(a=>a.pacienteId===p.id).sort((a,b)=>(b.data||'').localeCompare(a.data||''))[0];
  const lan=S.lancamentos.filter(l=>l.pacienteId===p.id);const aberto=lan.reduce((a,l)=>a+saldoL(l),0);const atraso=lan.filter(l=>stLanc(l)==='Em atraso').reduce((a,l)=>a+saldoL(l),0);
  const orcA=S.tratamentos.filter(t=>t.pacienteId===p.id&&['Em aberto','Em follow up'].includes(stTrat(t)));
- const info={cadastro:[['Data de nascimento',p.nascimento?`${br(p.nascimento)} <span class="badge b-mut">${age(p.nascimento)} anos</span>`:''],['CPF',esc(fmtCPF(p.cpf))],['RG',esc(p.rg)],['Estado civil',esc(p.estadoCivil)],['Sexo',esc(p.sexo)],['Profissão',esc(p.profissao)],['Como conheceu?',esc(p.comoConheceu)],['Plano',esc(p.plano)],['Responsável',esc(p.responsavel)]],
+ const info={cadastro:[['Data de nascimento',p.nascimento?`${br(p.nascimento)} <span class="badge b-mut">${age(p.nascimento)} anos</span>`:''],['CPF',esc(fmtCPF(p.cpf))],['RG',esc(p.rg)],['Estado civil',esc(p.estadoCivil)],['Sexo',esc(p.sexo)],['Profissão',esc(p.profissao)],['Empresa',esc(p.empresa)],['Como conheceu?',esc(p.comoConheceu)],['Plano',esc(p.plano)],['Responsável',esc(p.responsavel)]],
   contato:[['Celular',esc(p.celular)],['Telefone',esc(p.telefone)],['E-mail',esc(p.email)]],
   complemento:[['CEP',esc(p.cep)],['Endereço',esc([p.endereco,p.numero].filter(Boolean).join(', '))],['Complemento',esc(p.complemento)],['Bairro',esc(p.bairro)],['Cidade',esc([p.cidade,p.uf].filter(Boolean).join(' / '))],['Observações',esc(p.observacoes)]]}[UI.pacInfo];
  return `<div class="pgrid"><div class="card" style="grid-row:span 2"><h2>Informações do paciente</h2><div class="seg" style="width:100%;margin-bottom:10px">${[['cadastro','Cadastro'],['contato','Contato'],['complemento','Complemento']].map(([k,t])=>`<button style="flex:1" class="${UI.pacInfo===k?'on':''}" onclick="UI.pacInfo='${k}';render()">${t}</button>`).join('')}</div>${rows(info)}</div>
@@ -1442,11 +1484,13 @@ function fReceber(){const t=todayISO();let L=S.lancamentos.filter(l=>{const st=s
  ${(window._cr=L.map(l=>{const p=pac(l.pacienteId);return [stLanc(l),br(l.vencimento),p?p.nome:'',l.descricao,l.parcela||'',l.forma||'',l.valor,saldoL(l)]}),L).map(l=>{const p=pac(l.pacienteId);const st=stLanc(l);return `<tr><td>${badgeFor(st)}</td><td>${br(l.vencimento)}</td><td><span style="display:flex;align-items:center;gap:7px">${p?avatarPac(p,'sm'):''}<button class="lnk" onclick="go('paciente','${l.pacienteId}');UI.pacTab='financeiro';render()">${esc(p?p.nome:'?')}</button></span></td><td>${esc(l.descricao)}</td><td>${esc(l.parcela||'-')}</td><td>${esc(formaTxt(l)||'-')}</td><td class="num">${money(l.valor)}</td><td class="num">${money(saldoL(l))}</td><td>${parcBolinhas(l)}</td><td style="white-space:nowrap">${st!=='Pago'?`<button class="btn soft sm" onclick="cobrarPix('${l.id}')">Pix</button> <button class="btn green sm" onclick="baixarLanc('${l.id}')">Receber</button> `:''}<button class="btn ghost sm" title="Mais ações" onclick="lancMenu('${l.id}')">⋮</button></td></tr>`}).join('')||'<tr><td colspan="10" class="empty">Sem registros</td></tr>'}</tbody></table></div>
  <div style="text-align:right;padding:12px 16px;font-weight:700">Total ${money(tot)}</div></div>`}
 function fInad(){const L=inadList();const tot=L.reduce((a,o)=>a+o.valor,0);
- window._inad=L.map(o=>[o.p.nome,o.p.celular||'',o.qtd,br(o.maisAntigo),o.dias,o.valor,o.totalAberto]);
- return `<div class="phead"><div><h1>Inadimplência</h1><p class="sub">Pacientes com parcelas vencidas e não pagas, com cobrança direta pelo WhatsApp.</p></div><button class="btn ghost" onclick="exportRows('inadimplencia',['Paciente','Celular','Parcelas em atraso','Vencimento mais antigo','Dias em atraso','Valor em atraso','Total em aberto'],window._inad)">${ico('down',16)} Exportar Excel</button></div>
+ window._inad=L.map(o=>[o.p.nome,fmtCPF(o.p.cpf)||'',o.p.celular||'',enderecoDe(o.p),[str(o.p.profissao),str(o.p.empresa)].filter(Boolean).join(' / '),o.qtd,br(o.maisAntigo),o.dias,o.valor,o.totalAberto]);
+ return `<div class="phead"><div><h1>Inadimplência</h1><p class="sub">Pacientes com parcelas vencidas e não pagas, com cobrança direta pelo WhatsApp.</p></div><button class="btn ghost" onclick="exportRows('inadimplencia',['Paciente','CPF','Celular','Endereço','Profissão e empresa','Parcelas em atraso','Vencimento mais antigo','Dias em atraso','Valor em atraso','Total em aberto'],window._inad)">${ico('down',16)} Exportar Excel</button></div>
  <div class="grid g4" style="margin-bottom:16px"><div class="kpi r"><small>Total em atraso</small><b>${money(tot)}</b><span>${L.length} pacientes</span></div><div class="kpi"><small>Parcelas vencidas</small><b>${L.reduce((a,o)=>a+o.qtd,0)}</b><span>não pagas</span></div><div class="kpi"><small>Maior atraso</small><b>${L.length?Math.max(...L.map(o=>o.dias)):0} dias</b><span>parcela mais antiga</span></div></div>
- <div class="card" style="padding:0"><div class="tw"><table class="tbl"><thead><tr><th>Paciente</th><th>Celular</th><th class="num">Parcelas</th><th>Vencida desde</th><th class="num">Dias</th><th class="num">Em atraso</th><th class="num">Total em aberto</th><th></th></tr></thead><tbody>
- ${L.map(o=>{const l=waLink(o.p.celular,fillMsg(S.config.msgCobranca,{nome:firstName(o.p.nome),clinica:S.config.clinica,valor:money(o.valor),vencimento:br(o.maisAntigo)}));return `<tr><td><button class="lnk" onclick="go('paciente','${o.p.id}');UI.pacTab='financeiro';render()">${esc(o.p.nome)}</button></td><td>${esc(o.p.celular||'-')}</td><td class="num">${o.qtd}</td><td>${br(o.maisAntigo)}</td><td class="num"><span class="badge ${o.dias>60?'b-bad':o.dias>30?'b-warn':'b-info'}">${o.dias}</span></td><td class="num"><b style="color:var(--bad)">${money(o.valor)}</b></td><td class="num">${money(o.totalAberto)}</td><td>${l?`<a class="btn green sm" href="${l}" target="_blank" rel="noopener">Cobrar</a>`:'<span style="color:var(--mut);font-size:12px">Sem celular</span>'}</td></tr>`}).join('')||'<tr><td colspan="8" class="empty">Nenhuma parcela em atraso.</td></tr>'}</tbody></table></div></div>
+ <div class="card" style="padding:0"><div class="tw"><table class="tbl"><thead><tr><th>Paciente</th><th>CPF e endereço</th><th>Celular</th><th class="num">Parcelas</th><th>Vencida desde</th><th class="num">Dias</th><th class="num">Em atraso</th><th class="num">Total em aberto</th><th></th></tr></thead><tbody>
+ ${L.map(o=>{const l=waLink(o.p.celular,fillMsg(S.config.msgCobranca,{nome:firstName(o.p.nome),clinica:S.config.clinica,valor:money(o.valor),vencimento:br(o.maisAntigo)}));return `<tr><td><span style="display:flex;align-items:center;gap:7px">${avatarPac(o.p,'sm')}<button class="lnk" onclick="go('paciente','${o.p.id}');UI.pacTab='financeiro';render()">${esc(o.p.nome)}</button></span></td>
+   <td style="font-size:12px;line-height:1.4">${str(o.p.cpf)?esc(fmtCPF(o.p.cpf)):'<span style="color:var(--bad)">sem CPF</span>'}<br>${enderecoDe(o.p)?esc(enderecoDe(o.p)):'<span style="color:var(--bad)">sem endereço</span>'}<br><button class="lnk" onclick="pacForm('${o.p.id}')">completar cadastro</button></td>
+   <td>${esc(o.p.celular||'-')}</td><td class="num">${o.qtd}</td><td>${br(o.maisAntigo)}</td><td class="num"><span class="badge ${o.dias>60?'b-bad':o.dias>30?'b-warn':'b-info'}">${o.dias}</span></td><td class="num"><b style="color:var(--bad)">${money(o.valor)}</b></td><td class="num">${money(o.totalAberto)}</td><td>${l?`<a class="btn green sm" href="${l}" target="_blank" rel="noopener">Cobrar</a>`:'<span style="color:var(--mut);font-size:12px">Sem celular</span>'}</td></tr>`}).join('')||'<tr><td colspan="8" class="empty">Nenhuma parcela em atraso.</td></tr>'}</tbody></table></div></div>
  <p class="sub" style="margin-top:10px">A mensagem de cobrança pode ser alterada em Configurações.</p>`}
 
 /* ============ Gráficos ============ */
@@ -2255,7 +2299,7 @@ function agNovo(a,s){if(s==='Desmarcado'||s==='Faltou')return false;const k=a.da
  const hist=c=>S[c].some(x=>x.pacienteId===a.pacienteId&&((x.data||x.vencimento||x.pagamento||'')<a.data)&&(x.data||x.vencimento||x.pagamento));
  return !hist('evolucoes')&&!hist('tratamentos')&&!S.lancamentos.some(l=>l.pacienteId===a.pacienteId&&l.pagamento&&l.pagamento<a.data)}
 /* ============ Atualização: aviso com botão Atualizar agora ============ */
-const VERSAO_APP='1.9.18';const URL_VERSAO_JSON='https://raw.githubusercontent.com/TheIgor12/blacksolutions/main/versao.json';
+const VERSAO_APP='1.9.19';const URL_VERSAO_JSON='https://raw.githubusercontent.com/TheIgor12/blacksolutions/main/versao.json';
 const numV=v=>String(v||'0').split(/\D+/).filter(Boolean).map(Number);
 function versaoMaior(a,b){const x=numV(a),y=numV(b);for(let i=0;i<Math.max(x.length,y.length);i++){const d=(x[i]||0)-(y[i]||0);if(d)return d>0}return false}
 const ATU={nova:null,timer:null};

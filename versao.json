@@ -1,4 +1,4 @@
 {
-  "versao": "1.9.18",
-  "novidades": "No agendamento: duração em passos fixos de 15 em 15 minutos, campos de CPF e data de nascimento para paciente novo, foto do paciente e acesso direto à anamnese ao lado do nome. A foto do paciente passa a aparecer na agenda, na lista de pacientes e no financeiro, e dá para inserir ou trocar clicando nela em qualquer um desses lugares."
+  "versao": "1.9.19",
+  "novidades": "Endereço pelo CEP: digite o CEP e o sistema preenche rua, bairro, cidade e estado sozinho, no cadastro do paciente e no agendamento. Entraram também profissão e empresa onde a pessoa trabalha. Na tela de Inadimplência cada devedor passa a mostrar CPF e endereço completo, com aviso em vermelho quando falta algum deles, e a planilha exportada leva esses dados."
 }
