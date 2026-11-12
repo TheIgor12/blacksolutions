@@ -433,10 +433,12 @@ function levCurto(a,b){const n=a.length,m=b.length;if(Math.abs(n-m)>2)return 9;
   for(let j=1;j<=m;j++){const c=Math.min(ant[j]+1,at[j-1]+1,ant[j-1]+(a[i-1]===b[j-1]?0:1));at[j]=c;if(c<min)min=c}
   if(min>2)return 9;ant=at}
  return ant[m]}
-/* Nomes parecidos ja cadastrados, para o erro de digitacao nao virar cadastro repetido. */
-function pacParecidos(v,lim){const n=norm(splitNome(v||'').nome);if(n.length<3)return [];
+/* Nomes parecidos ja cadastrados, para o erro de digitacao nao virar cadastro repetido.
+   Serve para paciente e para produto: muda so a lista que entra. */
+function pacParecidos(v,lim){return nomesParecidos(S.pacientes,v,lim)}
+function nomesParecidos(lista,v,lim){const n=norm(splitNome(v||'').nome);if(n.length<3)return [];
  const toks=n.split(' ').filter(x=>x.length>2);const out=[];
- for(const p of S.pacientes){const q=norm(p.nome);if(!q||q===n)continue;
+ for(const p of (lista||[])){const q=norm(p.nome);if(!q||q===n)continue;
   let s=0;
   if(q.indexOf(n)>=0||n.indexOf(q)>=0)s=4;
   else{const qt=q.split(' ');const c=toks.filter(t=>qt.some(x=>x===t||(x.length>3&&t.length>3&&(x.indexOf(t)===0||t.indexOf(x)===0))));
@@ -594,9 +596,18 @@ function formModal(title,fields,data,onSave,extra){data=data||{};
  function mfPintar(){const o=mfVals();
   fields.forEach(f=>{const L=document.getElementById('mfL_'+f.k);if(!L)return;
    if(f.mostrarSe){const ok=!!f.mostrarSe(o);L.style.display=ok?'':'none';f.__off=!ok}
-   if(f.aviso){const H=document.getElementById('mfH_'+f.k);if(H){const t=f.aviso(o)||'';H.innerHTML=t;H.style.display=t?'':'none'}}})}
+   if(f.aviso){const H=document.getElementById('mfH_'+f.k);if(H){const t=f.aviso(o)||'';H.innerHTML=t;H.style.display=t?'':'none'}}});
+  /* auto(valores) devolve o que preencher em outros campos. So preenche campo
+     vazio, ou campo que ele mesmo preencheu antes. O que a pessoa digitar fica. */
+  fields.forEach(f=>{if(!f.auto)return;const v=f.auto(o)||{};
+   Object.keys(v).forEach(k=>{const el=$('#mf [name="'+k+'"]');if(!el)return;
+    const novo=(v[k]===null||v[k]===undefined)?'':v[k];
+    if(novo===''){if(el.dataset.auto==='1'){el.value='';delete el.dataset.auto}return}
+    if(!String(el.value).trim()||el.dataset.auto==='1'){el.value=novo;el.dataset.auto='1'}})})}
  window.mfSet=(k,v)=>{const el=$('#mf [name="'+k+'"]');if(!el)return;el.value=v;mfPintar();const f=$('#mf [name="celular"]');if(f&&f.offsetParent)f.focus()};
- if(fields.some(f=>f.aviso||f.mostrarSe)){const F=$('#mf');F.addEventListener('input',mfPintar);F.addEventListener('change',mfPintar);
+ if(fields.some(f=>f.aviso||f.mostrarSe||f.auto)){const F=$('#mf');
+  F.addEventListener('input',e=>{if(e.target&&e.target.dataset&&e.target.dataset.auto==='1')delete e.target.dataset.auto;mfPintar()});
+  F.addEventListener('change',mfPintar);
   F.addEventListener('click',e=>{const b=e.target.closest('[data-mfset]');if(!b)return;e.preventDefault();mfSet(b.getAttribute('data-mfset'),b.getAttribute('data-mfval'))});
   mfPintar()}
  $('#mfSave').onclick=()=>{const fd=new FormData($('#mf'));const o={};fields.forEach(f=>{let v=fd.get(f.k);if(f.type==='number')v=parseNum(v);o[f.k]=typeof v==='string'?v.trim():v});
@@ -620,6 +631,8 @@ function shell(content){const c=S.config;
  <div class="mfoot menu">${podeTela('config')?`<button class="${UI.view==='config'?'on':''}" onclick="go('config')">${ico('gear',18)} Configurações</button>`:''}</div></aside>
  <div class="scrim ${UI.drawer?'open':''}" onclick="toggleDrawer()"></div>
  <datalist id="dlPac">${S.pacientes.map(p=>`<option value="${esc(p.nome)}">`).join('')}</datalist>
+ <datalist id="dlProdNomes">${S.produtos.map(x=>`<option value="${esc(x.nome)}">${Number(x.preco)>0?money(x.preco):''}</option>`).join('')}</datalist>
+ <datalist id="dlServNomes">${S.servicos.map(x=>`<option value="${esc(x.nome)}">${Number(x.preco)>0?money(x.preco):''}</option>`).join('')}</datalist>
  <datalist id="dlServ">${S.servicos.filter(x=>x.ativo!==false).map(x=>`<option value="${esc(x.nome)}">`).join('')}</datalist><datalist id="dlProf">${S.profissionais.map(p=>`<option value="${esc(p.nome)}">`).join('')}</datalist>
  ${(()=>{const d=diasTeste();return d!=null&&!UI.auth?`<div style="background:${d<=3?'var(--warn-soft)':'var(--acc-soft)'};padding:8px 16px;font-size:13px;display:flex;justify-content:center;gap:12px;align-items:center;flex-wrap:wrap"><span>Teste grátis da clínica: <b>${d<=0?'termina hoje':d===1?'falta 1 dia':'faltam '+d+' dias'}</b></span><button class="btn sm" onclick="abrirAssinatura()">Assinar com Pix ou cartão</button></div>`:''})()}<main>${content}</main>`}
 const FUNCS=[['Comandas','comandas'],['Caixa do dia','caixa'],['Serviços e preços','servicos'],['Estoque e produtos','estoque'],['Comissões e salão-parceiro','comissoes'],['Protocolos','protocolos'],['Equipamentos','equipamentos'],['Segmento do negócio','config'],['Agenda','agenda'],['Pacientes','pacientes'],['Novo paciente','novoPaciente'],['Financeiro','financeiro'],['Conta Corrente','fin:conta'],['Fluxo de Caixa','fin:fluxo'],['Contas a Pagar','fin:pagar'],['Contas a Receber','fin:receber'],['Inadimplência e cobrança','fin:inad'],['Imposto de Renda','fin:ir'],['Dashboard Analítico','dashboard'],['Relatórios','relatorios'],['Aniversariantes','rel:pac_aniv'],['Alertas de retorno','rel:pac_ret'],['Profissionais','profissionais'],['Importar dados do Excel','importar'],['Backup dos dados','config'],['Configurações','config']];
@@ -1762,19 +1775,56 @@ function salvarTaxas(){const f=$('#cfgT');S.config.taxas={};f.querySelectorAll('
 
 /* ============ Serviços e preços ============ */
 const servPorNome=n=>S.servicos.find(s=>norm(s.nome)===norm(n));
+/* Mesmo apoio do produto, para a tabela de procedimentos nao encher de repetido. */
+function servParecidos(v,lim){return nomesParecidos(S.servicos,v,lim)}
+function servAuto(v){const x=servPorNome(v);
+ if(!x)return {preco:'',precoPacote:'',sessoesPacote:'',categoria:''};
+ return {preco:Number(x.preco)>0?x.preco:'',precoPacote:Number(x.precoPacote)>0?x.precoPacote:'',
+  sessoesPacote:Number(x.sessoesPacote)>0?x.sessoesPacote:'',categoria:x.categoria||''}}
+function avisoServico(v,editando){const nome=str(v).trim();if(nome.length<3)return '';
+ const x=servPorNome(nome);
+ if(x&&(!editando||x.id!==editando)){
+  const pc=Number(x.preco)>0?' Cobra '+money(x.preco):'';
+  const pk=Number(x.precoPacote)>0?', pacote de '+x.sessoesPacote+' por '+money(x.precoPacote):'';
+  return `<b class="ok">J\u00e1 est\u00e1 na tabela</b> ${esc(x.nome)}.${pc}${pk}. Salvar de novo cria um procedimento repetido com dois pre\u00e7os; prefira editar o que j\u00e1 existe.`}
+ if(editando)return '';
+ const par=servParecidos(nome,4);
+ if(!par.length)return '';
+ return `<b class="novo">Confira antes de salvar</b> J\u00e1 existe procedimento parecido: `
+  +par.map(y=>`<button class="lnk" type="button" data-mfset="nome" data-mfval="${esc(y.nome)}">${esc(y.nome)}${Number(y.preco)>0?' ('+money(y.preco)+')':''}</button>`).join('');}
 function vServicos(){const L=[...S.servicos].sort((a,b)=>(a.categoria||'').localeCompare(b.categoria||'')||a.nome.localeCompare(b.nome));
  return `<div class="page"><div class="phead"><div><h1>${ehSeg('podologia')?'Procedimentos e preços':'Serviços e preços'}</h1><p class="sub">${ehSeg('podologia')?'Tabela de procedimentos com o preço de cada atendimento. Quando o paciente é agendado, o valor entra como previsto no financeiro; quando é marcado como atendido, o valor passa a ser cobrado.':'Tabela de serviços com duração, preço e comissão. É usada na agenda, na comanda e nos pacotes.'}</p></div><div style="display:flex;gap:8px;flex-wrap:wrap">${S.tratamentos.length?`<button class="btn ghost" onclick="montarTabelaPrecos()">Montar a tabela pelos orçamentos</button>`:''}<button class="btn" onclick="servForm()">${ico('plus',16)} ${ehSeg('podologia')?'Novo procedimento':'Novo serviço'}</button></div></div>
  ${ehSeg('podologia')?`<div class="note">Lançar o valor da agenda no financeiro: <b>${S.config.lancarAgenda===false?'desligado':'ligado'}</b>. <button class="lnk" onclick="S.config.lancarAgenda=S.config.lancarAgenda===false;save();render()">${S.config.lancarAgenda===false?'Ligar':'Desligar'}</button>. Procedimentos de um plano ou pacote já aprovado na ficha do paciente não geram cobrança por sessão, porque o pacote já foi cobrado. <b>Avaliação e retorno nunca geram cobrança.</b> Procedimentos sem preço também não.</div>`:''}
  <div class="card"><table class="tbl"><tr><th>Serviço</th><th>Categoria</th><th class="num">Duração</th><th class="num">Preço</th><th class="num">Comissão</th><th>Status</th><th></th></tr>
  ${L.map(s=>`<tr><td><b>${esc(s.nome)}</b></td><td>${esc(s.categoria||'-')}</td><td class="num">${s.duracao||30} min</td><td class="num">${semCobranca(s.nome)?'<span class="badge b-ok">Sem cobrança</span>':money(s.preco)}${Number(s.precoPacote)>0?`<br><small style="color:var(--mut)">Pacote: ${money(s.precoPacote)}${s.sessoesPacote?' ('+s.sessoesPacote+' sessões)':''}</small>`:''}</td><td class="num">${s.comissao!==''&&s.comissao!=null?s.comissao+'%':'Padrão do profissional'}</td><td>${badgeFor(s.ativo===false?'Inativo':'Ativo')}</td><td><button class="lnk" onclick="servForm('${s.id}')">Editar</button></td></tr>`).join('')||'<tr><td colspan="7" class="mini-empty">Nenhum serviço cadastrado ainda.</td></tr>'}</table></div></div>`}
 function servForm(id){const s=id?S.servicos.find(x=>x.id===id):null;
- formModal(s?'Editar serviço':'Novo serviço',[{k:'nome',l:'Nome do serviço',req:true,full:true},{k:'categoria',l:'Categoria (ex.: Cabelo, Unhas, Corporal, Facial)'},{k:'duracao',l:'Duração (minutos)',type:'number'},{k:'preco',l:'Preço por sessão ou atendimento',type:'number'},{k:'precoPacote',l:'Valor do pacote completo (se for plano)',type:'number'},{k:'sessoesPacote',l:'Sessões do pacote',type:'number'},{k:'comissao',l:'Comissão deste serviço (%). Vazio usa a do profissional',type:'number'},{k:'ativo',l:'Status',type:'select',opts:['Ativo','Inativo']}],
+ formModal(s?'Editar serviço':'Novo serviço',[{k:'nome',l:'Nome do serviço',req:true,full:true,list:'dlServNomes',
+   aviso:o=>avisoServico(o.nome,s?s.id:''),auto:o=>(s?{}:servAuto(o.nome))},{k:'categoria',l:'Categoria (ex.: Cabelo, Unhas, Corporal, Facial)'},{k:'duracao',l:'Duração (minutos)',type:'number'},{k:'preco',l:'Preço por sessão ou atendimento',type:'number'},{k:'precoPacote',l:'Valor do pacote completo (se for plano)',type:'number'},{k:'sessoesPacote',l:'Sessões do pacote',type:'number'},{k:'comissao',l:'Comissão deste serviço (%). Vazio usa a do profissional',type:'number'},{k:'ativo',l:'Status',type:'select',opts:['Ativo','Inativo']}],
   s?{...s,ativo:s.ativo===false?'Inativo':'Ativo'}:{duracao:30,ativo:'Ativo'},
   o=>{o.ativo=o.ativo!=='Inativo';const fd=new FormData($('#mf'));if(String(fd.get('comissao')).trim()==='')o.comissao='';if(s)Object.assign(s,o);else S.servicos.push({id:uid(),...o})},
   s?`<button class="btn danger" style="margin-right:auto" onclick="delRec('servicos','${s.id}')">Excluir</button>`:'')}
 
 /* ============ Estoque, produtos e lotes ============ */
 const prod=id=>S.produtos.find(p=>p.id===id);
+/* ---- Apoio para digitar o nome do produto ---- */
+function prodPorNome(v){const n=norm(v||'');if(!n)return null;return S.produtos.find(p=>norm(p.nome)===n)||null}
+function prodParecidos(v,lim){return nomesParecidos(S.produtos,v,lim)}
+/* Preco e custo de quem ja esta cadastrado, para nao ter que digitar de novo. */
+function prodAuto(v){const p=prodPorNome(v);
+ if(!p)return {preco:'',custo:'',marca:''};
+ return {preco:Number(p.preco)>0?p.preco:'',custo:Number(p.custo)>0?p.custo:'',marca:p.marca||''}}
+function avisoProduto(v,editando){const nome=str(v).trim();if(nome.length<3)return '';
+ const p=prodPorNome(nome);
+ if(p&&(!editando||p.id!==editando)){
+  const pc=Number(p.preco)>0?' Vende por '+money(p.preco)+'.':'';
+  const ct=Number(p.custo)>0?' Custa '+money(p.custo)+'.':'';
+  return `<b class="ok">J\u00e1 cadastrado</b> ${esc(p.nome)}, ${saldoProd(p.id)} ${esc(p.unidade||'un')} em estoque.${pc}${ct} `
+   +`Pre\u00e7o e custo j\u00e1 vieram preenchidos; pode trocar se mudou. Para repor quantidade, feche aqui e use <b>Entrou produto</b> na linha dele, sen\u00e3o o estoque fica dividido em dois cadastros.`}
+ if(editando)return '';
+ const par=prodParecidos(nome,4);
+ if(!par.length)return '';
+ return `<b class="novo">Confira antes de salvar</b> J\u00e1 existe produto parecido: `
+  +par.map(x=>`<button class="lnk" type="button" data-mfset="nome" data-mfval="${esc(x.nome)}">${esc(x.nome)}${Number(x.preco)>0?' ('+money(x.preco)+')':''}</button>`).join('');}
 function saldoProd(id){return r2(S.movEstoque.filter(m=>m.produtoId===id).reduce((a,m)=>a+(Number(m.qtd)||0),0))}
 function lotesProd(id){const g={};S.movEstoque.filter(m=>m.produtoId===id&&m.lote).forEach(m=>{const k=m.lote;const o=g[k]||(g[k]={lote:k,validade:'',saldo:0});o.saldo=r2(o.saldo+(Number(m.qtd)||0));if(m.validade)o.validade=m.validade});return Object.values(g).filter(o=>o.saldo>0).sort((a,b)=>(a.validade||'9999').localeCompare(b.validade||'9999'))}
 function alertasEstoque(){const t=todayISO(),lim=addDays(t,30);const baixo=[],venc=[],neg=[];
@@ -1797,7 +1847,8 @@ function vEstoque(){const q=norm(UI.estQ||'');const fp=UI.estProf||'*';const don
  <div class="card"><h2>Rastrear lote</h2><p class="sub" style="margin-bottom:10px">Digite o número do lote para ver quando entrou e em quem foi usado. Útil em caso de reação ou recolhimento do produto.</p><input class="inp" placeholder="Número do lote" value="${esc(lq)}" onchange="UI.loteQ=this.value;render()">
  ${lq?`<table class="tbl mini"><tr><th>Data</th><th>Produto</th><th>Lote</th><th>Movimento</th><th class="num">Quantidade</th><th>${esc(SEG().pessoa)}</th><th>Observação</th></tr>${rastreio.map(m=>{const p=prod(m.produtoId),c=m.clienteId?pac(m.clienteId):null;return `<tr><td>${br(m.data)}</td><td>${esc(p?p.nome:'?')}</td><td>${esc(m.lote)}</td><td>${esc(m.tipo)}</td><td class="num">${m.qtd}</td><td>${c?`<button class="lnk" onclick="go('paciente','${c.id}')">${esc(c.nome)}</button>`:'-'}</td><td>${esc(m.obs||'')}</td></tr>`}).join('')||'<tr><td colspan="7" class="mini-empty">Nenhum movimento com esse lote.</td></tr>'}</table>`:''}</div></div>`}
 function prodForm(id){const p=id?prod(id):null;const un=p?(p.unidade||'un'):'un';
- const campos=[{k:'nome',l:'Nome do produto',req:true,full:true},{k:'marca',l:'Marca'},{k:'codigo',l:'Código ou código de barras'},
+ const campos=[{k:'nome',l:'Nome do produto',req:true,full:true,list:'dlProdNomes',
+   aviso:o=>avisoProduto(o.nome,p?p.id:''),auto:o=>(p?{}:prodAuto(o.nome))},{k:'marca',l:'Marca'},{k:'codigo',l:'Código ou código de barras'},
   {k:'tipo',l:'Para que serve este produto',type:'select',opts:['Revenda','Uso interno','Revenda e uso interno']},{k:'unidade',l:'Unidade (un, ml, g, frasco)'},
   ...(p?[]:[{k:'qtdInicial',l:'Quantas unidades você tem agora na prateleira',type:'number'}]),
   {k:'custo',l:'Quanto você paga por unidade',type:'number'},{k:'preco',l:'Por quanto você vende',type:'number'},
@@ -2149,7 +2200,7 @@ function agNovo(a,s){if(s==='Desmarcado'||s==='Faltou')return false;const k=a.da
  const hist=c=>S[c].some(x=>x.pacienteId===a.pacienteId&&((x.data||x.vencimento||x.pagamento||'')<a.data)&&(x.data||x.vencimento||x.pagamento));
  return !hist('evolucoes')&&!hist('tratamentos')&&!S.lancamentos.some(l=>l.pacienteId===a.pacienteId&&l.pagamento&&l.pagamento<a.data)}
 /* ============ Atualização: aviso com botão Atualizar agora ============ */
-const VERSAO_APP='1.9.16';const URL_VERSAO_JSON='https://raw.githubusercontent.com/TheIgor12/blacksolutions/main/versao.json';
+const VERSAO_APP='1.9.17';const URL_VERSAO_JSON='https://raw.githubusercontent.com/TheIgor12/blacksolutions/main/versao.json';
 const numV=v=>String(v||'0').split(/\D+/).filter(Boolean).map(Number);
 function versaoMaior(a,b){const x=numV(a),y=numV(b);for(let i=0;i<Math.max(x.length,y.length);i++){const d=(x[i]||0)-(y[i]||0);if(d)return d>0}return false}
 const ATU={nova:null,timer:null};

@@ -1,4 +1,4 @@
 {
-  "versao": "1.9.16",
-  "novidades": "No agendamento, ao digitar um nome que não está no cadastro, o sistema avisa que é paciente novo, mostra os nomes parecidos já cadastrados para evitar ficha repetida e abre o campo de celular ali mesmo. Paciente antigo sem celular na ficha também ganha o campo, e o número fica salvo no cadastro."
+  "versao": "1.9.17",
+  "novidades": "Ao digitar o nome de um produto ou de um procedimento que já está cadastrado, o preço e o custo aparecem sozinhos no formulário, e o campo continua livre para alterar. Se o nome for parecido com outro já cadastrado, o sistema avisa antes de salvar, para a tabela não encher de registro repetido com dois preços."
 }
