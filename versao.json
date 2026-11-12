@@ -1,4 +1,4 @@
 {
-  "versao": "1.9.17",
-  "novidades": "Ao digitar o nome de um produto ou de um procedimento que já está cadastrado, o preço e o custo aparecem sozinhos no formulário, e o campo continua livre para alterar. Se o nome for parecido com outro já cadastrado, o sistema avisa antes de salvar, para a tabela não encher de registro repetido com dois preços."
+  "versao": "1.9.18",
+  "novidades": "No agendamento: duração em passos fixos de 15 em 15 minutos, campos de CPF e data de nascimento para paciente novo, foto do paciente e acesso direto à anamnese ao lado do nome. A foto do paciente passa a aparecer na agenda, na lista de pacientes e no financeiro, e dá para inserir ou trocar clicando nela em qualquer um desses lugares."
 }
