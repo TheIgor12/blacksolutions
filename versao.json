@@ -1,6 +1,6 @@
 {
-  "versao": "1.9.13",
-  "html": "https://raw.githubusercontent.com/TheIgor12/blacksolutions/main/download/blackflow-1.9.13.html",
-  "novidades": "A versão que aparece no menu lateral e em Minha conta passou a ser a versão real do sistema, em vez de um número escrito à mão que ficava para trás a cada atualização.",
+  "versao": "1.9.14",
+  "html": "https://raw.githubusercontent.com/TheIgor12/blacksolutions/main/download/blackflow-1.9.14.html",
+  "novidades": "No cadastro de um paciente novo, o celular com WhatsApp passou a ser o segundo campo, logo depois do nome, e agora é obrigatório. Quem já estava cadastrado sem telefone continua podendo ser editado normalmente.",
   "instalador": "https://blackflow.app.br/download/BlackFlow_Instalador.exe"
 }
