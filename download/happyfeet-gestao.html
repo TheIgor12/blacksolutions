@@ -1194,8 +1194,8 @@ function pAg(p){const L=S.agendamentos.filter(a=>a.pacienteId===p.id).sort((a,b)
 /* ============ Financeiro ============ */
 function rangeFilters(after){return `<div class="filters"><label>De<input type="date" value="${UI.de}" onchange="UI.de=this.value;render()"></label><label>Até<input type="date" value="${UI.ate}" onchange="UI.ate=this.value;render()"></label>${after||''}</div>`}
 const inRange=d=>d&&d>=UI.de&&d<=UI.ate;
-function vFinanceiro(){const tabs=[['geral','Geral'],['conta','Conta Corrente'],['fluxo','Fluxo de Caixa'],['pagar','Contas a Pagar'],['receber','Contas a Receber'],['inad','Inadimplência'],['ir','Imposto de Renda']];
- const body={geral:fGeral,conta:fConta,fluxo:fFluxo,pagar:fPagar,receber:fReceber,inad:fInad,ir:fIR}[UI.finTab]();
+function vFinanceiro(){const tabs=[['geral','Geral'],['conta','Conta Corrente'],['fluxo','Fluxo de Caixa'],['pagar','Contas a Pagar'],['receber','Contas a Receber'],['inad','Inadimplência'],['conferir','Conferência'],['ir','Imposto de Renda']];
+ const body={geral:fGeral,conta:fConta,fluxo:fFluxo,pagar:fPagar,receber:fReceber,inad:fInad,conferir:fConferir,ir:fIR}[UI.finTab]();
  return `<div class="tabs">${tabs.map(([k,t])=>`<button class="${UI.finTab===k?'on':''}" onclick="UI.finTab='${k}';render()">${t}</button>`).join('')}</div><div class="page">${body}</div>`}
 function fGeral(){const T=[['conta','Conta Corrente','Recebimentos e pagamentos por dia','money'],['fluxo','Fluxo de Caixa','Saldo realizado e previsto','chart'],['pagar','Contas a Pagar','Despesas, fornecedores e baixa','up'],['receber','Contas a Receber','Parcelas em aberto e baixa','down'],['inad','Inadimplência','Parcelas vencidas e cobrança por WhatsApp','alert'],['ir','Imposto de Renda','Rendimentos e despesas do ano e declaração de pagamentos','report']];
  return `<h1>Financeiro</h1><p class="sub" style="margin-bottom:20px">Faça a gestão financeira da sua clínica, acompanhe entradas e saídas diárias.</p><div class="grid g4">${T.map(([k,t,d,i])=>`<div class="tile" onclick="UI.finTab='${k}';render()"><div class="ti">${ico(i)}</div><b>${t}</b><p>${d}</p></div>`).join('')}</div>`}
@@ -1209,6 +1209,91 @@ function fConta(){const E=entradasList().filter(x=>inRange(x.data)),Sa=saidasLis
  ${ts===0&&te>0?'<div class="note warn">Nenhuma saída no período. Se a clínica teve despesas, lance e baixe em Contas a Pagar; sem isso o resultado mostra o faturamento, e não o lucro.</div>':''}
  ${keys.map(k=>{const d=days[k],dt=new Date(k+'T00:00');const e=d.e.reduce((a,x)=>a+x.valor,0),s=d.s.reduce((a,x)=>a+x.valor,0);return `<details class="dayrow"><summary><div class="dn"><b>${dt.getDate()}</b><small>${DIAS[dt.getDay()]} . ${MESES[dt.getMonth()].slice(0,3)}</small></div><div class="kv"><small>Entradas</small><b style="color:var(--ok)">${money(e)}</b></div><div class="kv"><small>Saídas</small><b style="color:var(--bad)">${money(s)}</b></div><div class="kv"><small>Transações</small><b>${d.e.length+d.s.length}</b></div><span>▾</span></summary>
   <div class="tw" style="padding:0 12px 12px"><table class="tbl mini"><tbody>${d.e.map(x=>{const p=pac(x.l.pacienteId);return `<tr><td>${badgeFor('Pago')}</td><td>${esc(p?p.nome:'')}</td><td>${esc(x.l.descricao)}</td><td>${esc(formaTxt(x.l))}</td><td class="num" style="color:var(--ok)">${money(x.valor)}</td></tr>`}).join('')}${d.s.map(x=>`<tr><td><span class="badge b-bad">Saída</span></td><td>${esc(x.c.fornecedor||'')}</td><td>${esc(x.c.descricao)}</td><td>${esc(x.c.categoria||'')}</td><td class="num" style="color:var(--bad)">${money(x.valor)}</td></tr>`).join('')}</tbody></table></div></details>`}).join('')||'<div class="card empty">Nenhuma movimentação no período.</div>'}`}
+/* ============ Conferência com o sistema anterior ============
+   A clínica exporta o financeiro do Clinicorp em Excel e joga aqui. O sistema
+   compara paciente por paciente, mostra onde os valores divergem e deixa a
+   clínica decidir o que acertar. Nada é alterado sozinho. */
+function fConferir(){const C=UI.conf;
+ if(!C||!C.rows)return `<div class="phead"><div><h1>Conferência</h1><p class="sub">Compare o financeiro deste sistema com o do sistema anterior e veja exatamente onde os valores divergem.</p></div></div>
+  <div class="card"><h3 style="margin-top:0">Como fazer</h3>
+  <ol style="line-height:1.9;padding-left:20px;margin:10px 0 16px">
+   <li>No Clinicorp, abra Relatórios, depois Financeiro, e escolha Todos os Lançamentos.</li>
+   <li>Selecione o período inteiro, desde o começo da clínica até hoje.</li>
+   <li>Exporte em Excel.</li>
+   <li>Escolha o arquivo no botão abaixo. Nada é alterado neste momento: o sistema apenas compara e mostra as diferenças.</li></ol>
+  <label class="btn" style="cursor:pointer">Escolher a planilha do Clinicorp<input type="file" accept=".xlsx,.xls,.csv" style="display:none" onchange="confArquivo(this)"></label></div>`;
+ const D=C.dif||[];const comDif=D.filter(x=>Math.abs(x.difValor)>0.004||Math.abs(x.difPago)>0.004);
+ const tot=(k)=>D.reduce((a,x)=>a+x[k],0);
+ return `<div class="phead"><div><h1>Conferência</h1><p class="sub">${esc(C.fileName)} · ${C.linhas} linhas lidas · ${D.length} pacientes comparados</p></div>
+  <label class="btn ghost" style="cursor:pointer">Trocar a planilha<input type="file" accept=".xlsx,.xls,.csv" style="display:none" onchange="confArquivo(this)"></label></div>
+ <div class="grid g4" style="margin-bottom:16px">
+  <div class="kpi"><small>Lançado no Clinicorp</small><b>${money(tot('cliValor'))}</b><span>soma da planilha</span></div>
+  <div class="kpi"><small>Lançado aqui</small><b>${money(tot('bfValor'))}</b><span>só o que veio de importação</span></div>
+  <div class="kpi g"><small>Recebido no Clinicorp</small><b>${money(tot('cliPago'))}</b><span>soma da planilha</span></div>
+  <div class="kpi ${comDif.length?'r':'g'}"><small>Pacientes com diferença</small><b>${comDif.length}</b><span>de ${D.length} comparados</span></div></div>
+ ${comDif.length?`<div class="note warn">Lançamentos criados direto aqui, fora da importação, não entram nesta comparação e não são tocados pelo acerto.</div>
+ <div class="card"><div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px"><h3 style="margin:0">Pacientes com diferença</h3>
+  <button class="btn" onclick="confAjustarTodos()">Acertar todos pelo Clinicorp</button></div>
+  <div class="tw" style="margin-top:12px"><table class="tbl"><thead><tr><th>Paciente</th><th class="num">Lançado lá</th><th class="num">Lançado aqui</th><th class="num">Recebido lá</th><th class="num">Recebido aqui</th><th class="num">Diferença</th><th></th></tr></thead><tbody>
+  ${comDif.map(x=>`<tr><td>${esc(x.nome)}${x.semPaciente?' <span class="badge b-warn">sem cadastro aqui</span>':''}</td>
+   <td class="num">${money(x.cliValor)}</td><td class="num">${money(x.bfValor)}</td>
+   <td class="num">${money(x.cliPago)}</td><td class="num">${money(x.bfPago)}</td>
+   <td class="num" style="color:var(--bad)"><b>${money(x.difPago||x.difValor)}</b></td>
+   <td class="num"><button class="btn ghost sm" onclick="confAjustar('${x.chave}')">Acertar</button></td></tr>`).join('')}
+  </tbody></table></div></div>`:'<div class="note ok">Os valores batem. Nenhum paciente com diferença entre os dois sistemas.</div>'}
+ ${D.length-comDif.length?`<p class="sub" style="margin-top:14px">${D.length-comDif.length} paciente${D.length-comDif.length>1?'s':''} com os valores iguais nos dois sistemas.</p>`:''}`}
+async function confArquivo(input){const f=input.files&&input.files[0];if(!f)return;input.value='';
+ if(typeof XLSX==='undefined'){toast('A biblioteca de leitura do Excel não carregou. Verifique a internet e recarregue a página.');return}
+ try{
+  const wb=XLSX.read(await f.arrayBuffer(),{type:'array',raw:false});
+  const nome0=wb.SheetNames[0];
+  const rows=XLSX.utils.sheet_to_json(wb.Sheets[nome0],{header:1,raw:true,defval:''}).filter(r=>r.some(c=>String(c).trim()!==''));
+  const h=detectHeader(rows,'financeiro');const map=autoMap(rows[h]||[],'financeiro');
+  if(map.paciente==null||map.valor==null){toast('Não reconheci as colunas de paciente e valor nessa planilha. Use o relatório financeiro completo do Clinicorp.');return}
+  UI.conf={fileName:f.name,rows:rows.slice(h+1),map,linhas:rows.length-h-1};
+  confComparar();render()}
+ catch(e){toast('Não foi possível ler o arquivo: '+e.message)}}
+function confChave(nome,cpf){const d=onlyDigits(cpf||'');return d.length>=11?d:norm(nome)}
+function confComparar(){const C=UI.conf;const map=C.map;const G=(row,k)=>map[k]==null?'':row[map[k]];
+ const planilha={};
+ C.rows.forEach(row=>{const nome=str(G(row,'paciente'));if(!nome)return;
+  const valor=parseNum(G(row,'valor')),pago=parseNum(G(row,'valorPago'));
+  const st=norm(str(G(row,'status')));const temBaixa=!!parseDT(G(row,'pagamento')).d;
+  const quitado=/(^| )(pago|paga|quitad|recebid|baixad|liquidad|confirmad)/.test(st)&&!/(nao|n o) pag|aberto|pendente|parcial|a receber|vencid|atras/.test(st);
+  const pagoEfetivo=pago||((quitado||temBaixa)?valor:0);
+  const k=confChave(nome,str(G(row,'cpf')));
+  const o=planilha[k]||(planilha[k]={nome,chave:k,cliValor:0,cliPago:0,linhas:[]});
+  o.cliValor=r2(o.cliValor+valor);o.cliPago=r2(o.cliPago+pagoEfetivo);o.linhas.push(row)});
+ const D=Object.values(planilha).map(o=>{
+  const p=S.pacientes.find(x=>confChave(x.nome,x.cpf)===o.chave)||S.pacientes.find(x=>norm(x.nome)===norm(o.nome));
+  const L=p?S.lancamentos.filter(l=>l.pacienteId===p.id&&l.origem==='import'):[];
+  const bfValor=r2(L.reduce((a,l)=>a+(Number(l.valor)||0),0));
+  const bfPago=r2(L.reduce((a,l)=>a+pagoEf(l),0));
+  return Object.assign(o,{pacienteId:p?p.id:'',semPaciente:!p,bfValor,bfPago,
+   difValor:r2(o.cliValor-bfValor),difPago:r2(o.cliPago-bfPago)})});
+ D.sort((a,b)=>Math.abs(b.difPago||b.difValor)-Math.abs(a.difPago||a.difValor));
+ C.dif=D;return D}
+function confAjustar(chave,silencioso){const C=UI.conf;if(!C)return;
+ const x=(C.dif||[]).find(y=>y.chave===chave);if(!x)return;
+ const map=C.map,G=(row,k)=>map[k]==null?'':row[map[k]];
+ const p=x.pacienteId?pac(x.pacienteId):ensurePatient(x.nome,'');
+ if(!p){toast('Não consegui identificar o paciente '+x.nome);return}
+ /* troca apenas o que veio de importação, preservando o que foi lançado aqui */
+ S.lancamentos=S.lancamentos.filter(l=>!(l.pacienteId===p.id&&l.origem==='import'));
+ x.linhas.forEach(row=>{const valor=parseNum(G(row,'valor')),vp=parseNum(G(row,'valorPago'));
+  if(!valor&&!vp)return;
+  const l={id:uid(),pacienteId:p.id,descricao:str(G(row,'descricao'))||'Lançamento',valor:valor||vp,valorPago:vp,
+   vencimento:parseDT(G(row,'vencimento')).d,pagamento:parseDT(G(row,'pagamento')).d,forma:str(G(row,'forma')),
+   parcela:str(G(row,'parcela')),statusOrig:str(G(row,'status')),profissional:ensureProf(G(row,'profissional')),origem:'import'};
+  parcMigra(l);lancRecalc(l);S.lancamentos.push(l)});
+ if(!silencioso){save();confComparar();render();toast('Financeiro de '+p.nome+' acertado pelo Clinicorp.')}
+ return true}
+function confAjustarTodos(){const C=UI.conf;if(!C)return;
+ const alvo=(C.dif||[]).filter(x=>Math.abs(x.difValor)>0.004||Math.abs(x.difPago)>0.004);
+ if(!alvo.length){toast('Nada para acertar.');return}
+ confirmModal(`Acertar o financeiro de <b>${alvo.length} paciente${alvo.length>1?'s':''}</b> pelos valores do Clinicorp?<br><br>Os lançamentos que vieram de importação desses pacientes são substituídos pelos da planilha. O que foi lançado direto aqui no sistema fica como está.`,()=>{
+  let n=0;alvo.forEach(x=>{if(confAjustar(x.chave,true))n++});
+  save();confComparar();render();toast(n+' paciente'+(n>1?'s acertados':' acertado')+' pelo Clinicorp.')},'Acertar');}
 function fFluxo(){const y=UI.fluxoAno;const E=entradasList(),Sa=saidasList();let acc=0;
  const data=MESES.map((m,i)=>{const k=`${y}-${pad(i+1)}`;const ent=E.filter(x=>x.data&&x.data.startsWith(k)).reduce((a,x)=>a+x.valor,0);const sai=Sa.filter(x=>x.data&&x.data.startsWith(k)).reduce((a,x)=>a+x.valor,0);
   const arec=S.lancamentos.filter(l=>l.vencimento&&l.vencimento.startsWith(k)&&saldoL(l)>0).reduce((a,l)=>a+saldoL(l),0);const apag=S.contasPagar.filter(c=>c.vencimento&&c.vencimento.startsWith(k)&&!['Pago','Cancelado'].includes(stConta(c))).reduce((a,c)=>a+Math.max(0,c.valor-(c.valorPago||0)),0);
@@ -1998,7 +2083,7 @@ function agNovo(a,s){if(s==='Desmarcado'||s==='Faltou')return false;const k=a.da
  const hist=c=>S[c].some(x=>x.pacienteId===a.pacienteId&&((x.data||x.vencimento||x.pagamento||'')<a.data)&&(x.data||x.vencimento||x.pagamento));
  return !hist('evolucoes')&&!hist('tratamentos')&&!S.lancamentos.some(l=>l.pacienteId===a.pacienteId&&l.pagamento&&l.pagamento<a.data)}
 /* ============ Atualização: aviso com botão Atualizar agora ============ */
-const VERSAO_APP='1.9.14';const URL_VERSAO_JSON='https://raw.githubusercontent.com/TheIgor12/blacksolutions/main/versao.json';
+const VERSAO_APP='1.9.15';const URL_VERSAO_JSON='https://raw.githubusercontent.com/TheIgor12/blacksolutions/main/versao.json';
 const numV=v=>String(v||'0').split(/\D+/).filter(Boolean).map(Number);
 function versaoMaior(a,b){const x=numV(a),y=numV(b);for(let i=0;i<Math.max(x.length,y.length);i++){const d=(x[i]||0)-(y[i]||0);if(d)return d>0}return false}
 const ATU={nova:null,timer:null};
