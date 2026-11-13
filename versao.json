@@ -1,4 +1,4 @@
 {
-  "versao": "1.9.25",
-  "novidades": "O cadastro do negócio agora pede o CPF do responsável e, para quem tem CNPJ ou MEI, consulta a Receita Federal e preenche a razão social sozinho. Os campos de CNPJ passam a aceitar o formato alfanumérico, emitido desde 31 de julho de 2026."
+  "versao": "1.9.26",
+  "novidades": "A agenda passou a marcar atendimentos que se repetem. Escolha toda semana, a cada 15 dias ou uma vez por mês, diga quantos são, e o sistema marca a série inteira de uma vez. Ele pula sozinho as datas em que o horário já está ocupado e avisa quais foram. Dentro do agendamento aparece a posição na série, com o botão de desmarcar daqui em diante."
 }
