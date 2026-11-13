@@ -1,4 +1,4 @@
 {
-  "versao": "1.9.23",
-  "novidades": "Foto de exame tirada no celular agora entra reduzida, ocupando uma fração do espaço, sem perder legibilidade. PDF continua inteiro. A tela de Backup passou a dizer a verdade sobre onde os dados ficam, avisa há quantos dias foi o último backup e deixa claro que fotos, exames e documentos não entram no arquivo de backup."
+  "versao": "1.9.24",
+  "novidades": "Correção importante na Conferência com o Clinicorp: ela não enxergava os saldos que já tinham sido acertados e, ao acertar de novo, poderia cobrar duas vezes do mesmo paciente. O financeiro agora avisa quando a última conferência passou de trinta dias."
 }

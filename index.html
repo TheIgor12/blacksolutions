@@ -1420,7 +1420,7 @@ function rangeFilters(after){return `<div class="filters"><label>De<input type="
 const inRange=d=>d&&d>=UI.de&&d<=UI.ate;
 function vFinanceiro(){const tabs=[['geral','Geral'],['conta','Conta Corrente'],['fluxo','Fluxo de Caixa'],['pagar','Contas a Pagar'],['receber','Contas a Receber'],['inad','Inadimplência'],['conferir','Conferência'],['ir','Imposto de Renda']];
  const body={geral:fGeral,conta:fConta,fluxo:fFluxo,pagar:fPagar,receber:fReceber,inad:fInad,conferir:fConferir,ir:fIR}[UI.finTab]();
- return `<div class="tabs">${tabs.map(([k,t])=>`<button class="${UI.finTab===k?'on':''}" onclick="UI.finTab='${k}';render()">${t}</button>`).join('')}</div><div class="page">${body}</div>`}
+ return `<div class="tabs">${tabs.map(([k,t])=>`<button class="${UI.finTab===k?'on':''}" onclick="UI.finTab='${k}';render()">${t}</button>`).join('')}</div><div class="page">${UI.finTab==='conferir'?'':confAviso()}${body}</div>`}
 function fGeral(){const T=[['conta','Conta Corrente','Recebimentos e pagamentos por dia','money'],['fluxo','Fluxo de Caixa','Saldo realizado e previsto','chart'],['pagar','Contas a Pagar','Despesas, fornecedores e baixa','up'],['receber','Contas a Receber','Parcelas em aberto e baixa','down'],['inad','Inadimplência','Parcelas vencidas e cobrança por WhatsApp','alert'],['ir','Imposto de Renda','Rendimentos e despesas do ano e declaração de pagamentos','report']];
  return `<h1>Financeiro</h1><p class="sub" style="margin-bottom:20px">Faça a gestão financeira da sua clínica, acompanhe entradas e saídas diárias.</p><div class="grid g4">${T.map(([k,t,d,i])=>`<div class="tile" onclick="UI.finTab='${k}';render()"><div class="ti">${ico(i)}</div><b>${t}</b><p>${d}</p></div>`).join('')}</div>`}
 function fConta(){const E=entradasList().filter(x=>inRange(x.data)),Sa=saidasList().filter(x=>inRange(x.data));const te=E.reduce((a,x)=>a+x.valor,0),ts=Sa.reduce((a,x)=>a+x.valor,0);
@@ -1478,6 +1478,10 @@ async function confArquivo(input){const f=input.files&&input.files[0];if(!f)retu
   confComparar();render()}
  catch(e){toast('Não foi possível ler o arquivo: '+e.message)}}
 function confChave(nome,cpf){const d=onlyDigits(cpf||'');return d.length>=11?d:norm(nome)}
+/* De onde vem o que a confer\u00eancia compara e substitui. Precisa incluir
+   'conciliacao', que \u00e9 o saldo acertado \u00e0 m\u00e3o pelo Clinicorp: sem isso a
+   confer\u00eancia acharia que falta e lan\u00e7aria de novo, dobrando a d\u00edvida. */
+const ORIG_CLI=['import','clinicorp','conciliacao'];
 function confComparar(){const C=UI.conf;const map=C.map;const G=(row,k)=>map[k]==null?'':row[map[k]];
  const planilha={};
  C.rows.forEach(row=>{const nome=str(G(row,'paciente'));if(!nome)return;
@@ -1490,7 +1494,7 @@ function confComparar(){const C=UI.conf;const map=C.map;const G=(row,k)=>map[k]=
   o.cliValor=r2(o.cliValor+valor);o.cliPago=r2(o.cliPago+pagoEfetivo);o.linhas.push(row)});
  const D=Object.values(planilha).map(o=>{
   const p=S.pacientes.find(x=>confChave(x.nome,x.cpf)===o.chave)||S.pacientes.find(x=>norm(x.nome)===norm(o.nome));
-  const L=p?S.lancamentos.filter(l=>l.pacienteId===p.id&&l.origem==='import'):[];
+  const L=p?S.lancamentos.filter(l=>l.pacienteId===p.id&&ORIG_CLI.includes(str(l.origem))):[];
   const bfValor=r2(L.reduce((a,l)=>a+(Number(l.valor)||0),0));
   const bfPago=r2(L.reduce((a,l)=>a+pagoEf(l),0));
   return Object.assign(o,{pacienteId:p?p.id:'',semPaciente:!p,bfValor,bfPago,
@@ -1503,21 +1507,29 @@ function confAjustar(chave,silencioso){const C=UI.conf;if(!C)return;
  const p=x.pacienteId?pac(x.pacienteId):ensurePatient(x.nome,'');
  if(!p){toast('Não consegui identificar o paciente '+x.nome);return}
  /* troca apenas o que veio de importação, preservando o que foi lançado aqui */
- S.lancamentos=S.lancamentos.filter(l=>!(l.pacienteId===p.id&&l.origem==='import'));
+ S.lancamentos=S.lancamentos.filter(l=>!(l.pacienteId===p.id&&ORIG_CLI.includes(str(l.origem))));
  x.linhas.forEach(row=>{const valor=parseNum(G(row,'valor')),vp=parseNum(G(row,'valorPago'));
   if(!valor&&!vp)return;
   const l={id:uid(),pacienteId:p.id,descricao:str(G(row,'descricao'))||'Lançamento',valor:valor||vp,valorPago:vp,
    vencimento:parseDT(G(row,'vencimento')).d,pagamento:parseDT(G(row,'pagamento')).d,forma:str(G(row,'forma')),
    parcela:str(G(row,'parcela')),statusOrig:str(G(row,'status')),profissional:ensureProf(G(row,'profissional')),origem:'import'};
   parcMigra(l);lancRecalc(l);S.lancamentos.push(l)});
- if(!silencioso){save();confComparar();render();toast('Financeiro de '+p.nome+' acertado pelo Clinicorp.')}
+ if(!silencioso){S.config.ultimaConferencia=todayISO();save();confComparar();render();toast('Financeiro de '+p.nome+' acertado pelo Clinicorp.')}
  return true}
 function confAjustarTodos(){const C=UI.conf;if(!C)return;
  const alvo=(C.dif||[]).filter(x=>Math.abs(x.difValor)>0.004||Math.abs(x.difPago)>0.004);
  if(!alvo.length){toast('Nada para acertar.');return}
  confirmModal(`Acertar o financeiro de <b>${alvo.length} paciente${alvo.length>1?'s':''}</b> pelos valores do Clinicorp?<br><br>Os lançamentos que vieram de importação desses pacientes são substituídos pelos da planilha. O que foi lançado direto aqui no sistema fica como está.`,()=>{
   let n=0;alvo.forEach(x=>{if(confAjustar(x.chave,true))n++});
-  save();confComparar();render();toast(n+' paciente'+(n>1?'s acertados':' acertado')+' pelo Clinicorp.')},'Acertar');}
+  S.config.ultimaConferencia=todayISO();save();confComparar();render();toast(n+' paciente'+(n>1?'s acertados':' acertado')+' pelo Clinicorp.')},'Acertar');}
+/* Aviso de confer\u00eancia atrasada. Enquanto a cl\u00ednica lan\u00e7ar dinheiro em dois
+   sistemas, a diferen\u00e7a volta a crescer sozinha todo m\u00eas. */
+function confAviso(){const d=str(S.config.ultimaConferencia);
+ if(!S.lancamentos.some(l=>ORIG_CLI.includes(str(l.origem))))return '';
+ if(!d)return `<div class="note warn">Voc\u00ea ainda n\u00e3o fez nenhuma confer\u00eancia com o Clinicorp por aqui. Enquanto houver lan\u00e7amento nos dois sistemas, os saldos se afastam sozinhos. <button class="lnk" onclick="UI.finTab='conferir';render()">Conferir agora</button></div>`;
+ const dias=Math.round((new Date(todayISO())-new Date(d))/86400000);
+ if(dias<30)return '';
+ return `<div class="note ${dias>=60?'bad':'warn'}">\u00daltima confer\u00eancia com o Clinicorp em ${br(d)}, ${dias} dias atr\u00e1s. <button class="lnk" onclick="UI.finTab='conferir';render()">Conferir agora</button></div>`}
 function fFluxo(){const y=UI.fluxoAno;const E=entradasList(),Sa=saidasList();let acc=0;
  const data=MESES.map((m,i)=>{const k=`${y}-${pad(i+1)}`;const ent=E.filter(x=>x.data&&x.data.startsWith(k)).reduce((a,x)=>a+x.valor,0);const sai=Sa.filter(x=>x.data&&x.data.startsWith(k)).reduce((a,x)=>a+x.valor,0);
   const arec=S.lancamentos.filter(l=>l.vencimento&&l.vencimento.startsWith(k)&&saldoL(l)>0).reduce((a,l)=>a+saldoL(l),0);const apag=S.contasPagar.filter(c=>c.vencimento&&c.vencimento.startsWith(k)&&!['Pago','Cancelado'].includes(stConta(c))).reduce((a,c)=>a+Math.max(0,c.valor-(c.valorPago||0)),0);
@@ -2502,7 +2514,7 @@ function agNovo(a,s){if(s==='Desmarcado'||s==='Faltou')return false;const k=a.da
  const hist=c=>S[c].some(x=>x.pacienteId===a.pacienteId&&((x.data||x.vencimento||x.pagamento||'')<a.data)&&(x.data||x.vencimento||x.pagamento));
  return !hist('evolucoes')&&!hist('tratamentos')&&!S.lancamentos.some(l=>l.pacienteId===a.pacienteId&&l.pagamento&&l.pagamento<a.data)}
 /* ============ Atualização: aviso com botão Atualizar agora ============ */
-const VERSAO_APP='1.9.23';const URL_VERSAO_JSON='https://raw.githubusercontent.com/TheIgor12/blacksolutions/main/versao.json';
+const VERSAO_APP='1.9.24';const URL_VERSAO_JSON='https://raw.githubusercontent.com/TheIgor12/blacksolutions/main/versao.json';
 const numV=v=>String(v||'0').split(/\D+/).filter(Boolean).map(Number);
 function versaoMaior(a,b){const x=numV(a),y=numV(b);for(let i=0;i<Math.max(x.length,y.length);i++){const d=(x[i]||0)-(y[i]||0);if(d)return d>0}return false}
 const ATU={nova:null,timer:null};
