@@ -314,7 +314,7 @@ const waIco=()=>`<span class="wa">${ico('wa',15)}</span>`;
 function defaultState(){return {versao:1,config:{clinica:'Minha clínica',usuario:'Administrador',cor:'#0b6cf2',corTopo:'#0b0d12',logo:'',
  msgCobranca:'Olá {nome}, tudo bem? Aqui é da {clinica}. Consta em aberto o valor de {valor}, referente a parcelas vencidas desde {vencimento}. Podemos combinar a forma de pagamento?',
  msgRetorno:'Olá {nome}, tudo bem? Aqui é da {clinica}. Já faz um tempo desde o seu último atendimento. Vamos agendar o seu retorno?',diasRetorno:90,segmento:'',taxas:{},descontarTaxa:false,cashback:'',cashbackDias:''},
- pacientes:[],lancamentos:[],tratamentos:[],anamneses:[],agendamentos:[],contasPagar:[],evolucoes:[],profissionais:[],importacoes:[],servicos:[],produtos:[],movEstoque:[],comandas:[],caixas:[],avaliacoes:[],fotos:[],termos:[],fichas:[],protocolos:[],equipamentos:[],vouchers:[]}}
+ pacientes:[],lancamentos:[],tratamentos:[],anamneses:[],agendamentos:[],contasPagar:[],evolucoes:[],profissionais:[],importacoes:[],servicos:[],produtos:[],documentos:[],movEstoque:[],comandas:[],caixas:[],avaliacoes:[],fotos:[],termos:[],fichas:[],protocolos:[],equipamentos:[],vouchers:[]}}
 let S=defaultState();
 const DB={
  open(){return new Promise((res,rej)=>{const r=indexedDB.open('happyfeet-gestao',1);r.onupgradeneeded=()=>r.result.createObjectStore('kv');r.onsuccess=()=>res(r.result);r.onerror=()=>rej(r.error)})},
@@ -336,6 +336,11 @@ const FT={db:null,urls:{},enviando:false,erroNuvem:'',pend:0,
  filaDel(chave){return this.op('fila','readwrite',s=>s.delete(chave)).catch(()=>{})},
  fila(){return this.op('fila','readonly',s=>s.getAllKeys()).catch(()=>[])}};
 function nuvemFotos(){return !!(NV.ativa&&NV.sb&&NV.clinicaId&&!NV.offline)}
+/* Nem todo arquivo \u00e9 foto: exame costuma vir em PDF. Aqui se descobre a
+   extens\u00e3o e o tipo de cada arquivo guardado. */
+function arqInfo(id){const d=(S.documentos||[]).find(x=>x.id===id);
+ if(d)return {ext:d.ext||'pdf',mime:d.mime||'application/pdf'};
+ return {ext:'jpg',mime:'image/jpeg'}}
 function fotoMini(f){return f.thumb||f.img||''}
 function canvasDe(img,lado){const k=Math.min(1,lado/Math.max(img.width,img.height));const c=document.createElement('canvas');c.width=Math.max(1,Math.round(img.width*k));c.height=Math.max(1,Math.round(img.height*k));const g=c.getContext('2d');g.fillStyle='#fff';g.fillRect(0,0,c.width,c.height);g.drawImage(img,0,0,c.width,c.height);return c}
 function imagemDe(blob){return new Promise((res,rej)=>{const u=URL.createObjectURL(blob);const i=new Image();i.onload=()=>{res(i);setTimeout(()=>URL.revokeObjectURL(u),1000)};i.onerror=()=>{URL.revokeObjectURL(u);rej(new Error('imagem'))};i.src=u})}
@@ -349,7 +354,8 @@ async function filaEnviar(){if(FT.enviando||!nuvemFotos())return;FT.enviando=tru
  try{const pre=NV.clinicaId+'/';const L=(await FT.fila()).filter(k=>String(k).startsWith(pre));FT.pend=L.length;let i=0,sujo=false;
   const um=async()=>{while(i<L.length&&nuvemFotos()){const k=L[i++];const id=k.slice(pre.length);const blob=await FT.get(id);
     if(!blob){await FT.filaDel(k);FT.pend--;continue}
-    const {error}=await NV.sb.storage.from('fotos').upload(k+'.jpg',blob,{upsert:true,contentType:'image/jpeg'});
+    const ai=arqInfo(id);
+    const {error}=await NV.sb.storage.from('fotos').upload(k+'.'+ai.ext,blob,{upsert:true,contentType:ai.mime});
     if(error){const m=String(error.message||error);FT.erroNuvem=/bucket not found/i.test(m)?'a nuvem de fotos ainda não foi ativada no servidor':/row-level|security|unauthorized|403/i.test(m)?'sem permissão para enviar fotos desta clínica':m;throw error}
     FT.erroNuvem='';await FT.filaDel(k);FT.pend--;const f=S.fotos.find(x=>x.id===id);if(f&&f.img&&f.thumb){delete f.img;sujo=true}}};
   await Promise.all([um(),um(),um()]);if(sujo)save()}
@@ -360,11 +366,11 @@ function fotoStatusTxt(){if(!NV.ativa)return 'As fotos ficam guardadas neste com
 /* Devolve o endereço da imagem inteira: deste computador, ou baixa da nuvem e guarda */
 async function fotoCheia(f){if(!f)return '';if(f.img)return f.img;if(FT.urls[f.id])return FT.urls[f.id];
  let blob=await FT.get(f.id);
- if(!blob&&nuvemFotos()){try{const {data}=await NV.sb.storage.from('fotos').download(NV.clinicaId+'/'+f.id+'.jpg');if(data){blob=data;FT.put(f.id,data).catch(()=>{})}}catch(e){}}
+ if(!blob&&nuvemFotos()){try{const {data}=await NV.sb.storage.from('fotos').download(NV.clinicaId+'/'+f.id+'.'+arqInfo(f.id).ext);if(data){blob=data;FT.put(f.id,data).catch(()=>{})}}catch(e){}}
  if(!blob)return fotoMini(f);return FT.urls[f.id]=URL.createObjectURL(blob)}
 function fotoCarregar(f,elId){fotoCheia(f).then(u=>{const e=document.getElementById(elId);if(e&&u)e.src=u})}
 async function fotoApagarArquivo(id){await FT.del(id);if(FT.urls[id]){URL.revokeObjectURL(FT.urls[id]);delete FT.urls[id]}
- if(nuvemFotos()){await FT.filaDel(NV.clinicaId+'/'+id);try{await NV.sb.storage.from('fotos').remove([NV.clinicaId+'/'+id+'.jpg'])}catch(e){}}}
+ if(nuvemFotos()){await FT.filaDel(NV.clinicaId+'/'+id);try{await NV.sb.storage.from('fotos').remove([NV.clinicaId+'/'+id+'.'+arqInfo(id).ext])}catch(e){}}}
 /* Converte as fotos antigas (imagem inteira dentro dos dados) para o formato novo */
 async function fotoMigrar(){if(UI.fotoMigrando)return;const L=S.fotos.filter(f=>f.img&&!f.thumb);if(!L.length){filaEnviar();return}UI.fotoMigrando=1;
  try{for(const f of L){try{const blob=await (await fetch(f.img)).blob();const {thumb}=await fotoPreparar(blob,true);await fotoGuardar(f.id,blob);f.thumb=thumb;f.arq=1;if(!nuvemFotos())delete f.img}catch(e){}}save()}
@@ -476,7 +482,11 @@ function enderecoDe(p){if(!p)return '';
 function resumoAnamnese(p){if(!p)return '';
  const L=S.anamneses.filter(a=>a.pacienteId===p.id).sort((a,b)=>str(b.data).localeCompare(str(a.data)));
  return L.length?'anamnese de '+br(L[0].data)+(L.length>1?' e mais '+(L.length-1):''):'sem anamnese'}
-function avisoPaciente(v){const nome=splitNome(v||'').nome;if(!nome)return '';
+function avisoPaciente(v){const nome=splitNome(v||'').nome;
+ /* Campo vazio: explica que os campos de cadastro aparecem conforme o nome,
+    sen\u00e3o parece que a tela n\u00e3o tem nada. */
+ if(!nome)return `Digite o nome. Se a pessoa j\u00e1 estiver cadastrada, aparecem aqui a foto, o CPF, o endere\u00e7o e a anamnese dela. Se n\u00e3o estiver, o sistema abre os campos de celular, CPF, nascimento, endere\u00e7o, profiss\u00e3o e empresa para cadastrar na hora.`;
+ if(nome.length<3)return 'Continue digitando o nome.';
  const p=acharPac(v);
  if(p){const cel=str(p.celular)?' \u00b7 '+esc(p.celular):'';
   const falta=str(p.celular)?'':' Est\u00e1 sem celular na ficha; se preencher abaixo, fica salvo no cadastro.';
@@ -1042,7 +1052,7 @@ function pacForm(id){const p=id?pac(id):null;
 function vPaciente(){const p=pac(UI.param);if(!p)return `<div class="page"><div class="card">Paciente não encontrado. <button class="lnk" onclick="go('pacientes')">Voltar</button></div></div>`;
  const tabs=abasCliente();if(!tabs.some(([k])=>k===UI.pacTab))UI.pacTab='geral';
  const l=waLink(p.celular);
- const body={geral:pGeral,orcamentos:pOrc,financeiro:pFin,sessoes:pSess,evolucao:pEvo,anamnese:pAna,agendamentos:pAg,comandasC:pComandasC,avaliacao:pAvaliacao,fotos:pFotos,termos:pTermos,aplicacoes:pAplicacoes,ficha:pFicha}[UI.pacTab](p);
+ const body={geral:pGeral,orcamentos:pOrc,financeiro:pFin,sessoes:pSess,evolucao:pEvo,anamnese:pAna,agendamentos:pAg,comandasC:pComandasC,avaliacao:pAvaliacao,fotos:pFotos,documentos:pDocs,termos:pTermos,aplicacoes:pAplicacoes,ficha:pFicha}[UI.pacTab](p);
  return `<div style="background:#fff;padding:10px 24px 0"><button class="lnk" onclick="go('pacientes')">${ico('back',14)} Voltar para ${SEG().pessoas}</button></div>
  <div class="phd">${avatarPac(p,'xl')}<div style="flex:1;min-width:220px"><h1>${esc(p.nome)} <small>(${esc(p.codigo||'')})</small></h1><div style="margin:6px 0;color:var(--mut)">${esc(p.celular||'Sem celular')} ${l?`<a href="${l}" target="_blank" rel="noopener">${waIco()}</a>`:''}</div>${badgeFor(p.status||'Ativo')} ${p.criadoPorImportacao?'<span class="badge b-warn">Cadastro incompleto</span>':''}</div>
  <div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn ghost sm" onclick="pacForm('${p.id}')">Editar cadastro</button><button class="btn ghost sm" onclick="window.print()">${ico('print',15)} Imprimir</button><button class="btn ghost sm" style="color:var(--bad)" onclick="delPac('${p.id}')">Excluir</button></div></div>
@@ -2125,9 +2135,9 @@ function abasCliente(){const filtra=L=>pode('fichaFin')?L:L.filter(([k])=>k!=='f
  if(soAgenda())return [['geral','Visão Geral'],['agendamentos','Agendamentos']];
  return filtra(abasClienteTodas())}
 function abasClienteTodas(){
- if(ehSeg('estetica'))return [['geral','Visão Geral'],['sessoes','Pacotes de sessões'],['avaliacao','Avaliação'],['fotos','Antes e depois'],['termos','Termos'],['aplicacoes','Produtos aplicados'],['comandasC','Comandas'],['financeiro','Financeiro'],['evolucao','Evolução'],['anamnese','Anamnese'],['agendamentos','Agendamentos']];
- if(ehSeg('beleza'))return [['geral','Visão Geral'],['comandasC','Comandas'],['sessoes','Pacotes e assinaturas'],['ficha','Ficha técnica'],['fotos','Fotos'],['termos','Termos'],['financeiro','Financeiro'],['agendamentos','Agendamentos']];
- return [['geral','Visão Geral'],['orcamentos','Orçamentos'],['financeiro','Financeiro'],['sessoes','Controle de Sessões'],['evolucao','Evolução'],['anamnese','Anamnese'],['fotos','Fotos'],['termos','Termos'],['agendamentos','Agendamentos']]}
+ if(ehSeg('estetica'))return [['geral','Visão Geral'],['sessoes','Pacotes de sessões'],['avaliacao','Avaliação'],['fotos','Antes e depois'],['documentos','Documentos'],['termos','Termos'],['aplicacoes','Produtos aplicados'],['comandasC','Comandas'],['financeiro','Financeiro'],['evolucao','Evolução'],['anamnese','Anamnese'],['agendamentos','Agendamentos']];
+ if(ehSeg('beleza'))return [['geral','Visão Geral'],['comandasC','Comandas'],['sessoes','Pacotes e assinaturas'],['ficha','Ficha técnica'],['fotos','Fotos'],['documentos','Documentos'],['termos','Termos'],['financeiro','Financeiro'],['agendamentos','Agendamentos']];
+ return [['geral','Visão Geral'],['orcamentos','Orçamentos'],['financeiro','Financeiro'],['sessoes','Controle de Sessões'],['evolucao','Evolução'],['anamnese','Anamnese'],['fotos','Fotos'],['documentos','Documentos'],['termos','Termos'],['agendamentos','Agendamentos']]}
 function pComandasC(p){const L=S.comandas.filter(c=>c.clienteId===p.id).sort((a,b)=>(b.data||'').localeCompare(a.data||''));const cb=cashbackSaldo(p.id);
  return `<div class="card"><div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px"><h2 style="margin:0">Comandas</h2><span>${Number(S.config.cashback)>0?`Cashback disponível: <b>${money(cb)}</b> `:''}<button class="btn sm" onclick="const c=abrirComandaPara('${p.id}');comandaModal(c.id)">${ico('plus',14)} Abrir comanda</button></span></div>
  <table class="tbl mini"><tr><th>Comanda</th><th>Data</th><th>Itens</th><th class="num">Total</th><th>Situação</th></tr>${L.map(c=>`<tr style="cursor:pointer" onclick="comandaModal('${c.id}')"><td>Nº ${c.numero}</td><td>${br(c.data)}</td><td>${c.itens.map(i=>esc(i.descricao)).join(', ')}</td><td class="num">${money(comandaLiquido(c))}</td><td>${badgeFor(c.status==='Fechada'?'Pago':c.status==='Cancelada'?'Cancelado':'Em aberto')}</td></tr>`).join('')||'<tr><td colspan="5" class="mini-empty">Nenhuma comanda.</td></tr>'}</table></div>`}
@@ -2147,6 +2157,50 @@ function avalForm(pid,id){const a=id?S.avaliacoes.find(x=>x.id===id):null;
   a||{data:todayISO()},o=>{const fd=new FormData($('#mf'));['peso','altura','cintura','abdomen','quadril','braco','coxa'].forEach(k=>{if(String(fd.get(k)).trim()==='')o[k]=''});if(a)Object.assign(a,o);else S.avaliacoes.push({id:uid(),pacienteId:pid,...o})},
   a?`<button class="btn danger" style="margin-right:auto" onclick="delRec('avaliacoes','${a.id}')">Excluir</button>`:'')}
 /* Fotos de antes e depois: reduzidas para caber na nuvem */
+/* ============ Documentos do paciente: exames, laudos, receitas, termos ============
+   O arquivo inteiro fica neste computador e na nuvem da clinica. Nos dados fica
+   so a ficha do documento, para a sincronizacao continuar leve. */
+const DOC_TIPOS=['Exame','Laudo','Receita','Atestado','Encaminhamento','Termo','Documento pessoal','Outro'];
+const DOC_MAX=12*1024*1024;
+function docExt(nome,mime){const m=String(nome||'').match(/\.([A-Za-z0-9]{1,5})$/);
+ if(m)return m[1].toLowerCase();
+ if(/pdf/.test(mime))return 'pdf';if(/png/.test(mime))return 'png';if(/jpe?g/.test(mime))return 'jpg';return 'bin'}
+function docTam(n){n=Number(n)||0;return n>=1048576?(n/1048576).toFixed(1).replace('.',',')+' MB':Math.max(1,Math.round(n/1024))+' KB'}
+function docsDe(pid){return (S.documentos||[]).filter(d=>d.pacienteId===pid).sort((a,b)=>str(b.data).localeCompare(str(a.data)))}
+function pDocs(p){const L=docsDe(p.id);
+ return `<div class="card"><div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px">
+   <div><h2 style="margin:0">Documentos</h2><p class="sub" style="margin:4px 0 0">Exames, laudos, receitas e qualquer arquivo deste ${esc(SEG().pessoa.toLowerCase())}. Aceita PDF e imagem, até 12 MB por arquivo.</p></div>
+   <label class="btn" style="cursor:pointer">${ico('up',16)} Anexar arquivos<input type="file" multiple accept=".pdf,image/*" style="display:none" onchange="docAdd('${p.id}',this)"></label></div>
+  ${L.length?`<div class="tw" style="margin-top:12px"><table class="tbl"><thead><tr><th>Documento</th><th>Tipo</th><th>Data</th><th>Tamanho</th><th></th></tr></thead><tbody>
+   ${L.map(d=>`<tr><td><button class="lnk" onclick="docAbrir('${d.id}')">${esc(d.titulo||d.arquivo||'Documento')}</button><br><small class="sub">${esc(d.arquivo||'')}</small></td>
+     <td><select class="inp" style="padding:3px" onchange="docTipo('${d.id}',this.value)">${DOC_TIPOS.map(t=>`<option ${t===(d.tipo||'Exame')?'selected':''}>${esc(t)}</option>`).join('')}</select></td>
+     <td><input class="inp" style="padding:3px;width:140px" type="date" value="${esc(d.data||'')}" onchange="docData('${d.id}',this.value)"></td>
+     <td>${esc(docTam(d.tamanho))}</td>
+     <td style="white-space:nowrap"><button class="btn ghost sm" onclick="docAbrir('${d.id}')">Abrir</button> <button class="btn ghost sm" onclick="docRenomear('${d.id}')">Renomear</button> <button class="btn danger sm" onclick="docApagar('${d.id}')">Excluir</button></td></tr>`).join('')}
+   </tbody></table></div>`:'<div class="empty" style="margin-top:12px">Nenhum documento anexado ainda.</div>'}
+  <p class="sub" style="margin-top:10px">${esc(fotoStatusTxt().replace(/<[^>]+>/g,''))}</p></div>`}
+async function docAdd(pid,input){const fs=[...input.files];input.value='';if(!fs.length)return;
+ let n=0,grandes=[];
+ for(const f of fs){
+  if(f.size>DOC_MAX){grandes.push(f.name);continue}
+  try{const id=uid();await fotoGuardar(id,f);
+   (S.documentos=S.documentos||[]).push({id,pacienteId:pid,data:todayISO(),titulo:String(f.name).replace(/\.[A-Za-z0-9]{1,5}$/,''),arquivo:f.name,tipo:/exame|lab|result/i.test(f.name)?'Exame':'Exame',ext:docExt(f.name,f.type),mime:f.type||'application/octet-stream',tamanho:f.size});
+   n++}catch(e){toast('Não foi possível ler '+f.name)}}
+ if(n){save();render();filaEnviar()}
+ toast(grandes.length?`${n} anexado(s). Ficaram de fora por passar de 12 MB: ${grandes.join(', ')}`:n+(n===1?' documento anexado':' documentos anexados'))}
+function docTipo(id,v){const d=(S.documentos||[]).find(x=>x.id===id);if(!d)return;d.tipo=v;save()}
+function docData(id,v){const d=(S.documentos||[]).find(x=>x.id===id);if(!d)return;d.data=v;save()}
+function docRenomear(id){const d=(S.documentos||[]).find(x=>x.id===id);if(!d)return;
+ formModal('Renomear documento',[{k:'titulo',l:'Nome que aparece na lista',req:true,full:true}],{titulo:d.titulo||d.arquivo||''},o=>{d.titulo=o.titulo;save();render()})}
+async function docAbrir(id){const d=(S.documentos||[]).find(x=>x.id===id);if(!d)return;
+ let blob=await FT.get(id);
+ if(!blob&&nuvemFotos()){try{const {data}=await NV.sb.storage.from('fotos').download(NV.clinicaId+'/'+id+'.'+(d.ext||'pdf'));if(data){blob=data;FT.put(id,data).catch(()=>{})}}catch(e){}}
+ if(!blob){toast('O arquivo ainda não chegou neste aparelho. Abra pelo computador onde ele foi anexado, ou espere a sincronização');return}
+ const u=URL.createObjectURL(new Blob([blob],{type:d.mime||'application/octet-stream'}));
+ window.open(u,'_blank');setTimeout(()=>URL.revokeObjectURL(u),60000)}
+function docApagar(id){const d=(S.documentos||[]).find(x=>x.id===id);if(!d)return;
+ confirmModal(`Excluir <b>${esc(d.titulo||d.arquivo)}</b>? O arquivo sai deste computador e da nuvem, e não tem como voltar.`,async()=>{
+  await fotoApagarArquivo(id);S.documentos=(S.documentos||[]).filter(x=>x.id!==id);save();render();toast('Documento excluído')})}
 function pFotos(p){const L=S.fotos.filter(f=>f.pacienteId===p.id).sort((a,b)=>(b.data||'').localeCompare(a.data||''));const sel=UI.fotoSel||[];const areas=[...new Set(L.map(f=>f.area||'Sem área'))];
  return `<div class="card"><div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px"><h2 style="margin:0">${ehSeg('beleza')?'Fotos':ehSeg('podologia')?'Fotos do tratamento':'Fotos de antes e depois'}</h2><span style="display:flex;gap:8px;flex-wrap:wrap">${sel.length===2?`<button class="btn soft sm" onclick="fotoComparar()">Comparar as 2 marcadas</button>`:'<small style="color:var(--mut);align-self:center">Marque 2 fotos para comparar lado a lado</small>'}<label class="btn sm" style="cursor:pointer">${ico('up',14)} Adicionar fotos<input type="file" accept="image/*" multiple style="display:none" onchange="fotoAdd('${p.id}',this)"></label></span></div>
  ${areas.map(ar=>`<h2 style="margin-top:16px;font-size:14px">${esc(ar)}</h2><div class="grid g4">${L.filter(f=>(f.area||'Sem área')===ar).map(f=>`<div class="card" style="margin:0;padding:8px;${sel.includes(f.id)?'outline:3px solid var(--acc)':''}"><img src="${fotoMini(f)}" loading="lazy" style="width:100%;height:170px;object-fit:cover;border-radius:8px;cursor:pointer" onclick="fotoVer('${f.id}')">${f.refTipo?`<small style="display:block;color:var(--mut);margin-top:4px">Da ${f.refTipo==='evolucao'?'evolução':'anamnese'} de ${br(f.data)}</small>`:''}<div style="display:flex;justify-content:space-between;align-items:center;margin-top:6px;font-size:12px"><label style="display:flex;gap:4px;align-items:center"><input type="checkbox" ${sel.includes(f.id)?'checked':''} onchange="fotoMarcar('${f.id}')">${br(f.data)} · ${esc(f.momento||'')}</label><button class="lnk" onclick="fotoEditar('${f.id}')">Editar</button></div></div>`).join('')}</div>`).join('')||'<div class="mini-empty">Nenhuma foto ainda.</div>'}
@@ -2299,7 +2353,7 @@ function agNovo(a,s){if(s==='Desmarcado'||s==='Faltou')return false;const k=a.da
  const hist=c=>S[c].some(x=>x.pacienteId===a.pacienteId&&((x.data||x.vencimento||x.pagamento||'')<a.data)&&(x.data||x.vencimento||x.pagamento));
  return !hist('evolucoes')&&!hist('tratamentos')&&!S.lancamentos.some(l=>l.pacienteId===a.pacienteId&&l.pagamento&&l.pagamento<a.data)}
 /* ============ Atualização: aviso com botão Atualizar agora ============ */
-const VERSAO_APP='1.9.19';const URL_VERSAO_JSON='https://raw.githubusercontent.com/TheIgor12/blacksolutions/main/versao.json';
+const VERSAO_APP='1.9.20';const URL_VERSAO_JSON='https://raw.githubusercontent.com/TheIgor12/blacksolutions/main/versao.json';
 const numV=v=>String(v||'0').split(/\D+/).filter(Boolean).map(Number);
 function versaoMaior(a,b){const x=numV(a),y=numV(b);for(let i=0;i<Math.max(x.length,y.length);i++){const d=(x[i]||0)-(y[i]||0);if(d)return d>0}return false}
 const ATU={nova:null,timer:null};
@@ -2546,7 +2600,7 @@ function exportAll(){if(!pode('exportar')){toast('O seu perfil de acesso não pe
 // Preencha com os dados do seu projeto Supabase. Em branco, o sistema funciona só neste computador.
 const NUVEM={url:'https://blszdbjpxgtloblxlusr.supabase.co',chave:'sb_publishable_0Tns_mDN2N1iQmw_sEzFXw_SRMy1uXK'};
 const NV={ativa:!!(NUVEM.url&&NUVEM.chave),sb:null,sessao:null,clinicaId:null,papel:'',nomeClinica:'',hashes:{},cursor:0,status:'local',ocupado:false,offline:false,timer:null};
-const COLS=['vouchers','pacientes','lancamentos','tratamentos','anamneses','agendamentos','contasPagar','evolucoes','profissionais','importacoes','servicos','produtos','movEstoque','comandas','caixas','avaliacoes','fotos','termos','fichas','protocolos','equipamentos'];
+const COLS=['vouchers','documentos','pacientes','lancamentos','tratamentos','anamneses','agendamentos','contasPagar','evolucoes','profissionais','importacoes','servicos','produtos','movEstoque','comandas','caixas','avaliacoes','fotos','termos','fichas','protocolos','equipamentos'];
 const URL_ASSINATURA='https://raw.githubusercontent.com/TheIgor12/blacksolutions/main/assinatura.json';
 let ASSINATURA=null;
 /* O prazo da degustação fica em um lugar só, no assinatura.json, para mudar

@@ -1,4 +1,4 @@
 {
-  "versao": "1.9.19",
-  "novidades": "Endereço pelo CEP: digite o CEP e o sistema preenche rua, bairro, cidade e estado sozinho, no cadastro do paciente e no agendamento. Entraram também profissão e empresa onde a pessoa trabalha. Na tela de Inadimplência cada devedor passa a mostrar CPF e endereço completo, com aviso em vermelho quando falta algum deles, e a planilha exportada leva esses dados."
+  "versao": "1.9.20",
+  "novidades": "Nova aba Documentos na ficha de cada paciente, para anexar exames, laudos, receitas e atestados em PDF ou imagem, com tipo, data e nome editáveis. O arquivo fica guardado no computador e na nuvem da clínica. No agendamento, o campo do paciente agora explica desde o início o que vai aparecer conforme o nome for digitado."
 }
