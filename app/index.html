@@ -419,7 +419,7 @@ async function fotosZipImportar(input){const arqs=[...input.files];input.value='
  z.lendo=false;z.res=`${novas} fotos importadas${repetidas?', '+repetidas+' já existiam':''}${semPac?', '+semPac+' de '+faltam.size+' pacientes não encontrados no cadastro':''}${erros?', '+erros+' com erro':''}.`;
  render();toast(novas+' fotos importadas');filaEnviar()}
 
-const UI={view:'inicio',param:null,drawer:false,pacQuery:'',pacPage:0,pacPer:10,pacTab:'geral',pacInfo:'cadastro',finTab:'geral',
+const UI={view:'inicio',param:null,drawer:false,exLote:null,exLendo:false,pacQuery:'',pacPage:0,pacPer:10,pacTab:'geral',pacInfo:'cadastro',finTab:'geral',
  agDate:todayISO(),agMode:(window.innerWidth<700?'dia':'semana'),profOff:{},rel:'pac_aniv',relMes:new Date().getMonth()+1,
  de:iso(new Date(new Date().getFullYear(),new Date().getMonth(),1)),ate:todayISO(),crStatus:'aberto',cpShow:{apagar:true,pagas:true},
  fluxoAno:new Date().getFullYear(),dashRef:todayISO().slice(0,7),dashQtd:3,anaOpen:{},
@@ -741,7 +741,7 @@ function render(){if(NV.ativa&&UI.auth){$('#app').innerHTML=vAuth();setTimeout((
  if(soAgenda()&&!VIEWS_AGENDA.includes(UI.view))UI.view='agenda';
  if(perfilAtual()){const livre=['inicio','paciente'];const vk=UI.view==='paciente'?'pacientes':UI.view;
   if(!livre.includes(UI.view)&&!podeTela(vk)||UI.view==='paciente'&&!podeTela('pacientes')){const m=menuItens();UI.view=m.length?m[0][0]:'inicio';UI.param=null}}
- const V={inicio:vInicio,agenda:vAgenda,pacientes:vPacientes,paciente:vPaciente,financeiro:vFinanceiro,dashboard:vDashboard,relatorios:vRelatorios,profissionais:vProfissionais,importar:vImportar,config:vConfig,servicos:vServicos,estoque:vEstoque,comandas:vComandas,caixa:vCaixa,comissoes:vComissoes,protocolos:vProtocolos,equipamentos:vEquipamentos,confirmacao:vConfirmacao,indicacoes:vIndicacoes,vouchers:vVouchers};
+ const V={inicio:vInicio,agenda:vAgenda,pacientes:vPacientes,paciente:vPaciente,financeiro:vFinanceiro,dashboard:vDashboard,relatorios:vRelatorios,profissionais:vProfissionais,importar:vImportar,config:vConfig,servicos:vServicos,estoque:vEstoque,exames:vExames,comandas:vComandas,caixa:vCaixa,comissoes:vComissoes,protocolos:vProtocolos,equipamentos:vEquipamentos,confirmacao:vConfirmacao,indicacoes:vIndicacoes,vouchers:vVouchers};
  let c;try{c=(V[UI.view]||vInicio)()}catch(e){console.error(e);c=`<div class="page"><div class="card">Erro ao montar a tela: ${esc(e.message)}</div></div>`}
  $('#app').innerHTML=shell(c);checarSegmento();if(!UI.regrasOk&&S.servicos.length&&!UI.auth){UI.regrasOk=1;if(regrasClinica())save()}if(!AVISO.timer)avisoIniciar();atuIniciar();if(!UI.auth){fotoIniciar();confAutoIniciar()}}
 
@@ -1830,7 +1830,7 @@ const optList=(arr,v)=>arr.map(o=>{const [val,lab]=Array.isArray(o)?o:[o,o];retu
 function menuItens(){const P=SEG().pessoas;
  if(soAgenda())return [['agenda','Agenda','cal'],['confirmacao','Confirmação e Alertas','bell'],['pacientes',P,'user'],['profissionais','Profissional','badge'],['servicos',ehSeg('podologia')?'Procedimentos e preços':'Serviços e preços','report']].filter(([k])=>podeTela(k));
  const base=[['agenda','Agenda','cal'],['confirmacao','Confirmação e Alertas','bell'],['indicacoes','Controle de Indicação','share'],['vouchers','Controle de Voucher','gift'],['dashboard','Dashboard Analítico','chart'],['financeiro','Financeiro','money'],['importar','Importar Dados','up'],['pacientes',P,'user'],['profissionais','Profissional','badge'],['relatorios','Relatórios','report']];
- if(ehSeg('podologia'))return [...base,['servicos','Procedimentos e preços','report'],['estoque','Estoque','badge']].filter(([k])=>podeTela(k));
+ if(ehSeg('podologia'))return [...base,['exames','Exames','file'],['servicos','Procedimentos e preços','report'],['estoque','Estoque','badge']].filter(([k])=>podeTela(k));
  const extra=[['comandas','Comandas','file'],['caixa','Caixa do dia','money'],['servicos','Serviços e preços','report'],['estoque',ehSeg('estetica')?'Produtos e lotes':'Estoque','badge'],['comissoes',ehSeg('beleza')?'Comissões e salão-parceiro':'Comissões','chart']];
  if(ehSeg('estetica'))extra.push(['protocolos','Protocolos','report'],['equipamentos','Equipamentos','gear']);
  return [...base,...extra].filter(([k])=>podeTela(k))}
@@ -2157,6 +2157,95 @@ function avalForm(pid,id){const a=id?S.avaliacoes.find(x=>x.id===id):null;
   a||{data:todayISO()},o=>{const fd=new FormData($('#mf'));['peso','altura','cintura','abdomen','quadril','braco','coxa'].forEach(k=>{if(String(fd.get(k)).trim()==='')o[k]=''});if(a)Object.assign(a,o);else S.avaliacoes.push({id:uid(),pacienteId:pid,...o})},
   a?`<button class="btn danger" style="margin-right:auto" onclick="delRec('avaliacoes','${a.id}')">Excluir</button>`:'')}
 /* Fotos de antes e depois: reduzidas para caber na nuvem */
+/* ============ Exames: upload em lote com reconhecimento do paciente ============
+   A pessoa solta os arquivos na tela e o sistema descobre de quem e cada um,
+   pelo CPF, pelo codigo ou pelo nome, no nome do arquivo e, em PDF, tambem no
+   texto de dentro. O que ele reconhece com certeza ja vai para a ficha do
+   paciente. O que ficou em duvida espera uma escolha, porque exame no paciente
+   errado e erro que nao se conserta depois. */
+let PDFJS_P=null;
+function carregarPdfJs(){if(window.pdfjsLib)return Promise.resolve(window.pdfjsLib);
+ if(PDFJS_P)return PDFJS_P;
+ return PDFJS_P=new Promise((res,rej)=>{const sc=document.createElement('script');
+  sc.src='https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js';
+  sc.onload=()=>{try{window.pdfjsLib.GlobalWorkerOptions.workerSrc='https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js'}catch(e){}res(window.pdfjsLib)};
+  sc.onerror=()=>rej(new Error('pdfjs'));document.head.appendChild(sc)})}
+async function pdfTexto(blob){const lib=await carregarPdfJs();
+ const doc=await lib.getDocument({data:await blob.arrayBuffer()}).promise;
+ let t='';const n=Math.min(3,doc.numPages);
+ for(let i=1;i<=n;i++){const pg=await doc.getPage(i);const c=await pg.getTextContent();t+=' '+c.items.map(x=>x.str).join(' ')}
+ return t}
+/* Procura o paciente dentro de um texto qualquer. Devolve o mais confiavel. */
+function acharNoTexto(txt){const t=norm(txt);const dig=String(txt).replace(/\D/g,'');
+ if(!t)return null;
+ for(const p of S.pacientes){const c=str(p.cpf).replace(/\D/g,'');
+  if(c.length===11&&dig.indexOf(c)>=0)return {p,como:'CPF',certo:true}}
+ for(const p of S.pacientes){const n=norm(p.nome);
+  if(n.length>6&&t.indexOf(n)>=0)return {p,como:'nome completo',certo:true}}
+ /* nome e sobrenome separados, que e como vem na maioria dos arquivos */
+ for(const p of S.pacientes){const w=norm(p.nome).split(' ').filter(x=>x.length>2);
+  if(w.length>=2&&t.indexOf(w[0])>=0&&t.indexOf(w[w.length-1])>=0)return {p,como:'nome e sobrenome',certo:true}}
+ const par=nomesParecidos(S.pacientes,txt,1);
+ if(par.length)return {p:par[0],como:'nome parecido',certo:false};
+ return null}
+async function exameDetectar(f){const base=String(f.name).replace(/\.[A-Za-z0-9]{1,5}$/,'').replace(/[_\-.]+/g,' ');
+ let r=acharNoTexto(base);
+ if(r&&r.certo)return {...r,onde:'nome do arquivo'};
+ if(/pdf$/i.test(f.name)||/pdf/i.test(f.type)){
+  try{const t=await pdfTexto(f);const r2=acharNoTexto(t);
+   if(r2&&r2.certo)return {...r2,onde:'texto do exame'};
+   if(r2&&!r)r=r2}catch(e){}}
+ return r?{...r,onde:'nome do arquivo'}:null}
+function vExames(){const L=UI.exLote;
+ const recentes=(S.documentos||[]).filter(d=>(d.tipo||'')==='Exame').sort((a,b)=>str(b.data).localeCompare(str(a.data))).slice(0,40);
+ return `<div class="page"><div class="phead"><div><h1>Exames</h1><p class="sub">Solte aqui os exames que você baixou. O sistema descobre de quem é cada arquivo e guarda na ficha do paciente.</p></div></div>
+ <div class="card"><div class="drop" ondragover="event.preventDefault();this.classList.add('on')" ondragleave="this.classList.remove('on')" ondrop="this.classList.remove('on');exSoltar(event)">
+   ${ico('up',34)}<p><b>Arraste os arquivos para cá</b></p><p class="sub">PDF ou imagem, até 12 MB por arquivo. Pode soltar vários de uma vez.</p>
+   <input type="file" multiple accept=".pdf,image/*" onchange="exArquivos([...this.files]);this.value=''"></div>
+  ${UI.exLendo?'<p class="sub" style="margin-top:10px">Lendo os arquivos e procurando o nome do paciente...</p>':''}
+  ${L&&L.length?exTabela(L):''}</div>
+ <div class="card"><h2>Últimos exames guardados</h2>
+  ${recentes.length?`<div class="tw"><table class="tbl"><thead><tr><th>Paciente</th><th>Exame</th><th>Data</th><th></th></tr></thead><tbody>
+   ${recentes.map(d=>{const p=pac(d.pacienteId);return `<tr><td><span style="display:flex;align-items:center;gap:7px">${p?avatarPac(p,'sm'):''}<button class="lnk" onclick="go('paciente','${d.pacienteId}');UI.pacTab='documentos';render()">${esc(p?p.nome:'?')}</button></span></td>
+     <td>${esc(d.titulo||d.arquivo||'')}</td><td>${br(d.data)}</td><td><button class="btn ghost sm" onclick="docAbrir('${d.id}')">Abrir</button></td></tr>`}).join('')}
+   </tbody></table></div>`:'<div class="empty">Nenhum exame guardado ainda.</div>'}</div></div>`}
+function exTabela(L){const pend=L.filter(x=>!x.pronto).length;
+ return `<div class="tw" style="margin-top:14px"><table class="tbl"><thead><tr><th>Arquivo</th><th>Paciente</th><th>Como reconheci</th><th></th></tr></thead><tbody>
+ ${L.map((x,i)=>`<tr><td>${esc(x.nome)}<br><small class="sub">${esc(docTam(x.tam))}</small></td>
+  <td>${x.pronto?`<b style="color:#15803d">${esc(x.nomePac)}</b>`:`<input class="inp" style="width:100%;max-width:260px" list="dlPac" value="${esc(x.sugestao||'')}" oninput="UI.exLote[${i}].sugestao=this.value" placeholder="Digite o nome do paciente">`}</td>
+  <td><small>${x.pronto?esc(x.como):x.como?`<span style="color:#b45309">${esc(x.como)}, confirme</span>`:'<span style="color:var(--bad)">não reconheci</span>'}</small></td>
+  <td style="white-space:nowrap">${x.pronto?'guardado':`<button class="btn sm" onclick="exGuardar(${i})">Guardar</button> <button class="btn ghost sm" onclick="exDescartar(${i})">Tirar</button>`}</td></tr>`).join('')}
+ </tbody></table></div>
+ ${pend?`<div class="mact" style="margin-top:10px"><button class="btn ghost" onclick="UI.exLote=null;render()">Limpar lista</button><button class="btn" onclick="exGuardarTodos()">${pend===1?'Guardar o que falta':'Guardar os '+pend+' que faltam'}</button></div>`
+       :`<div class="mact" style="margin-top:10px"><button class="btn ghost" onclick="UI.exLote=null;render()">Fechar</button></div>`}`}
+function exSoltar(ev){ev.preventDefault();const fs=[...(ev.dataTransfer&&ev.dataTransfer.files||[])];if(fs.length)exArquivos(fs)}
+async function exArquivos(fs){if(!fs.length)return;
+ UI.exLote=UI.exLote||[];UI.exLendo=true;render();
+ for(const f of fs){
+  if(f.size>DOC_MAX){UI.exLote.push({nome:f.name,tam:f.size,erro:1,como:'passa de 12 MB',file:null,pronto:false});continue}
+  let d=null;try{d=await exameDetectar(f)}catch(e){}
+  const it={nome:f.name,tam:f.size,file:f,como:d?d.como+' ('+d.onde+')':'',sugestao:d?d.p.nome:'',pacId:d?d.p.id:'',pronto:false};
+  UI.exLote.push(it);
+  if(d&&d.certo){await exSalvarArquivo(it,d.p);it.pronto=true;it.nomePac=d.p.nome}
+  render()}
+ UI.exLendo=false;save();render();
+ const n=UI.exLote.filter(x=>x.pronto).length,f2=UI.exLote.filter(x=>!x.pronto).length;
+ toast(n+(n===1?' exame guardado sozinho':' exames guardados sozinhos')+(f2?'. '+f2+' esperando você confirmar o paciente':''))}
+async function exSalvarArquivo(it,p){const f=it.file;if(!f||!p)return false;
+ const id=uid();await fotoGuardar(id,f);
+ (S.documentos=S.documentos||[]).push({id,pacienteId:p.id,data:todayISO(),titulo:String(f.name).replace(/\.[A-Za-z0-9]{1,5}$/,''),arquivo:f.name,tipo:'Exame',ext:docExt(f.name,f.type),mime:f.type||'application/octet-stream',tamanho:f.size});
+ filaEnviar();return true}
+async function exGuardar(i){const it=(UI.exLote||[])[i];if(!it||it.pronto)return;
+ const p=acharPac(it.sugestao||'');
+ if(!p){toast('Não achei esse paciente no cadastro. Confira o nome');return}
+ if(await exSalvarArquivo(it,p)){it.pronto=true;it.nomePac=p.nome;it.como='você confirmou';save();render();toast('Exame guardado na ficha de '+p.nome)}}
+async function exGuardarTodos(){const L=UI.exLote||[];let n=0,faltou=0;
+ for(let i=0;i<L.length;i++){const it=L[i];if(it.pronto)continue;
+  const p=acharPac(it.sugestao||'');
+  if(!p){faltou++;continue}
+  if(await exSalvarArquivo(it,p)){it.pronto=true;it.nomePac=p.nome;it.como='você confirmou';n++}}
+ save();render();toast(n+(n===1?' exame guardado':' exames guardados')+(faltou?'. '+faltou+' ainda sem paciente':''))}
+function exDescartar(i){UI.exLote=(UI.exLote||[]).filter((x,k)=>k!==i);if(!UI.exLote.length)UI.exLote=null;render()}
 /* ============ Documentos do paciente: exames, laudos, receitas, termos ============
    O arquivo inteiro fica neste computador e na nuvem da clinica. Nos dados fica
    so a ficha do documento, para a sincronizacao continuar leve. */
@@ -2353,7 +2442,7 @@ function agNovo(a,s){if(s==='Desmarcado'||s==='Faltou')return false;const k=a.da
  const hist=c=>S[c].some(x=>x.pacienteId===a.pacienteId&&((x.data||x.vencimento||x.pagamento||'')<a.data)&&(x.data||x.vencimento||x.pagamento));
  return !hist('evolucoes')&&!hist('tratamentos')&&!S.lancamentos.some(l=>l.pacienteId===a.pacienteId&&l.pagamento&&l.pagamento<a.data)}
 /* ============ Atualização: aviso com botão Atualizar agora ============ */
-const VERSAO_APP='1.9.20';const URL_VERSAO_JSON='https://raw.githubusercontent.com/TheIgor12/blacksolutions/main/versao.json';
+const VERSAO_APP='1.9.21';const URL_VERSAO_JSON='https://raw.githubusercontent.com/TheIgor12/blacksolutions/main/versao.json';
 const numV=v=>String(v||'0').split(/\D+/).filter(Boolean).map(Number);
 function versaoMaior(a,b){const x=numV(a),y=numV(b);for(let i=0;i<Math.max(x.length,y.length);i++){const d=(x[i]||0)-(y[i]||0);if(d)return d>0}return false}
 const ATU={nova:null,timer:null};
@@ -2511,7 +2600,7 @@ async function fotoAddRef(pid,tipo,id,input){const fs=[...input.files];input.val
 
 /* ============ Configurações ============ */
 /* ---- Perfis de acesso: cada pessoa vê só o que precisa ---- */
-function telasPerm(){const P=SEG().pessoas;return [['agenda','Agenda'],['pacientes',P],['confirmacao','Confirmação e alertas'],['servicos',ehSeg('podologia')?'Procedimentos e preços':'Serviços e preços'],['estoque','Estoque'],['comandas','Comandas'],['caixa','Caixa do dia'],['financeiro','Financeiro'],['relatorios','Relatórios'],['dashboard','Dashboard'],['comissoes','Comissões'],['indicacoes','Indicações'],['vouchers','Vouchers'],['protocolos','Protocolos'],['equipamentos','Equipamentos'],['importar','Importar dados'],['profissionais','Profissionais'],['config','Configurações']]}
+function telasPerm(){const P=SEG().pessoas;return [['agenda','Agenda'],['pacientes',P],['exames','Exames'],['confirmacao','Confirmação e alertas'],['servicos',ehSeg('podologia')?'Procedimentos e preços':'Serviços e preços'],['estoque','Estoque'],['comandas','Comandas'],['caixa','Caixa do dia'],['financeiro','Financeiro'],['relatorios','Relatórios'],['dashboard','Dashboard'],['comissoes','Comissões'],['indicacoes','Indicações'],['vouchers','Vouchers'],['protocolos','Protocolos'],['equipamentos','Equipamentos'],['importar','Importar dados'],['profissionais','Profissionais'],['config','Configurações']]}
 const EXTRAS_PERM=[['fichaFin','Ver o financeiro na ficha do cliente'],['valores','Ver valores e preços nas telas'],['excluir','Excluir registros'],['exportar','Baixar backup e exportar para Excel']];
 function perfisPadrao(){return [
  {id:'recepcao',nome:'Recepção',telas:['agenda','pacientes','confirmacao','comandas','servicos'],extras:{valores:true}},

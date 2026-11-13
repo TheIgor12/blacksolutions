@@ -1,4 +1,4 @@
 {
-  "versao": "1.9.20",
-  "novidades": "Nova aba Documentos na ficha de cada paciente, para anexar exames, laudos, receitas e atestados em PDF ou imagem, com tipo, data e nome editáveis. O arquivo fica guardado no computador e na nuvem da clínica. No agendamento, o campo do paciente agora explica desde o início o que vai aparecer conforme o nome for digitado."
+  "versao": "1.9.21",
+  "novidades": "Nova aba Exames: arraste os arquivos para a tela e o sistema descobre sozinho de quem é cada um, pelo CPF, pelo nome do arquivo ou pelo texto de dentro do PDF, e guarda na ficha do paciente. O que ficar em dúvida espera uma confirmação, para nenhum exame cair no paciente errado."
 }
