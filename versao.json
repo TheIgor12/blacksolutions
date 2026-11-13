@@ -1,4 +1,4 @@
 {
-  "versao": "1.9.22",
-  "novidades": "Todo campo agora tem formato. Telefone sai como (47) 99999-9999 enquanto a pessoa digita, CEP como 89251-000, CPF como 123.456.789-00 e CNPJ como 12.345.678/0001-99. Os campos de dinheiro ficam com ponto de milhar e vírgula de centavos ao sair do campo, e continuam aceitando o número digitado de qualquer jeito."
+  "versao": "1.9.23",
+  "novidades": "Foto de exame tirada no celular agora entra reduzida, ocupando uma fração do espaço, sem perder legibilidade. PDF continua inteiro. A tela de Backup passou a dizer a verdade sobre onde os dados ficam, avisa há quantos dias foi o último backup e deixa claro que fotos, exames e documentos não entram no arquivo de backup."
 }

@@ -2283,7 +2283,8 @@ async function exArquivos(fs){if(!fs.length)return;
  UI.exLendo=false;save();render();
  const n=UI.exLote.filter(x=>x.pronto).length,f2=UI.exLote.filter(x=>!x.pronto).length;
  toast(n+(n===1?' exame guardado sozinho':' exames guardados sozinhos')+(f2?'. '+f2+' esperando você confirmar o paciente':''))}
-async function exSalvarArquivo(it,p){const f=it.file;if(!f||!p)return false;
+async function exSalvarArquivo(it,p){const f0=it.file;if(!f0||!p)return false;
+ const f=await docPreparar(f0);
  const id=uid();await fotoGuardar(id,f);
  (S.documentos=S.documentos||[]).push({id,pacienteId:p.id,data:todayISO(),titulo:String(f.name).replace(/\.[A-Za-z0-9]{1,5}$/,''),arquivo:f.name,tipo:'Exame',ext:docExt(f.name,f.type),mime:f.type||'application/octet-stream',tamanho:f.size});
  filaEnviar();return true}
@@ -2320,10 +2321,17 @@ function pDocs(p){const L=docsDe(p.id);
      <td style="white-space:nowrap"><button class="btn ghost sm" onclick="docAbrir('${d.id}')">Abrir</button> <button class="btn ghost sm" onclick="docRenomear('${d.id}')">Renomear</button> <button class="btn danger sm" onclick="docApagar('${d.id}')">Excluir</button></td></tr>`).join('')}
    </tbody></table></div>`:'<div class="empty" style="margin-top:12px">Nenhum documento anexado ainda.</div>'}
   <p class="sub" style="margin-top:10px">${esc(fotoStatusTxt().replace(/<[^>]+>/g,''))}</p></div>`}
+/* Foto de exame tirada no celular chega com 4 MB. Reduzida fica em 300 KB e
+   continua leg\u00edvel. PDF vai inteiro, porque reduzir estragaria o documento. */
+async function docPreparar(f){if(!/^image\//.test(f.type||''))return f;
+ try{const b64=await fotoReduzirLado(f,1600,0.82);const r=await fetch(b64);const bl=await r.blob();
+  return bl.size<f.size?new File([bl],String(f.name).replace(/\.[A-Za-z0-9]+$/,'')+'.jpg',{type:'image/jpeg'}):f}
+ catch(e){return f}}
 async function docAdd(pid,input){const fs=[...input.files];input.value='';if(!fs.length)return;
  let n=0,grandes=[];
- for(const f of fs){
-  if(f.size>DOC_MAX){grandes.push(f.name);continue}
+ for(const f0 of fs){
+  if(f0.size>DOC_MAX){grandes.push(f0.name);continue}
+  const f=await docPreparar(f0);
   try{const id=uid();await fotoGuardar(id,f);
    (S.documentos=S.documentos||[]).push({id,pacienteId:pid,data:todayISO(),titulo:String(f.name).replace(/\.[A-Za-z0-9]{1,5}$/,''),arquivo:f.name,tipo:/exame|lab|result/i.test(f.name)?'Exame':'Exame',ext:docExt(f.name,f.type),mime:f.type||'application/octet-stream',tamanho:f.size});
    n++}catch(e){toast('Não foi possível ler '+f.name)}}
@@ -2494,7 +2502,7 @@ function agNovo(a,s){if(s==='Desmarcado'||s==='Faltou')return false;const k=a.da
  const hist=c=>S[c].some(x=>x.pacienteId===a.pacienteId&&((x.data||x.vencimento||x.pagamento||'')<a.data)&&(x.data||x.vencimento||x.pagamento));
  return !hist('evolucoes')&&!hist('tratamentos')&&!S.lancamentos.some(l=>l.pacienteId===a.pacienteId&&l.pagamento&&l.pagamento<a.data)}
 /* ============ Atualização: aviso com botão Atualizar agora ============ */
-const VERSAO_APP='1.9.22';const URL_VERSAO_JSON='https://raw.githubusercontent.com/TheIgor12/blacksolutions/main/versao.json';
+const VERSAO_APP='1.9.23';const URL_VERSAO_JSON='https://raw.githubusercontent.com/TheIgor12/blacksolutions/main/versao.json';
 const numV=v=>String(v||'0').split(/\D+/).filter(Boolean).map(Number);
 function versaoMaior(a,b){const x=numV(a),y=numV(b);for(let i=0;i<Math.max(x.length,y.length);i++){const d=(x[i]||0)-(y[i]||0);if(d)return d>0}return false}
 const ATU={nova:null,timer:null};
@@ -2704,7 +2712,17 @@ function cfgCardClinica(){const c=S.config;return `<div class="card"><h2>Clínic
  <div class="mact"><button class="btn" onclick="saveCfg()">Salvar configurações</button></div></div>`}
 function cfgCardTermos(){const c=S.config;return `${true?`<div class="card"><h2>Textos dos termos</h2><p class="sub" style="margin-bottom:10px">Variáveis: {nome}, {cpf}, {clinica}, {procedimento}, {data}. Revise os textos com o seu advogado.</p><div class="fgrid" id="cfgTm"><label class="full">Termo de consentimento<textarea name="termoConsentimento" rows="4">${esc(c.termoConsentimento||TERMO_PADRAO.consentimento)}</textarea></label><label class="full">Autorização de uso de imagem<textarea name="termoImagem" rows="4">${esc(c.termoImagem||TERMO_PADRAO.imagem)}</textarea></label></div><div class="mact"><button class="btn" onclick="$('#cfgTm').querySelectorAll('textarea').forEach(t=>S.config[t.name]=t.value);save();toast('Textos dos termos salvos')">Salvar textos</button></div></div>`:''}`}
 function cfgCardLogo(){const c=S.config;return `<div class="card"><h2>Logotipo da clínica</h2><p class="sub" style="margin-bottom:12px">Aparece no menu lateral, para toda a equipe. Use imagem PNG ou JPG. As cores e o logotipo ficam salvos na nuvem da clínica.</p><div style="display:flex;gap:18px;align-items:center;flex-wrap:wrap"><img src="${logoClinica()}" style="max-width:180px;max-height:90px;border:1px solid var(--line);border-radius:10px;padding:8px;background:#fff">${/happy\s*feet/i.test(S.config.clinica)&&S.config.logo!==LOGO_HAPPYFEET?'<button class="btn soft" onclick="S.config.logo=LOGO_HAPPYFEET;save();render()">Usar o logotipo HappyFEET</button>':''}<label class="btn ghost" style="cursor:pointer">${ico('up',16)} Trocar logotipo<input type="file" accept="image/*" style="display:none" onchange="setLogo(this)"></label>${S.config.logo?'<button class="btn ghost" onclick="S.config.logo=\'\';save();render()">Usar o logotipo BlackFlow</button>':''}</div></div>`}
-function cfgCardBackup(){const c=S.config;const tot=S.pacientes.length+S.lancamentos.length+S.tratamentos.length+S.agendamentos.length+S.anamneses.length+S.contasPagar.length;return `<div class="card"><h2>Backup e segurança dos dados</h2><div class="note warn">Os dados ficam gravados somente neste navegador, neste computador. Não vão para nenhum servidor. Se limpar os dados do navegador, trocar de computador ou o disco falhar, tudo se perde. Baixe um backup toda semana e guarde em local seguro. São dados de saúde: o arquivo de backup deve ser tratado com o mesmo sigilo do prontuário.</div>
+/* Quanto tempo faz desde o \u00faltimo backup. */
+function backupAviso(){const d=str(S.config.ultimoBackup);
+ if(!d)return '<div class="note bad" style="margin-top:8px">Nenhum backup foi baixado ainda neste aparelho.</div>';
+ const dias=Math.round((new Date(todayISO())-new Date(d))/86400000);
+ if(dias>=30)return `<div class="note bad" style="margin-top:8px">O \u00faltimo backup foi em ${br(d)}, ${dias} dias atr\u00e1s. J\u00e1 passou da hora.</div>`;
+ if(dias>=7)return `<div class="note warn" style="margin-top:8px">\u00daltimo backup em ${br(d)}, ${dias} dias atr\u00e1s.</div>`;
+ return `<div class="note" style="margin-top:8px">\u00daltimo backup em ${br(d)}.</div>`}
+function cfgCardBackup(){const c=S.config;const tot=S.pacientes.length+S.lancamentos.length+S.tratamentos.length+S.agendamentos.length+S.anamneses.length+S.contasPagar.length;return `<div class="card"><h2>Backup e segurança dos dados</h2>${NV.ativa?`<div class="note">Os dados ficam neste navegador e também na nuvem da clínica, sincronizados entre os aparelhos que entram com o mesmo acesso. Mesmo assim, baixe um backup de tempos em tempos: a nuvem protege contra perder o computador, não contra apagar sem querer.</div>`
+  :`<div class="note warn">A sincronização está desligada. Os dados ficam gravados somente neste navegador, neste computador. Se limpar os dados do navegador, trocar de computador ou o disco falhar, tudo se perde.</div>`}
+ <div class="note warn" style="margin-top:8px">O backup é um arquivo com os dados escritos: pacientes, agenda, financeiro, anamneses. <b>Fotos, exames e documentos não entram nele</b>, porque são arquivos grandes; esses ficam na nuvem da clínica. São dados de saúde: guarde o arquivo com o mesmo sigilo do prontuário.</div>
+ ${backupAviso()}
  <p class="sub">${tot} registros gravados: ${S.pacientes.length} pacientes, ${S.lancamentos.length} lançamentos, ${S.tratamentos.length} tratamentos, ${S.agendamentos.length} agendamentos, ${S.anamneses.length} anamneses, ${S.evolucoes.length} evoluções, ${S.contasPagar.length} contas a pagar.</p>
  <div class="mact" style="justify-content:flex-start"><button class="btn" onclick="backup()">${ico('down',16)} Baixar backup</button><label class="btn ghost" style="cursor:pointer">${ico('up',16)} Restaurar backup<input type="file" accept=".json" style="display:none" onchange="restore(this)"></label><button class="btn ghost" onclick="exportAll()">${ico('down',16)} Salvar uma cópia dos dados do BlackFlow em Excel</button></div></div>`}
 function cfgCardRisco(){return `${NV.ativa&&NV.sessao&&NV.papel&&NV.papel!=='admin'?'':`<div class="card"><h2>Zona de risco</h2><p class="sub">Apaga todos os dados deste navegador. Faça um backup antes.</p><div class="mact" style="justify-content:flex-start"><button class="btn danger" onclick="wipe()">Apagar todos os dados</button></div></div>`}`}
