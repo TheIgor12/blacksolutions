@@ -269,6 +269,54 @@ function onlyDigits(v){return String(v??'').replace(/\D/g,'')}
 function fmtCPF(c){const d=onlyDigits(c);if(!d)return '';const x=d.padStart(11,'0');return d.length<=11?`${x.slice(0,3)}.${x.slice(3,6)}.${x.slice(6,9)}-${x.slice(9)}`:c}
 function keyCPF(c){const d=onlyDigits(c);return d.length>=9&&d.length<=11?d.padStart(11,'0'):''}
 function waLink(p,msg){let d=onlyDigits(p);if(d.length<10)return '';if(!d.startsWith('55')||d.length<=11)d='55'+d;return `https://wa.me/${d}${msg?'?text='+encodeURIComponent(msg):''}`}
+/* ============ Formato dos campos: telefone, CPF, CNPJ, CEP e dinheiro ============
+   Telefone sai como (47) 99999-9999, CEP como 89251-000, CPF como
+   123.456.789-00. Dinheiro e formatado quando a pessoa sai do campo, para nao
+   atrapalhar quem digita. */
+function soDig(v){return String(v==null?'':v).replace(/\D/g,'')}
+function mascFone(v){const d=soDig(v).slice(0,11);
+ if(d.length<=2)return d.length?'('+d:'';
+ if(d.length<=6)return '('+d.slice(0,2)+') '+d.slice(2);
+ if(d.length<=10)return '('+d.slice(0,2)+') '+d.slice(2,6)+'-'+d.slice(6);
+ return '('+d.slice(0,2)+') '+d.slice(2,7)+'-'+d.slice(7)}
+function mascCEP(v){const d=soDig(v).slice(0,8);return d.length<=5?d:d.slice(0,5)+'-'+d.slice(5)}
+function mascCPF(v){const d=soDig(v).slice(0,11);
+ if(d.length<=3)return d;if(d.length<=6)return d.slice(0,3)+'.'+d.slice(3);
+ if(d.length<=9)return d.slice(0,3)+'.'+d.slice(3,6)+'.'+d.slice(6);
+ return d.slice(0,3)+'.'+d.slice(3,6)+'.'+d.slice(6,9)+'-'+d.slice(9)}
+function mascCNPJ(v){const d=soDig(v).slice(0,14);
+ if(d.length<=2)return d;if(d.length<=5)return d.slice(0,2)+'.'+d.slice(2);
+ if(d.length<=8)return d.slice(0,2)+'.'+d.slice(2,5)+'.'+d.slice(5);
+ if(d.length<=12)return d.slice(0,2)+'.'+d.slice(2,5)+'.'+d.slice(5,8)+'/'+d.slice(8);
+ return d.slice(0,2)+'.'+d.slice(2,5)+'.'+d.slice(5,8)+'/'+d.slice(8,12)+'-'+d.slice(12)}
+function mascDoc(v){return soDig(v).length>11?mascCNPJ(v):mascCPF(v)}
+function mascDinheiro(v){const n=parseNum(v);return v===''||v==null?'':n.toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2})}
+function aplicarMasc(tipo,v){return {fone:mascFone,cep:mascCEP,cpf:mascCPF,cnpj:mascCNPJ,doc:mascDoc,dinheiro:mascDinheiro}[tipo]?{fone:mascFone,cep:mascCEP,cpf:mascCPF,cnpj:mascCNPJ,doc:mascDoc,dinheiro:mascDinheiro}[tipo](v):String(v==null?'':v)}
+/* Descobre o formato pelo nome do campo, para valer em toda tela sem precisar
+   marcar campo por campo. */
+/* Mesmo criterio, mas a partir do nome do campo, para j\u00e1 mostrar formatado. */
+function mascNome(k){const n=String(k||'').toLowerCase();
+ if(/cnpj/.test(n)&&!/cpf/.test(n))return 'cnpj';
+ if(/cpf/.test(n))return /cnpj/.test(n)?'doc':'cpf';
+ if(/cep/.test(n))return 'cep';
+ if(/celular|telefone|fone|whats|tel$/.test(n))return 'fone';
+ return ''}
+function mascDe(el){if(!el||el.dataset&&el.dataset.mask)return el.dataset.mask||'';
+ const t=(el.type||'').toLowerCase();
+ if(t==='date'||t==='number'||t==='email'||t==='file'||el.tagName==='SELECT'||el.tagName==='TEXTAREA')return '';
+ const n=(el.name||el.id||'').toLowerCase();
+ if(/cnpj/.test(n)&&!/cpf/.test(n))return 'cnpj';
+ if(/cpf/.test(n))return /cnpj/.test(n)?'doc':'cpf';
+ if(/cep/.test(n))return 'cep';
+ if(/celular|telefone|fone|whats|tel$/.test(n))return 'fone';
+ return ''}
+document.addEventListener('input',e=>{const el=e.target;if(!el||el.tagName!=='INPUT')return;
+ const m=mascDe(el);if(!m||m==='dinheiro')return;
+ const fim=el.selectionStart>=String(el.value).length;
+ const novo=aplicarMasc(m,el.value);
+ if(novo!==el.value){el.value=novo;if(fim)try{el.setSelectionRange(novo.length,novo.length)}catch(err){}}},true);
+document.addEventListener('blur',e=>{const el=e.target;if(!el||el.tagName!=='INPUT')return;
+ if((el.dataset&&el.dataset.mask)==='dinheiro'&&String(el.value).trim()!=='')el.value=mascDinheiro(el.value)},true);
 function parseNum(v){if(typeof v==='number')return v;let s=String(v??'').replace(/R\$/g,'').replace(/\s/g,'');if(!s)return 0;const neg=/^\(.*\)$/.test(s)||s.startsWith('-');s=s.replace(/[()\-+]/g,'');if(s.includes(','))s=s.replace(/\./g,'').replace(',','.');const n=parseFloat(s);return isNaN(n)?0:(neg?-n:n)}
 function parseDT(v){
  if(v===''||v==null)return {d:'',t:''};
@@ -657,8 +705,10 @@ function formModal(title,fields,data,onSave,extra){data=data||{};
  const h=fields.map(f=>{const v=data[f.k]??(f.def??'');let inp;
   if(f.type==='hora15'){const L=[];for(let m=6*60;m<=22*60;m+=15)L.push(pad(Math.floor(m/60))+':'+pad(m%60));if(v&&!L.includes(String(v).slice(0,5)))L.push(String(v).slice(0,5));L.sort();inp=`<select name="${f.k}" class="hora15">${L.map(o=>`<option ${o===String(v).slice(0,5)?'selected':''}>${o}</option>`).join('')}</select>`}
   else if(f.type==='select')inp=`<select name="${f.k}">${f.opts.map(o=>`<option ${String(o)===String(v)?'selected':''}>${esc(o)}</option>`).join('')}</select>`;
+  else if(f.type==='dinheiro')inp=`<input name="${f.k}" type="text" inputmode="decimal" data-mask="dinheiro" value="${esc(v===''||v==null?'':mascDinheiro(v))}" autocomplete="off">`;
   else if(f.type==='textarea')inp=`<textarea name="${f.k}" rows="${f.rows||4}">${esc(v)}</textarea>`;
-  else inp=`<input name="${f.k}" type="${f.type||'text'}" ${f.type==='number'?`step="${f.step||'0.01'}"${f.min!==undefined?` min="${f.min}"`:''}`:''} value="${esc(v)}" ${f.list?`list="${f.list}"`:''} autocomplete="off">`;
+  else {const mk=f.mask||(f.type&&f.type!=='text'?'':mascNome(f.k));
+   inp=`<input name="${f.k}" type="${f.type||'text'}" ${f.type==='number'?`step="${f.step||'0.01'}"${f.min!==undefined?` min="${f.min}"`:''}`:''} ${mk?`data-mask="${mk}"`:''} value="${esc(mk?aplicarMasc(mk,v):v)}" ${f.list?`list="${f.list}"`:''} autocomplete="off">`}
   return `<label class="${f.full?'full':''}" id="mfL_${f.k}"><span>${esc(f.l)}${f.req?' *':''}</span>${inp}</label>`
    +(f.aviso?`<div class="fhint full" id="mfH_${f.k}" style="display:none"></div>`:'')}).join('');
  openModal(`<h3>${esc(title)}</h3><form id="mf" class="fgrid" onsubmit="return false">${h}</form><div class="mact">${extra||''}<button class="btn ghost" onclick="closeModal()">Cancelar</button><button class="btn" id="mfSave">Salvar</button></div>`);
@@ -675,7 +725,9 @@ function formModal(title,fields,data,onSave,extra){data=data||{};
    Object.keys(v).forEach(k=>{const el=$('#mf [name="'+k+'"]');if(!el)return;
     const novo=(v[k]===null||v[k]===undefined)?'':v[k];
     if(novo===''){if(el.dataset.auto==='1'){el.value='';delete el.dataset.auto}return}
-    if(!String(el.value).trim()||el.dataset.auto==='1'){el.value=novo;el.dataset.auto='1'}})})}
+    if(!String(el.value).trim()||el.dataset.auto==='1'){
+     el.value=(el.dataset.mask==='dinheiro'?mascDinheiro(novo):(el.dataset.mask?aplicarMasc(el.dataset.mask,novo):novo));
+     el.dataset.auto='1'}})})}
  window.mfPintarGlobal=mfPintar;
  /* CEP: ao completar oito d\u00edgitos, busca o endere\u00e7o e preenche os campos que
     estiverem vazios. O que a pessoa digitou na m\u00e3o nunca e sobrescrito. */
@@ -701,7 +753,7 @@ function formModal(title,fields,data,onSave,extra){data=data||{};
   F.addEventListener('click',e=>{const b=e.target.closest('[data-mfset]');if(!b)return;e.preventDefault();mfSet(b.getAttribute('data-mfset'),b.getAttribute('data-mfval'))});
   mfPintar()}
  $('#mfSave').onclick=()=>{const fd=new FormData($('#mf'));const o={};fields.forEach(f=>{let v=fd.get(f.k);
-   if(f.type==='number')v=parseNum(v);
+   if(f.type==='number'||f.type==='dinheiro')v=parseNum(v);
    /* lista de n\u00fameros devolve n\u00famero, e n\u00e3o texto, para a conta n\u00e3o sair errada */
    else if(f.type==='select'&&(f.opts||[]).every(x=>typeof x==='number'))v=Number(v)||0;
    o[f.k]=typeof v==='string'?v.trim():v});
@@ -813,7 +865,7 @@ function vVouchers(){const L=[...S.vouchers].sort((a,b)=>(b.criado||'').localeCo
   ${F.map(v=>{const s=vchSit(v);return `<tr><td><b style="font-family:monospace;font-size:14px">${esc(v.codigo)}</b></td><td>${esc(v.tipo)}</td><td>${esc(v.beneficiario||'-')}</td><td class="num">${v.tipo==='Cupom de desconto'?(v.percentual?v.percentual+'%':money(v.valor)):money(v.valor)}</td><td class="num">${v.tipo==='Cupom de desconto'?((v.usos||[]).length+' usos'):money(vchSaldo(v))}</td><td>${v.validade?br(v.validade):'Sem validade'}</td><td><span class="badge ${s==='Ativo'?'b-ok':s==='Vencido'?'b-bad':'b-mut'}">${s}</span></td>
    <td style="white-space:nowrap">${s==='Ativo'?`<button class="btn green sm" onclick="vchUsar('${v.id}')">Usar</button> `:''}<button class="lnk" onclick="vchVer('${v.id}')">Detalhes</button> <button class="lnk" onclick="vchImprimir('${v.id}')">Imprimir</button></td></tr>`}).join('')||'<tr><td colspan="8" class="empty">Nenhum voucher emitido.</td></tr>'}</tbody></table></div></div></div>`}
 function vchForm(tipo){const cupom=tipo==='Cupom de desconto';
- formModal(cupom?'Novo cupom de desconto':'Novo vale-presente',[{k:'codigo',l:'Código'},{k:'validade',l:'Validade',type:'date'},...(cupom?[{k:'percentual',l:'Desconto em % (deixe vazio para usar valor)',type:'number'},{k:'valor',l:'Ou desconto em reais',type:'number'},{k:'limiteUsos',l:'Limite de usos (vazio = sem limite)',type:'number'},{k:'beneficiario',l:'Para quem (opcional)',list:'dlPac'}]:[{k:'valor',l:'Valor do vale',type:'number',req:true},{k:'comprador',l:'Quem comprou',list:'dlPac'},{k:'beneficiario',l:'Quem vai usar',list:'dlPac'},{k:'forma',l:'Forma de pagamento da venda',type:'select',opts:['','Pix','Dinheiro','Cartão de crédito','Cartão de débito','Transferência','Cortesia, sem venda']}]),{k:'obs',l:'Observação',type:'textarea',rows:2,full:true}],
+ formModal(cupom?'Novo cupom de desconto':'Novo vale-presente',[{k:'codigo',l:'Código'},{k:'validade',l:'Validade',type:'date'},...(cupom?[{k:'percentual',l:'Desconto em % (deixe vazio para usar valor)',type:'number'},{k:'valor',l:'Ou desconto em reais',type:'dinheiro'},{k:'limiteUsos',l:'Limite de usos (vazio = sem limite)',type:'number'},{k:'beneficiario',l:'Para quem (opcional)',list:'dlPac'}]:[{k:'valor',l:'Valor do vale',type:'dinheiro',req:true},{k:'comprador',l:'Quem comprou',list:'dlPac'},{k:'beneficiario',l:'Quem vai usar',list:'dlPac'},{k:'forma',l:'Forma de pagamento da venda',type:'select',opts:['','Pix','Dinheiro','Cartão de crédito','Cartão de débito','Transferência','Cortesia, sem venda']}]),{k:'obs',l:'Observação',type:'textarea',rows:2,full:true}],
   {codigo:vchCodigo(),validade:addDays(todayISO(),180)},o=>{const codigo=String(o.codigo||'').trim().toUpperCase()||vchCodigo();if(S.vouchers.some(v=>v.codigo===codigo)){toast('Já existe um voucher com esse código');return false}
    if(cupom&&!(+o.percentual>0)&&!(+o.valor>0)){toast('Informe o desconto em % ou em reais');return false}
    const v={id:uid(),tipo,codigo,validade:o.validade||'',valor:+o.valor||0,percentual:+o.percentual||0,limiteUsos:+o.limiteUsos||0,comprador:o.comprador||'',beneficiario:o.beneficiario||'',obs:o.obs||'',criado:new Date().toISOString(),usos:[]};S.vouchers.push(v);
@@ -1075,7 +1127,7 @@ function pOrc(p){const L=S.tratamentos.filter(t=>t.pacienteId===p.id).sort((a,b)
  return `<div class="phead"><h2 style="margin:0">Orçamentos</h2><button class="btn" onclick="tratForm(null,'${p.id}')">${ico('plus',16)} Novo Orçamento</button></div><div class="card"><div class="tw"><table class="tbl"><thead><tr><th>Status</th><th>Data</th><th>Tratamento</th><th>Responsável</th><th class="num">Valor</th><th></th></tr></thead><tbody>
  ${L.map(t=>`<tr><td>${badgeFor(stTrat(t))}</td><td>${br(t.data)}</td><td>${esc(t.procedimento)}${t.sessoesTotal>1?` <small style="color:var(--mut)">(${t.sessoesTotal} sessões)</small>`:''}</td><td>${esc(t.profissional||'-')}</td><td class="num"><b style="color:var(--ok)">${money(t.valor)}</b></td><td class="num"><button class="lnk" onclick="tratForm('${t.id}')">Editar</button></td></tr>`).join('')||'<tr><td colspan="6" class="empty">Nenhum orçamento.</td></tr>'}</tbody></table></div></div>`}
 function tratForm(id,pacienteId){const t=id?S.tratamentos.find(x=>x.id===id):null;const pid=t?t.pacienteId:pacienteId;
- formModal(t?'Editar orçamento':'Novo orçamento',[{k:'procedimento',l:'Procedimento ou tratamento',req:true,full:true,list:'dlServ'},{k:'data',l:'Data',type:'date'},{k:'valor',l:'Valor total (vazio usa a tabela de preços)',type:'number'},{k:'sessoesTotal',l:'Sessões contratadas',type:'number'},{k:'sessoesRealizadas',l:'Sessões realizadas',type:'number'},{k:'profissional',l:'Responsável',list:'dlProf'},{k:'statusOrig',l:'Status',type:'select',opts:['Aprovado','Em aberto','Em follow up','Reprovado','Concluído']}],
+ formModal(t?'Editar orçamento':'Novo orçamento',[{k:'procedimento',l:'Procedimento ou tratamento',req:true,full:true,list:'dlServ'},{k:'data',l:'Data',type:'date'},{k:'valor',l:'Valor total (vazio usa a tabela de preços)',type:'dinheiro'},{k:'sessoesTotal',l:'Sessões contratadas',type:'number'},{k:'sessoesRealizadas',l:'Sessões realizadas',type:'number'},{k:'profissional',l:'Responsável',list:'dlProf'},{k:'statusOrig',l:'Status',type:'select',opts:['Aprovado','Em aberto','Em follow up','Reprovado','Concluído']}],
   t?{...t,statusOrig:stTrat(t)}:{data:todayISO(),sessoesTotal:1,sessoesRealizadas:0,statusOrig:'Em aberto'},
   o=>{o.profissional=ensureProf(o.profissional);const sv=servPorNome(o.procedimento);const fd=new FormData($('#mf'));if(sv&&!t){if(String(fd.get('sessoesTotal'))==='1'&&Number(sv.sessoesPacote)>1)o.sessoesTotal=Number(sv.sessoesPacote);if(String(fd.get('valor')).trim()===''||!(o.valor>0))o.valor=Number(sv.precoPacote)>0?Number(sv.precoPacote):r2((Number(sv.preco)||0)*(Number(o.sessoesTotal)||1))}o.sessoesTotal=o.sessoesTotal||1;if(t)Object.assign(t,o);else S.tratamentos.push({id:uid(),pacienteId:pid,origem:'manual',...o})},
   t?`<button class="btn danger" style="margin-right:auto" onclick="delRec('tratamentos','${t.id}')">Excluir</button>`:'')}
@@ -1104,10 +1156,10 @@ function pFin(p){const todos=S.lancamentos.filter(l=>l.pacienteId===p.id);
  <div style="display:flex;gap:20px;flex-wrap:wrap;justify-content:flex-end;padding:12px 16px;font-weight:600"><span>Total ${money(bruto)}</span><span style="color:var(--ok)">Pago ${money(pago)}</span><span style="color:${tot>0.004?'var(--bad)':'var(--mut)'}">Saldo a pagar ${money(tot)}</span>${cred>0.004?`<span style="color:var(--info)">Crédito ${money(cred)}</span>`:''}</div></div>`}
 function lancForm(id,pacienteId){const l=id?S.lancamentos.find(x=>x.id===id):null;const pid=l?l.pacienteId:pacienteId;const temPg=!!(l&&pagosL(l).length);
  formModal(l?'Editar lançamento':'Novo lançamento',[{k:'descricao',l:'Descrição',req:true,full:true},{k:'valor',l:temPg?'Valor total (já pago '+money(pagoEf(l))+')':'Valor',type:'number',req:true},{k:'vencimento',l:'Vencimento',type:'date',req:true},{k:'parcela',l:'Parcela (ex.: 1/3)'},
-  ...(temPg?[]:[{k:'forma',l:'Forma de pagamento',type:'select',opts:['',...FORMAS_PAG]},{k:'valorPago',l:'Valor já pago',type:'number'},{k:'pagamento',l:'Data do pagamento',type:'date'},{k:'statusOrig',l:'Situação',type:'select',opts:['','Pago','Em aberto','Cancelado']}])],
+  ...(temPg?[]:[{k:'forma',l:'Forma de pagamento',type:'select',opts:['',...FORMAS_PAG]},{k:'valorPago',l:'Valor já pago',type:'dinheiro'},{k:'pagamento',l:'Data do pagamento',type:'date'},{k:'statusOrig',l:'Situação',type:'select',opts:['','Pago','Em aberto','Cancelado']}])],
   l||{vencimento:todayISO(),descricao:'Lançamento de Tratamento'},o=>{if(o.statusOrig==='Em aberto'&&!o.valorPago)o.pagamento='';if(l){Object.assign(l,o);if(temPg)lancRecalc(l)}else{const nl={id:uid(),pacienteId:pid,origem:'manual',criadoEm:todayISO(),criadoHora:new Date().toTimeString().slice(0,5),...o};lancMigra(nl);parcMigra(nl);lancRecalc(nl);S.lancamentos.push(nl)}},
   l?`<button class="btn danger" style="margin-right:auto" onclick="delRec('lancamentos','${l.id}')">Excluir</button>`:'')}
-function mensalidadesForm(pid){formModal('Adicionar mensalidades',[{k:'descricao',l:'Descrição',req:true,full:true},{k:'total',l:'Valor total',type:'number',req:true},{k:'qtd',l:'Quantidade de parcelas',type:'number',req:true},{k:'per',l:'A cada quanto tempo',type:'select',opts:['Mensal','Quinzenal','Semanal']},{k:'primeiro',l:'Primeiro vencimento',type:'date',req:true},{k:'forma',l:'Forma de pagamento prevista',type:'select',opts:['',...FORMAS_PAG]},{k:'modo',l:'Como lançar',type:'select',opts:['Um lançamento com parcelas','Um lançamento para cada parcela']}],
+function mensalidadesForm(pid){formModal('Adicionar mensalidades',[{k:'descricao',l:'Descrição',req:true,full:true},{k:'total',l:'Valor total',type:'dinheiro',req:true},{k:'qtd',l:'Quantidade de parcelas',type:'number',req:true},{k:'per',l:'A cada quanto tempo',type:'select',opts:['Mensal','Quinzenal','Semanal']},{k:'primeiro',l:'Primeiro vencimento',type:'date',req:true},{k:'forma',l:'Forma de pagamento prevista',type:'select',opts:['',...FORMAS_PAG]},{k:'modo',l:'Como lançar',type:'select',opts:['Um lançamento com parcelas','Um lançamento para cada parcela']}],
  {descricao:'Lançamento de Tratamento',qtd:4,per:'Mensal',primeiro:todayISO(),forma:'Dinheiro'},
  o=>{const n=Math.max(1,Math.round(parseNum(o.qtd)));const total=r2(parseNum(o.total));const base=Math.floor(total/n*100)/100;
   if(o.modo==='Um lançamento para cada parcela'){for(let i=0;i<n;i++){const v=i===n-1?r2(total-base*(n-1)):base;
@@ -1181,12 +1233,12 @@ function parcelasLanc(id){const l=S.lancamentos.find(x=>x.id===id);if(!l)return;
  <div class="mact"><button class="btn ghost" style="margin-right:auto" onclick="closeModal();render()">Fechar</button><button class="btn soft" onclick="parcDividir('${l.id}')">Dividir o saldo em parcelas</button><button class="btn soft" onclick="parcAdd('${l.id}')">Adicionar parcela</button>${emAberto>0.004?`<button class="btn green" onclick="baixarLanc('${l.id}')">Receber a próxima</button>`:''}</div>`,'1120px')}
 function parcAtualiza(l){lancRecalc(l);save();const id=l.id,volta=UI.parcAberta===id;setTimeout(()=>{if(volta)parcelasLanc(id);else render()},0)}
 function parcAdd(id){const l=S.lancamentos.find(x=>x.id===id);if(!l)return;
- formModal('Adicionar parcela',[{k:'venc',l:'Vencimento',type:'date',req:true},{k:'valor',l:'Valor',type:'number',req:true},{k:'forma',l:'Forma de pagamento prevista',type:'select',opts:['',...FORMAS_PAG]},{k:'obs',l:'Observação',full:true}],
+ formModal('Adicionar parcela',[{k:'venc',l:'Vencimento',type:'date',req:true},{k:'valor',l:'Valor',type:'dinheiro',req:true},{k:'forma',l:'Forma de pagamento prevista',type:'select',opts:['',...FORMAS_PAG]},{k:'obs',l:'Observação',full:true}],
   {venc:todayISO(),valor:r2(saldoL(l))||''},o=>{const P=parcL(l);P.push({id:uid(),venc:o.venc,data:'',receb:'',valor:r2(parseNum(o.valor)),forma:o.forma||'',obs:o.obs||'',recibo:null,status:'Em aberto'});
    const soma=r2(P.filter(x=>x.status!=='Cancelado').reduce((a,x)=>a+(Number(x.valor)||0),0));if(soma>(l.valor||0)+0.004)l.valor=soma;
    parcAtualiza(l);toast('Parcela adicionada');return 'skip'})}
 function parcEditar(id,pid){const l=S.lancamentos.find(x=>x.id===id);if(!l)return;const x=parcL(l).find(y=>y.id===pid);if(!x)return;
- formModal('Editar parcela',[{k:'venc',l:'Vencimento',type:'date',req:true},{k:'valor',l:'Valor',type:'number',req:true},{k:'forma',l:'Forma de pagamento',type:'select',opts:['',...FORMAS_PAG]},...(parcRec(x)?[{k:'data',l:'Data do pagamento',type:'date'}]:[]),{k:'obs',l:'Observação',full:true}],
+ formModal('Editar parcela',[{k:'venc',l:'Vencimento',type:'date',req:true},{k:'valor',l:'Valor',type:'dinheiro',req:true},{k:'forma',l:'Forma de pagamento',type:'select',opts:['',...FORMAS_PAG]},...(parcRec(x)?[{k:'data',l:'Data do pagamento',type:'date'}]:[]),{k:'obs',l:'Observação',full:true}],
   {venc:x.venc,valor:x.valor,forma:x.forma||'',data:x.data||'',obs:x.obs||''},o=>{x.venc=o.venc;x.valor=r2(parseNum(o.valor));x.forma=o.forma;x.obs=o.obs;if(parcRec(x)&&o.data){x.data=o.data;x.receb=o.data}
    if(x.taxa)x.taxaValor=r2(x.valor*parseNum(x.taxa)/100),x.liquido=r2(x.valor-x.taxaValor);
    parcAtualiza(l);toast('Parcela alterada');return 'skip'})}
@@ -1227,7 +1279,7 @@ function reciboForm(id,pid){const l=S.lancamentos.find(x=>x.id===id);if(!l)retur
  formModal('Recibo',[{k:'numero',l:'Número'},{k:'clinica',l:'Clínica',req:true},{k:'cnpj',l:'CNPJ ou CPF da clínica'},{k:'profissional',l:'Profissional'},{k:'profCpf',l:'CPF do profissional'},
   {k:'endereco',l:'Endereço',full:true},{k:'telefone',l:'Telefone'},{k:'telefone2',l:'Telefone adicional'},
   {k:'beneficiario',l:'Beneficiário',req:true},{k:'benCpf',l:'CPF do beneficiário'},{k:'responsavel',l:'Responsável'},{k:'respCpf',l:'CPF do responsável'},
-  {k:'data',l:'Data',type:'date',req:true},{k:'valor',l:'Valor',type:'number',req:true},{k:'referente',l:'Referente a',full:true},{k:'obs',l:'Observações',full:true}],
+  {k:'data',l:'Data',type:'date',req:true},{k:'valor',l:'Valor',type:'dinheiro',req:true},{k:'referente',l:'Referente a',full:true},{k:'obs',l:'Observações',full:true}],
   {numero:r.numero||'',clinica:r.clinica||c.clinica||'',cnpj:r.cnpj||c.cnpj||'',profissional:r.profissional||prof,profCpf:r.profCpf||c.profCpf||'',endereco:r.endereco||c.endereco||'',telefone:r.telefone||c.telefone||'',telefone2:r.telefone2||'',
    beneficiario:r.beneficiario||(p?p.nome:''),benCpf:r.benCpf||(p?p.cpf||'':''),responsavel:r.responsavel||'',respCpf:r.respCpf||'',data:r.data||x.data||todayISO(),valor:r.valor!=null?r.valor:x.valor,referente:r.referente||l.descricao||'Tratamento',obs:r.obs||''},
   o=>{if(!o.numero)o.numero=reciboNum();o.valor=r2(parseNum(o.valor));x.recibo=o;
@@ -1258,7 +1310,7 @@ function valorExtenso(v){v=r2(Math.abs(Number(v)||0));const i=Math.floor(v),c=Ma
 /* ====== Crédito do paciente ====== */
 function creditoDe(p){return r2(Number(p.credito)||0)}
 function creditoForm(pid){const p=pac(pid);if(!p)return;
- formModal('Crédito do paciente',[{k:'valor',l:'Valor a adicionar ao crédito',type:'number',req:true},{k:'obs',l:'Observação',full:true}],{valor:''},
+ formModal('Crédito do paciente',[{k:'valor',l:'Valor a adicionar ao crédito',type:'dinheiro',req:true},{k:'obs',l:'Observação',full:true}],{valor:''},
   o=>{p.credito=r2(creditoDe(p)+parseNum(o.valor));p.creditoObs=o.obs||'';toast('Crédito do paciente: '+money(p.credito))})}
 function creditoUsar(lid){const l=S.lancamentos.find(x=>x.id===lid);if(!l)return;const p=pac(l.pacienteId);if(!p)return;
  const cred=creditoDe(p),saldo=r2(saldoL(l));
@@ -1482,10 +1534,10 @@ function fPagar(){const L=S.contasPagar.filter(c=>{const st=stConta(c);const pag
  <div style="display:flex;gap:18px;flex-wrap:wrap;font-size:13px;color:var(--mut)"><b style="color:var(--ink)">TOTAIS</b>${tipos.map(t=>`<span>${t} <b style="color:var(--ink)">${money(tot(t))}</b></span>`).join('')}<span>Valor total <b style="color:var(--bad)">${money(L.reduce((a,c)=>a+c.valor,0))}</b></span></div></div>
  <div class="card" style="padding:0"><div class="tw"><table class="tbl"><thead><tr><th>Status</th><th>Vencimento</th><th>Descrição</th><th>Fornecedor</th><th>Categoria</th><th>Tipo</th><th class="num">Valor</th><th></th></tr></thead><tbody>
  ${L.map(c=>{const st=stConta(c);return `<tr><td>${badgeFor(st==='A vencer'?'Em aberto':st)}</td><td>${br(c.vencimento)}</td><td>${esc(c.descricao)}</td><td>${esc(c.fornecedor||'-')}</td><td>${esc(c.categoria||'-')}</td><td>${esc(c.tipo||'Outros')}</td><td class="num">${money(c.valor)}</td><td class="num" style="white-space:nowrap">${st!=='Pago'?`<button class="btn green sm" onclick="baixarConta('${c.id}')">Pagar</button> `:''}<button class="lnk" onclick="cpForm('${c.id}')">Editar</button></td></tr>`}).join('')||'<tr><td colspan="8" class="empty">Nenhuma conta no período.</td></tr>'}</tbody></table></div></div>`}
-function cpForm(id){const c=id?S.contasPagar.find(x=>x.id===id):null;formModal(c?'Editar conta a pagar':'Nova conta a pagar',[{k:'descricao',l:'Descrição',req:true,full:true},{k:'fornecedor',l:'Fornecedor'},{k:'categoria',l:'Categoria (ex.: materiais, aluguel)'},{k:'tipo',l:'Tipo',type:'select',opts:['Custo Fixo','Custo Variável','Investimento','Outros']},{k:'valor',l:'Valor',type:'number',req:true},{k:'vencimento',l:'Vencimento',type:'date',req:true},{k:'pagamento',l:'Data do pagamento (se já paga)',type:'date'},{k:'repetir',l:'Repetir por quantos meses (conta recorrente)',type:'number'}],c||{vencimento:todayISO(),tipo:'Custo Fixo',repetir:1},
+function cpForm(id){const c=id?S.contasPagar.find(x=>x.id===id):null;formModal(c?'Editar conta a pagar':'Nova conta a pagar',[{k:'descricao',l:'Descrição',req:true,full:true},{k:'fornecedor',l:'Fornecedor'},{k:'categoria',l:'Categoria (ex.: materiais, aluguel)'},{k:'tipo',l:'Tipo',type:'select',opts:['Custo Fixo','Custo Variável','Investimento','Outros']},{k:'valor',l:'Valor',type:'dinheiro',req:true},{k:'vencimento',l:'Vencimento',type:'date',req:true},{k:'pagamento',l:'Data do pagamento (se já paga)',type:'date'},{k:'repetir',l:'Repetir por quantos meses (conta recorrente)',type:'number'}],c||{vencimento:todayISO(),tipo:'Custo Fixo',repetir:1},
  o=>{const rep=Math.max(1,Math.round(o.repetir||1));delete o.repetir;o.statusOrig=o.pagamento?'Pago':'';if(c){Object.assign(c,o);return}const d0=new Date(o.vencimento+'T00:00');for(let i=0;i<rep;i++){const d=new Date(d0);d.setMonth(d0.getMonth()+i);S.contasPagar.push({id:uid(),origem:'manual',...o,vencimento:iso(d),pagamento:i===0?o.pagamento:'',statusOrig:i===0?o.statusOrig:'',valorPago:0})}},
  c?`<button class="btn danger" style="margin-right:auto" onclick="delRec('contasPagar','${c.id}')">Excluir</button>`:'')}
-function baixarConta(id){const c=S.contasPagar.find(x=>x.id===id);formModal('Registrar pagamento da conta',[{k:'pagamento',l:'Data do pagamento',type:'date',req:true},{k:'valorPago',l:'Valor pago',type:'number',req:true}],{pagamento:todayISO(),valorPago:c.valor},o=>{Object.assign(c,o);c.statusOrig='Pago'})}
+function baixarConta(id){const c=S.contasPagar.find(x=>x.id===id);formModal('Registrar pagamento da conta',[{k:'pagamento',l:'Data do pagamento',type:'date',req:true},{k:'valorPago',l:'Valor pago',type:'dinheiro',req:true}],{pagamento:todayISO(),valorPago:c.valor},o=>{Object.assign(c,o);c.statusOrig='Pago'})}
 function fReceber(){const t=todayISO();let L=S.lancamentos.filter(l=>{const st=stLanc(l);if(st==='Cancelado')return false;if(UI.crStatus==='aberto')return (saldoL(l)>0||st==='Previsto')&&(inRange(l.vencimento)||(st!=='Previsto'&&l.vencimento&&l.vencimento<UI.de));if(UI.crStatus==='pago')return st==='Pago'&&inRange(l.pagamento||l.vencimento);return inRange(l.vencimento)}).sort((a,b)=>(a.vencimento||'').localeCompare(b.vencimento||''));
  const tot=L.reduce((a,l)=>a+(UI.crStatus==='pago'?pagoEf(l):saldoL(l)),0);
  return `<div class="phead"><div><h1>Contas a Receber</h1><p class="sub">Parcelas dos pacientes. Em aberto inclui as vencidas antes do período.</p></div><button class="btn ghost" onclick="exportRows('contas_a_receber',['Status','Vencimento','Paciente','Descrição','Parcela','Forma','Valor','Saldo'],window._cr)">${ico('down',16)} Exportar Excel</button></div>
@@ -1908,7 +1960,7 @@ function vServicos(){const L=[...S.servicos].sort((a,b)=>(a.categoria||'').local
  ${L.map(s=>`<tr><td><b>${esc(s.nome)}</b></td><td>${esc(s.categoria||'-')}</td><td class="num">${s.duracao||30} min</td><td class="num">${semCobranca(s.nome)?'<span class="badge b-ok">Sem cobrança</span>':money(s.preco)}${Number(s.precoPacote)>0?`<br><small style="color:var(--mut)">Pacote: ${money(s.precoPacote)}${s.sessoesPacote?' ('+s.sessoesPacote+' sessões)':''}</small>`:''}</td><td class="num">${s.comissao!==''&&s.comissao!=null?s.comissao+'%':'Padrão do profissional'}</td><td>${badgeFor(s.ativo===false?'Inativo':'Ativo')}</td><td><button class="lnk" onclick="servForm('${s.id}')">Editar</button></td></tr>`).join('')||'<tr><td colspan="7" class="mini-empty">Nenhum serviço cadastrado ainda.</td></tr>'}</table></div></div>`}
 function servForm(id){const s=id?S.servicos.find(x=>x.id===id):null;
  formModal(s?'Editar serviço':'Novo serviço',[{k:'nome',l:'Nome do serviço',req:true,full:true,list:'dlServNomes',
-   aviso:o=>avisoServico(o.nome,s?s.id:''),auto:o=>(s?{}:servAuto(o.nome))},{k:'categoria',l:'Categoria (ex.: Cabelo, Unhas, Corporal, Facial)'},{k:'duracao',l:'Duração (minutos)',type:'select',opts:[15,30,45,60,75,90,120,150,180]},{k:'preco',l:'Preço por sessão ou atendimento',type:'number'},{k:'precoPacote',l:'Valor do pacote completo (se for plano)',type:'number'},{k:'sessoesPacote',l:'Sessões do pacote',type:'number'},{k:'comissao',l:'Comissão deste serviço (%). Vazio usa a do profissional',type:'number'},{k:'ativo',l:'Status',type:'select',opts:['Ativo','Inativo']}],
+   aviso:o=>avisoServico(o.nome,s?s.id:''),auto:o=>(s?{}:servAuto(o.nome))},{k:'categoria',l:'Categoria (ex.: Cabelo, Unhas, Corporal, Facial)'},{k:'duracao',l:'Duração (minutos)',type:'select',opts:[15,30,45,60,75,90,120,150,180]},{k:'preco',l:'Preço por sessão ou atendimento',type:'dinheiro'},{k:'precoPacote',l:'Valor do pacote completo (se for plano)',type:'dinheiro'},{k:'sessoesPacote',l:'Sessões do pacote',type:'number'},{k:'comissao',l:'Comissão deste serviço (%). Vazio usa a do profissional',type:'number'},{k:'ativo',l:'Status',type:'select',opts:['Ativo','Inativo']}],
   s?{...s,ativo:s.ativo===false?'Inativo':'Ativo'}:{duracao:30,ativo:'Ativo'},
   o=>{o.ativo=o.ativo!=='Inativo';const fd=new FormData($('#mf'));if(String(fd.get('comissao')).trim()==='')o.comissao='';if(s)Object.assign(s,o);else S.servicos.push({id:uid(),...o})},
   s?`<button class="btn danger" style="margin-right:auto" onclick="delRec('servicos','${s.id}')">Excluir</button>`:'')}
@@ -1960,7 +2012,7 @@ function prodForm(id){const p=id?prod(id):null;const un=p?(p.unidade||'un'):'un'
    aviso:o=>avisoProduto(o.nome,p?p.id:''),auto:o=>(p?{}:prodAuto(o.nome))},{k:'marca',l:'Marca'},{k:'codigo',l:'Código ou código de barras'},
   {k:'tipo',l:'Para que serve este produto',type:'select',opts:['Revenda','Uso interno','Revenda e uso interno']},{k:'unidade',l:'Unidade (un, ml, g, frasco)'},
   ...(p?[]:[{k:'qtdInicial',l:'Quantas unidades você tem agora na prateleira',type:'number'}]),
-  {k:'custo',l:'Quanto você paga por unidade',type:'number'},{k:'preco',l:'Por quanto você vende',type:'number'},
+  {k:'custo',l:'Quanto você paga por unidade',type:'dinheiro'},{k:'preco',l:'Por quanto você vende',type:'dinheiro'},
   {k:'minimo',l:'Avisar quando sobrar quantas unidades',type:'number'},{k:'comissao',l:'Comissão na venda (%). Vazio usa a do profissional',type:'number'},
   {k:'dono',l:'Estoque de quem',type:'select',opts:['Da clínica (compartilhado)',...S.profissionais.filter(x=>x.ativo!==false).map(x=>x.nome)]},{k:'ativo',l:'Status',type:'select',opts:['Ativo','Inativo']}];
  formModal(p?'Editar produto':'Novo produto',campos,
@@ -1981,7 +2033,7 @@ function ajustarSaldo(pid){const p=prod(pid);if(!p)return;const atual=saldoProd(
   `<span class="sub" style="margin-right:auto">O sistema diz que há <b>${atual} ${esc(un)}</b></span>`)}
 function movForm(pid,tipo,clienteId){const p=prod(pid);const lt=lotesProd(pid);const ent=tipo==='Entrada';
  const fields=[{k:'data',l:'Data',type:'date',req:true},{k:'qtd',l:'Quantas unidades '+(ent?'chegaram':'saíram')+' ('+(p.unidade||'un')+')',type:'number',req:true}];
- if(ent)fields.push({k:'custo',l:'Quanto você pagou por unidade',type:'number'},{k:'lote',l:'Lote'},{k:'validade',l:'Validade',type:'date'},{k:'obs',l:'Nota fiscal ou fornecedor',full:true});
+ if(ent)fields.push({k:'custo',l:'Quanto você pagou por unidade',type:'dinheiro'},{k:'lote',l:'Lote'},{k:'validade',l:'Validade',type:'date'},{k:'obs',l:'Nota fiscal ou fornecedor',full:true});
  else fields.push({k:'motivo',l:'O que aconteceu',type:'select',opts:['Usei no atendimento','Perdi, quebrou ou venceu','Dei de brinde ou usei em mim','Acerto de contagem']},{k:'lote',l:'Lote',type:lt.length?'select':'text',opts:['',...lt.map(l=>l.lote)]},{k:'cliente',l:SEG().pessoa+' (opcional)',list:'dlPac'},{k:'obs',l:'Observação',full:true});
  formModal((ent?'Entrou produto: ':'Saiu produto: ')+p.nome+(p.dono?' · estoque de '+p.dono:''),fields,{data:todayISO(),custo:p.custo,cliente:clienteId&&pac(clienteId)?pac(clienteId).nome:''},o=>{const q=Math.abs(parseNum(o.qtd));if(!q){toast('Informe a quantidade');return false}
   let cid='';if(!ent&&o.cliente){const c=findPatient(o.cliente);if(c)cid=c.id}
@@ -2041,7 +2093,7 @@ function cmdDelItem(cid,iid){const c=S.comandas.find(x=>x.id===cid);c.itens=c.it
 function cmdSet(cid,k,v){const c=S.comandas.find(x=>x.id===cid);c[k]=Math.max(0,parseNum(v));save();cmdTotais(c)}
 function cmdAddServ(cid){const c=S.comandas.find(x=>x.id===cid);const s=S.servicos.find(x=>x.id===$('#cmdServ').value);if(!s){toast('Escolha o serviço');return}c.itens.push({id:uid(),tipo:'servico',refId:s.id,descricao:s.nome,profissional:$('#cmdProf').value,qtd:1,valor:precoTabela(s.nome)||0});cmdSalvar(c)}
 function cmdAddProd(cid){const c=S.comandas.find(x=>x.id===cid);const p=prod($('#cmdProd').value);if(!p){toast('Escolha o produto');return}c.itens.push({id:uid(),tipo:'produto',refId:p.id,descricao:p.nome,profissional:$('#cmdVend').value,qtd:1,valor:Number(p.preco)||0});cmdSalvar(c)}
-function cmdAvulso(cid){const c=S.comandas.find(x=>x.id===cid);formModal('Item avulso',[{k:'descricao',l:'Descrição',req:true,full:true},{k:'tipo',l:'Tipo',type:'select',opts:['Serviço','Produto']},{k:'profissional',l:'Profissional',list:'dlProf'},{k:'valor',l:'Valor',type:'number',req:true}],{tipo:'Serviço'},o=>{c.itens.push({id:uid(),tipo:o.tipo==='Produto'?'produto':'servico',refId:'',descricao:o.descricao,profissional:ensureProf(o.profissional),qtd:1,valor:parseNum(o.valor)});setTimeout(()=>comandaModal(c.id),30)})}
+function cmdAvulso(cid){const c=S.comandas.find(x=>x.id===cid);formModal('Item avulso',[{k:'descricao',l:'Descrição',req:true,full:true},{k:'tipo',l:'Tipo',type:'select',opts:['Serviço','Produto']},{k:'profissional',l:'Profissional',list:'dlProf'},{k:'valor',l:'Valor',type:'dinheiro',req:true}],{tipo:'Serviço'},o=>{c.itens.push({id:uid(),tipo:o.tipo==='Produto'?'produto':'servico',refId:'',descricao:o.descricao,profissional:ensureProf(o.profissional),qtd:1,valor:parseNum(o.valor)});setTimeout(()=>comandaModal(c.id),30)})}
 function cmdAddPag(cid){const c=S.comandas.find(x=>x.id===cid);const forma=$('#cmdForma').value,valor=r2(parseNum($('#cmdValor').value)),parcelas=Math.max(1,parseInt($('#cmdParc').value,10)||1);if(!valor){toast('Informe o valor');return}
  if(forma==='Cashback'){const s=cashbackSaldo(c.clienteId)-(c.pagamentos||[]).filter(p=>p.forma==='Cashback').reduce((a,p)=>a+p.valor,0);if(valor>s+0.004){toast('O cashback disponível é '+money(s));return}}
  (c.pagamentos||(c.pagamentos=[])).push({forma,valor,parcelas:forma==='Cartão de crédito'?parcelas:1});cmdSalvar(c)}
@@ -2078,7 +2130,7 @@ function vCaixa(){const d=UI.caixaData||todayISO();const cx=caixaDo(d);const esp
  <div class="card"><h2>Movimentos da gaveta</h2>${movs.map(m=>`<div class="row"><span>${esc(m.hora)} · ${esc(m.tipo)} · ${esc(m.motivo||'')}</span><span style="color:${m.tipo==='Sangria'?'var(--bad)':'var(--ok)'}">${money(m.valor)}</span></div>`).join('')||'<div class="mini-empty">Nenhuma sangria ou suprimento.</div>'}</div>
  ${cx.obs?`<div class="card"><h2>Observação do fechamento</h2><p>${esc(cx.obs)}</p></div>`:''}`}</div>`}
 function caixaAbrir(d){formModal('Abrir caixa de '+br(d),[{k:'abertura',l:'Dinheiro na gaveta (troco inicial)',type:'number',req:false}],{abertura:0},o=>{S.caixas.push({id:'cx_'+d,data:d,abertura:parseNum(o.abertura),abertoPor:nomeUsuario(),abertoEm:new Date().toISOString(),movs:[],fechado:false,contado:{}})})}
-function caixaMov(d,tipo){formModal(tipo,[{k:'valor',l:'Valor',type:'number',req:true},{k:'motivo',l:'Motivo',full:true}],{},o=>{const cx=caixaDo(d);(cx.movs||(cx.movs=[])).push({tipo,valor:parseNum(o.valor),motivo:o.motivo,hora:new Date().toTimeString().slice(0,5),por:nomeUsuario()})})}
+function caixaMov(d,tipo){formModal(tipo,[{k:'valor',l:'Valor',type:'dinheiro',req:true},{k:'motivo',l:'Motivo',full:true}],{},o=>{const cx=caixaDo(d);(cx.movs||(cx.movs=[])).push({tipo,valor:parseNum(o.valor),motivo:o.motivo,hora:new Date().toTimeString().slice(0,5),por:nomeUsuario()})})}
 function caixaFechar(d){const cx=caixaDo(d);const ct={};document.querySelectorAll('.cxc').forEach(i=>{if(i.value!=='')ct[i.dataset.f]=parseNum(i.value)});cx.contado=ct;
  formModal('Fechar caixa',[{k:'obs',l:'Observação (diferenças, quem conferiu)',type:'textarea',full:true}],{obs:cx.obs||''},o=>{cx.obs=o.obs;cx.fechado=true;cx.fechadoEm=new Date().toISOString();cx.fechadoPor=nomeUsuario()})}
 function caixaReabrir(d){confirmModal('Reabrir o caixa deste dia?',()=>{const cx=caixaDo(d);cx.fechado=false},'Reabrir')}
@@ -2107,7 +2159,7 @@ function atendModal(){const A=UI.atend;const profs=S.profissionais.filter(x=>x.a
  openModal(`<h3>Novo atendimento</h3><p class="sub" style="margin-bottom:10px">Junte vários serviços e profissionais no mesmo atendimento. O horário de cada serviço começa quando o anterior termina, mas pode ser mudado para fazer ao mesmo tempo.</p>
  <div class="fgrid"><label class="full"><span>${esc(SEG().pessoa)} *</span><input id="atCli" list="dlPac" value="${esc(A.cliente)}" autocomplete="off" oninput="UI.atend.cliente=this.value;atendAviso()" onchange="UI.atend.cliente=this.value;atendAviso()"></label>
  <div class="fhint full" id="atHint" style="display:none"></div>
- <label class="full" id="atCelL" style="display:none"><span>Celular / WhatsApp *</span><input id="atCel" value="${esc(A.celular||'')}" autocomplete="off" oninput="UI.atend.celular=this.value"></label><label><span>Data *</span><input id="atData" type="date" value="${A.data}" onchange="UI.atend.data=this.value"></label></div>
+ <label class="full" id="atCelL" style="display:none"><span>Celular / WhatsApp *</span><input id="atCel" data-mask="fone" value="${esc(mascFone(A.celular||''))}" autocomplete="off" oninput="UI.atend.celular=this.value"></label><label><span>Data *</span><input id="atData" type="date" value="${A.data}" onchange="UI.atend.data=this.value"></label></div>
  <table class="tbl mini"><tr><th>Serviço</th><th>Profissional</th><th>Hora</th><th>Duração</th><th></th></tr>${A.itens.map((it,k)=>`<tr><td><input list="dlServ" value="${esc(it.servico)}" onchange="atendSet(${k},'servico',this.value)" style="width:100%"></td><td><select onchange="atendSet(${k},'profissional',this.value)">${optList(['',...profs],it.profissional)}</select></td><td><input type="time" value="${it.hora}" onchange="atendSet(${k},'hora',this.value)"></td><td><input id="atDur${k}" type="number" value="${it.duracao}" style="width:70px" onchange="atendSet(${k},'duracao',this.value)"> min</td><td>${A.itens.length>1?`<button class="lnk" style="color:var(--bad)" onclick="UI.atend.itens.splice(${k},1);atendModal()">Tirar</button>`:''}</td></tr>`).join('')}</table>
  <div class="mact" style="justify-content:flex-start"><button class="btn ghost sm" onclick="atendMais()">${ico('plus',14)} Mais um serviço</button></div>
  <div class="mact"><button class="btn ghost" onclick="closeModal()">Cancelar</button><button class="btn" onclick="atendSalvar()">Agendar</button></div>`,true);setTimeout(atendAviso,0)}
@@ -2142,7 +2194,7 @@ function pComandasC(p){const L=S.comandas.filter(c=>c.clienteId===p.id).sort((a,
  return `<div class="card"><div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px"><h2 style="margin:0">Comandas</h2><span>${Number(S.config.cashback)>0?`Cashback disponível: <b>${money(cb)}</b> `:''}<button class="btn sm" onclick="const c=abrirComandaPara('${p.id}');comandaModal(c.id)">${ico('plus',14)} Abrir comanda</button></span></div>
  <table class="tbl mini"><tr><th>Comanda</th><th>Data</th><th>Itens</th><th class="num">Total</th><th>Situação</th></tr>${L.map(c=>`<tr style="cursor:pointer" onclick="comandaModal('${c.id}')"><td>Nº ${c.numero}</td><td>${br(c.data)}</td><td>${c.itens.map(i=>esc(i.descricao)).join(', ')}</td><td class="num">${money(comandaLiquido(c))}</td><td>${badgeFor(c.status==='Fechada'?'Pago':c.status==='Cancelada'?'Cancelado':'Em aberto')}</td></tr>`).join('')||'<tr><td colspan="5" class="mini-empty">Nenhuma comanda.</td></tr>'}</table></div>`}
 function pacoteForm(pid){const servs=S.servicos.filter(s=>s.ativo!==false);
- formModal(ehSeg('beleza')?'Novo pacote ou assinatura':'Novo pacote de sessões',[{k:'procedimento',l:'Serviço ou nome do pacote (ex.: 10 sessões de drenagem)',req:true,full:true,list:'dlServ'},{k:'sessoesTotal',l:'Quantidade de sessões',type:'number',req:true},{k:'valor',l:'Valor do pacote',type:'number'},{k:'data',l:'Data da venda',type:'date'},{k:'validade',l:'Validade do pacote',type:'date'},{k:'profissional',l:'Profissional responsável',list:'dlProf'},{k:'cobrar',l:'Lançar a cobrança no financeiro',type:'select',opts:['Sim, em aberto','Sim, já pago','Não']}],
+ formModal(ehSeg('beleza')?'Novo pacote ou assinatura':'Novo pacote de sessões',[{k:'procedimento',l:'Serviço ou nome do pacote (ex.: 10 sessões de drenagem)',req:true,full:true,list:'dlServ'},{k:'sessoesTotal',l:'Quantidade de sessões',type:'number',req:true},{k:'valor',l:'Valor do pacote',type:'dinheiro'},{k:'data',l:'Data da venda',type:'date'},{k:'validade',l:'Validade do pacote',type:'date'},{k:'profissional',l:'Profissional responsável',list:'dlProf'},{k:'cobrar',l:'Lançar a cobrança no financeiro',type:'select',opts:['Sim, em aberto','Sim, já pago','Não']}],
   {sessoesTotal:ehSeg('beleza')?4:10,data:todayISO(),cobrar:'Sim, em aberto'},o=>{const id=uid();S.tratamentos.push({id,pacienteId:pid,procedimento:o.procedimento,data:o.data,validade:o.validade,sessoesTotal:Math.max(1,parseInt(o.sessoesTotal,10)||1),sessoesRealizadas:0,valor:parseNum(o.valor),statusOrig:'Aprovado',profissional:ensureProf(o.profissional),origem:'manual',pacote:true});
    if(o.cobrar!=='Não'&&parseNum(o.valor)>0){const pago=o.cobrar==='Sim, já pago';S.lancamentos.push({id:uid(),pacienteId:pid,descricao:'Pacote: '+o.procedimento,valor:parseNum(o.valor),valorPago:pago?parseNum(o.valor):0,vencimento:o.data,pagamento:pago?o.data:'',forma:'',parcela:'',statusOrig:pago?'Pago':'Em aberto',profissional:'',origem:'manual'})}})}
 function pAvaliacao(p){const L=S.avaliacoes.filter(a=>a.pacienteId===p.id).sort((a,b)=>(a.data||'').localeCompare(b.data||''));const M=[['peso','Peso (kg)'],['cintura','Cintura (cm)'],['abdomen','Abdômen (cm)'],['quadril','Quadril (cm)'],['braco','Braço (cm)'],['coxa','Coxa (cm)']];
@@ -2340,7 +2392,7 @@ function fichaForm(pid,id){const f=id?S.fichas.find(x=>x.id===id):null;const u=S
 function vProtocolos(){return `<div class="page"><div class="phead"><div><h1>Protocolos</h1><p class="sub">Sequências prontas de sessões, com intervalo entre elas. Ao aplicar em um cliente, o sistema cria o pacote e já agenda todas as sessões.</p></div><button class="btn" onclick="protForm()">${ico('plus',16)} Novo protocolo</button></div>
  <div class="grid g3">${S.protocolos.map(p=>`<div class="card"><div style="display:flex;justify-content:space-between"><b>${esc(p.nome)}</b><button class="lnk" onclick="protForm('${p.id}')">Editar</button></div><p class="sub" style="margin:8px 0">${p.sessoes} sessões, uma a cada ${p.intervalo} dias${p.duracao?', '+p.duracao+' minutos cada':''}${p.valor?' · '+money(p.valor):''}</p>${p.descricao?`<p style="font-size:13px">${esc(p.descricao)}</p>`:''}<button class="btn sm" onclick="protAplicar('${p.id}')">Aplicar a um cliente</button></div>`).join('')||'<div class="card empty">Nenhum protocolo. Exemplo: Drenagem pós-operatória, 10 sessões, a cada 2 dias.</div>'}</div></div>`}
 function protForm(id){const p=id?S.protocolos.find(x=>x.id===id):null;
- formModal(p?'Editar protocolo':'Novo protocolo',[{k:'nome',l:'Nome do protocolo',req:true,full:true},{k:'servico',l:'Serviço de cada sessão',list:'dlServ'},{k:'sessoes',l:'Número de sessões',type:'number',req:true},{k:'intervalo',l:'Intervalo entre as sessões (dias)',type:'number',req:true},{k:'duracao',l:'Duração de cada sessão (minutos)',type:'number'},{k:'valor',l:'Valor do protocolo completo',type:'number'},{k:'descricao',l:'Descrição e cuidados',type:'textarea',full:true,rows:3}],
+ formModal(p?'Editar protocolo':'Novo protocolo',[{k:'nome',l:'Nome do protocolo',req:true,full:true},{k:'servico',l:'Serviço de cada sessão',list:'dlServ'},{k:'sessoes',l:'Número de sessões',type:'number',req:true},{k:'intervalo',l:'Intervalo entre as sessões (dias)',type:'number',req:true},{k:'duracao',l:'Duração de cada sessão (minutos)',type:'number'},{k:'valor',l:'Valor do protocolo completo',type:'dinheiro'},{k:'descricao',l:'Descrição e cuidados',type:'textarea',full:true,rows:3}],
   p||{sessoes:10,intervalo:7,duracao:60},o=>{o.sessoes=Math.max(1,parseInt(o.sessoes,10)||1);o.intervalo=Math.max(1,parseInt(o.intervalo,10)||1);if(p)Object.assign(p,o);else S.protocolos.push({id:uid(),...o})},
   p?`<button class="btn danger" style="margin-right:auto" onclick="delRec('protocolos','${p.id}')">Excluir</button>`:'')}
 function protAplicar(id){const pr=S.protocolos.find(x=>x.id===id);
@@ -2364,7 +2416,7 @@ function equipForm(id){const e=id?S.equipamentos.find(x=>x.id===id):null;
   e||{intervaloManut:180},o=>{if(e)Object.assign(e,o);else S.equipamentos.push({id:uid(),usos:[],manutencoes:[],...o})},
   e?`<button class="btn danger" style="margin-right:auto" onclick="delRec('equipamentos','${e.id}')">Excluir</button>`:'')}
 function equipUso(id){const e=S.equipamentos.find(x=>x.id===id);formModal('Uso: '+e.nome,[{k:'data',l:'Data',type:'date',req:true},{k:'horas',l:'Horas usadas (ex.: 0,5)',type:'number',req:true},{k:'obs',l:'Cliente ou observação',full:true}],{data:todayISO()},o=>{(e.usos||(e.usos=[])).push({data:o.data,horas:parseNum(o.horas),obs:o.obs})})}
-function equipManut(id){const e=S.equipamentos.find(x=>x.id===id);formModal('Manutenção: '+e.nome,[{k:'data',l:'Data',type:'date',req:true},{k:'tipo',l:'Tipo',type:'select',opts:['Preventiva','Corretiva','Troca de ponteira ou lâmpada']},{k:'custo',l:'Custo',type:'number'},{k:'obs',l:'Observação',full:true}],{data:todayISO(),tipo:'Preventiva'},o=>{(e.manutencoes||(e.manutencoes=[])).push(o);e.ultimaManut=o.data;if(/ponteira|lâmpada/i.test(o.tipo)){e.horasIniciais=0;e.usos=[]}
+function equipManut(id){const e=S.equipamentos.find(x=>x.id===id);formModal('Manutenção: '+e.nome,[{k:'data',l:'Data',type:'date',req:true},{k:'tipo',l:'Tipo',type:'select',opts:['Preventiva','Corretiva','Troca de ponteira ou lâmpada']},{k:'custo',l:'Custo',type:'dinheiro'},{k:'obs',l:'Observação',full:true}],{data:todayISO(),tipo:'Preventiva'},o=>{(e.manutencoes||(e.manutencoes=[])).push(o);e.ultimaManut=o.data;if(/ponteira|lâmpada/i.test(o.tipo)){e.horasIniciais=0;e.usos=[]}
   if(parseNum(o.custo)>0)S.contasPagar.push({id:uid(),descricao:'Manutenção: '+e.nome,fornecedor:'',categoria:'Manutenção de equipamentos',tipo:'Custo Variável',vencimento:o.data,valor:parseNum(o.custo),valorPago:parseNum(o.custo),pagamento:o.data,statusOrig:'Pago',obs:o.obs||'',origem:'manual'})})}
 
 /* Avisos da tela inicial para os novos módulos */
@@ -2442,7 +2494,7 @@ function agNovo(a,s){if(s==='Desmarcado'||s==='Faltou')return false;const k=a.da
  const hist=c=>S[c].some(x=>x.pacienteId===a.pacienteId&&((x.data||x.vencimento||x.pagamento||'')<a.data)&&(x.data||x.vencimento||x.pagamento));
  return !hist('evolucoes')&&!hist('tratamentos')&&!S.lancamentos.some(l=>l.pacienteId===a.pacienteId&&l.pagamento&&l.pagamento<a.data)}
 /* ============ Atualização: aviso com botão Atualizar agora ============ */
-const VERSAO_APP='1.9.21';const URL_VERSAO_JSON='https://raw.githubusercontent.com/TheIgor12/blacksolutions/main/versao.json';
+const VERSAO_APP='1.9.22';const URL_VERSAO_JSON='https://raw.githubusercontent.com/TheIgor12/blacksolutions/main/versao.json';
 const numV=v=>String(v||'0').split(/\D+/).filter(Boolean).map(Number);
 function versaoMaior(a,b){const x=numV(a),y=numV(b);for(let i=0;i<Math.max(x.length,y.length);i++){const d=(x[i]||0)-(y[i]||0);if(d)return d>0}return false}
 const ATU={nova:null,timer:null};
