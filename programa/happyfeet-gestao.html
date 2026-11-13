@@ -284,12 +284,26 @@ function mascCPF(v){const d=soDig(v).slice(0,11);
  if(d.length<=3)return d;if(d.length<=6)return d.slice(0,3)+'.'+d.slice(3);
  if(d.length<=9)return d.slice(0,3)+'.'+d.slice(3,6)+'.'+d.slice(6);
  return d.slice(0,3)+'.'+d.slice(3,6)+'.'+d.slice(6,9)+'-'+d.slice(9)}
-function mascCNPJ(v){const d=soDig(v).slice(0,14);
+function soAlnum(v){return String(v==null?'':v).replace(/[^0-9A-Za-z]/g,'').toUpperCase()}
+/* O CNPJ alfanumerico passou a ser emitido pela Receita Federal em 31 de julho
+   de 2026. As doze primeiras posicoes aceitam letra, as duas ultimas continuam
+   sendo algarismos. Por isso aqui nao da para usar soDig. */
+function mascCNPJ(v){let d=soAlnum(v).slice(0,14);
+ d=d.slice(0,12)+d.slice(12).replace(/[^0-9]/g,'');
  if(d.length<=2)return d;if(d.length<=5)return d.slice(0,2)+'.'+d.slice(2);
  if(d.length<=8)return d.slice(0,2)+'.'+d.slice(2,5)+'.'+d.slice(5);
  if(d.length<=12)return d.slice(0,2)+'.'+d.slice(2,5)+'.'+d.slice(5,8)+'/'+d.slice(8);
  return d.slice(0,2)+'.'+d.slice(2,5)+'.'+d.slice(5,8)+'/'+d.slice(8,12)+'-'+d.slice(12)}
-function mascDoc(v){return soDig(v).length>11?mascCNPJ(v):mascCPF(v)}
+function mascDoc(v){return soAlnum(v).length>11?mascCNPJ(v):mascCPF(v)}
+/* Digitos verificadores. Conferem se o numero e bem formado, e nada alem
+   disso. Nao provam que o documento existe nem de quem e. */
+function cpfValido(v){const d=soDig(v);if(d.length!==11||/^(.)\1{10}$/.test(d))return false;
+ let s=0;for(let i=0;i<9;i++)s+=(+d[i])*(10-i);let r=11-(s%11);if(r>=10)r=0;if(r!==+d[9])return false;
+ s=0;for(let i=0;i<10;i++)s+=(+d[i])*(11-i);r=11-(s%11);if(r>=10)r=0;return r===+d[10]}
+function cnpjValido(v){const d=soAlnum(v);if(d.length!==14||!/^[0-9]{2}$/.test(d.slice(12))||/^(.)\1{13}$/.test(d))return false;
+ const calc=(n,pes)=>{let s=0;for(let i=0;i<n;i++)s+=(d.charCodeAt(i)-48)*pes[i];const r=s%11;return r<2?0:11-r};
+ if(calc(12,[5,4,3,2,9,8,7,6,5,4,3,2])!==+d[12])return false;
+ return calc(13,[6,5,4,3,2,9,8,7,6,5,4,3,2])===+d[13]}
 function mascDinheiro(v){const n=parseNum(v);return v===''||v==null?'':n.toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2})}
 function aplicarMasc(tipo,v){return {fone:mascFone,cep:mascCEP,cpf:mascCPF,cnpj:mascCNPJ,doc:mascDoc,dinheiro:mascDinheiro}[tipo]?{fone:mascFone,cep:mascCEP,cpf:mascCPF,cnpj:mascCNPJ,doc:mascDoc,dinheiro:mascDinheiro}[tipo](v):String(v==null?'':v)}
 /* Descobre o formato pelo nome do campo, para valer em toda tela sem precisar
@@ -2514,7 +2528,7 @@ function agNovo(a,s){if(s==='Desmarcado'||s==='Faltou')return false;const k=a.da
  const hist=c=>S[c].some(x=>x.pacienteId===a.pacienteId&&((x.data||x.vencimento||x.pagamento||'')<a.data)&&(x.data||x.vencimento||x.pagamento));
  return !hist('evolucoes')&&!hist('tratamentos')&&!S.lancamentos.some(l=>l.pacienteId===a.pacienteId&&l.pagamento&&l.pagamento<a.data)}
 /* ============ Atualização: aviso com botão Atualizar agora ============ */
-const VERSAO_APP='1.9.24';const URL_VERSAO_JSON='https://raw.githubusercontent.com/TheIgor12/blacksolutions/main/versao.json';
+const VERSAO_APP='1.9.25';const URL_VERSAO_JSON='https://raw.githubusercontent.com/TheIgor12/blacksolutions/main/versao.json';
 const numV=v=>String(v||'0').split(/\D+/).filter(Boolean).map(Number);
 function versaoMaior(a,b){const x=numV(a),y=numV(b);for(let i=0;i<Math.max(x.length,y.length);i++){const d=(x[i]||0)-(y[i]||0);if(d)return d>0}return false}
 const ATU={nova:null,timer:null};
@@ -2827,6 +2841,10 @@ function vAuth(){const A=UI.auth;const box=c=>`<div class="auth"><div class="aut
   const escolhido=seg?(pl==='agenda'?pa:pc):null;
   return box(`<h2>Cadastre o seu negócio</h2><p class="sub" style="margin-bottom:6px">Você será o administrador. Depois poderá convidar a sua equipe.</p>
   <form onsubmit="authClinica();return false"><label>Nome do negócio<input id="au_clin" value="${esc2(A.clin||'')}" oninput="UI.auth.clin=this.value"></label>
+  <label>CPF do responsável<input id="au_cpf" data-mask="cpf" inputmode="numeric" value="${esc2(A.cpf||'')}" oninput="UI.auth.cpf=this.value" placeholder="000.000.000-00"></label>
+  <div class="ast">O negócio tem CNPJ?</div>
+  <div style="display:flex;gap:8px;flex-wrap:wrap"><button type="button" class="btn ${A.temCnpj===1?'':'ghost'} sm" onclick="authCnpjTem(1)">Sim, tenho CNPJ ou MEI</button><button type="button" class="btn ${A.temCnpj===0?'':'ghost'} sm" onclick="authCnpjTem(0)">Não, sou autônomo</button></div>
+  ${A.temCnpj===1?`<label style="margin-top:10px">CNPJ<input id="au_cnpj" data-mask="cnpj" value="${esc2(A.cnpj||'')}" oninput="UI.auth.cnpj=this.value" onblur="authCnpjBuscar()" placeholder="00.000.000/0000-00"></label>${A.cnpjMsg?`<div class="aresumo" style="${A.cnpjOk?'':'background:var(--warn-soft)'}">${esc2(A.cnpjMsg)}</div>`:'<div class="sub" style="margin:-6px 0 10px">Saia do campo e o sistema consulta a Receita Federal sozinho.</div>'}`:''}
   <div class="ast">O que você faz?</div>
   ${op(1,'beleza','agenda','Atendo com hora marcada','Manicure, pedicure, barbearia, cílios, sobrancelha, massagem, depilação e afins.',pl==='completo'&&A.op===1?vC:vA)}
   ${op(2,'beleza','completo','Salão de beleza','Vários profissionais, comanda, caixa do dia, comissões e estoque.',pl==='agenda'&&A.op===2?vA:vC)}
@@ -2857,13 +2875,46 @@ async function authEsqueci(){const email=val('#au_email');if(!email){authMsg('In
 async function authNovaSenha(){const cod=val('#au_cod').replace(/\s/g,''),senha=$('#au_senha').value,s2=$('#au_senha2').value;if(senha.length<8){authMsg('A senha precisa ter pelo menos 8 caracteres.');return}if(senha!==s2){authMsg('As senhas não conferem.');return}
  authMsg('Salvando...',true);const r=await NV.sb.auth.verifyOtp({email:UI.auth.email,token:cod,type:'recovery'});if(r.error){authMsg(traduz(r.error));return}
  const u=await NV.sb.auth.updateUser({password:senha});if(u.error){authMsg(traduz(u.error));return}await entrar(r.data.session)}
-function authEsc(op,seg,plano){UI.auth.clin=val('#au_clin')||UI.auth.clin||'';UI.auth.op=op;UI.auth.seg=seg;UI.auth.plano=plano;render()}
-function authPlano(plano){UI.auth.clin=val('#au_clin')||UI.auth.clin||'';if(!UI.auth.seg){UI.auth.seg='beleza';UI.auth.op=plano==='agenda'?1:2}UI.auth.plano=plano;render()}
+function authGuardar(){UI.auth.clin=val('#au_clin')||UI.auth.clin||'';const c=$('#au_cpf');if(c)UI.auth.cpf=c.value;const j=$('#au_cnpj');if(j)UI.auth.cnpj=j.value}
+function authEsc(op,seg,plano){authGuardar();UI.auth.op=op;UI.auth.seg=seg;UI.auth.plano=plano;render()}
+function authPlano(plano){authGuardar();if(!UI.auth.seg){UI.auth.seg='beleza';UI.auth.op=plano==='agenda'?1:2}UI.auth.plano=plano;render()}
+function authCnpjTem(v){authGuardar();UI.auth.temCnpj=v;if(v===0){UI.auth.cnpj='';UI.auth.cnpjMsg='';UI.auth.cnpjOk=false;UI.auth.cnpjDados=null}render()}
+/* Consulta o CNPJ nos dados abertos do cadastro da Receita Federal. A BrasilAPI
+   vem primeiro, e a open.cnpja fica de reserva quando ela nao responde. */
+async function authCnpjBuscar(){authGuardar();const d=soAlnum(UI.auth.cnpj||'');
+ if(!d){UI.auth.cnpjMsg='';UI.auth.cnpjOk=false;render();return}
+ if(!cnpjValido(d)){UI.auth.cnpjOk=false;UI.auth.cnpjDados=null;UI.auth.cnpjMsg='Este CNPJ não é válido. Confira os caracteres.';render();return}
+ UI.auth.cnpjMsg='Consultando a Receita Federal...';UI.auth.cnpjOk=true;render();
+ let r=null,semCadastro=false;
+ try{const x=await fetch('https://brasilapi.com.br/api/cnpj/v1/'+d);
+  if(x.ok){const j=await x.json();
+   r={razao:j.razao_social||j.nome_fantasia||'',fantasia:j.nome_fantasia||'',situacao:j.descricao_situacao_cadastral||'',municipio:j.municipio||'',uf:j.uf||'',fonte:'brasilapi'}}
+  else if(x.status===404)semCadastro=true}catch(e){}
+ if(!r){try{const x=await fetch('https://open.cnpja.com/office/'+d);
+  if(x.ok){const j=await x.json();semCadastro=false;
+   r={razao:(j.company&&j.company.name)||'',fantasia:j.alias||'',situacao:(j.status&&j.status.text)||'',municipio:(j.address&&j.address.city)||'',uf:(j.address&&j.address.state)||'',fonte:'cnpja'}}
+  else if(x.status===404)semCadastro=true}catch(e){}}
+ if(!r&&semCadastro){UI.auth.cnpjOk=false;UI.auth.cnpjDados=null;UI.auth.cnpjMsg='Este CNPJ não foi encontrado no cadastro da Receita Federal.';render();return}
+ if(!r){UI.auth.cnpjOk=true;UI.auth.cnpjDados={cnpj:d,consulta:'falhou'};UI.auth.cnpjMsg='Não foi possível consultar a Receita Federal agora. O cadastro segue assim mesmo.';render();return}
+ if(!r.razao){UI.auth.cnpjOk=false;UI.auth.cnpjDados=null;UI.auth.cnpjMsg='Este CNPJ não foi encontrado no cadastro da Receita Federal.';render();return}
+ const ativa=/ativa/i.test(r.situacao||'');
+ UI.auth.cnpjDados={cnpj:d,razao:r.razao,fantasia:r.fantasia,situacao:r.situacao,municipio:r.municipio,uf:r.uf,fonte:r.fonte,em:new Date().toISOString()};
+ UI.auth.cnpjOk=ativa;
+ UI.auth.cnpjMsg=r.razao+(r.municipio?' · '+r.municipio+(r.uf?'/'+r.uf:''):'')+(r.situacao?' · '+r.situacao:'')+(ativa?'':'. Esta inscrição não está ativa na Receita Federal.');
+ if(!val('#au_clin')&&!UI.auth.clin){UI.auth.clin=r.fantasia||r.razao}
+ render()}
 let CAD=null;
-async function authClinica(){const nome=val('#au_clin');if(!nome){authMsg('Informe o nome do negócio.');return}
+async function authClinica(){authGuardar();const nome=val('#au_clin')||UI.auth.clin||'';if(!nome){authMsg('Informe o nome do negócio.');return}
+ const cpf=soDig(UI.auth.cpf||'');
+ if(!cpf){authMsg('Informe o CPF do responsável.');return}
+ if(!cpfValido(cpf)){authMsg('O CPF informado não é válido. Confira os números.');return}
+ if(UI.auth.temCnpj===undefined){authMsg('Diga se o negócio tem CNPJ.');return}
+ const cnpj=UI.auth.temCnpj===1?soAlnum(UI.auth.cnpj||''):'';
+ if(UI.auth.temCnpj===1){if(!cnpj){authMsg('Informe o CNPJ.');return}if(!cnpjValido(cnpj)){authMsg('O CNPJ informado não é válido. Confira os caracteres.');return}}
  if(!UI.auth.seg){authMsg('Escolha o que você faz.');return}
  authMsg('Criando...',true);CAD={segmento:UI.auth.seg,plano:UI.auth.plano||'completo'};
- const {error}=await NV.sb.rpc('criar_clinica',{p_nome:nome});if(error){CAD=null;authMsg(traduz(error));return}
+ const dd=UI.auth.cnpjDados||null;
+ const {error}=await NV.sb.rpc('criar_clinica',{p_nome:nome,p_cpf:cpf,p_cnpj:cnpj||null,p_razao:(dd&&dd.razao)||null,p_verif:dd});if(error){CAD=null;authMsg(traduz(error));return}
  window.BSC&&BSC.evento('clique','clinica_criada');await entrar(NV.sessao)}
 async function entrar(sessao){NV.sessao=sessao;NV.offline=false;UI.auth={modo:'carregando'};render();
  try{await NV.sb.rpc('aceitar_convites')}catch(e){}

@@ -1,4 +1,4 @@
 {
-  "versao": "1.9.24",
-  "novidades": "Correção importante na Conferência com o Clinicorp: ela não enxergava os saldos que já tinham sido acertados e, ao acertar de novo, poderia cobrar duas vezes do mesmo paciente. O financeiro agora avisa quando a última conferência passou de trinta dias."
+  "versao": "1.9.25",
+  "novidades": "O cadastro do negócio agora pede o CPF do responsável e, para quem tem CNPJ ou MEI, consulta a Receita Federal e preenche a razão social sozinho. Os campos de CNPJ passam a aceitar o formato alfanumérico, emitido desde 31 de julho de 2026."
 }
