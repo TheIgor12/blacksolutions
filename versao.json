@@ -1,4 +1,4 @@
 {
-  "versao": "1.9.26",
-  "novidades": "A agenda passou a marcar atendimentos que se repetem. Escolha toda semana, a cada 15 dias ou uma vez por mês, diga quantos são, e o sistema marca a série inteira de uma vez. Ele pula sozinho as datas em que o horário já está ocupado e avisa quais foram. Dentro do agendamento aparece a posição na série, com o botão de desmarcar daqui em diante."
+  "versao": "1.9.27",
+  "novidades": "A ficha de anamnese foi refeita. Em vez de uma caixa de texto onde era preciso digitar pergunta e resposta linha por linha, agora cada pergunta é um bloco com Sim ou Não, campo para detalhar e marcação de alerta. As respostas de risco, como diabetes e uso de anticoagulante, aparecem em vermelho na ficha do paciente e dentro da janela do agendamento, antes do atendimento começar. A clínica monta o próprio questionário em Configurações."
 }

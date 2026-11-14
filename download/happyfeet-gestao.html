@@ -1148,7 +1148,7 @@ function agForm(id,pacienteId,pre){pre=pre||{};const a=id?S.agendamentos.find(x=
     const r=criarSerie(ag,modoRep,nv);setTimeout(()=>openModal(serieResumo(r,modoRep,pp.nome)),180)}if(ant==='Atendido'&&stAg(ag)!=='Atendido')estornarSessao(ag);if(stAg(ag)!=='Atendido')delete ag.semPacote;sincLancAg(ag);if(stAg(ag)==='Atendido'&&ant!=='Atendido'&&precisaPerguntar(ag)){UI.sessAnt=UI.sessAnt||{};UI.sessAnt[ag.id]=ant;setTimeout(()=>perguntarSessao(ag.id),150)}if(lancAgAtivo()){const pr=precoProc(ag.procedimento);if(pr&&!pacoteAtivo(ag)&&['Agendado','Confirmado'].includes(stAg(ag)))setTimeout(()=>toast('Valor de '+money(pr)+' lançado como previsto no financeiro'),60)}},
   a?`<button class="btn danger" style="margin-right:auto" onclick="delRec('agendamentos','${a.id}')">Excluir</button>`:'')}
 function agModal(id){const a=S.agendamentos.find(x=>x.id===id);if(!a)return;const p=pac(a.pacienteId);const l=p?waLink(p.celular):'';
- openModal(`<h3 style="display:flex;align-items:center;gap:10px">${p?avatarPac(p,'lg'):''}<span>${esc(p?p.nome:'Paciente')}</span></h3>${p?`<div class="row"><span>Anamnese</span><span>${esc(resumoAnamnese(p))}</span></div>`:''}${p&&str(p.cpf)?`<div class="row"><span>CPF</span><span>${esc(fmtCPF(p.cpf))}</span></div>`:''}${p&&enderecoDe(p)?`<div class="row"><span>Endereço</span><span>${esc(enderecoDe(p))}</span></div>`:''}${p&&(str(p.profissao)||str(p.empresa))?`<div class="row"><span>Trabalho</span><span>${esc([str(p.profissao),str(p.empresa)].filter(Boolean).join(' · '))}</span></div>`:''}<div class="row"><span>Data</span><span>${br(a.data)} às ${esc(a.hora)} (${a.duracao||30} min)</span></div><div class="row"><span>Profissional</span><span>${esc(a.profissional||'-')}</span></div><div class="row"><span>Procedimento</span><span>${esc(a.procedimento||'-')}</span></div><div class="row" style="align-items:center"><span><b>Situação</b></span><span><select id="agSt" onchange="setAgSt('${a.id}',this.value)" style="font-size:14px;font-weight:700;padding:8px 12px;border-radius:8px;border:2px solid ${({Agendado:'#e0a800',Confirmado:'#16a34a',Atendido:'#64748b',Faltou:'#dc2626',Desmarcado:'#999'})[stAg(a)]||'#e0a800'};background:${({Agendado:'#fff3bf',Confirmado:'#c9f2d6',Atendido:'#e6ebf3',Faltou:'#fde8e8',Desmarcado:'#eee'})[stAg(a)]||'#fff3bf'}">${['Agendado','Confirmado','Atendido','Faltou','Desmarcado'].map(x=>`<option value="${x}" ${stAg(a)===x?'selected':''}>${x==='Desmarcado'?'Desmarcou':x}</option>`).join('')}</select></span></div>${agNovo(a,stAg(a))?`<div class="row"><span></span><span><i class="evtag" style="font-size:11px;padding:2px 8px">${esc(SEG().pessoa.toUpperCase())} NOVO</i></span></div>`:''}${serieHTML(a)}${agSessHTML(a)}${a.obs?`<div class="row"><span>Observação</span><span>${esc(a.obs)}</span></div>`:''}${agFinHTML(a)}${lancAgAtivo()?agValHTML(a):''}
+ openModal(`<h3 style="display:flex;align-items:center;gap:10px">${p?avatarPac(p,'lg'):''}<span>${esc(p?p.nome:'Paciente')}</span></h3>${p?anaFaixa(p.id,1):''}${p?`<div class="row"><span>Anamnese</span><span>${esc(resumoAnamnese(p))}</span></div>`:''}${p&&str(p.cpf)?`<div class="row"><span>CPF</span><span>${esc(fmtCPF(p.cpf))}</span></div>`:''}${p&&enderecoDe(p)?`<div class="row"><span>Endereço</span><span>${esc(enderecoDe(p))}</span></div>`:''}${p&&(str(p.profissao)||str(p.empresa))?`<div class="row"><span>Trabalho</span><span>${esc([str(p.profissao),str(p.empresa)].filter(Boolean).join(' · '))}</span></div>`:''}<div class="row"><span>Data</span><span>${br(a.data)} às ${esc(a.hora)} (${a.duracao||30} min)</span></div><div class="row"><span>Profissional</span><span>${esc(a.profissional||'-')}</span></div><div class="row"><span>Procedimento</span><span>${esc(a.procedimento||'-')}</span></div><div class="row" style="align-items:center"><span><b>Situação</b></span><span><select id="agSt" onchange="setAgSt('${a.id}',this.value)" style="font-size:14px;font-weight:700;padding:8px 12px;border-radius:8px;border:2px solid ${({Agendado:'#e0a800',Confirmado:'#16a34a',Atendido:'#64748b',Faltou:'#dc2626',Desmarcado:'#999'})[stAg(a)]||'#e0a800'};background:${({Agendado:'#fff3bf',Confirmado:'#c9f2d6',Atendido:'#e6ebf3',Faltou:'#fde8e8',Desmarcado:'#eee'})[stAg(a)]||'#fff3bf'}">${['Agendado','Confirmado','Atendido','Faltou','Desmarcado'].map(x=>`<option value="${x}" ${stAg(a)===x?'selected':''}>${x==='Desmarcado'?'Desmarcou':x}</option>`).join('')}</select></span></div>${agNovo(a,stAg(a))?`<div class="row"><span></span><span><i class="evtag" style="font-size:11px;padding:2px 8px">${esc(SEG().pessoa.toUpperCase())} NOVO</i></span></div>`:''}${serieHTML(a)}${agSessHTML(a)}${a.obs?`<div class="row"><span>Observação</span><span>${esc(a.obs)}</span></div>`:''}${agFinHTML(a)}${lancAgAtivo()?agValHTML(a):''}
  <div class="mact">${l?`<a class="btn green" href="${l}" target="_blank" rel="noopener">WhatsApp</a>`:''}${p?`<button class="btn ghost" onclick="anaRapida('${p.id}')">Anamnese</button><button class="btn ghost" onclick="fotoPerfil('${p.id}')">${p.foto?'Trocar foto':'Inserir foto'}</button><button class="btn ghost" onclick="closeModal();go('paciente','${p.id}')">Abrir ficha</button>`:''}${!ehSeg('podologia')&&!soAgenda()&&p?`<button class="btn soft" onclick="comandaDoAgendamento('${a.id}')">Abrir comanda</button>`:''}<button class="btn" onclick="closeModal();agForm('${a.id}')">Editar</button></div>`)}
 /* Situação financeira do atendimento, igual ao selo Financeiro Ok do Clinicorp */
 function agFinHTML(a){const l=lancDoAg(a);if(!l||!(Number(l.valor)>0))return '';const sd=saldoL(l),pn=parcNum(l);
@@ -1200,7 +1200,7 @@ function pGeral(p){const m=lastApptMap()[p.id]||{};const prox=S.agendamentos.fil
  const info={cadastro:[['Data de nascimento',p.nascimento?`${br(p.nascimento)} <span class="badge b-mut">${age(p.nascimento)} anos</span>`:''],['CPF',esc(fmtCPF(p.cpf))],['RG',esc(p.rg)],['Estado civil',esc(p.estadoCivil)],['Sexo',esc(p.sexo)],['Profissão',esc(p.profissao)],['Empresa',esc(p.empresa)],['Como conheceu?',esc(p.comoConheceu)],['Plano',esc(p.plano)],['Responsável',esc(p.responsavel)]],
   contato:[['Celular',esc(p.celular)],['Telefone',esc(p.telefone)],['E-mail',esc(p.email)]],
   complemento:[['CEP',esc(p.cep)],['Endereço',esc([p.endereco,p.numero].filter(Boolean).join(', '))],['Complemento',esc(p.complemento)],['Bairro',esc(p.bairro)],['Cidade',esc([p.cidade,p.uf].filter(Boolean).join(' / '))],['Observações',esc(p.observacoes)]]}[UI.pacInfo];
- return `<div class="pgrid"><div class="card" style="grid-row:span 2"><h2>Informações do paciente</h2><div class="seg" style="width:100%;margin-bottom:10px">${[['cadastro','Cadastro'],['contato','Contato'],['complemento','Complemento']].map(([k,t])=>`<button style="flex:1" class="${UI.pacInfo===k?'on':''}" onclick="UI.pacInfo='${k}';render()">${t}</button>`).join('')}</div>${rows(info)}</div>
+ return `${anaFaixa(p.id)}<div class="pgrid"><div class="card" style="grid-row:span 2"><h2>Informações do paciente</h2><div class="seg" style="width:100%;margin-bottom:10px">${[['cadastro','Cadastro'],['contato','Contato'],['complemento','Complemento']].map(([k,t])=>`<button style="flex:1" class="${UI.pacInfo===k?'on':''}" onclick="UI.pacInfo='${k}';render()">${t}</button>`).join('')}</div>${rows(info)}</div>
  <div class="card"><h2>Próximo agendamento</h2>${prox?`<div class="row"><span>${br(prox.data)} às ${esc(prox.hora)}</span><span>${esc(prox.procedimento||'')}</span></div><div class="row"><span>Profissional</span><span>${esc(prox.profissional||'-')}</span></div>`:`<div class="mini-empty">Sem próximo agendamento${m.last?`<br>Último atendimento em ${br(m.last)}`:''}</div>`}<button class="btn ghost" style="width:100%;justify-content:center;margin-top:10px" onclick="agForm(null,'${p.id}')">Novo Agendamento</button></div>
  <div class="card"><h2>Anamnese</h2>${ana?`<div class="row"><span>Atual</span><span>Criada em ${br(ana.data)}</span></div><div class="row"><span>Respostas</span><span>${ana.respostas.length}</span></div>`:'<div class="mini-empty">Nenhuma anamnese registrada.</div>'}<button class="btn ghost" style="width:100%;justify-content:center;margin-top:10px" onclick="UI.pacTab='anamnese';render()">Ver anamnese</button></div>
  <div class="card"><h2>Situação financeira</h2><div class="row"><span>Total em aberto</span><span><b style="color:var(--ink)">${money(aberto)}</b></span></div><div class="row"><span>Em atraso</span><span><b style="color:${atraso?'var(--bad)':'var(--ok)'}">${money(atraso)}</b></span></div><button class="btn ghost" style="width:100%;justify-content:center;margin-top:10px" onclick="UI.pacTab='financeiro';render()">Ver financeiro</button></div>
@@ -1489,10 +1489,112 @@ function pEvo(p){const L=S.evolucoes.filter(e=>e.pacienteId===p.id).sort((a,b)=>
 function evoForm(id,pid){const e=id?S.evolucoes.find(x=>x.id===id):null;formModal(e?'Editar evolução':'Nova evolução',[{k:'data',l:'Data',type:'date',req:true},{k:'profissional',l:'Profissional',list:'dlProf'},{k:'texto',l:'Descrição do atendimento',type:'textarea',rows:8,req:true,full:true}],e||{data:todayISO()},o=>{o.profissional=ensureProf(o.profissional);if(e)Object.assign(e,o);else S.evolucoes.push({id:uid(),pacienteId:pid,...o})},e?`<button class="btn danger" style="margin-right:auto" onclick="delRec('evolucoes','${e.id}')">Excluir</button>`:'')}
 function pAna(p){const L=S.anamneses.filter(a=>a.pacienteId===p.id).sort((a,b)=>(b.data||'').localeCompare(a.data||''));
  return `<div class="phead"><h2 style="margin:0">Anamnese</h2><button class="btn" onclick="anaForm('${p.id}')">${ico('plus',16)} Nova Anamnese</button></div>
+ ${anaFaixa(p.id)}
  ${L.map((a,i)=>{const open=UI.anaOpen[a.id]??i===0;return `<div class="card"><div style="display:flex;justify-content:space-between;align-items:center;gap:10px;cursor:pointer" onclick="UI.anaOpen['${a.id}']=${!open};render()"><div><b>${i===0?'Atual':'Anterior'}</b> <span style="color:var(--mut)">Data de criação: ${br(a.data)} ${a.modelo?' . '+esc(a.modelo):''}</span></div><span class="lnk">${open?'Recolher':'Ver respostas'}</span></div>
- ${open?`<div class="qa" style="margin-top:12px">${a.respostas.map(r=>`<div>${esc(r.q)}</div><div>${esc(r.a)}</div>`).join('')}</div>${fotosMini(p.id,'anamnese',a.id)}<div class="mact"><button class="btn ghost sm" style="color:var(--bad)" onclick="delRec('anamneses','${a.id}')">Excluir</button></div>`:''}</div>`}).join('')||'<div class="card mini-empty">Nenhuma anamnese registrada.</div>'}`}
-function anaForm(pid){formModal('Nova anamnese',[{k:'data',l:'Data',type:'date',req:true},{k:'modelo',l:'Modelo'},{k:'texto',l:'Perguntas e respostas (uma por linha, no formato Pergunta: Resposta)',type:'textarea',rows:12,full:true,req:true}],{data:todayISO(),modelo:'Anamnese podológica',texto:'Diabético: \nHipertenso: \nAlergias: \nMedicamentos em uso: \nCirurgias anteriores: \nCirculação (varizes, edema): \nTipo de calçado mais usado: \nQueixa principal: '},
- o=>{const respostas=o.texto.split('\n').map(x=>x.trim()).filter(Boolean).map(x=>{const i=x.indexOf(':');return i>0?{q:x.slice(0,i).trim(),a:x.slice(i+1).trim()}:{q:x,a:''}});S.anamneses.push({id:uid(),pacienteId:pid,data:o.data,modelo:o.modelo,respostas,origem:'manual'})})}
+ ${open?`<div class="qa" style="margin-top:12px">${a.respostas.map(r=>{const al=anaEhAlerta(r);const d=str(r.det2||r.obs);
+  return `<div${al?' style="color:var(--bad);font-weight:700"':''}>${esc(r.q)}</div><div${al?' style="color:var(--bad);font-weight:700"':''}>${esc(r.a)||'<span style="color:var(--mut);font-weight:400">não respondido</span>'}${d?' · '+esc(d):''}</div>`}).join('')}</div>${fotosMini(p.id,'anamnese',a.id)}<div class="mact"><button class="btn ghost sm" style="color:var(--bad)" onclick="delRec('anamneses','${a.id}')">Excluir</button><button class="btn ghost sm" onclick="anaForm('${p.id}','${a.id}')">Editar</button></div>`:''}</div>`}).join('')||'<div class="card mini-empty">Nenhuma anamnese registrada.</div>'}`}
+/* ============ Anamnese estruturada ============
+   Antes isto era uma caixa de texto onde a pessoa digitava "Pergunta: Resposta"
+   linha por linha. Quem preenchia errava a ordem, esquecia pergunta e não
+   tinha como destacar o que é risco. Agora cada pergunta é um bloco com
+   resposta de Sim ou Não, campo para detalhar e marcação de alerta.
+   O alerta é o ponto todo: antes de encostar lâmina em alguém, a pessoa
+   precisa ver na tela que a paciente é diabética e usa anticoagulante. */
+const ANAM_PADRAO=[
+ {q:'Está sob tratamento médico no momento?',tipo:'simnao',alerta:true,det:'Qual tratamento e com qual médico'},
+ {q:'Toma algum medicamento de uso contínuo?',tipo:'simnao',alerta:true,det:'Quais medicamentos'},
+ {q:'Tem alergia a algum medicamento, anestésico, esmalte ou produto?',tipo:'simnao',alerta:true,det:'A que é alérgico'},
+ {q:'É diabético?',tipo:'simnao',alerta:true,det:'Tipo, tempo de diagnóstico e se está controlado'},
+ {q:'Tem pressão alta?',tipo:'simnao',alerta:true,det:'Faz tratamento'},
+ {q:'Usa anticoagulante?',tipo:'simnao',alerta:true,det:'Qual e há quanto tempo'},
+ {q:'Tem problema de circulação, varizes ou inchaço nas pernas?',tipo:'simnao',alerta:true,det:'Descreva'},
+ {q:'Tem marca-passo, prótese ou pino metálico?',tipo:'simnao',alerta:true,det:'Onde'},
+ {q:'Já teve trombose?',tipo:'simnao',alerta:true,det:'Quando'},
+ {q:'Tem alguma doença infectocontagiosa?',tipo:'simnao',alerta:true,det:'Qual'},
+ {q:'Sente dormência, formigamento ou perda de sensibilidade nos pés?',tipo:'simnao',alerta:true,det:'Há quanto tempo'},
+ {q:'Está grávida ou amamentando?',tipo:'simnao',alerta:true,det:'Tempo de gestação'},
+ {q:'Tem epilepsia, convulsão ou desmaios?',tipo:'simnao',alerta:true,det:'Descreva'},
+ {q:'Tem problema de tireoide?',tipo:'simnao',alerta:false,det:'Qual'},
+ {q:'Já fez cirurgia nos pés ou nas pernas?',tipo:'simnao',alerta:false,det:'Qual e quando'},
+ {q:'Tem unha encravada com frequência?',tipo:'simnao',alerta:false,det:'Em quais dedos'},
+ {q:'Tem micose ou alteração na cor das unhas?',tipo:'simnao',alerta:false,det:'Onde'},
+ {q:'Pratica esporte ou atividade física regularmente?',tipo:'simnao',alerta:false,det:'Qual e com que frequência'},
+ {q:'Que tipo de calçado usa no dia a dia?',tipo:'texto',alerta:false,det:''},
+ {q:'Qual a sua queixa principal hoje?',tipo:'texto',alerta:false,det:''}
+];
+function anamModelo(){const m=S.config&&Array.isArray(S.config.anamPerguntas)&&S.config.anamPerguntas.length?S.config.anamPerguntas:ANAM_PADRAO;
+ return m.map(x=>({q:str(x.q),tipo:x.tipo==='texto'?'texto':'simnao',alerta:!!x.alerta,det:str(x.det)}))}
+/* Uma resposta vira alerta quando a pergunta está marcada como alerta e a
+   pessoa respondeu Sim, ou escreveu alguma coisa numa pergunta de texto. */
+function anaEhAlerta(r){if(!r||!r.alerta)return false;
+ return r.tipo==='texto'?!!str(r.a):norm(r.a)==='sim'}
+function anaUltima(pid){return S.anamneses.filter(a=>a.pacienteId===pid).sort((a,b)=>str(b.data).localeCompare(str(a.data)))[0]||null}
+function anaAlertas(pid){const a=anaUltima(pid);if(!a||!Array.isArray(a.respostas))return [];
+ return a.respostas.filter(anaEhAlerta).map(r=>({q:r.q,a:r.a,det:str(r.det2||r.obs)}))}
+/* Faixa vermelha com o que precisa ser visto antes do atendimento */
+function anaFaixa(pid,compacto){const L=anaAlertas(pid);if(!L.length)return '';
+ const txt=L.map(x=>esc(x.q.replace(/\?$/,''))+(x.det?': '+esc(x.det):'')).join(' · ');
+ return `<div class="aviso-ana" style="border:1px solid var(--bad);background:var(--bad-soft,#ff6b7a1a);border-radius:12px;padding:${compacto?'8px 10px':'12px 14px'};margin:${compacto?'8px 0':'0 0 14px'};font-size:${compacto?'12.5px':'14px'}">
+  <b style="color:var(--bad)">Atenção na anamnese:</b> ${txt}</div>`}
+
+/* ---- preenchimento ---- */
+function anaForm(pid,id){const a=id?S.anamneses.find(x=>x.id===id):null;
+ const base=anamModelo();
+ const itens=a&&Array.isArray(a.respostas)&&a.respostas.length
+  ? a.respostas.map(r=>({q:str(r.q),tipo:r.tipo==='texto'?'texto':(r.tipo?'simnao':(/^(sim|nao|não)$/i.test(str(r.a))?'simnao':'texto')),alerta:!!r.alerta,det:str(r.det),a:str(r.a),det2:str(r.det2||r.obs)}))
+  : base.map(x=>({...x,a:'',det2:''}));
+ UI.ana={pid,id:id||'',data:(a&&a.data)||todayISO(),modelo:(a&&a.modelo)||'Anamnese podológica',itens};
+ anaPintar()}
+function anaPintar(){openModal(anaHTML(),'820px')}
+function anaHTML(){const A=UI.ana,p=pac(A.pid);
+ const nAl=A.itens.filter(anaEhAlerta).length;
+ return `<h3 style="margin-top:0">${A.id?'Editar anamnese':'Nova anamnese'}</h3>
+ <p class="sub" style="margin:0 0 12px">${esc(p?p.nome:'')} · responda o que a pessoa contar. Em branco fica em branco, não precisa inventar.</p>
+ <div class="lin" style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+  <label>Data<input type="date" value="${esc(A.data)}" oninput="UI.ana.data=this.value"></label>
+  <label>Modelo<input value="${esc(A.modelo)}" oninput="UI.ana.modelo=this.value"></label></div>
+ ${nAl?`<div style="border:1px solid var(--bad);border-radius:12px;padding:10px 12px;margin:12px 0;font-size:13px"><b style="color:var(--bad)">${nAl} ${nAl===1?'resposta exige atenção':'respostas exigem atenção'}</b> e ${nAl===1?'vai aparecer':'vão aparecer'} em vermelho na ficha e no agendamento.</div>`:''}
+ <div style="max-height:52vh;overflow:auto;margin:12px 0;padding-right:4px">
+ ${A.itens.map((r,i)=>{const al=anaEhAlerta(r);
+  return `<div style="border:1px solid ${al?'var(--bad)':'var(--line,#e6e6ef)'};border-radius:12px;padding:12px;margin-bottom:10px">
+   <div style="display:flex;justify-content:space-between;gap:10px;align-items:flex-start">
+    <b style="font-size:14px">${i+1}. ${esc(r.q)}</b>
+    <button class="lnk" title="Remover esta pergunta" onclick="anaDel(${i})" style="color:var(--mut)">remover</button></div>
+   ${r.tipo==='simnao'?`<div style="display:flex;gap:8px;margin:10px 0">
+     <button class="btn ${norm(r.a)==='sim'?'':'ghost'} sm" onclick="anaResp(${i},'Sim')">Sim</button>
+     <button class="btn ${norm(r.a)==='nao'?'':'ghost'} sm" onclick="anaResp(${i},'Não')">Não</button>
+     ${str(r.a)?`<button class="lnk sm" onclick="anaResp(${i},'')">limpar</button>`:''}</div>`:''}
+   ${r.tipo==='texto'
+     ? `<input style="width:100%;margin-top:8px" placeholder="Resposta" value="${esc(r.a)}" oninput="UI.ana.itens[${i}].a=this.value" onblur="anaPintar()">`
+     : (norm(r.a)==='sim'?`<input style="width:100%" placeholder="${esc(r.det||'Detalhe a resposta')}" value="${esc(r.det2)}" oninput="UI.ana.itens[${i}].det2=this.value">`:'')}
+   ${r.alerta?`<div style="margin-top:8px;font-size:12px;color:${al?'var(--bad)':'var(--mut)'}">${al?'Esta resposta vai virar alerta em vermelho.':'Se a resposta for Sim, vira alerta em vermelho.'}</div>`:''}
+  </div>`}).join('')}
+ </div>
+ <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px">
+  <button class="btn ghost sm" onclick="anaAdd()">${ico('plus',14)} Acrescentar pergunta</button>
+  <button class="btn ghost sm" onclick="anaRestaurar()">Restaurar o modelo</button></div>
+ <div class="mact">${A.id?`<button class="btn danger" style="margin-right:auto" onclick="delRec('anamneses','${A.id}')">Excluir</button>`:''}
+  <button class="btn ghost" onclick="closeModal()">Cancelar</button>
+  <button class="btn" onclick="anaSalvar()">Salvar anamnese</button></div>`}
+function anaResp(i,v){UI.ana.itens[i].a=v;if(norm(v)!=='sim')UI.ana.itens[i].det2='';anaPintar()}
+function anaDel(i){UI.ana.itens.splice(i,1);anaPintar()}
+function anaRestaurar(){UI.ana.itens=anamModelo().map(x=>({...x,a:'',det2:''}));anaPintar();toast('Modelo restaurado. As respostas foram limpas.')}
+function anaAdd(){formModal('Acrescentar pergunta',[
+  {k:'q',l:'Pergunta',req:true,full:true},
+  {k:'tipo',l:'Tipo de resposta',type:'select',opts:['Sim ou Não','Texto livre']},
+  {k:'det',l:'O que pedir quando a resposta for Sim',full:true},
+  {k:'alerta',l:'Virar alerta em vermelho quando for Sim',type:'select',opts:['Não','Sim']}],
+ {tipo:'Sim ou Não',alerta:'Não'},o=>{
+  UI.ana.itens.push({q:str(o.q),tipo:str(o.tipo)==='Texto livre'?'texto':'simnao',alerta:norm(o.alerta)==='sim',det:str(o.det),a:'',det2:''});
+  setTimeout(anaPintar,60)})}
+function anaSalvar(){const A=UI.ana;
+ const respostas=A.itens.map(r=>({q:r.q,a:str(r.a),tipo:r.tipo,alerta:!!r.alerta,det:str(r.det),det2:str(r.det2)}));
+ if(!respostas.some(r=>str(r.a))){toast('Responda ao menos uma pergunta antes de salvar.');return}
+ if(A.id){const a=S.anamneses.find(x=>x.id===A.id);if(a)Object.assign(a,{data:A.data,modelo:A.modelo,respostas})}
+ else S.anamneses.push({id:uid(),pacienteId:A.pid,data:A.data,modelo:A.modelo,respostas,origem:'manual'});
+ const n=respostas.filter(anaEhAlerta).length;
+ closeModal();save();render();
+ toast(n?'Anamnese salva. '+n+(n===1?' alerta marcado.':' alertas marcados.'):'Anamnese salva.')}
 function pAg(p){const L=S.agendamentos.filter(a=>a.pacienteId===p.id).sort((a,b)=>(b.data+b.hora).localeCompare(a.data+a.hora));
  return `<div class="phead"><h2 style="margin:0">Agendamentos</h2><button class="btn" onclick="agForm(null,'${p.id}')">${ico('plus',16)} Novo Agendamento</button></div><div class="card"><div class="tw"><table class="tbl"><thead><tr><th>Data</th><th>Hora</th><th>Profissional</th><th>Procedimento</th><th>Status</th><th></th></tr></thead><tbody>
  ${L.map(a=>`<tr><td>${br(a.data)}</td><td>${esc(a.hora)}</td><td>${esc(a.profissional||'-')}</td><td>${esc(a.procedimento||'-')}</td><td>${badgeFor(stAg(a))}</td><td class="num"><button class="lnk" onclick="agForm('${a.id}')">Editar</button></td></tr>`).join('')||'<tr><td colspan="6" class="empty">Nenhum agendamento.</td></tr>'}</tbody></table></div></div>`}
@@ -2596,7 +2698,7 @@ function agNovo(a,s){if(s==='Desmarcado'||s==='Faltou')return false;const k=a.da
  const hist=c=>S[c].some(x=>x.pacienteId===a.pacienteId&&((x.data||x.vencimento||x.pagamento||'')<a.data)&&(x.data||x.vencimento||x.pagamento));
  return !hist('evolucoes')&&!hist('tratamentos')&&!S.lancamentos.some(l=>l.pacienteId===a.pacienteId&&l.pagamento&&l.pagamento<a.data)}
 /* ============ Atualização: aviso com botão Atualizar agora ============ */
-const VERSAO_APP='1.9.26';const URL_VERSAO_JSON='https://raw.githubusercontent.com/TheIgor12/blacksolutions/main/versao.json';
+const VERSAO_APP='1.9.27';const URL_VERSAO_JSON='https://raw.githubusercontent.com/TheIgor12/blacksolutions/main/versao.json';
 const numV=v=>String(v||'0').split(/\D+/).filter(Boolean).map(Number);
 function versaoMaior(a,b){const x=numV(a),y=numV(b);for(let i=0;i<Math.max(x.length,y.length);i++){const d=(x[i]||0)-(y[i]||0);if(d)return d>0}return false}
 const ATU={nova:null,timer:null};
@@ -2821,12 +2923,43 @@ function cfgCardBackup(){const c=S.config;const tot=S.pacientes.length+S.lancame
  <div class="mact" style="justify-content:flex-start"><button class="btn" onclick="backup()">${ico('down',16)} Baixar backup</button><label class="btn ghost" style="cursor:pointer">${ico('up',16)} Restaurar backup<input type="file" accept=".json" style="display:none" onchange="restore(this)"></label><button class="btn ghost" onclick="exportAll()">${ico('down',16)} Salvar uma cópia dos dados do BlackFlow em Excel</button></div></div>`}
 function cfgCardRisco(){return `${NV.ativa&&NV.sessao&&NV.papel&&NV.papel!=='admin'?'':`<div class="card"><h2>Zona de risco</h2><p class="sub">Apaga todos os dados deste navegador. Faça um backup antes.</p><div class="mact" style="justify-content:flex-start"><button class="btn danger" onclick="wipe()">Apagar todos os dados</button></div></div>`}`}
 const CFG_ABAS=[['clinica','Dados da clínica'],['atendimento','Agenda e mensagens'],['financeiro','Recebimento'],['equipe','Equipe e acesso'],['plano','Plano e assinatura'],['sistema','Backup e dados']];
+/* Editor do modelo de anamnese. Cada clínica monta o questionário dela,
+   e marca quais respostas viram alerta vermelho antes do atendimento. */
+function cfgCardAnamnese(){const M=anamModelo();const proprio=!!(S.config&&Array.isArray(S.config.anamPerguntas)&&S.config.anamPerguntas.length);
+ return `<div class="card"><div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px">
+  <h2 style="margin:0">Ficha de anamnese</h2>
+  <span><button class="btn ghost sm" onclick="cfgAnamAdd()">${ico('plus',14)} Nova pergunta</button>
+  ${proprio?`<button class="btn ghost sm" onclick="cfgAnamPadrao()">Voltar ao modelo pronto</button>`:''}</span></div>
+ <div class="note">Este é o questionário que aparece ao abrir uma anamnese nova. ${proprio?'Você montou o seu próprio.':'Está valendo o modelo pronto de podologia, com '+M.length+' perguntas.'} As perguntas marcadas com alerta aparecem em vermelho na ficha e na janela do agendamento quando a resposta for Sim. Mexer aqui não altera as anamneses já respondidas.</div>
+ <table class="tbl mini" style="margin-top:12px"><tr><th style="width:44px">Nº</th><th>Pergunta</th><th style="width:120px">Resposta</th><th style="width:90px">Alerta</th><th style="width:150px"></th></tr>
+ ${M.map((x,i)=>`<tr><td>${i+1}</td><td>${esc(x.q)}${x.det?`<br><small style="color:var(--mut)">Se Sim, pergunta: ${esc(x.det)}</small>`:''}</td>
+  <td>${x.tipo==='texto'?'Texto livre':'Sim ou Não'}</td>
+  <td>${x.alerta?'<span class="badge b-bad">Sim</span>':'<span class="badge b-mut">Não</span>'}</td>
+  <td><button class="lnk" onclick="cfgAnamEdit(${i})">Editar</button> · <button class="lnk" onclick="cfgAnamMover(${i},-1)">Subir</button> · <button class="lnk" style="color:var(--bad)" onclick="cfgAnamDel(${i})">Excluir</button></td></tr>`).join('')}
+ </table></div>`}
+function cfgAnamGravar(L){S.config.anamPerguntas=L.map(x=>({q:str(x.q),tipo:x.tipo==='texto'?'texto':'simnao',alerta:!!x.alerta,det:str(x.det)}));save();render()}
+function cfgAnamAdd(){cfgAnamForm(null)}
+function cfgAnamEdit(i){cfgAnamForm(i)}
+function cfgAnamForm(i){const M=anamModelo();const x=i==null?null:M[i];
+ formModal(x?'Editar pergunta':'Nova pergunta da anamnese',[
+  {k:'q',l:'Pergunta',req:true,full:true},
+  {k:'tipo',l:'Tipo de resposta',type:'select',opts:['Sim ou Não','Texto livre']},
+  {k:'det',l:'Quando a resposta for Sim, o que pedir',full:true,mostrarSe:o=>str(o.tipo)!=='Texto livre'},
+  {k:'alerta',l:'Virar alerta vermelho quando for Sim',type:'select',opts:['Não','Sim']}],
+  x?{q:x.q,tipo:x.tipo==='texto'?'Texto livre':'Sim ou Não',det:x.det,alerta:x.alerta?'Sim':'Não'}:{tipo:'Sim ou Não',alerta:'Não'},
+  o=>{const novo={q:str(o.q),tipo:str(o.tipo)==='Texto livre'?'texto':'simnao',alerta:norm(o.alerta)==='sim',det:str(o.det)};
+   if(i==null)M.push(novo);else M[i]=novo;cfgAnamGravar(M)})}
+function cfgAnamDel(i){const M=anamModelo();
+ confirmModal('Tirar a pergunta <b>'+esc(M[i].q)+'</b> do modelo? As anamneses já respondidas continuam como estão.',()=>{M.splice(i,1);cfgAnamGravar(M)},'Tirar do modelo')}
+function cfgAnamMover(i,d){const M=anamModelo();const j=i+d;if(j<0||j>=M.length)return;
+ const t=M[i];M[i]=M[j];M[j]=t;cfgAnamGravar(M)}
+function cfgAnamPadrao(){confirmModal('Voltar ao modelo pronto de podologia, com '+ANAM_PADRAO.length+' perguntas? O questionário que você montou será perdido.',()=>{S.config.anamPerguntas=[];cfgAnamGravar(ANAM_PADRAO)},'Voltar ao modelo pronto')}
 function vConfig(){const t=CFG_ABAS.some(a=>a[0]===UI.cfgTab)?UI.cfgTab:'clinica';
  const ajuda={clinica:'Nome, contato, endereço, cores, logotipo e tipo de negócio. Esses dados saem nos recibos e nas mensagens.',atendimento:'Agendamento online, lembretes por WhatsApp, aviso na tela e textos dos termos.',financeiro:'Chave Pix da clínica, taxas e fidelidade. Usado nas cobranças e no recebimento.',equipe:'Quem usa o sistema e o que cada pessoa pode ver.',plano:'Plano contratado e troca de plano.',sistema:'Backup, exportação para Excel e apagar dados.'}[t];
  return `<div class="page" style="max-width:980px"><div class="phead"><div><h1>Configurações</h1><p class="sub">${esc(ajuda)}</p></div></div>
  <div class="filters" style="margin-bottom:14px;flex-wrap:wrap">${CFG_ABAS.map(([k,n])=>`<button class="btn ${t===k?'':'ghost'} sm" onclick="UI.cfgTab='${k}';render()">${esc(n)}</button>`).join(' ')}</div>
  ${t==='clinica'?cfgCardClinica()+cfgCardLogo()+cardSegmentoConfig():''}
- ${t==='atendimento'?cardAgOnline()+cardMsgsConfig()+cfgCardTermos():''}
+ ${t==='atendimento'?cardAgOnline()+cardMsgsConfig()+cfgCardAnamnese()+cfgCardTermos():''}
  ${t==='financeiro'?cardPixConfig():''}
  ${t==='equipe'?cardAcessoConfig():''}
  ${t==='plano'?cardPlanoConfig():''}
