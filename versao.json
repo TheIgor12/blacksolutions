@@ -1,4 +1,4 @@
 {
-  "versao": "1.9.27",
-  "novidades": "A ficha de anamnese foi refeita. Em vez de uma caixa de texto onde era preciso digitar pergunta e resposta linha por linha, agora cada pergunta é um bloco com Sim ou Não, campo para detalhar e marcação de alerta. As respostas de risco, como diabetes e uso de anticoagulante, aparecem em vermelho na ficha do paciente e dentro da janela do agendamento, antes do atendimento começar. A clínica monta o próprio questionário em Configurações."
+  "versao": "1.9.28",
+  "novidades": "O nome do paciente e a foto dentro da janela do agendamento agora são links. Clicando em qualquer um dos dois, a ficha completa do paciente abre direto, com anamnese, fotos, documentos, financeiro e histórico de atendimentos. O botão Abrir ficha continua no mesmo lugar, para quem preferir."
 }
