@@ -1,4 +1,4 @@
 {
-  "versao": "1.9.28",
-  "novidades": "O nome do paciente e a foto dentro da janela do agendamento agora são links. Clicando em qualquer um dos dois, a ficha completa do paciente abre direto, com anamnese, fotos, documentos, financeiro e histórico de atendimentos. O botão Abrir ficha continua no mesmo lugar, para quem preferir."
+  "versao": "1.9.29",
+  "novidades": "Os termos assinados passaram a ter prova técnica. Cada assinatura grava um código de verificação calculado sobre o texto, que denuncia qualquer alteração posterior no documento, mais a data e a hora do servidor, o endereço de rede e o aparelho usado. Quem assina pelo celular agora precisa rolar o termo até o fim e confirmar a data de nascimento ou os quatro últimos números do documento, conferidos com o cadastro da clínica. O termo impresso sai com o comprovante completo no rodapé."
 }

@@ -6,16 +6,21 @@
 <meta name="robots" content="noindex">
 <title>Assinar termo</title>
 <style>
-:root{--acc:#0b6cf2;--ink:#1f2328;--mut:#6b7280;--line:#e5e7eb;--bg:#f2f2f3}
+:root{--acc:#0b6cf2;--ink:#1f2328;--mut:#6b7280;--line:#e5e7eb;--bg:#f2f2f3;--bad:#c0392b}
 *{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font-family:system-ui,-apple-system,"Segoe UI",Roboto,Arial,sans-serif;line-height:1.5}
 .w{max-width:680px;margin:0 auto;padding:20px 16px 40px}.c{background:#fff;border:1px solid var(--line);border-radius:14px;padding:20px;margin-bottom:14px}
-h1{font-size:20px;margin:0 0 4px}.sub{color:var(--mut);font-size:14px;margin:0}.txt{white-space:pre-wrap;font-size:15px;max-height:50vh;overflow:auto;border:1px solid var(--line);border-radius:10px;padding:14px;background:#fafafa}
+h1{font-size:20px;margin:0 0 4px}.sub{color:var(--mut);font-size:14px;margin:0}
+.txt{white-space:pre-wrap;font-size:15px;max-height:50vh;overflow:auto;border:1px solid var(--line);border-radius:10px;padding:14px;background:#fafafa}
+.fim{font-size:13px;margin:8px 0 0;color:var(--mut)}.fim.pronto{color:#15803d;font-weight:600}
 label{display:block;font-size:14px;margin:12px 0 4px}input[type=text]{width:100%;font-size:16px;padding:10px 12px;border:1px solid var(--line);border-radius:10px}
 canvas{width:100%;height:180px;border:1px dashed #9ca3af;border-radius:10px;background:#fff;touch-action:none;display:block}
 .row{display:flex;gap:10px;margin-top:14px;flex-wrap:wrap}button{font:inherit;font-size:16px;font-weight:700;border-radius:10px;padding:12px 18px;border:0;cursor:pointer}
 .ok{background:var(--acc);color:#fff;flex:1}.gh{background:#fff;border:1px solid var(--line);color:var(--ink)}button:disabled{opacity:.5}
 .chk{display:flex;gap:10px;align-items:flex-start;font-size:14px;margin-top:12px}.chk input{width:22px;height:22px;margin-top:1px}
 .msg{text-align:center;padding:30px 10px}.msg b{font-size:20px;display:block;margin-bottom:6px}.rod{text-align:center;color:var(--mut);font-size:12px}
+.erro{color:var(--bad);font-size:14px;margin:10px 0 0;font-weight:600}
+.av{background:#eff6ff;border:1px solid #bfdbfe;border-radius:10px;padding:12px;font-size:13px;color:#1e3a5f;margin-top:14px}
+.hash{font-family:ui-monospace,Menlo,Consolas,monospace;font-size:11px;word-break:break-all;color:var(--mut)}
 </style>
 <script src="/cliques.js" defer></script></head>
 <body>
@@ -24,35 +29,72 @@ canvas{width:100%;height:180px;border:1px dashed #9ca3af;border-radius:10px;back
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
 <script>
 const sb=supabase.createClient('https://blszdbjpxgtloblxlusr.supabase.co','sb_publishable_0Tns_mDN2N1iQmw_sEzFXw_SRMy1uXK',{auth:{persistSession:false}});
-const token=new URLSearchParams(location.search).get('t')||'';const app=document.getElementById('app');
+const token=new URLSearchParams(location.search).get('t')||'';const app=document.getElementById('app');let antigo=false;
 const esc=s=>String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 function aviso(t,s){app.innerHTML=`<div class="c msg"><b>${t}</b><p class="sub">${s||''}</p></div>`}
+const ERROS={nao_encontrado:'Este termo não foi encontrado. Peça um novo link para a clínica.',
+ ja_assinado:'Este termo já foi assinado.',
+ bloqueado:'Este link foi bloqueado por excesso de tentativas de conferência. Peça um novo link para a clínica.',
+ sem_assinatura:'A assinatura ficou em branco. Assine no quadro antes de enviar.',
+ sem_nome:'Escreva o seu nome completo.'};
+
 async function iniciar(){
  if(!/^[0-9a-f-]{36}$/i.test(token)){aviso('Link inválido','Peça um novo link para a clínica.');return}
- const {data,error}=await sb.rpc('termo_publico',{p_token:token});
+ let {data,error}=await sb.rpc('termo_abrir',{p_token:token});
+ if(error&&/termo_abrir|schema cache|function/i.test(error.message||'')){antigo=true;({data,error}=await sb.rpc('termo_publico',{p_token:token}))}
  if(error||!data){aviso('Termo não encontrado','Confira se o link está completo ou peça um novo para a clínica.');return}
- if(data.assinado){aviso('Este termo já foi assinado','Obrigado! Não é preciso fazer mais nada.');return}
+ if(data.assinado){aviso('Este termo já foi assinado','Obrigado. Não é preciso fazer mais nada.');return}
  if(data.expirado){aviso('Este link venceu','Peça um novo link para a clínica.');return}
+ if(data.bloqueado){aviso('Link bloqueado','Houve tentativas demais de conferência. Peça um novo link para a clínica.');return}
+
+ const tipo=String(data.confere_tipo||'');
+ const confHTML = tipo==='nascimento'
+  ? `<label for="conf">Para confirmar que é você, informe a sua data de nascimento</label><input type="text" id="conf" inputmode="numeric" placeholder="dia, mes e ano" autocomplete="bday">`
+  : tipo==='documento'
+  ? `<label for="conf">Para confirmar que é você, informe os quatro últimos números do seu CPF</label><input type="text" id="conf" inputmode="numeric" maxlength="6" placeholder="quatro números">`
+  : '';
+
  app.innerHTML=`<div class="c"><h1>${esc(data.titulo)}</h1><p class="sub">${esc(data.clinica||'')}${data.paciente?' · '+esc(data.paciente):''}</p></div>
- <div class="c"><div class="txt">${esc(data.texto)}</div>
+ <div class="c"><div class="txt" id="txt">${esc(data.texto)}</div>
+ <p class="fim" id="fim">Role o texto até o fim para liberar a assinatura.</p>
  <label for="nome">Seu nome completo</label><input type="text" id="nome" value="${esc(data.paciente||'')}" autocomplete="name">
+ ${confHTML}
  <label>Assine abaixo com o dedo</label><canvas id="cv"></canvas>
- <div class="chk"><input type="checkbox" id="li"><label for="li" style="margin:0">Li o termo acima e concordo com o que está escrito.</label></div>
- <div class="row"><button class="gh" id="limpar">Limpar</button><button class="ok" id="enviar" disabled>Assinar</button></div></div>`;
+ <div class="chk"><input type="checkbox" id="li"><label for="li" style="margin:0">Li o termo inteiro e concordo com o que está escrito.</label></div>
+ <p class="erro" id="err" style="display:none"></p>
+ <div class="row"><button class="gh" id="limpar">Limpar</button><button class="ok" id="enviar" disabled>Assinar</button></div>
+ <div class="av">Ao assinar, ficam registrados no sistema da clínica a data e a hora do servidor, o endereço de rede e o aparelho usado, e um código de verificação calculado sobre o texto acima, que permite provar depois que o documento não foi alterado.</div></div>`;
+
  const cv=document.getElementById('cv'),x=cv.getContext('2d');let tem=false,on=false;
+ const txt=document.getElementById('txt'),fim=document.getElementById('fim');
+ const li=document.getElementById('li'),nome=document.getElementById('nome'),btn=document.getElementById('enviar');
+ const conf=document.getElementById('conf'),err=document.getElementById('err');
+ let leu=false;
+ function verFim(){if(leu)return;if(txt.scrollTop+txt.clientHeight>=txt.scrollHeight-8){leu=true;fim.textContent='Texto lido até o fim.';fim.className='fim pronto';checar()}}
+ txt.onscroll=verFim;
  function ajustar(){const r=cv.getBoundingClientRect();cv.width=Math.round(r.width*2);cv.height=Math.round(r.height*2);x.lineWidth=5;x.lineCap='round';x.lineJoin='round';x.strokeStyle='#111';tem=false;checar()}
  const pt=e=>{const r=cv.getBoundingClientRect();return [(e.clientX-r.left)*cv.width/r.width,(e.clientY-r.top)*cv.height/r.height]};
  cv.onpointerdown=e=>{on=true;cv.setPointerCapture(e.pointerId);const [a,b]=pt(e);x.beginPath();x.moveTo(a,b)};
  cv.onpointermove=e=>{if(!on)return;const [a,b]=pt(e);x.lineTo(a,b);x.stroke();if(!tem){tem=true;checar()}};
  cv.onpointerup=()=>{on=false};
- const li=document.getElementById('li'),nome=document.getElementById('nome'),btn=document.getElementById('enviar');
- function checar(){btn.disabled=!(tem&&li.checked&&nome.value.trim().length>3)}
- li.onchange=checar;nome.oninput=checar;document.getElementById('limpar').onclick=ajustar;ajustar();
- btn.onclick=async()=>{btn.disabled=true;btn.textContent='Enviando...';
+ function confOk(){if(!conf)return true;const d=(conf.value||'').replace(/\D/g,'');return tipo==='nascimento'?d.length===8:d.length===4}
+ function checar(){btn.disabled=!(leu&&tem&&li.checked&&nome.value.trim().length>3&&confOk())}
+ li.onchange=checar;nome.oninput=checar;if(conf)conf.oninput=checar;
+ document.getElementById('limpar').onclick=ajustar;ajustar();verFim();
+ setTimeout(verFim,300);
+
+ btn.onclick=async()=>{btn.disabled=true;btn.textContent='Enviando...';err.style.display='none';
   const c=document.createElement('canvas');c.width=640;c.height=Math.round(640*cv.height/cv.width);const g=c.getContext('2d');g.fillStyle='#fff';g.fillRect(0,0,c.width,c.height);g.drawImage(cv,0,0,c.width,c.height);
-  const {data:ok,error}=await sb.rpc('assinar_termo',{p_token:token,p_assinatura:c.toDataURL('image/png'),p_nome:nome.value.trim()});
-  if(error||!ok){btn.disabled=false;btn.textContent='Tentar de novo';alert('Não foi possível enviar a assinatura. Verifique a internet e tente de novo.');return}
-  aviso('Termo assinado!','Obrigado. A clínica já recebeu a sua assinatura. Pode fechar esta página.')};
+  const png=c.toDataURL('image/png');let r,error;
+  if(antigo){({data:r,error}=await sb.rpc('assinar_termo',{p_token:token,p_assinatura:png,p_nome:nome.value.trim()}));if(!error)r={ok:!!r}}
+  else{({data:r,error}=await sb.rpc('termo_assinar',{p_token:token,p_assinatura:png,p_nome:nome.value.trim(),p_confere:conf?conf.value:null}));
+   if(error&&/termo_assinar|schema cache|function/i.test(error.message||'')){antigo=true;({data:r,error}=await sb.rpc('assinar_termo',{p_token:token,p_assinatura:png,p_nome:nome.value.trim()}));if(!error)r={ok:!!r}}}
+  if(error||!r){btn.disabled=false;btn.textContent='Tentar de novo';err.textContent='Não foi possível enviar. Verifique a internet e tente de novo.';err.style.display='block';return}
+  if(!r.ok){
+   if(r.erro==='confere'){btn.textContent='Assinar';err.textContent='Os dados não conferem com o cadastro da clínica. Confira e tente de novo'+(r.restam?' (restam '+r.restam+' tentativas).':'.');err.style.display='block';checar();if(conf)conf.focus();return}
+   aviso('Não foi possível assinar',ERROS[r.erro]||'Fale com a clínica.');return}
+  app.innerHTML=`<div class="c msg"><b>Termo assinado</b><p class="sub">Obrigado. A clínica já recebeu a sua assinatura. Pode fechar esta página.</p>
+   <p class="sub" style="margin-top:14px">Código de verificação do documento:</p><p class="hash">${esc(r.hash||'')}</p></div>`};
 }
 iniciar();
 </script>

@@ -274,6 +274,31 @@ function waLink(p,msg){let d=onlyDigits(p);if(d.length<10)return '';if(!d.starts
    123.456.789-00. Dinheiro e formatado quando a pessoa sai do campo, para nao
    atrapalhar quem digita. */
 function soDig(v){return String(v==null?'':v).replace(/\D/g,'')}
+/* SHA-256 para o codigo de verificacao dos termos. Usa o do navegador e, se nao houver, o proprio. */
+function sha256Puro(msg){const rr=(n,x)=>(x>>>n)|(x<<(32-n));
+ const K=new Uint32Array([0x428a2f98,0x71374491,0xb5c0fbcf,0xe9b5dba5,0x3956c25b,0x59f111f1,0x923f82a4,0xab1c5ed5,0xd807aa98,0x12835b01,0x243185be,0x550c7dc3,0x72be5d74,0x80deb1fe,0x9bdc06a7,0xc19bf174,0xe49b69c1,0xefbe4786,0x0fc19dc6,0x240ca1cc,0x2de92c6f,0x4a7484aa,0x5cb0a9dc,0x76f988da,0x983e5152,0xa831c66d,0xb00327c8,0xbf597fc7,0xc6e00bf3,0xd5a79147,0x06ca6351,0x14292967,0x27b70a85,0x2e1b2138,0x4d2c6dfc,0x53380d13,0x650a7354,0x766a0abb,0x81c2c92e,0x92722c85,0xa2bfe8a1,0xa81a664b,0xc24b8b70,0xc76c51a3,0xd192e819,0xd6990624,0xf40e3585,0x106aa070,0x19a4c116,0x1e376c08,0x2748774c,0x34b0bcb5,0x391c0cb3,0x4ed8aa4a,0x5b9cca4f,0x682e6ff3,0x748f82ee,0x78a5636f,0x84c87814,0x8cc70208,0x90befffa,0xa4506ceb,0xbef9a3f7,0xc67178f2]);
+ const H=new Uint32Array([0x6a09e667,0xbb67ae85,0x3c6ef372,0xa54ff53a,0x510e527f,0x9b05688c,0x1f83d9ab,0x5be0cd19]);
+ const b=new TextEncoder().encode(String(msg==null?'':msg)),l=b.length,n=((l+8)>>6)+1,m=new Uint8Array(n*64);
+ m.set(b);m[l]=0x80;const dv=new DataView(m.buffer);dv.setUint32(n*64-8,Math.floor(l/536870912),false);dv.setUint32(n*64-4,(l*8)>>>0,false);
+ const w=new Uint32Array(64);
+ for(let i=0;i<n;i++){for(let t=0;t<16;t++)w[t]=dv.getUint32(i*64+t*4,false);
+  for(let t=16;t<64;t++){const a1=w[t-15],a2=w[t-2];const s0=rr(7,a1)^rr(18,a1)^(a1>>>3),s1=rr(17,a2)^rr(19,a2)^(a2>>>10);w[t]=(w[t-16]+s0+w[t-7]+s1)>>>0}
+  let a=H[0],bb=H[1],c=H[2],d=H[3],e=H[4],f=H[5],g=H[6],h=H[7];
+  for(let t=0;t<64;t++){const S1=rr(6,e)^rr(11,e)^rr(25,e),ch=(e&f)^(~e&g),t1=(h+S1+ch+K[t]+w[t])>>>0,S0=rr(2,a)^rr(13,a)^rr(22,a),mj=(a&bb)^(a&c)^(bb&c),t2=(S0+mj)>>>0;
+   h=g;g=f;f=e;e=(d+t1)>>>0;d=c;c=bb;bb=a;a=(t1+t2)>>>0}
+  H[0]=(H[0]+a)>>>0;H[1]=(H[1]+bb)>>>0;H[2]=(H[2]+c)>>>0;H[3]=(H[3]+d)>>>0;H[4]=(H[4]+e)>>>0;H[5]=(H[5]+f)>>>0;H[6]=(H[6]+g)>>>0;H[7]=(H[7]+h)>>>0}
+ return Array.from(H).map(x=>x.toString(16).padStart(8,'0')).join('')}
+async function sha256Hex(txt){try{if(typeof crypto!=='undefined'&&crypto.subtle){const b=await crypto.subtle.digest('SHA-256',new TextEncoder().encode(String(txt==null?'':txt)));return Array.from(new Uint8Array(b)).map(x=>x.toString(16).padStart(2,'0')).join('')}}catch(e){}
+ return sha256Puro(txt)}
+function hashCurto(h){const x=String(h||'').replace(/[^0-9a-f]/gi,'');return x?x.slice(0,8)+' '+x.slice(8,16)+' '+x.slice(16,24)+' '+x.slice(24,32):''}
+/* Dado de conferencia da identidade de quem assina pelo celular. O sistema manda so o resumo, nunca o dado em si. */
+function confereDoPaciente(p){if(!p)return null;
+ const nas=soDig(p.nascimento);
+ if(nas.length===8)return {tipo:'nascimento',valor:p.nascimento.slice(8,10)+p.nascimento.slice(5,7)+p.nascimento.slice(0,4)};
+ const cpf=soDig(p.cpf);
+ if(cpf.length===11)return {tipo:'documento',valor:cpf.slice(-4)};
+ return null}
+function confereRotulo(t){return t==='nascimento'?'data de nascimento conferida com o cadastro':t==='documento'?'quatro ultimos numeros do documento conferidos com o cadastro':'sem conferencia de identidade'}
 function mascFone(v){const d=soDig(v).slice(0,11);
  if(d.length<=2)return d.length?'('+d:'';
  if(d.length<=6)return '('+d.slice(0,2)+') '+d.slice(2);
@@ -989,15 +1014,23 @@ const URL_ASSINAR='https://blackflow.app.br/assinar/?t=';
 async function termoRemoto(pid,tipo){if(!NV.ativa||!NV.sb||!NV.clinicaId||NV.offline){toast('Para enviar o termo pelo celular, o BlackFlow precisa estar conectado à nuvem.');return}
  const p=pac(pid);const txt=$('#tmTxt').value.trim();if(!txt){toast('O texto do termo está vazio');return}const proc=$('#tmProc').value.trim();
  const titulo=tipo==='imagem'?'Autorização de uso de imagem':'Termo de consentimento';const id=uid();
- const {data,error}=await NV.sb.from('assinaturas').insert({clinica_id:NV.clinicaId,termo_id:String(id),titulo,texto:txt,paciente:p.nome,clinica_nome:S.config.clinica}).select('token').single();
+ const cf=confereDoPaciente(p);let cfOff=false;
+ const reg={clinica_id:NV.clinicaId,termo_id:String(id),titulo,texto:txt,paciente:p.nome,clinica_nome:S.config.clinica};
+ if(cf){reg.confere_tipo=cf.tipo;reg.confere_hash=await sha256Hex(String(id)+':'+cf.valor)}
+ let {data,error}=await NV.sb.from('assinaturas').insert(reg).select('token').single();
+ if(error&&cf&&/confere_|column|coluna/i.test(traduz(error)+String(error.message||''))){delete reg.confere_tipo;delete reg.confere_hash;
+  ({data,error}=await NV.sb.from('assinaturas').insert(reg).select('token').single());if(!error)cfOff=true}
  if(error){toast('Não foi possível criar o link: '+traduz(error));return}
- S.termos.push({id,pacienteId:pid,tipo,procedimento:proc,texto:txt,data:todayISO(),hora:new Date().toTimeString().slice(0,5),assinatura:'',registradoPor:nomeUsuario(),remoto:{token:data.token,enviado:new Date().toISOString()}});save();
+ S.termos.push({id,pacienteId:pid,tipo,procedimento:proc,texto:txt,data:todayISO(),hora:new Date().toTimeString().slice(0,5),assinatura:'',registradoPor:nomeUsuario(),remoto:{token:data.token,enviado:new Date().toISOString(),confereTipo:cf?cf.tipo:''}});save();
  const link=URL_ASSINAR+data.token;const wl=waLink(p.celular,`Olá ${firstName(p.nome)}, tudo bem? Aqui é da ${S.config.clinica}. Segue o ${titulo.toLowerCase()} para você ler e assinar pelo celular, com o dedo: ${link}`);
- openModal(`<h3>Link de assinatura criado</h3><p>Mande o link para ${esc(p.nome)}. Ela abre no celular, lê o termo e assina com o dedo. A assinatura aparece aqui sozinha na aba Termos.</p><textarea id="tmLink" rows="2" readonly style="width:100%;font-size:13px">${esc(link)}</textarea>
+ openModal(`<h3>Link de assinatura criado</h3><p>Mande o link para ${esc(p.nome)}. Ela abre no celular, lê o termo inteiro e assina com o dedo. A assinatura aparece aqui sozinha na aba Termos.</p>
+ <div class="note" style="margin-bottom:10px">${cfOff?'Atenção: a conferência de identidade ainda não está ativa no banco de dados. Rode o script bs_assinatura_prova.sql no Supabase para ativar.':cf?`Antes de assinar, o sistema vai pedir ${cf.tipo==='nascimento'?'a data de nascimento':'os quatro últimos números do documento'} e conferir com o cadastro. Quem receber o link encaminhado e não souber esse dado não consegue assinar.`:'Atenção: este paciente não tem data de nascimento nem documento no cadastro, então o link vai abrir sem conferência de identidade. Preencha um dos dois na ficha para que o sistema confira quem está assinando.'}</div><textarea id="tmLink" rows="2" readonly style="width:100%;font-size:13px">${esc(link)}</textarea>
  <div class="mact"><button class="btn ghost" onclick="const t=$('#tmLink');t.select();(navigator.clipboard?navigator.clipboard.writeText(t.value):Promise.reject()).then(()=>toast('Link copiado'),()=>{document.execCommand('copy');toast('Link copiado')})">Copiar link</button>${wl?`<a class="btn green" href="${wl}" target="_blank" rel="noopener">${waIco()} Enviar pelo WhatsApp</a>`:''}<button class="btn" onclick="closeModal();render()">Fechar</button></div>`)}
 async function termosVerificar(silencioso){if(!NV.ativa||!NV.sb||NV.offline)return;const pend=S.termos.filter(t=>t.remoto&&!t.assinatura&&t.remoto.token);if(!pend.length)return;
- try{const {data,error}=await NV.sb.from('assinaturas').select('token,assinatura,assinado_em,nome_assinou').in('token',pend.map(t=>t.remoto.token)).not('assinado_em','is',null);if(error)throw error;let n=0;
-  (data||[]).forEach(r=>{const t=pend.find(x=>x.remoto.token===r.token);if(t&&r.assinatura){t.assinatura=r.assinatura;const d=new Date(r.assinado_em);t.data=iso(d);t.hora=d.toTimeString().slice(0,5);t.remoto.assinadoEm=r.assinado_em;t.remoto.nome=r.nome_assinou||'';n++}});
+ try{const {data,error}=await NV.sb.from('assinaturas').select('token,assinatura,assinado_em,nome_assinou,hash_texto,ip_assinatura,agente,aberto_em,confere_tipo').in('token',pend.map(t=>t.remoto.token)).not('assinado_em','is',null);if(error)throw error;let n=0;
+  (data||[]).forEach(r=>{const t=pend.find(x=>x.remoto.token===r.token);if(t&&r.assinatura){t.assinatura=r.assinatura;const d=new Date(r.assinado_em);t.data=iso(d);t.hora=d.toTimeString().slice(0,5);
+   t.hash=r.hash_texto||'';t.assinadoEm=r.assinado_em;t.agente=r.agente||'';t.ip=r.ip_assinatura||'';
+   t.remoto.assinadoEm=r.assinado_em;t.remoto.nome=r.nome_assinou||'';t.remoto.abertoEm=r.aberto_em||'';t.remoto.confereTipo=r.confere_tipo||'';n++}});
   if(n){save();if(podeRedesenhar())render();toast(n===1?'Um termo foi assinado pelo celular':n+' termos foram assinados pelo celular')}else if(!silencioso)toast('Nenhuma assinatura nova ainda')}catch(e){if(!silencioso)toast('Não foi possível verificar agora')}}
 
 /* Agenda no celular: só o dia escolhido, em lista simples */
@@ -2564,7 +2597,7 @@ const TERMO_PADRAO={
  imagem:'Eu, {nome}, CPF {cpf}, autorizo a {clinica} a usar as fotos e vídeos do meu tratamento ({procedimento}) em suas redes sociais, site e materiais de divulgação, sem identificação do meu nome, de forma gratuita. Posso cancelar esta autorização a qualquer momento, por escrito, valendo para publicações futuras.'};
 function pTermos(p){const L=S.termos.filter(t=>t.pacienteId===p.id).sort((a,b)=>(b.data||'').localeCompare(a.data||''));
  return `<div class="card"><div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px"><h2 style="margin:0">Termos assinados</h2><span style="display:flex;gap:8px"><button class="btn sm" onclick="termoForm('${p.id}','consentimento')">Termo de consentimento</button><button class="btn soft sm" onclick="termoForm('${p.id}','imagem')">Autorização de uso de imagem</button></span></div>
- <table class="tbl mini"><tr><th>Data</th><th>Termo</th><th>Procedimento</th><th>Assinatura</th><th></th></tr>${L.map(t=>`<tr><td>${br(t.data)}</td><td>${t.tipo==='imagem'?'Autorização de uso de imagem':'Termo de consentimento'}${t.revogado?' <span class="badge b-bad">Revogado</span>':''}</td><td>${esc(t.procedimento||'')}</td><td>${t.assinatura?`<span class="badge b-ok">${t.remoto?'Assinado pelo celular':'Assinado na tela'}</span>`:t.remoto?'<span class="badge b-warn">Aguardando assinatura pelo celular</span>':'<span class="badge b-warn">Sem assinatura</span>'}</td><td style="white-space:nowrap"><button class="lnk" onclick="termoImprimir('${t.id}')">Imprimir</button>${t.tipo==='imagem'&&!t.revogado?` <button class="lnk" style="color:var(--bad)" onclick="termoRevogar('${t.id}')">Revogar</button>`:''}</td></tr>`).join('')||'<tr><td colspan="5" class="mini-empty">Nenhum termo.</td></tr>'}</table>
+ <table class="tbl mini"><tr><th>Data</th><th>Termo</th><th>Procedimento</th><th>Assinatura</th><th></th></tr>${L.map(t=>`<tr><td>${br(t.data)}</td><td>${t.tipo==='imagem'?'Autorização de uso de imagem':'Termo de consentimento'}${t.revogado?' <span class="badge b-bad">Revogado</span>':''}</td><td>${esc(t.procedimento||'')}</td><td>${t.assinatura?`<span class="badge b-ok">${t.remoto?'Assinado pelo celular':'Assinado na tela'}</span>`:t.remoto?'<span class="badge b-warn">Aguardando assinatura pelo celular</span>':'<span class="badge b-warn">Sem assinatura</span>'}</td><td style="white-space:nowrap">${t.assinatura?`<button class="lnk" onclick="termoComprovante('${t.id}')">Comprovante</button> `:''}<button class="lnk" onclick="termoImprimir('${t.id}')">Imprimir</button>${t.tipo==='imagem'&&!t.revogado?` <button class="lnk" style="color:var(--bad)" onclick="termoRevogar('${t.id}')">Revogar</button>`:''}</td></tr>`).join('')||'<tr><td colspan="5" class="mini-empty">Nenhum termo.</td></tr>'}</table>
  <p class="sub" style="margin-top:10px">Os textos padrão podem ser ajustados em Configurações. Revise com o seu advogado antes de usar.${L.some(t=>t.remoto&&!t.assinatura)?' <button class="lnk" onclick="termosVerificar(false)">Verificar assinaturas pelo celular</button>':''}</p></div>${(setTimeout(()=>termosVerificar(true),300),'')}`}
 function termoTexto(tipo,p,proc){const tpl=(tipo==='imagem'?S.config.termoImagem:S.config.termoConsentimento)||TERMO_PADRAO[tipo];return fillMsg(tpl,{nome:p.nome,cpf:fmtCPF(p.cpf)||'não informado',clinica:S.config.clinica,procedimento:proc||'',data:br(todayISO())})}
 function termoForm(pid,tipo){const p=pac(pid);UI.termo={pid,tipo};
@@ -2573,11 +2606,50 @@ function termoForm(pid,tipo){const p=pac(pid);UI.termo={pid,tipo};
  <div class="mact"><button class="btn ghost" style="margin-right:auto" onclick="const c=$('#tmCv');c.getContext('2d').clearRect(0,0,c.width,c.height);c.dataset.ok=''">Limpar assinatura</button><button class="btn ghost" onclick="closeModal()">Cancelar</button>${NV.ativa?`<button class="btn soft" onclick="termoRemoto('${pid}','${tipo}')">Enviar para assinar pelo celular</button>`:''}<button class="btn" onclick="termoSalvar()">Salvar termo</button></div>`,true);
  const c=$('#tmCv'),x=c.getContext('2d');x.lineWidth=2.4;x.lineCap='round';x.strokeStyle='#111';let on=false;const pt=e=>{const r=c.getBoundingClientRect();return [(e.clientX-r.left)*c.width/r.width,(e.clientY-r.top)*c.height/r.height]};
  c.onpointerdown=e=>{on=true;c.setPointerCapture(e.pointerId);const [a,b]=pt(e);x.beginPath();x.moveTo(a,b)};c.onpointermove=e=>{if(!on)return;const [a,b]=pt(e);x.lineTo(a,b);x.stroke();c.dataset.ok='1'};c.onpointerup=()=>{on=false}}
-function termoSalvar(){const T=UI.termo;const c=$('#tmCv');const txt=$('#tmTxt').value.trim();if(!txt){toast('O texto do termo está vazio');return}
- S.termos.push({id:uid(),pacienteId:T.pid,tipo:T.tipo,procedimento:$('#tmProc').value.trim(),texto:txt,data:todayISO(),hora:new Date().toTimeString().slice(0,5),assinatura:c.dataset.ok?c.toDataURL('image/png'):'',registradoPor:nomeUsuario()});closeModal();save();render();toast(c.dataset.ok?'Termo assinado e salvo':'Termo salvo sem assinatura')}
+async function termoSalvar(){const T=UI.termo;const c=$('#tmCv');const txt=$('#tmTxt').value.trim();if(!txt){toast('O texto do termo está vazio');return}
+ const h=await sha256Hex(txt);const ag=(navigator.userAgent||'').slice(0,300);
+ S.termos.push({id:uid(),pacienteId:T.pid,tipo:T.tipo,procedimento:$('#tmProc').value.trim(),texto:txt,data:todayISO(),hora:new Date().toTimeString().slice(0,5),assinatura:c.dataset.ok?c.toDataURL('image/png'):'',registradoPor:nomeUsuario(),hash:h,agente:ag,assinadoEm:new Date().toISOString()});closeModal();save();render();toast(c.dataset.ok?'Termo assinado e salvo':'Termo salvo sem assinatura')}
 function termoRevogar(id){confirmModal('Registrar que o cliente revogou a autorização de uso de imagem? As fotos não devem mais ser publicadas.',()=>{const t=S.termos.find(x=>x.id===id);t.revogado=todayISO()},'Revogar')}
+/* Comprovante tecnico da assinatura eletronica */
+function dtBR(v){if(!v)return '';const d=new Date(v);if(isNaN(d))return '';return d.toLocaleDateString('pt-BR')+' às '+d.toTimeString().slice(0,5)}
+function decorrido(a,b){const x=new Date(a),y=new Date(b);if(isNaN(x)||isNaN(y))return '';const seg=Math.round((y-x)/1000);if(seg<0)return '';
+ if(seg<60)return seg+(seg===1?' segundo':' segundos');const mi=Math.floor(seg/60);if(mi<60)return mi+(mi===1?' minuto':' minutos');const h=Math.floor(mi/60);return h+(h===1?' hora':' horas')+(mi%60?' e '+(mi%60)+' minutos':'')}
+function aparelho(ua){const u=str(ua);if(!u)return '';
+ const so=/Android/i.test(u)?'Android':/iPhone|iPad|iPod/i.test(u)?'iPhone ou iPad':/Windows/i.test(u)?'Windows':/Mac OS X|Macintosh/i.test(u)?'Mac':/Linux/i.test(u)?'Linux':'';
+ const nav=/Edg\//i.test(u)?'Edge':/OPR\/|Opera/i.test(u)?'Opera':/Chrome\//i.test(u)?'Chrome':/Firefox\//i.test(u)?'Firefox':/Safari\//i.test(u)?'Safari':'';
+ return [so,nav].filter(Boolean).join(', ')||'não identificado'}
+function termoProva(t){const p=pac(t.pacienteId);const r=t.remoto||null;const L=[];
+ L.push(['Documento assinado',(t.tipo==='imagem'?'Autorização de uso de imagem':'Termo de consentimento')+(t.procedimento?' · '+t.procedimento:'')]);
+ L.push(['Signatário',(r&&r.nome)||(p?p.nome:'')]);
+ L.push(['Como foi assinado',r?'Pelo celular do próprio signatário, por link pessoal':'Na tela do computador da clínica, diante do profissional']);
+ L.push(['Conferência de identidade',r?confereRotulo(r.confereTipo):'presencial, feita pelo profissional']);
+ L.push(['Data e hora da assinatura',dtBR(t.assinadoEm)||(br(t.data)+(t.hora?' às '+t.hora:''))]);
+ if(r&&r.abertoEm){L.push(['Link aberto em',dtBR(r.abertoEm)]);const d=decorrido(r.abertoEm,t.assinadoEm);if(d)L.push(['Tempo entre abrir e assinar',d])}
+ if(t.ip)L.push(['Endereço de rede de origem',t.ip]);
+ if(t.agente)L.push(['Aparelho e navegador',aparelho(t.agente)]);
+ L.push(['Código de verificação do texto',t.hash?hashCurto(t.hash):'não calculado nesta versão']);
+ L.push(['Registrado no sistema por',t.registradoPor||'']);
+ if(t.revogado)L.push(['Autorização revogada em',br(t.revogado)]);
+ return L.filter(x=>str(x[1]))}
+function termoComprovante(id){const t=S.termos.find(x=>x.id===id);if(!t)return;
+ openModal(`<h3>Comprovante da assinatura</h3>
+ <table class="tbl mini">${termoProva(t).map(x=>`<tr><td style="width:42%;color:var(--mut)">${esc(x[0])}</td><td><b>${esc(x[1])}</b></td></tr>`).join('')}</table>
+ <div class="note" style="margin-top:12px">O código de verificação é calculado sobre o texto do termo no instante da assinatura. Se uma única letra do documento for alterada depois, o código deixa de bater e a alteração fica demonstrada.</div>
+ <div class="mact"><button class="btn ghost" onclick="termoImprimir('${t.id}')">Imprimir o termo</button><button class="btn" onclick="closeModal()">Fechar</button></div>`,true)}
 function termoImprimir(id){const t=S.termos.find(x=>x.id===id);const p=pac(t.pacienteId);const w=window.open('','_blank');if(!w){toast('Libere as janelas para imprimir');return}
- w.document.write(`<html><head><meta charset="utf-8"><title>Termo</title><style>body{font-family:Arial,sans-serif;font-size:14px;max-width:720px;margin:40px auto;line-height:1.6}h2{text-align:center}</style></head><body><h2>${t.tipo==='imagem'?'AUTORIZAÇÃO DE USO DE IMAGEM':'TERMO DE CONSENTIMENTO'}</h2><p style="text-align:justify">${esc(t.texto).replace(/\n/g,'<br>')}</p><p>${esc(S.config.clinica)}, ${br(t.data)}${t.hora?' às '+t.hora:''}.</p>${t.assinatura?`<img src="${t.assinatura}" style="max-width:340px;display:block">`:'<br><br>'}<div style="border-top:1px solid #000;width:340px;padding-top:4px">${esc(p?p.nome:'')}</div>${t.revogado?`<p><b>Autorização revogada em ${br(t.revogado)}.</b></p>`:''}<script>window.print()<\/script></body></html>`);w.document.close()}
+ const prova=termoProva(t).map(x=>`<tr><td>${esc(x[0])}</td><td><b>${esc(x[1])}</b></td></tr>`).join('');
+ w.document.write(`<html><head><meta charset="utf-8"><title>Termo</title><style>body{font-family:Arial,sans-serif;font-size:14px;max-width:720px;margin:40px auto;line-height:1.6}h2{text-align:center}h3{font-size:13px;text-transform:uppercase;letter-spacing:.5px;margin:34px 0 8px;border-bottom:1px solid #000;padding-bottom:4px}table{width:100%;border-collapse:collapse;font-size:12px}td{padding:3px 0;vertical-align:top}td:first-child{width:42%;color:#555}.hs{font-family:monospace;font-size:11px;word-break:break-all}</style></head><body>
+ <h2>${t.tipo==='imagem'?'AUTORIZAÇÃO DE USO DE IMAGEM':'TERMO DE CONSENTIMENTO'}</h2>
+ <p style="text-align:justify">${esc(t.texto).replace(/\n/g,'<br>')}</p>
+ <p>${esc(S.config.clinica)}, ${br(t.data)}${t.hora?' às '+t.hora:''}.</p>
+ ${t.assinatura?`<img src="${t.assinatura}" style="max-width:340px;display:block">`:'<br><br>'}
+ <div style="border-top:1px solid #000;width:340px;padding-top:4px">${esc((t.remoto&&t.remoto.nome)||(p?p.nome:''))}</div>
+ ${t.revogado?`<p><b>Autorização revogada em ${br(t.revogado)}.</b></p>`:''}
+ <h3>Comprovante da assinatura eletrônica</h3><table>${prova}</table>
+ ${t.hash?`<p class="hs" style="margin-top:10px">Código completo: ${esc(t.hash)}</p>`:''}
+ <p style="font-size:11px;color:#555;margin-top:10px">Assinatura eletrônica nos termos do artigo 10, parágrafo 2º, da Medida Provisória nº 2.200-2, de 24 de agosto de 2001. O código de verificação acima é o resultado do algoritmo SHA-256 aplicado ao texto deste termo no instante da assinatura e permite conferir que o documento não foi alterado depois.</p>
+ <script>window.print()<\/script></body></html>`);w.document.close()}
+
 /* Produtos aplicados no cliente, com lote */
 function pAplicacoes(p){const L=S.movEstoque.filter(m=>m.clienteId===p.id).sort((a,b)=>(b.data||'').localeCompare(a.data||''));const uso=S.produtos.filter(x=>x.ativo!==false&&/uso/i.test(x.tipo||''));
  return `<div class="card"><div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px"><h2 style="margin:0">Produtos aplicados e lotes</h2>${uso.length?`<span><select id="aplProd">${uso.map(x=>`<option value="${x.id}">${esc(x.nome)}${x.dono?' ('+esc(x.dono)+')':''}</option>`).join('')}</select> <button class="btn sm" onclick="movForm($('#aplProd').value,'Consumo','${p.id}')">Registrar aplicação</button></span>`:`<button class="btn ghost sm" onclick="go('estoque')">Cadastrar produtos de uso interno</button>`}</div>
@@ -2698,7 +2770,7 @@ function agNovo(a,s){if(s==='Desmarcado'||s==='Faltou')return false;const k=a.da
  const hist=c=>S[c].some(x=>x.pacienteId===a.pacienteId&&((x.data||x.vencimento||x.pagamento||'')<a.data)&&(x.data||x.vencimento||x.pagamento));
  return !hist('evolucoes')&&!hist('tratamentos')&&!S.lancamentos.some(l=>l.pacienteId===a.pacienteId&&l.pagamento&&l.pagamento<a.data)}
 /* ============ Atualização: aviso com botão Atualizar agora ============ */
-const VERSAO_APP='1.9.28';const URL_VERSAO_JSON='https://raw.githubusercontent.com/TheIgor12/blacksolutions/main/versao.json';
+const VERSAO_APP='1.9.29';const URL_VERSAO_JSON='https://raw.githubusercontent.com/TheIgor12/blacksolutions/main/versao.json';
 const numV=v=>String(v||'0').split(/\D+/).filter(Boolean).map(Number);
 function versaoMaior(a,b){const x=numV(a),y=numV(b);for(let i=0;i<Math.max(x.length,y.length);i++){const d=(x[i]||0)-(y[i]||0);if(d)return d>0}return false}
 const ATU={nova:null,timer:null};
