@@ -1,4 +1,4 @@
 {
-  "versao": "1.9.29",
-  "novidades": "Os termos assinados passaram a ter prova técnica. Cada assinatura grava um código de verificação calculado sobre o texto, que denuncia qualquer alteração posterior no documento, mais a data e a hora do servidor, o endereço de rede e o aparelho usado. Quem assina pelo celular agora precisa rolar o termo até o fim e confirmar a data de nascimento ou os quatro últimos números do documento, conferidos com o cadastro da clínica. O termo impresso sai com o comprovante completo no rodapé."
+  "versao": "1.9.30",
+  "novidades": "Tudo o que é lista de nomes agora aparece em ordem alfabética: pacientes, serviços, produtos, profissionais, protocolos, equipamentos, colunas da agenda, resultados da busca e menu de relatórios. A ordenação respeita acento, ignora maiúscula e entende número, então Laser 2 sessões vem antes de Laser 10 sessões. Nas formas de pagamento, as quatro mais usadas continuam no topo e o resto ficou em ordem."
 }
