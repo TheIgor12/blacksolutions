@@ -1,4 +1,4 @@
 {
-  "versao": "1.9.36",
-  "novidades": "Corrigido o aviso de atualização que aparecia o tempo todo: a versão 1.9.35 tinha ficado marcada por dentro como 1.9.34. Na janela do agendamento, o aviso de aniversário agora fica no canto superior direito, do outro lado do nome, com o emoji, quantos dias faltam e a idade."
+  "versao": "1.9.37",
+  "novidades": "Botão Voltar para a agenda fixo no topo da ficha, em todas as abas (Financeiro, Exames, Documentos, Anamnese e as demais); a agenda volta no mesmo dia em que estava. O aviso de aniversário também reconhece datas de nascimento gravadas como dia/mês/ano."
 }

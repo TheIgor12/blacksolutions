@@ -130,6 +130,7 @@ a.btn{text-decoration:none}
 .pgrid .span2{grid-column:span 2}
 .pgrid .ex2{grid-column:2/span 2}
 .anivico{display:inline!important;font-style:normal;margin:0 3px 0 0!important;padding:0!important;background:none!important;border:0!important}
+.volta-ag{position:sticky;top:48px;z-index:29;background:#fff;padding:10px 24px;display:flex;align-items:center;gap:16px;flex-wrap:wrap;border-bottom:1px solid var(--line)}
 .aniv-canto{order:9;margin-left:auto;display:flex;align-items:center;gap:8px;background:#fff4e5;border:1px solid #f5c98b;color:#7a4b00;border-radius:12px;padding:6px 10px;font-size:12px;font-weight:600;line-height:1.25;text-align:right;white-space:nowrap}.aniv-canto b{font-size:26px;line-height:1}.aniv-canto small{font-size:12px;font-weight:600}
 .aniv-faixa{background:#fff4e5;border:1px solid #f5c98b;color:#7a4b00}
 .mini-empty{border:1px dashed var(--line);border-radius:8px;padding:16px;color:var(--mut);font-size:13px;text-align:center;margin-bottom:12px}
@@ -1301,7 +1302,7 @@ function vPaciente(){const p=pac(UI.param);if(!p)return `<div class="page"><div 
  const tabs=abasCliente();if(!tabs.some(([k])=>k===UI.pacTab))UI.pacTab='geral';
  const l=waLink(p.celular);
  const body={geral:pGeral,prontuario:pPront,orcamentos:pOrc,financeiro:pFin,sessoes:pSess,evolucao:pEvo,anamnese:pAna,agendamentos:pAg,comandasC:pComandasC,avaliacao:pAvaliacao,fotos:pFotos,exames:pExames,documentos:pDocs,termos:pTermos,aplicacoes:pAplicacoes,ficha:pFicha}[UI.pacTab](p);
- return `<div style="background:#fff;padding:10px 24px 0"><button class="lnk" onclick="go('pacientes')">${ico('back',14)} Voltar para ${SEG().pessoas}</button></div>
+ return `<div class="volta-ag"><button class="btn sm" onclick="voltarAgenda()">${ico('back',15)} Voltar para a agenda</button><button class="lnk" onclick="go('pacientes')">Ir para ${SEG().pessoas}</button></div>
  <div class="phd">${avatarPac(p,'xl')}<div style="flex:1;min-width:220px"><h1>${anivIco(p)}${esc(p.nome)} <small>(${esc(p.codigo||'')})</small></h1><div style="margin:6px 0;color:var(--mut)">${esc(p.celular||'Sem celular')} ${l?`<a href="${l}" target="_blank" rel="noopener">${waIco()}</a>`:''}</div>${badgeFor(p.status||'Ativo')} ${anivSelo(p)}${p.criadoPorImportacao?'<span class="badge b-warn">Cadastro incompleto</span>':''}</div>
  <div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn ghost sm" onclick="pacForm('${p.id}')">Editar cadastro</button><button class="btn ghost sm" onclick="window.print()">${ico('print',15)} Imprimir</button><button class="btn ghost sm" style="color:var(--bad)" onclick="delPac('${p.id}')">Excluir</button></div></div>
  <div class="tabs" style="padding-left:24px">${tabs.map(([k,t])=>`<button class="${UI.pacTab===k?'on':''}" onclick="UI.pacTab='${k}';render()">${t}</button>`).join('')}</div><div class="page">${body}</div>`}
@@ -2766,7 +2767,7 @@ function pExames(p){const L=examesDe(p.id);
    data do atendimento. Quem nasceu em 29/02 faz aniversario em 28/02 nos anos
    que nao sao bissextos. */
 const ANIV_ANTES=5;
-function anivDias(p,ref){if(!p||!p.nascimento||p.status==='Inativo')return null;const m=String(p.nascimento).match(/^(\d{4})-(\d{2})-(\d{2})/);if(!m)return null;
+function anivDias(p,ref){if(!p||!p.nascimento||p.status==='Inativo')return null;const n=String(p.nascimento).trim();let m=n.match(/^(\d{4})-(\d{2})-(\d{2})/);if(!m){const b=n.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})/);if(b)m=[n,b[3],('0'+b[2]).slice(-2),('0'+b[1]).slice(-2)]}if(!m)return null;
  const r=new Date((ref||todayISO())+'T00:00');if(isNaN(r))return null;
  const em=y=>{const d=new Date(y,+m[2]-1,+m[3]);return d.getMonth()!==+m[2]-1?new Date(y,+m[2]-1,28):d};
  let d=em(r.getFullYear());if(d<r)d=em(r.getFullYear()+1);
@@ -2777,6 +2778,7 @@ function anivIco(p,ref){const a=anivDias(p,ref);if(!a||a.dias>ANIV_ANTES)return 
 function anivCanto(p,ref){const a=anivDias(p,ref);if(!a||a.dias>ANIV_ANTES)return '';const hoje=a.dias===0;const noDia=ref&&ref!==todayISO();
  const txt=hoje?(noDia?'Aniversário neste dia':'Aniversário hoje'):'Aniversário em '+a.dias+(a.dias===1?' dia':' dias');
  return `<span class="aniv-canto" title="${txt} (${br(a.dia)}), ${a.idade} anos"><b>${hoje?'\u{1F382}':'\u{1F381}'}</b><small>${txt}<br>${a.idade} anos</small></span>`}
+function voltarAgenda(){closeModal();go('agenda')}
 function anivSelo(p){const a=anivDias(p);if(!a||a.dias>ANIV_ANTES)return '';
  return a.dias===0?`<span class="badge b-warn">\u{1F382} Faz aniversário hoje, ${a.idade} anos</span> `:`<span class="badge b-warn">\u{1F381} Aniversário em ${a.dias} ${a.dias===1?'dia':'dias'} (${br(a.dia)})</span> `}
 function anivProximos(){return S.pacientes.map(p=>({p,a:anivDias(p)})).filter(x=>x.a&&x.a.dias<=ANIV_ANTES).sort((x,y)=>x.a.dias-y.a.dias||azCmp(x.p.nome,y.p.nome))}
@@ -3041,7 +3043,7 @@ function agNovo(a,s){if(s==='Desmarcado'||s==='Faltou')return false;const k=a.da
  const hist=c=>S[c].some(x=>x.pacienteId===a.pacienteId&&((x.data||x.vencimento||x.pagamento||'')<a.data)&&(x.data||x.vencimento||x.pagamento));
  return !hist('evolucoes')&&!hist('tratamentos')&&!S.lancamentos.some(l=>l.pacienteId===a.pacienteId&&l.pagamento&&l.pagamento<a.data)}
 /* ============ Atualização: aviso com botão Atualizar agora ============ */
-const VERSAO_APP='1.9.36';const URL_VERSAO_JSON='https://raw.githubusercontent.com/TheIgor12/blacksolutions/main/versao.json';
+const VERSAO_APP='1.9.37';const URL_VERSAO_JSON='https://raw.githubusercontent.com/TheIgor12/blacksolutions/main/versao.json';
 const numV=v=>String(v||'0').split(/\D+/).filter(Boolean).map(Number);
 function versaoMaior(a,b){const x=numV(a),y=numV(b);for(let i=0;i<Math.max(x.length,y.length);i++){const d=(x[i]||0)-(y[i]||0);if(d)return d>0}return false}
 const ATU={nova:null,timer:null};
