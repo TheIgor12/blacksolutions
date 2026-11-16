@@ -1,4 +1,4 @@
 {
-  "versao": "1.9.45",
-  "novidades": "Entrou em Relatórios a Recuperação de pacientes. Para cada serviço cadastrado o sistema separa a base em quatro situações: quem abandonou o tratamento pela metade, quem fez avaliação e nunca voltou para o procedimento, quem já fez e sumiu, e quem nunca fez. Mostra há quantos dias cada pessoa não aparece, com filtro livre de dias, e traz a mensagem de WhatsApp pronta para cada situação, com o nome, o procedimento e as sessões que faltam já preenchidos. A visão geral lista todos os serviços lado a lado para a clínica escolher por onde começar. O plano completo passou a R$ 79,90 e a promoção de Black Friday vale para as primeiras cem clínicas."
+  "versao": "1.9.46",
+  "novidades": "Entrou a Ajuda no menu: quinze respostas passo a passo escritas a partir das telas reais, com busca por palavra. Responde na hora, sem internet e sem custo. Em Configurações dá para ligar um assistente de inteligência artificial do Google, gratuito, com chave própria da clínica, para as dúvidas que a ajuda escrita não cobre. Ele só responde sobre o uso do sistema e não tem acesso a dado de paciente."
 }

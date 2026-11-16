@@ -312,6 +312,23 @@ a.btn{text-decoration:none}
 .recmed{color:var(--warn)}
 .recalto{color:var(--bad)}
 @media(max-width:700px){.recsum>div{min-width:calc(50% - 6px)}.recmsg{flex-direction:column}}
+.ajbusca{display:flex;align-items:center;gap:10px;border:2px solid var(--line);border-radius:12px;padding:11px 14px;margin-bottom:16px}
+.ajbusca:focus-within{border-color:var(--acc)}
+.ajbusca svg{color:var(--mut);flex:none}
+.ajbusca input{flex:1;border:0;outline:none;font:inherit;font-size:15px;background:none;color:var(--ink);min-width:0}
+.ajlista{display:flex;flex-direction:column;gap:8px}
+.ajitem{border:1px solid var(--line);border-radius:12px;overflow:hidden}
+.ajitem.on{border-color:var(--acc)}
+.ajt{display:flex;align-items:center;justify-content:space-between;gap:12px;width:100%;text-align:left;
+ background:none;border:0;padding:13px 15px;cursor:pointer;font-weight:600;font-size:14.5px;color:var(--ink)}
+.ajt:hover{background:var(--acc-soft)}
+.ajitem.on .ajt{background:var(--acc-soft);color:var(--acc)}
+.ajt i{font-style:normal;font-size:19px;font-weight:700;color:var(--mut);flex:none;line-height:1}
+.ajc{padding:2px 15px 15px}
+.ajc ol{margin:0;padding-left:20px}
+.ajc li{margin-bottom:8px;line-height:1.55}
+.ajn{margin:10px 0 0;padding:10px 12px;background:var(--bg);border-radius:9px;font-size:13px;color:var(--mut);line-height:1.5}
+.iaresp{background:var(--acc-soft);border-radius:11px;padding:14px 16px;margin-top:12px;line-height:1.6;font-size:14.5px}
 tr.azflash td,.azflash.card{animation:azpisca 2s ease}
 /* Tipografia: menos peso e mais respiro. A fonte anterior era arredondada e
    pesada; esta tem traço mais fino, que combina com clínica, estética e salão. */
@@ -562,7 +579,7 @@ const waIco=()=>`<span class="wa">${ico('wa',15)}</span>`;
 /* ============ Estado e armazenamento ============ */
 function defaultState(){return {versao:1,config:{clinica:'Minha clínica',usuario:'Administrador',cor:'#5a4cfb',corTopo:'#0a0820',logo:'',
  msgCobranca:'Olá {nome}, tudo bem? Aqui é da {clinica}. Consta em aberto o valor de {valor}, referente a parcelas vencidas desde {vencimento}. Podemos combinar a forma de pagamento?',
- msgRetorno:'Olá {nome}, tudo bem? Aqui é da {clinica}. Já faz um tempo desde o seu último atendimento. Vamos agendar o seu retorno?',diasRetorno:90,msgRec:{},segmento:'',taxas:{},descontarTaxa:false,cashback:'',cashbackDias:''},
+ msgRetorno:'Olá {nome}, tudo bem? Aqui é da {clinica}. Já faz um tempo desde o seu último atendimento. Vamos agendar o seu retorno?',diasRetorno:90,msgRec:{},iaChave:'',segmento:'',taxas:{},descontarTaxa:false,cashback:'',cashbackDias:''},
  pacientes:[],lancamentos:[],tratamentos:[],anamneses:[],agendamentos:[],contasPagar:[],evolucoes:[],profissionais:[],importacoes:[],servicos:[],produtos:[],documentos:[],movEstoque:[],comandas:[],caixas:[],avaliacoes:[],fotos:[],termos:[],fichas:[],protocolos:[],equipamentos:[],vouchers:[]}}
 let S=defaultState();
 const DB={
@@ -995,7 +1012,7 @@ function render(){if(NV.ativa&&UI.auth){$('#app').innerHTML=vAuth();setTimeout((
  if(soAgenda()&&!VIEWS_AGENDA.includes(UI.view))UI.view='agenda';
  if(perfilAtual()){const livre=['inicio','paciente','blackpay'];const vk=UI.view==='paciente'?'pacientes':UI.view;
   if(!livre.includes(UI.view)&&!podeTela(vk)||UI.view==='paciente'&&!podeTela('pacientes')){const m=menuItens();UI.view=m.length?m[0][0]:'inicio';UI.param=null}}
- const V={inicio:vInicio,agenda:vAgenda,pacientes:vPacientes,paciente:vPaciente,financeiro:vFinanceiro,dashboard:vDashboard,relatorios:vRelatorios,profissionais:vProfissionais,importar:vImportar,config:vConfig,servicos:vServicos,estoque:vEstoque,exames:vExames,comandas:vComandas,caixa:vCaixa,comissoes:vComissoes,protocolos:vProtocolos,equipamentos:vEquipamentos,confirmacao:vConfirmacao,indicacoes:vIndicacoes,vouchers:vVouchers,blackpay:vBlackPay,prontuarios:vProntuarios,fotorapida:vFotoRapida};
+ const V={inicio:vInicio,agenda:vAgenda,pacientes:vPacientes,paciente:vPaciente,financeiro:vFinanceiro,dashboard:vDashboard,relatorios:vRelatorios,profissionais:vProfissionais,importar:vImportar,config:vConfig,servicos:vServicos,estoque:vEstoque,exames:vExames,comandas:vComandas,caixa:vCaixa,comissoes:vComissoes,protocolos:vProtocolos,equipamentos:vEquipamentos,confirmacao:vConfirmacao,indicacoes:vIndicacoes,vouchers:vVouchers,blackpay:vBlackPay,prontuarios:vProntuarios,fotorapida:vFotoRapida,ajuda:vAjuda};
  let c;try{c=(V[UI.view]||vInicio)()}catch(e){console.error(e);c=`<div class="page"><div class="card">Erro ao montar a tela: ${esc(e.message)}</div></div>`}
  $('#app').innerHTML=shell(c);try{fonteAplicar()}catch(e){}checarSegmento();if(!UI.regrasOk&&S.servicos.length&&!UI.auth){UI.regrasOk=1;if(regrasClinica())save()}if(!AVISO.timer)avisoIniciar();atuIniciar();if(!UI.auth){fotoIniciar();confAutoIniciar()}}
 
@@ -2265,6 +2282,204 @@ function recExportar(){const R=recUI();const {L,g}=recListaAtual();
   recMsg(g,it,R.serv)]);
  exportRows('recuperacao_'+norm(R.serv).replace(/ /g,'_')+'_'+g,cols,rows)}
 
+/* ============ Ajuda do sistema ============
+   Base de respostas escrita a partir das telas reais. Responde na hora, sem
+   internet e sem custo. A IA entra só no que a base não cobre, e precisa de
+   chave própria da clínica em Configurações. */
+const AJUDA=[
+ {id:'foto',t:'Tirar foto do pé e salvar no sistema',
+  tags:'foto camera celular tirar bater fotografia imagem pe antes depois evolucao',
+  p:['No celular, abra <b>Inserir foto</b> no menu, ou abra o atendimento do paciente e toque em <b>Tirar foto</b>.',
+     'O aparelho abre a câmera direto, sem passar pela galeria. Enquadre e tire.',
+     'Se preferir usar uma foto que já está no aparelho, toque em <b>Escolher do aparelho</b> ao lado.',
+     'A foto fica presa ao paciente e ao dia. Para ver depois, abra o paciente e vá em <b>Prontuário</b>: as fotos aparecem na linha do tempo, junto com atendimento e exames.'],
+  n:'A foto vai para a nuvem da clínica, não fica só no aparelho. Quem usar outro celular com o mesmo login vê a mesma foto.'},
+ {id:'agendar',t:'Agendar um paciente',
+  tags:'agendar agenda marcar horario consulta encaixe remarcar novo agendamento',
+  p:['Abra <b>Agenda</b>. Ela já abre no dia de hoje.',
+     'Clique no horário vago da coluna do profissional. Abre a janela de novo agendamento com o dia e a hora preenchidos.',
+     'Comece a escrever o nome do paciente: o sistema procura enquanto você digita. Se for paciente novo, dá para cadastrar ali mesmo.',
+     'Escolha o procedimento e a duração. O sistema usa a duração que está em Procedimentos e preços.',
+     'Salve. O agendamento aparece na cor do status.'],
+  n:'Para mover, arraste o agendamento para outro horário. Para desmarcar, clique nele e mude o status: desmarcado libera o horário e não conta como falta.'},
+ {id:'relatorio',t:'Fazer um relatório',
+  tags:'relatorio relatorios metrica numero exportar excel imprimir estatistica',
+  p:['Abra <b>Relatórios</b> no menu.',
+     'Na coluna da esquerda estão os relatórios agrupados: Pacientes, Financeiro, Tratamentos e Agendamentos. Clique no que quer ver.',
+     'Alguns pedem período: escolha a data de início e de fim nos campos acima da tabela.',
+     'Para guardar ou mandar para o contador, use <b>Exportar Excel</b>. Para imprimir, use <b>Imprimir</b>.'],
+  n:'O relatório <b>Recuperação de pacientes</b> é diferente dos outros: ele mostra quem parou de vir e já traz a mensagem pronta para chamar de volta.'},
+ {id:'recuperar',t:'Chamar de volta quem parou de vir',
+  tags:'recuperacao recuperar paciente cliente sumiu sumido voltar volta abandonou abandono parou pararam retorno reativar chamar inativo nao aparece nao volta faz tempo perdido',
+  p:['Abra <b>Relatórios</b> e escolha <b>Recuperação de pacientes</b>.',
+     'A primeira tela mostra todos os serviços cadastrados e, em cada um, quantas pessoas estão paradas em cada situação. Comece pelo de maior potencial.',
+     'Clique em <b>Abrir</b> no serviço. Aparecem quatro grupos: quem abandonou o tratamento, quem avaliou e não voltou, quem já fez e sumiu, e quem nunca fez.',
+     'Ajuste o filtro <b>Sem vir há</b> para o prazo que faz sentido no seu caso. Dá para escrever qualquer número de dias.',
+     'Clique em <b>Chamar</b> na linha da pessoa: abre o WhatsApp com a mensagem já escrita, com o nome e o procedimento dela.'],
+  n:'Quem tem horário já marcado não aparece nas listas, para você não chamar quem já vem.'},
+ {id:'mensagem',t:'Mandar mensagem para o paciente pelo WhatsApp',
+  tags:'whatsapp mensagem mandar enviar zap cobrar lembrete confirmacao',
+  p:['Em quase toda tela que mostra um paciente existe um botão de WhatsApp. Ele abre a conversa com o texto já escrito.',
+     'Para confirmar o horário do dia seguinte: <b>Confirmação e Alertas</b>.',
+     'Para cobrar parcela vencida: <b>Financeiro</b>, aba Inadimplência.',
+     'Para chamar quem sumiu: <b>Relatórios</b>, Recuperação de pacientes.',
+     'O texto de cada tipo de mensagem muda em <b>Configurações</b>, no campo correspondente.'],
+  n:'O sistema nunca envia sozinho. Ele abre a conversa com o texto pronto e quem aperta enviar é você, para você poder conferir antes.'},
+ {id:'paciente',t:'Cadastrar um paciente',
+  tags:'cadastrar paciente cliente novo ficha cpf endereco cep',
+  p:['Abra <b>Pacientes</b> e clique em <b>Adicionar</b>.',
+     'Nome e celular bastam para começar. O resto dá para completar depois.',
+     'Se preencher o CEP, o endereço vem sozinho.',
+     'Para encontrar depois, use a busca no topo: ela procura por nome, por CPF e pelo código.'],
+  n:'As letrinhas A a Z ao lado da lista saltam direto para a inicial. Clicando em D, a lista pula para o primeiro nome com D.'},
+ {id:'prontuario',t:'Ver o histórico completo de um paciente',
+  tags:'prontuario historico ficha evolucao linha do tempo tudo do paciente',
+  p:['Abra <b>Prontuário</b> no menu, ou clique no nome do paciente em qualquer tela.',
+     'A linha do tempo junta tudo: agendamento, atendimento, anamnese, evolução, foto, exame, documento assinado, pagamento e tratamento.',
+     'Os botões em cima filtram por tipo, para achar só as fotos ou só os exames.'],
+  n:''},
+ {id:'procedimento',t:'Cadastrar um procedimento e o preço',
+  tags:'procedimento servico preco cadastrar valor sessao pacote comissao duracao',
+  p:['Abra <b>Procedimentos e preços</b> e clique em <b>Adicionar</b>.',
+     'Nome e preço bastam. A duração serve para a agenda calcular o horário sozinha.',
+     'Se for pacote, preencha quantas sessões tem e o preço do pacote.',
+     'A comissão em porcentagem alimenta o relatório de comissões.'],
+  n:'Cadastrar o procedimento é o que liga o relatório de Recuperação de pacientes: é por ele que o sistema descobre quem nunca fez e quem abandonou.'},
+ {id:'financeiro',t:'Lançar um pagamento e emitir recibo',
+  tags:'financeiro pagamento receber recibo parcela dinheiro pix cartao lancamento caixa',
+  p:['Abra <b>Financeiro</b> e clique em <b>Novo lançamento</b>, ou lance direto pela comanda do atendimento.',
+     'Escolha o paciente, o valor e a forma de pagamento.',
+     'Se for parcelado, informe quantas parcelas: o sistema cria uma linha por parcela com o vencimento de cada uma.',
+     'Para o recibo, clique na linha do pagamento e use <b>Recibo</b>. Ele sai com o logotipo e os dados da clínica.'],
+  n:'Parcela vencida e não paga cai sozinha na aba Inadimplência, com o botão de cobrança por WhatsApp.'},
+ {id:'importar',t:'Trazer os dados de outro sistema',
+  tags:'importar importacao excel planilha migrar clinicorp trazer dados outro sistema',
+  p:['Peça ao sistema antigo a exportação em Excel. Quase todos exportam.',
+     'Abra <b>Importar Dados</b> e escolha o tipo: pacientes primeiro, depois financeiro, tratamentos, anamnese e agendamentos.',
+     'Selecione a planilha. O sistema mostra as colunas que reconheceu e deixa você corrigir o que ele errou.',
+     'Confira a prévia antes de gravar.'],
+  n:'Sempre comece pelos pacientes. Os outros arquivos se ligam a eles pelo nome ou pelo código.'},
+ {id:'termo',t:'Colher assinatura em termo ou documento',
+  tags:'termo assinatura assinar documento consentimento contrato autorizacao',
+  p:['Abra o paciente e vá em <b>Documentos</b>.',
+     'Escolha o modelo e gere o documento.',
+     'Para assinar ali na clínica, passe o aparelho e a pessoa assina com o dedo.',
+     'Para assinar de casa, use <b>Enviar para assinar</b>: vai um link por WhatsApp e a pessoa assina pelo celular dela.'],
+  n:'O documento assinado recebe um código de verificação. Se alguém alterar o texto depois, o código deixa de bater e a alteração fica provada.'},
+ {id:'cor',t:'Mudar as cores, a letra e o logotipo',
+  tags:'cor logotipo letra fonte personalizar marca visual aparencia tema',
+  p:['Abra <b>Configurações</b>, aba Dados da clínica.',
+     'O primeiro cartão é <b>Letra do sistema</b>: sete opções, cada uma com exemplo. Clique e muda na hora.',
+     'Logo abaixo ficam a cor principal e a cor da barra de cima.',
+     'Mais abaixo, <b>Logotipo da clínica</b>: envie um PNG ou JPG e ele passa a aparecer no menu e nos recibos.'],
+  n:'A escolha vale para a clínica inteira, em todos os aparelhos e para toda a equipe.'},
+ {id:'profissional',t:'Cadastrar outro profissional',
+  tags:'profissional equipe funcionario podologa colega usuario adicionar pessoa',
+  p:['Abra <b>Profissional</b> e clique em <b>Adicionar</b>.',
+     'A cor escolhida é a que o profissional terá na agenda.',
+     'A comissão em porcentagem é usada quando o procedimento não tem comissão própria.'],
+  n:''},
+ {id:'exame',t:'Guardar exame do paciente',
+  tags:'exame upload arquivo pdf laudo anexar resultado',
+  p:['Abra <b>Exames</b> e envie o arquivo, ou envie direto pela ficha do paciente.',
+     'O sistema tenta identificar o paciente pelo nome que está no arquivo. Confira antes de gravar.',
+     'O exame passa a aparecer na linha do tempo do prontuário.'],
+  n:''},
+ {id:'backup',t:'Onde ficam os dados e o que acontece se o computador quebrar',
+  tags:'backup nuvem perder dados seguranca servidor guardar computador quebrou',
+  p:['Os dados ficam na nuvem, não no aparelho. Entrando com o mesmo e-mail de outro computador ou celular, está tudo lá.',
+     'Para levar uma cópia para fora do sistema, use <b>Exportar Excel</b> nos relatórios.'],
+  n:''}];
+function ajudaBusca(q){const n=norm(q);if(!n)return AJUDA;
+ const ts=n.split(' ').filter(w=>w.length>=3);
+ return AJUDA.map(a=>{const alvo=norm(a.t+' '+a.tags+' '+a.p.join(' '));
+  let s=0; if(alvo.includes(n))s+=10;
+  ts.forEach(w=>{if(norm(a.t).includes(w))s+=4; else if(norm(a.tags).includes(w))s+=3; else if(alvo.includes(w))s+=1});
+  return {a,s}}).filter(x=>x.s>0).sort((x,y)=>y.s-x.s).map(x=>x.a)}
+function vAjuda(){const q=UI.ajQ||'',L=ajudaBusca(q),ab=UI.ajAberto||'';
+ const temIA=!!str(S.config.iaChave);
+ return `<div class="page"><div class="phead"><div><h1>Ajuda</h1><p class="sub">Como fazer cada coisa no BlackFlow, passo a passo.</p></div></div>
+ <div class="card">
+  <label class="ajbusca">${ico('menu',18)}<input value="${esc(q)}" oninput="UI.ajQ=this.value;UI.ajAberto='';render()" placeholder="Escreva a sua dúvida. Exemplo: como tiro foto do pé"></label>
+  ${L.length?`<div class="ajlista">${L.map(a=>`
+   <div class="ajitem ${ab===a.id?'on':''}">
+    <button class="ajt" onclick="UI.ajAberto=UI.ajAberto==='${a.id}'?'':'${a.id}';render()">
+     <span>${esc(a.t)}</span><i>${ab===a.id?'&minus;':'+'}</i></button>
+    ${ab===a.id?`<div class="ajc"><ol>${a.p.map(x=>`<li>${x}</li>`).join('')}</ol>
+     ${a.n?`<p class="ajn">${a.n}</p>`:''}</div>`:''}
+   </div>`).join('')}</div>`
+  :`<div class="note">Nada na ajuda sobre isso.${temIA?' Pergunte à inteligência artificial abaixo.':''}</div>`}
+ </div>
+ ${temIA?`<div class="card"><h2>Perguntar à inteligência artificial</h2>
+  <p class="sub">Para o que a ajuda acima não cobre. Ela só responde sobre o uso do BlackFlow, e não tem acesso aos dados dos ${esc(SEG().pessoas.toLowerCase())}.</p>
+  <div style="display:flex;gap:8px;flex-wrap:wrap">
+   <input id="iaQ" placeholder="Escreva a sua pergunta" style="flex:1;min-width:200px;border:1px solid var(--line);border-radius:8px;padding:10px 12px"
+    onkeydown="if(event.key==='Enter')iaPerguntar()">
+   <button class="btn" onclick="iaPerguntar()">Perguntar</button></div>
+  <div id="iaResp"></div></div>`
+ :`<div class="card"><h2>Perguntar à inteligência artificial</h2>
+  <p class="sub">Dá para ligar um assistente que responde o que a ajuda acima não cobre. É gratuito e a chave é da clínica, pega em poucos minutos no Google AI Studio.</p>
+  <div class="note">Enquanto não estiver ligado, a ajuda acima funciona normalmente: ela responde na hora, sem internet e sem custo.
+   <div style="margin-top:10px"><button class="btn sm" onclick="go('config');UI.cfgTab='clinica';render()">Ir para Configurações</button></div></div></div>`}
+ </div>`}
+/* A chave é da clínica e fica na configuração dela. Nunca uma chave da BlackSolutions:
+   tudo que vai para o navegador pode ser lido por quem abre o sistema. */
+const IA_REGRA=`Você é o assistente de uso do BlackFlow, um sistema de agenda e gestão para clínicas de podologia, estética, salões de beleza e afins.
+Responda APENAS perguntas sobre como usar o BlackFlow. Para qualquer outro assunto, responda exatamente: "Eu só respondo dúvidas sobre o uso do BlackFlow."
+Nunca dê conselho clínico, diagnóstico, dosagem, orientação de tratamento, conselho jurídico, contábil ou financeiro.
+Você não tem acesso aos dados de nenhum paciente e não deve inventar nenhum.
+Responda em português do Brasil, em no máximo seis linhas, em passos numerados quando for um procedimento.
+Se a resposta não estiver na documentação abaixo, diga que não sabe e sugira falar com o suporte da BlackSolutions. Não invente nome de tela, de botão ou de menu.
+
+DOCUMENTAÇÃO DO SISTEMA:
+`;
+function iaDoc(){return AJUDA.map(a=>`## ${a.t}\n${a.p.map((x,i)=>(i+1)+'. '+x.replace(/<[^>]+>/g,'')).join('\n')}${a.n?'\nObservação: '+a.n.replace(/<[^>]+>/g,''):''}`).join('\n\n')}
+async function iaPerguntar(){const el=$('#iaQ');if(!el)return;const q=str(el.value).trim();
+ const saida=$('#iaResp');if(!q||!saida)return;
+ const chave=str(S.config.iaChave);
+ if(!chave){saida.innerHTML='<div class="note">Nenhuma chave configurada.</div>';return}
+ saida.innerHTML='<div class="note">Pensando...</div>';
+ try{
+  const r=await fetch('https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key='+encodeURIComponent(chave),
+   {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({
+    system_instruction:{parts:[{text:IA_REGRA+iaDoc()}]},
+    contents:[{role:'user',parts:[{text:q}]}],
+    generationConfig:{temperature:0.2,maxOutputTokens:600}})});
+  const j=await r.json();
+  if(!r.ok){const m=(j&&j.error&&j.error.message)||('erro '+r.status);
+   saida.innerHTML=`<div class="note">${/API key not valid|API_KEY_INVALID/i.test(m)?'A chave não foi aceita pelo Google. Confira em Configurações se ela foi colada inteira.':
+    /quota|RESOURCE_EXHAUSTED|429/i.test(m)?'O limite gratuito do Google foi atingido por agora. Tente de novo daqui a pouco.':esc(m)}</div>`;return}
+  const t=((((j.candidates||[])[0]||{}).content||{}).parts||[]).map(p=>p.text).join('').trim();
+  saida.innerHTML=t?`<div class="iaresp">${esc(t).replace(/\n/g,'<br>')}</div>
+   <p class="sub" style="margin-top:8px">Resposta de inteligência artificial. Confira antes de seguir, principalmente se envolver dinheiro ou dado de ${esc(SEG().pessoa.toLowerCase())}.</p>`
+   :'<div class="note">Não veio resposta. Tente escrever a pergunta de outro jeito.</div>'}
+ catch(e){saida.innerHTML='<div class="note">Não deu para falar com o Google. Verifique a internet.</div>'}}
+function cfgCardIA(){const tem=!!str(S.config.iaChave);
+ return `<div class="card"><h2>Assistente de dúvidas</h2>
+ <p class="sub" style="margin-bottom:12px">Liga o assistente de inteligência artificial dentro de <b>Ajuda</b>, para as dúvidas que a ajuda escrita não cobre. É gratuito dentro do limite do Google.</p>
+ <div class="note" style="margin-bottom:12px">Como pegar a chave, em três passos:
+  <ol style="margin:8px 0 0;padding-left:20px">
+   <li>Abra <b>aistudio.google.com/apikey</b> e entre com a conta Google da clínica.</li>
+   <li>Clique em criar chave. Ela aparece uma vez, começando com AIza.</li>
+   <li>Copie e cole no campo abaixo.</li></ol></div>
+ <div class="note" style="margin-bottom:12px;border-left:3px solid var(--warn)">A chave fica guardada na configuração desta clínica e vai junto para o navegador de quem usa o sistema aqui. Quem tiver acesso ao sistema da clínica consegue lê-la. Use uma chave criada só para isto, do plano gratuito, e não uma chave ligada a cobrança.</div>
+ <div class="fgrid"><label>Chave do Google AI Studio<input type="password" id="cfgIa" value="${esc(S.config.iaChave||'')}" placeholder="AIza..." autocomplete="off"></label></div>
+ <div style="display:flex;gap:8px;margin-top:10px;flex-wrap:wrap">
+  <button class="btn" onclick="iaSalvarChave()">Salvar chave</button>
+  ${tem?`<button class="btn ghost" onclick="iaTestar(this)">Testar</button><button class="btn ghost" onclick="iaApagarChave()">Remover</button>`:''}
+ </div><div id="iaTeste"></div></div>`}
+function iaSalvarChave(){const e=$('#cfgIa');if(!e)return;S.config.iaChave=str(e.value).trim();save();render();
+ toast(S.config.iaChave?'Chave salva. O assistente já aparece em Ajuda.':'Chave removida.')}
+function iaApagarChave(){S.config.iaChave='';save();render();toast('Chave removida.')}
+async function iaTestar(bt){const d=$('#iaTeste');if(d)d.innerHTML='<div class="note">Testando...</div>';
+ try{const r=await fetch('https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key='+encodeURIComponent(str(S.config.iaChave)),
+  {method:'POST',headers:{'Content-Type':'application/json'},
+   body:JSON.stringify({contents:[{role:'user',parts:[{text:'responda apenas: ok'}]}],generationConfig:{maxOutputTokens:10}})});
+  const j=await r.json();
+  if(d)d.innerHTML=r.ok?'<div class="note" style="border-left:3px solid var(--ok)">A chave funciona. O assistente está ligado em Ajuda.</div>'
+   :`<div class="note" style="border-left:3px solid var(--bad)">${esc((j&&j.error&&j.error.message)||('erro '+r.status))}</div>`}
+ catch(e){if(d)d.innerHTML='<div class="note">Não deu para falar com o Google.</div>'}}
+
 function vRelatorios(){const r=repData(UI.rel);const title=Object.values(REPORTS).flat().find(x=>x[0]===UI.rel)?.[1]||'';window._rep=r;
  const mi=new Set(r.money||[]);
  return `<div class="page"><div class="phead"><div><h1>Relatórios</h1><p class="sub">Acompanhe métricas com relatórios da clínica.</p></div></div><div class="split"><div class="card rlist" style="padding:8px">${Object.entries(REPORTS).map(([g,L])=>`<div class="rgrp">${g}</div>${azPor(L,x=>x[1]).map(([k,t])=>`<button class="${UI.rel===k?'on':''}" onclick="UI.rel='${k}';render()">${t}</button>`).join('')}`).join('')}</div>
@@ -2533,8 +2748,8 @@ const r2=v=>Math.round((Number(v)||0)*100)/100;
 const optList=(arr,v)=>arr.map(o=>{const [val,lab]=Array.isArray(o)?o:[o,o];return `<option value="${esc(val)}" ${String(val)===String(v??'')?'selected':''}>${esc(lab)}</option>`}).join('');
 
 function menuItens(){const P=SEG().pessoas;
- if(soAgenda())return menuOrdem([['agenda','Agenda','cal'],['confirmacao','Confirmação e Alertas','bell'],['pacientes',P,'user'],['prontuarios','Prontuário','file'],['fotorapida','Inserir foto','cam'],['profissionais','Profissional','badge'],['servicos',ehSeg('podologia')?'Procedimentos e preços':'Serviços e preços','report']].filter(([k])=>podeTela(k)));
- const base=[['agenda','Agenda','cal'],['confirmacao','Confirmação e Alertas','bell'],['indicacoes','Controle de Indicação','share'],['vouchers','Controle de Voucher','gift'],['dashboard','Dashboard Analítico','chart'],['financeiro','Financeiro','money'],['importar','Importar Dados','up'],['pacientes',P,'user'],['prontuarios','Prontuário','file'],['fotorapida','Inserir foto','cam'],['profissionais','Profissional','badge'],['relatorios','Relatórios','report']];
+ if(soAgenda())return menuOrdem([['agenda','Agenda','cal'],['confirmacao','Confirmação e Alertas','bell'],['pacientes',P,'user'],['prontuarios','Prontuário','file'],['ajuda','Ajuda','alert'],['fotorapida','Inserir foto','cam'],['profissionais','Profissional','badge'],['servicos',ehSeg('podologia')?'Procedimentos e preços':'Serviços e preços','report']].filter(([k])=>podeTela(k)));
+ const base=[['agenda','Agenda','cal'],['confirmacao','Confirmação e Alertas','bell'],['indicacoes','Controle de Indicação','share'],['vouchers','Controle de Voucher','gift'],['dashboard','Dashboard Analítico','chart'],['financeiro','Financeiro','money'],['importar','Importar Dados','up'],['pacientes',P,'user'],['prontuarios','Prontuário','file'],['ajuda','Ajuda','alert'],['fotorapida','Inserir foto','cam'],['profissionais','Profissional','badge'],['relatorios','Relatórios','report']];
  if(ehSeg('podologia'))return menuOrdem([...base,['exames','Exames','file'],['servicos','Procedimentos e preços','report'],['estoque','Estoque','badge']].filter(([k])=>podeTela(k)));
  const extra=[['comandas','Comandas','file'],['caixa','Caixa do dia','money'],['servicos','Serviços e preços','report'],['estoque',ehSeg('estetica')?'Produtos e lotes':'Estoque','badge'],['comissoes',ehSeg('beleza')?'Comissões e salão-parceiro':'Comissões','chart']];
  if(ehSeg('estetica'))extra.push(['protocolos','Protocolos','report'],['equipamentos','Equipamentos','gear']);
@@ -3484,7 +3699,7 @@ function agNovo(a,s){if(s==='Desmarcado'||s==='Faltou')return false;const k=a.da
  const hist=c=>S[c].some(x=>x.pacienteId===a.pacienteId&&((x.data||x.vencimento||x.pagamento||'')<a.data)&&(x.data||x.vencimento||x.pagamento));
  return !hist('evolucoes')&&!hist('tratamentos')&&!S.lancamentos.some(l=>l.pacienteId===a.pacienteId&&l.pagamento&&l.pagamento<a.data)}
 /* ============ Atualização: aviso com botão Atualizar agora ============ */
-const VERSAO_APP='1.9.45';const URL_VERSAO_JSON='https://raw.githubusercontent.com/TheIgor12/blacksolutions/main/versao.json';
+const VERSAO_APP='1.9.46';const URL_VERSAO_JSON='https://raw.githubusercontent.com/TheIgor12/blacksolutions/main/versao.json';
 const numV=v=>String(v||'0').split(/\D+/).filter(Boolean).map(Number);
 function versaoMaior(a,b){const x=numV(a),y=numV(b);for(let i=0;i<Math.max(x.length,y.length);i++){const d=(x[i]||0)-(y[i]||0);if(d)return d>0}return false}
 const ATU={nova:null,timer:null};
@@ -3744,7 +3959,7 @@ function vConfig(){const t=CFG_ABAS.some(a=>a[0]===UI.cfgTab)?UI.cfgTab:'clinica
  const ajuda={clinica:'Nome, contato, endereço, cores, logotipo e tipo de negócio. Esses dados saem nos recibos e nas mensagens.',atendimento:'Agendamento online, lembretes por WhatsApp, aviso na tela e textos dos termos.',financeiro:'Chave Pix da clínica, taxas e fidelidade. Usado nas cobranças e no recebimento.',equipe:'Quem usa o sistema e o que cada pessoa pode ver.',plano:'Plano contratado e troca de plano.',sistema:'Backup, exportação para Excel e apagar dados.'}[t];
  return `<div class="page" style="max-width:980px"><div class="phead"><div><h1>Configurações</h1><p class="sub">${esc(ajuda)}</p></div></div>
  <div class="filters" style="margin-bottom:14px;flex-wrap:wrap">${CFG_ABAS.map(([k,n])=>`<button class="btn ${t===k?'':'ghost'} sm" onclick="UI.cfgTab='${k}';render()">${esc(n)}</button>`).join(' ')}</div>
- ${t==='clinica'?cfgCardFonte()+cfgCardClinica()+cfgCardLogo()+cardSegmentoConfig():''}
+ ${t==='clinica'?cfgCardFonte()+cfgCardClinica()+cfgCardLogo()+cfgCardIA()+cardSegmentoConfig():''}
  ${t==='atendimento'?cardAgOnline()+cardMsgsConfig()+cfgCardAnamnese()+cfgCardTermos():''}
  ${t==='financeiro'?cardPixConfig():''}
  ${t==='equipe'?cardAcessoConfig():''}
