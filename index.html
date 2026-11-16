@@ -392,6 +392,7 @@ function toast(msg){const t=document.createElement('div');t.className='toast';t.
 function download(name,blob){if(window.pywebview&&window.pywebview.api&&window.pywebview.api.salvar_arquivo){const fr=new FileReader();fr.onload=async()=>{const p=await window.pywebview.api.salvar_arquivo(name,String(fr.result).split(',')[1]);if(p)toast('Arquivo salvo em '+p)};fr.readAsDataURL(blob);return}const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=name;document.body.appendChild(a);a.click();setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove()},500)}
 
 const ICONS={
+ card:'<rect x="2" y="5" width="20" height="14" rx="2"/><path d="M2 10h20"/><path d="M6 15h4"/>',
  bell:'<path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/>',
  share:'<circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><path d="M8.6 13.5l6.8 4M15.4 6.5l-6.8 4"/>',
  gift:'<rect x="3" y="8" width="18" height="4" rx="1"/><path d="M12 8v13M19 12v9H5v-9M7.5 8a2.5 2.5 0 0 1 0-5C11 3 12 8 12 8s1-5 4.5-5a2.5 2.5 0 0 1 0 5"/>',
@@ -851,11 +852,52 @@ function globalSearch(q){const r=$('#gsr');const n=norm(q);if(!n){r.classList.re
 function render(){if(NV.ativa&&UI.auth){$('#app').innerHTML=vAuth();setTimeout(()=>{const i=document.querySelector('#app input');if(i)i.focus()},0);return}
  document.documentElement.style.setProperty('--acc',S.config.cor||'#0b6cf2');document.documentElement.style.setProperty('--top',S.config.corTopo||'#0b0d12');const fv=$('#fav');if(fv&&fv.href!==ICONE)fv.href=ICONE;
  if(soAgenda()&&!VIEWS_AGENDA.includes(UI.view))UI.view='agenda';
- if(perfilAtual()){const livre=['inicio','paciente'];const vk=UI.view==='paciente'?'pacientes':UI.view;
+ if(perfilAtual()){const livre=['inicio','paciente','blackpay'];const vk=UI.view==='paciente'?'pacientes':UI.view;
   if(!livre.includes(UI.view)&&!podeTela(vk)||UI.view==='paciente'&&!podeTela('pacientes')){const m=menuItens();UI.view=m.length?m[0][0]:'inicio';UI.param=null}}
- const V={inicio:vInicio,agenda:vAgenda,pacientes:vPacientes,paciente:vPaciente,financeiro:vFinanceiro,dashboard:vDashboard,relatorios:vRelatorios,profissionais:vProfissionais,importar:vImportar,config:vConfig,servicos:vServicos,estoque:vEstoque,exames:vExames,comandas:vComandas,caixa:vCaixa,comissoes:vComissoes,protocolos:vProtocolos,equipamentos:vEquipamentos,confirmacao:vConfirmacao,indicacoes:vIndicacoes,vouchers:vVouchers};
+ const V={inicio:vInicio,agenda:vAgenda,pacientes:vPacientes,paciente:vPaciente,financeiro:vFinanceiro,dashboard:vDashboard,relatorios:vRelatorios,profissionais:vProfissionais,importar:vImportar,config:vConfig,servicos:vServicos,estoque:vEstoque,exames:vExames,comandas:vComandas,caixa:vCaixa,comissoes:vComissoes,protocolos:vProtocolos,equipamentos:vEquipamentos,confirmacao:vConfirmacao,indicacoes:vIndicacoes,vouchers:vVouchers,blackpay:vBlackPay};
  let c;try{c=(V[UI.view]||vInicio)()}catch(e){console.error(e);c=`<div class="page"><div class="card">Erro ao montar a tela: ${esc(e.message)}</div></div>`}
  $('#app').innerHTML=shell(c);checarSegmento();if(!UI.regrasOk&&S.servicos.length&&!UI.auth){UI.regrasOk=1;if(regrasClinica())save()}if(!AVISO.timer)avisoIniciar();atuIniciar();if(!UI.auth){fotoIniciar();confAutoIniciar()}}
+
+/* ============ BlackPay ============ */
+function bpInteresse(){const c=S.config;c.bpInteresse=c.bpInteresse?'':new Date().toISOString();save();render();
+ toast(c.bpInteresse?'Anotado. Avisamos você quando o BlackPay abrir.':'Tudo bem, retiramos o seu aviso.')}
+function vBlackPay(){const marcado=!!(S.config||{}).bpInteresse;
+ return `<div class="page" style="max-width:860px">
+ <div class="phead"><div><h1>BlackPay <span class="badge b-warn" style="vertical-align:middle;margin-left:6px">Em desenvolvimento</span></h1>
+ <p class="sub">O meio de pagamento da BlackSolutions, feito para funcionar dentro do BlackFlow.</p></div></div>
+
+ <div class="card">
+  <h2 style="margin-top:0;font-size:17px">Ainda não está disponível</h2>
+  <p>Esta tela existe para você saber o que vem pela frente. Nada aqui está ativo e nenhuma cobrança passa por este módulo hoje.</p>
+  <p>Quando abrir, o BlackPay vai resolver um incômodo específico do dia a dia: o pagamento acontece numa maquininha que não conversa com o sistema, e depois alguém precisa digitar o recebimento no financeiro e conferir no extrato no fim do mês.</p>
+ </div>
+
+ <div class="card">
+  <h2 style="margin-top:0;font-size:17px">O que vai fazer</h2>
+  <table class="tbl mini">
+   <tr><td style="width:34%;color:var(--mut)">Maquininha</td><td>Terminal de cartão em parceria, com a taxa negociada em conjunto para todas as clínicas que usam o BlackFlow. Quanto mais clínicas, menor a taxa para cada uma.</td></tr>
+   <tr><td style="color:var(--mut)">Pagamento na comanda</td><td>O valor da comanda vai direto para a maquininha, sem ninguém digitar. Acabam os erros de valor trocado.</td></tr>
+   <tr><td style="color:var(--mut)">Baixa automática</td><td>Pagou, o recebimento aparece no financeiro na hora, já com a forma de pagamento e a taxa certas.</td></tr>
+   <tr><td style="color:var(--mut)">Conciliação</td><td>O que caiu na conta conferido com o que foi lançado, sem planilha paralela.</td></tr>
+  </table>
+ </div>
+
+ <div class="card">
+  <h2 style="margin-top:0;font-size:17px">Como vai funcionar por dentro</h2>
+  <p>A BlackSolutions não é banco e não pretende ser. O BlackPay opera em parceria com instituição autorizada pelo Banco Central, que é quem detém a licença e por onde o dinheiro passa.</p>
+  <p><b>O dinheiro da clínica vai direto para a conta da clínica.</b> A BlackSolutions não recebe, não retém e não repassa valores de terceiros em nenhum momento.</p>
+  <p class="sub" style="margin-bottom:0">Essa escolha é deliberada. É ela que permite oferecer o recurso sem embutir no preço o custo de uma estrutura regulatória que a sua clínica acabaria pagando.</p>
+ </div>
+
+ <div class="card">
+  <h2 style="margin-top:0;font-size:17px">Quer ser avisada quando abrir?</h2>
+  <p class="sub">Marcar aqui não gera compromisso, não contrata nada e não compartilha dado nenhum. Serve só para sabermos quantas clínicas têm interesse, o que ajuda a negociar uma taxa melhor.</p>
+  <div class="mact" style="justify-content:flex-start;border:0;padding:0;margin-top:12px">
+   <button class="btn ${marcado?'ghost':''}" onclick="bpInteresse()">${marcado?'Retirar o meu interesse':'Tenho interesse'}</button>
+   ${marcado?`<span class="sub" style="align-self:center">Registrado em ${br(String(S.config.bpInteresse).slice(0,10))}.</span>`:''}
+  </div>
+ </div>
+ </div>`}
 
 /* ============ Início ============ */
 function vInicio(){const vazio=!S.pacientes.length;const inad=inadList().reduce((a,o)=>a+o.valor,0);
@@ -2123,7 +2165,7 @@ function planoInfo(k){const a=(typeof ASSINATURA!=='undefined'&&ASSINATURA&&ASSI
  return Object.assign({},d[k]||{},a[k]||{})}
 const planoK=()=>planoContratado()==='agenda'?'agenda':(S.config.plano==='agenda'?'agenda':'completo');
 const soAgenda=()=>planoK()==='agenda';
-const VIEWS_AGENDA=['inicio','agenda','pacientes','paciente','profissionais','servicos','confirmacao','config'];
+const VIEWS_AGENDA=['inicio','agenda','pacientes','paciente','profissionais','servicos','confirmacao','config','blackpay'];
 const segK=()=>SEGMENTOS[S.config.segmento]?S.config.segmento:'podologia';
 const SEG=()=>SEGMENTOS[segK()];
 const ehSeg=(...k)=>k.includes(segK());
@@ -2134,12 +2176,14 @@ const r2=v=>Math.round((Number(v)||0)*100)/100;
 const optList=(arr,v)=>arr.map(o=>{const [val,lab]=Array.isArray(o)?o:[o,o];return `<option value="${esc(val)}" ${String(val)===String(v??'')?'selected':''}>${esc(lab)}</option>`}).join('');
 
 function menuItens(){const P=SEG().pessoas;
- if(soAgenda())return [['agenda','Agenda','cal'],['confirmacao','Confirmação e Alertas','bell'],['pacientes',P,'user'],['profissionais','Profissional','badge'],['servicos',ehSeg('podologia')?'Procedimentos e preços':'Serviços e preços','report']].filter(([k])=>podeTela(k));
+ if(soAgenda())return [...[['agenda','Agenda','cal'],['confirmacao','Confirmação e Alertas','bell'],['pacientes',P,'user'],['profissionais','Profissional','badge'],['servicos',ehSeg('podologia')?'Procedimentos e preços':'Serviços e preços','report']].filter(([k])=>podeTela(k)),...BPITEM];
  const base=[['agenda','Agenda','cal'],['confirmacao','Confirmação e Alertas','bell'],['indicacoes','Controle de Indicação','share'],['vouchers','Controle de Voucher','gift'],['dashboard','Dashboard Analítico','chart'],['financeiro','Financeiro','money'],['importar','Importar Dados','up'],['pacientes',P,'user'],['profissionais','Profissional','badge'],['relatorios','Relatórios','report']];
- if(ehSeg('podologia'))return [...base,['exames','Exames','file'],['servicos','Procedimentos e preços','report'],['estoque','Estoque','badge']].filter(([k])=>podeTela(k));
+ if(ehSeg('podologia'))return [...[...base,['exames','Exames','file'],['servicos','Procedimentos e preços','report'],['estoque','Estoque','badge']].filter(([k])=>podeTela(k)),...BPITEM];
  const extra=[['comandas','Comandas','file'],['caixa','Caixa do dia','money'],['servicos','Serviços e preços','report'],['estoque',ehSeg('estetica')?'Produtos e lotes':'Estoque','badge'],['comissoes',ehSeg('beleza')?'Comissões e salão-parceiro':'Comissões','chart']];
  if(ehSeg('estetica'))extra.push(['protocolos','Protocolos','report'],['equipamentos','Equipamentos','gear']);
- return [...base,...extra].filter(([k])=>podeTela(k))}
+ return [...[...base,...extra].filter(([k])=>podeTela(k)),...BPITEM]}
+/* BlackPay entra sempre por ultimo e nao depende de perfil, porque por enquanto e so informativo */
+const BPITEM=[['blackpay','BlackPay','card']];
 
 /* Escolha do segmento */
 function segCards(acao){return `<div class="grid g3">${Object.entries(SEGMENTOS).map(([k,s])=>`<div class="tile" style="${segK()===k&&S.config.segmento?'outline:3px solid var(--acc)':''}" onclick="${acao}('${k}')"><div class="ti">${ico(k==='podologia'?'user':k==='estetica'?'chart':'badge')}</div><b>${esc(s.nome)}</b><p>${esc(s.desc)}</p></div>`).join('')}</div>`}
@@ -2822,7 +2866,7 @@ function agNovo(a,s){if(s==='Desmarcado'||s==='Faltou')return false;const k=a.da
  const hist=c=>S[c].some(x=>x.pacienteId===a.pacienteId&&((x.data||x.vencimento||x.pagamento||'')<a.data)&&(x.data||x.vencimento||x.pagamento));
  return !hist('evolucoes')&&!hist('tratamentos')&&!S.lancamentos.some(l=>l.pacienteId===a.pacienteId&&l.pagamento&&l.pagamento<a.data)}
 /* ============ Atualização: aviso com botão Atualizar agora ============ */
-const VERSAO_APP='1.9.31';const URL_VERSAO_JSON='https://raw.githubusercontent.com/TheIgor12/blacksolutions/main/versao.json';
+const VERSAO_APP='1.9.32';const URL_VERSAO_JSON='https://raw.githubusercontent.com/TheIgor12/blacksolutions/main/versao.json';
 const numV=v=>String(v||'0').split(/\D+/).filter(Boolean).map(Number);
 function versaoMaior(a,b){const x=numV(a),y=numV(b);for(let i=0;i<Math.max(x.length,y.length);i++){const d=(x[i]||0)-(y[i]||0);if(d)return d>0}return false}
 const ATU={nova:null,timer:null};

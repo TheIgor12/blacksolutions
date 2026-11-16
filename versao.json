@@ -1,4 +1,4 @@
 {
-  "versao": "1.9.31",
-  "novidades": "Índice de letras nas listas de pacientes e de procedimentos: clique no D e a tela pula direto para o primeiro nome com D, destacando a linha por alguns segundos. As letras sem ninguém cadastrado aparecem apagadas. A lista de procedimentos passou a ser alfabética pura, sem agrupar por categoria. O cadastro de procedimento ficou mais simples: abre com nome, duração e preço, e só mostra pacote, categoria, comissão e situação para quem pedir."
+  "versao": "1.9.32",
+  "novidades": "Novo módulo BlackPay, último item do menu lateral. Por enquanto é apenas informativo: apresenta o meio de pagamento que está em desenvolvimento, explica que a operação vai correr por instituição autorizada pelo Banco Central e que o dinheiro da clínica vai direto para a conta da clínica. Tem um botão para a clínica registrar interesse e ser avisada quando abrir."
 }
