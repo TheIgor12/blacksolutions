@@ -1,4 +1,4 @@
 {
-  "versao": "1.9.41",
-  "novidades": "O aviso de atendimento ganhou um X no canto superior direito. O X tira o aviso da frente sem encerrá-lo, e ele volta sozinho três minutos depois. O botão Ciente passou a encerrar o aviso de verdade: antes ele só fechava a janelinha, e o aviso já não voltava de qualquer jeito. E quando chega o aviso de cinco minutos, o de quinze da mesma pessoa sai da tela, em vez de ficarem dois cartões empilhados."
+  "versao": "1.9.42",
+  "novidades": "As notificações deixaram de travar a tela do celular. Agora aparecem no máximo três de cada vez, com o resto numa fila, ficam na parte de baixo e dá para tocar a tela por trás delas. Cada aviso tem um X no canto e também fecha arrastando para o lado, e nos dois casos ele volta depois: três minutos para atendimento, duas horas para aniversário. O botão Ciente encerra de vez. A fonte do sistema passou a ser a Figtree e agora pode ser escolhida em Configurações, Dados da clínica, entre seis opções com prévia."
 }

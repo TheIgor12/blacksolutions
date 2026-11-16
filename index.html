@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>BlackFlow</title>
-<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link id="fonteLink" href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
 <link rel="icon" id="fav">
 <meta name="theme-color" content="#0b0d12"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="BlackFlow"><meta name="apple-mobile-web-app-status-bar-style" content="black">
 <script>if(/^https?:/.test(location.protocol)){document.write('<link rel="manifest" href="manifest.webmanifest"><link rel="apple-touch-icon" href="icone-180.png">')}</script>
@@ -14,7 +14,7 @@
 <style>
 :root{--acc:#0b6cf2;--acc-soft:color-mix(in srgb,var(--acc) 9%,#fff);--navy:#254775;--bg:#f2f2f3;--card:#fff;--ink:#1f2328;--mut:#6b7280;--line:#e5e7eb;--top:#122b63;--ok:#2e9d5b;--ok-soft:#e5f5ec;--warn:#b77d00;--warn-soft:#fff5d6;--bad:#d64545;--bad-soft:#fde8e8;--info:#2f7fc1;--info-soft:#e6f0fa}
 *{box-sizing:border-box}
-body{margin:0;font-family:"Plus Jakarta Sans",system-ui,-apple-system,"Segoe UI",Roboto,Arial,sans-serif;background:var(--bg);color:var(--ink);font-size:14px;-webkit-font-smoothing:antialiased;-moz-osx-font-smoothing:grayscale;letter-spacing:-0.004em}
+body{margin:0;font-family:var(--ff,"Figtree",system-ui,-apple-system,"Segoe UI",Roboto,Arial,sans-serif);background:var(--bg);color:var(--ink);font-size:14px;-webkit-font-smoothing:antialiased;-moz-osx-font-smoothing:grayscale;letter-spacing:-0.004em}
 input,select,textarea,button{font-family:inherit}
 .top{position:sticky;top:0;z-index:30;height:48px;background:linear-gradient(90deg,color-mix(in srgb,var(--top) 80%,#000),var(--top) 55%,color-mix(in srgb,var(--top) 80%,#fff));color:#fff;display:flex;align-items:center;gap:12px;padding:0 12px}
 .ico{background:none;border:0;color:inherit;cursor:pointer;padding:6px;border-radius:6px;display:inline-flex;align-items:center}
@@ -180,7 +180,15 @@ a.btn{text-decoration:none}
 .ptf{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:14px}
 .ptf button{font-size:12px;font-weight:700;padding:5px 11px;border-radius:20px;border:1px solid var(--line);background:#fff;color:var(--mut);cursor:pointer}
 .ptf button.on{background:var(--acc);border-color:var(--acc);color:#fff}
-.drop input{margin-top:12px}.agleg{display:flex;flex-wrap:wrap;gap:4px 12px;align-items:center;font-size:12.5px;font-weight:600;color:#3b4456;margin:0 8px}.agleg span{display:flex;align-items:center;gap:4px;white-space:nowrap}.agleg i{width:15px;height:15px;border-radius:4px;border-left:4px solid;display:inline-block}.refr{color:#cfd6e8;margin-right:6px;padding:4px;border-radius:8px;background:transparent;border:0;cursor:pointer}.refr:hover{background:rgba(255,255,255,.12)}.refr.gira svg{animation:gira .8s linear infinite}.avfoto{object-fit:cover;cursor:pointer;padding:0}.fmini{display:flex;flex-wrap:wrap;gap:8px;margin-top:10px}.fmini img{width:78px;height:78px;object-fit:cover;border-radius:8px;cursor:zoom-in;border:1px solid var(--line)}.fadd{width:78px;height:78px;border:2px dashed var(--line);border-radius:8px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;color:var(--mut);font-size:11px;cursor:pointer}.fadd:hover{border-color:var(--acc);color:var(--acc)}#atuFaixa{position:fixed;left:50%;bottom:18px;transform:translateX(-50%);z-index:9998;background:#0b0d12;color:#fff;border-radius:14px;box-shadow:0 18px 50px rgba(0,0,0,.35);padding:12px 16px;display:flex;gap:16px;align-items:center;flex-wrap:wrap;max-width:calc(100% - 32px);font-size:14px}#atuFaixa span{display:flex;align-items:center;gap:8px}#avisos{position:fixed;top:64px;right:16px;z-index:9999;display:flex;flex-direction:column;gap:10px;max-width:360px;width:calc(100% - 32px)}.aviso{position:relative;background:#fff;border-radius:14px;box-shadow:0 18px 50px rgba(0,0,0,.28);border-left:6px solid var(--acc);padding:14px 40px 14px 16px;animation:avisoEntra .35s ease}
+.drop input{margin-top:12px}.agleg{display:flex;flex-wrap:wrap;gap:4px 12px;align-items:center;font-size:12.5px;font-weight:600;color:#3b4456;margin:0 8px}.agleg span{display:flex;align-items:center;gap:4px;white-space:nowrap}.agleg i{width:15px;height:15px;border-radius:4px;border-left:4px solid;display:inline-block}.refr{color:#cfd6e8;margin-right:6px;padding:4px;border-radius:8px;background:transparent;border:0;cursor:pointer}.refr:hover{background:rgba(255,255,255,.12)}.refr.gira svg{animation:gira .8s linear infinite}.avfoto{object-fit:cover;cursor:pointer;padding:0}.fmini{display:flex;flex-wrap:wrap;gap:8px;margin-top:10px}.fmini img{width:78px;height:78px;object-fit:cover;border-radius:8px;cursor:zoom-in;border:1px solid var(--line)}.fadd{width:78px;height:78px;border:2px dashed var(--line);border-radius:8px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;color:var(--mut);font-size:11px;cursor:pointer}.fadd:hover{border-color:var(--acc);color:var(--acc)}#atuFaixa{position:fixed;left:50%;bottom:18px;transform:translateX(-50%);z-index:9998;background:#0b0d12;color:#fff;border-radius:14px;box-shadow:0 18px 50px rgba(0,0,0,.35);padding:12px 16px;display:flex;gap:16px;align-items:center;flex-wrap:wrap;max-width:calc(100% - 32px);font-size:14px}#atuFaixa span{display:flex;align-items:center;gap:8px}#avisos{position:fixed;top:64px;right:16px;z-index:9999;display:flex;flex-direction:column;gap:10px;max-width:360px;width:calc(100% - 32px);
+ max-height:calc(100vh - 96px);overflow-y:auto;overscroll-behavior:contain;pointer-events:none}
+#avisos .aviso{pointer-events:auto}
+@media(max-width:700px){#avisos{top:auto;bottom:12px;right:12px;left:12px;width:auto;max-width:none;max-height:58vh}}
+.aviso{touch-action:pan-y;transition:transform .18s ease,opacity .18s ease}
+.aviso.arrastando{transition:none}
+.aviso.saindo{opacity:0}
+.aviso-mais{pointer-events:auto;align-self:center;background:rgba(17,20,26,.88);color:#fff;border:0;border-radius:20px;
+ padding:6px 14px;font:inherit;font-size:12px;font-weight:600;cursor:pointer;box-shadow:0 6px 18px rgba(0,0,0,.25)}.aviso{position:relative;background:#fff;border-radius:14px;box-shadow:0 18px 50px rgba(0,0,0,.28);border-left:6px solid var(--acc);padding:14px 40px 14px 16px;animation:avisoEntra .35s ease}
 .aviso-x{position:absolute;top:7px;right:7px;width:28px;height:28px;display:flex;align-items:center;justify-content:center;
  border:0;background:transparent;border-radius:8px;cursor:pointer;color:#9aa3b2;font-size:21px;line-height:1;font-family:inherit}
 .aviso-x:hover{background:#f1f3f7;color:#1f2328}.aviso-t{display:flex;gap:6px;align-items:center;font-size:12px;font-weight:700;color:var(--acc);text-transform:uppercase;letter-spacing:.03em}.aviso-n{font-size:17px;font-weight:800;margin:6px 0 2px}.aviso-d{font-size:13px;color:#444}.aviso-b{display:flex;gap:8px;justify-content:flex-end;margin-top:10px}@keyframes avisoEntra{from{transform:translateX(40px);opacity:0}to{transform:none;opacity:1}}.drop.over{border-color:var(--acc);background:#eaf1ff}.spin{width:34px;height:34px;border:4px solid #c9d6f5;border-top-color:var(--acc);border-radius:50%;margin:0 auto;animation:gira 0.9s linear infinite}@keyframes gira{to{transform:rotate(360deg)}}
@@ -321,6 +329,32 @@ function soDig(v){return String(v==null?'':v).replace(/\D/g,'')}
 /* Nome vindo de importação costuma estar todo em maiúscula, o que deixa a tela
    pesada e difícil de ler. Aqui só a exibição muda; o cadastro continua como
    foi digitado, e nome que já tem minúscula não é tocado. */
+/* A fonte do sistema é escolhida nas Configurações. Todas são legíveis em
+   tabela densa; o que muda é o tom. A lista é curta de propósito: fonte demais
+   para escolher não ajuda ninguém. */
+const FONTES=[
+ {k:'figtree', n:'Figtree',            g:'Figtree:wght@400;500;600;700',            f:'"Figtree"',            d:'Moderna e acolhedora. Boa para clínica de estética e salão, sem perder leitura em tabela.'},
+ {k:'jakarta', n:'Plus Jakarta Sans',  g:'Plus+Jakarta+Sans:wght@400;500;600;700',  f:'"Plus Jakarta Sans"',  d:'Traço fino e discreto, aspecto profissional e sóbrio.'},
+ {k:'poppins', n:'Poppins',            g:'Poppins:wght@400;500;600;700',            f:'"Poppins"',            d:'Geométrica e redonda, a mais usada em beleza e estética. Ocupa mais espaço.'},
+ {k:'dmsans',  n:'DM Sans',            g:'DM+Sans:wght@400;500;700',                f:'"DM Sans"',            d:'Suave e compacta, aproveita bem telas pequenas.'},
+ {k:'inter',   n:'Inter',              g:'Inter:wght@400;500;600;700',              f:'"Inter"',              d:'A mais legível de todas, desenhada para tela. Visual neutro.'},
+ {k:'nunito',  n:'Nunito',             g:'Nunito:wght@400;600;700;800',             f:'"Nunito"',             d:'Arredondada e informal. Era a fonte antiga do sistema.'}];
+const FONTE_PADRAO='figtree';
+function fonteAtual(){const k=str(S.config&&S.config.fonte)||FONTE_PADRAO;return FONTES.find(f=>f.k===k)||FONTES[0]}
+function fonteAplicar(){const f=fonteAtual();
+ document.documentElement.style.setProperty('--ff',f.f+',system-ui,-apple-system,"Segoe UI",Roboto,Arial,sans-serif');
+ const l=document.getElementById('fonteLink');
+ if(l){const u='https://fonts.googleapis.com/css2?family='+f.g+'&display=swap';if(l.getAttribute('href')!==u)l.setAttribute('href',u)}}
+function fonteEscolher(k){S.config.fonte=k;save();fonteAplicar();render();toast('Fonte alterada para '+fonteAtual().n+'.')}
+function cfgCardFonte(){const at=fonteAtual();
+ return `<div class="card"><h2>Fonte do sistema</h2>
+ <p class="sub" style="margin-bottom:12px">Muda a letra de todas as telas, no computador e no celular. A escolha vale para esta clínica inteira.</p>
+ <div class="grid g3">${FONTES.map(f=>`<button class="card" style="margin:0;text-align:left;cursor:pointer;border:2px solid ${f.k===at.k?'var(--acc)':'var(--line)'};background:${f.k===at.k?'var(--acc-soft,#eef3ff)':'var(--card,#fff)'}" onclick="fonteEscolher('${f.k}')">
+  <b style="font-family:${f.f},sans-serif;font-size:17px;display:block;margin-bottom:2px">${esc(f.n)}</b>
+  <span style="font-family:${f.f},sans-serif;font-size:13px;display:block;margin-bottom:6px">Maria Aparecida · Onicocriptose · R$ 301,00</span>
+  <small style="color:var(--mut);display:block">${esc(f.d)}</small>
+  ${f.k===at.k?'<small style="color:var(--acc);font-weight:700;display:block;margin-top:6px">Em uso</small>':''}</button>`).join('')}</div>
+ <p class="sub" style="margin:12px 0 0">Sem internet, o sistema usa a letra padrão do aparelho e continua funcionando.</p></div>`}
 const NOME_MINUS=['de','da','do','das','dos','e','di','du','del','della','van','von','y'];
 function nomePessoa(v){const t=String(v==null?'':v).trim();
  if(!t||/[a-zà-ö]/.test(t))return t;
@@ -908,7 +942,7 @@ function render(){if(NV.ativa&&UI.auth){$('#app').innerHTML=vAuth();setTimeout((
   if(!livre.includes(UI.view)&&!podeTela(vk)||UI.view==='paciente'&&!podeTela('pacientes')){const m=menuItens();UI.view=m.length?m[0][0]:'inicio';UI.param=null}}
  const V={inicio:vInicio,agenda:vAgenda,pacientes:vPacientes,paciente:vPaciente,financeiro:vFinanceiro,dashboard:vDashboard,relatorios:vRelatorios,profissionais:vProfissionais,importar:vImportar,config:vConfig,servicos:vServicos,estoque:vEstoque,exames:vExames,comandas:vComandas,caixa:vCaixa,comissoes:vComissoes,protocolos:vProtocolos,equipamentos:vEquipamentos,confirmacao:vConfirmacao,indicacoes:vIndicacoes,vouchers:vVouchers,blackpay:vBlackPay,prontuarios:vProntuarios,fotorapida:vFotoRapida};
  let c;try{c=(V[UI.view]||vInicio)()}catch(e){console.error(e);c=`<div class="page"><div class="card">Erro ao montar a tela: ${esc(e.message)}</div></div>`}
- $('#app').innerHTML=shell(c);checarSegmento();if(!UI.regrasOk&&S.servicos.length&&!UI.auth){UI.regrasOk=1;if(regrasClinica())save()}if(!AVISO.timer)avisoIniciar();atuIniciar();if(!UI.auth){fotoIniciar();confAutoIniciar()}}
+ $('#app').innerHTML=shell(c);try{fonteAplicar()}catch(e){}checarSegmento();if(!UI.regrasOk&&S.servicos.length&&!UI.auth){UI.regrasOk=1;if(regrasClinica())save()}if(!AVISO.timer)avisoIniciar();atuIniciar();if(!UI.auth){fotoIniciar();confAutoIniciar()}}
 
 /* ============ BlackPay ============ */
 function bpInteresse(){const c=S.config;c.bpInteresse=c.bpInteresse?'':new Date().toISOString();save();render();
@@ -2832,19 +2866,30 @@ function anivFaixaInicio(){if(UI.auth)return '';const L=anivProximos();if(!L.len
  return `<div class="note aniv-faixa" style="margin-bottom:16px"><b>Aniversários</b><br>${L.map(({p,a})=>{const l=a.dias===0?anivMsgLink(p):'';return `${a.dias===0?'\u{1F382}':'\u{1F381}'} <button class="lnk" onclick="go('paciente','${p.id}')">${esc(nomePessoa(p.nome))}</button> ${a.dias===0?`faz <b>${a.idade} anos hoje</b>`:`faz ${a.idade} anos em <b>${a.dias} ${a.dias===1?'dia':'dias'}</b> (${br(a.dia)})`}${l?` <a class="lnk" href="${l}" target="_blank" rel="noopener">mandar parabéns</a>`:''}`}).join('<br>')}</div>`}
 function anivVistos(){try{return JSON.parse(localStorage.getItem('bf_aniv')||'{}')||{}}catch(e){return {}}}
 function anivChecar(){if(UI.auth||!S||!Array.isArray(S.pacientes))return;const V=anivVistos();const novos=[];
- anivProximos().forEach(({p,a})=>{const etapa=a.dias===0?'dia':'antes';const k=p.id+':'+a.dia+':'+etapa;if(V[k])return;V[k]=todayISO();novos.push({p,a})});
+ anivProximos().forEach(({p,a})=>{const etapa=a.dias===0?'dia':'antes';const k=p.id+':'+a.dia+':'+etapa;
+  if(V[k])return;
+  if(V['soneca:'+k]&&Date.now()<V['soneca:'+k])return;
+  V[k]=todayISO();novos.push({p,a})});
  if(!novos.length)return;
- const lim=addDays(todayISO(),-400);Object.keys(V).forEach(k=>{if(V[k]<lim)delete V[k]});
+ const lim=addDays(todayISO(),-400);Object.keys(V).forEach(k=>{if(k.indexOf('soneca:')!==0&&V[k]<lim)delete V[k]});
  try{localStorage.setItem('bf_aniv',JSON.stringify(V))}catch(e){}
  novos.forEach(anivMostrar);avisoSom();
  try{if('Notification' in window&&Notification.permission==='granted')novos.forEach(({p,a})=>new Notification(a.dias===0?'\u{1F382} Aniversário hoje':'\u{1F381} Aniversário em '+a.dias+(a.dias===1?' dia':' dias'),{body:p.nome+(a.dias===0?' faz '+a.idade+' anos hoje':' faz '+a.idade+' anos em '+br(a.dia))}))}catch(e){}
  if(UI.view==='inicio')render()}
 function anivMostrar({p,a}){let box=document.getElementById('avisos');if(!box){box=document.createElement('div');box.id='avisos';document.body.appendChild(box)}
  const d=document.createElement('div');d.className='aviso';const l=a.dias===0?anivMsgLink(p):'';
- d.innerHTML=`<div class="aviso-t">${a.dias===0?'\u{1F382} Aniversário hoje':'\u{1F381} Aniversário chegando'}</div><div class="aviso-n">${esc(p.nome)}</div><div class="aviso-d">${a.dias===0?`Faz <b>${a.idade} anos hoje</b>`:`Faz ${a.idade} anos em <b>${a.dias} ${a.dias===1?'dia':'dias'}</b>, no dia ${br(a.dia)}`}</div>
+ d.innerHTML=`${avisoBotaoX()}<div class="aviso-t">${a.dias===0?'\u{1F382} Aniversário hoje':'\u{1F381} Aniversário chegando'}</div><div class="aviso-n">${esc(nomePessoa(p.nome))}</div><div class="aviso-d">${a.dias===0?`Faz <b>${a.idade} anos hoje</b>`:`Faz ${a.idade} anos em <b>${a.dias} ${a.dias===1?'dia':'dias'}</b>, no dia ${br(a.dia)}`}</div>
  <div class="aviso-b">${l?`<a class="btn green sm" href="${l}" target="_blank" rel="noopener" data-f="wa">${waIco()} Parabéns</a>`:''}<button class="btn sm" data-f="ficha">Abrir ficha</button><button class="btn ghost sm" data-f="ok">Ciente</button></div>`;
- d.querySelector('[data-f=ok]').onclick=()=>d.remove();d.querySelector('[data-f=ficha]').onclick=()=>{d.remove();go('paciente',p.id)};const w=d.querySelector('[data-f=wa]');if(w)w.addEventListener('click',()=>setTimeout(()=>d.remove(),300));
- box.appendChild(d)}
+ const k=p.id+':'+a.dia+':'+(a.dias===0?'dia':'antes');
+ d.__encerrar=()=>{try{const V=anivVistos();V[k]=todayISO();delete V['soneca:'+k];localStorage.setItem('bf_aniv',JSON.stringify(V))}catch(e){}};
+ /* No aniversário a volta é em duas horas, e não em três minutos: ninguém quer
+    o mesmo parabéns reaparecendo o dia inteiro. */
+ d.__soneca=()=>{try{const V=anivVistos();delete V[k];V['soneca:'+k]=Date.now()+AVISO_SONECA_ANIV;localStorage.setItem('bf_aniv',JSON.stringify(V))}catch(e){}};
+ d.querySelector('[data-f=ok]').onclick=()=>avisoFechar(d,false);
+ d.querySelector('[data-f=x]').onclick=()=>avisoFechar(d,true);
+ d.querySelector('[data-f=ficha]').onclick=()=>{d.__encerrar();d.__saindo=1;d.remove();avisoPilha();go('paciente',p.id)};
+ const w=d.querySelector('[data-f=wa]');if(w)w.addEventListener('click',()=>setTimeout(()=>avisoFechar(d,false),300));
+ avisoArrastar(d);box.appendChild(d);avisoPilha()}
 /* ============ Documentos do paciente: exames, laudos, receitas, termos ============
    O arquivo inteiro fica neste computador e na nuvem da clinica. Nos dados fica
    so a ficha do documento, para a sincronizacao continuar leve. */
@@ -3114,6 +3159,37 @@ function avisoChecar(){if(S.config.avisoAgenda===false||UI.auth)return;const t=t
  try{if(window.pywebview&&window.pywebview.api&&window.pywebview.api.chamar_atencao)window.pywebview.api.chamar_atencao()}catch(e){}
  try{if('Notification' in window&&Notification.permission==='granted')novos.forEach(x=>{const p=pac(x.a.pacienteId);new Notification('BlackFlow: atendimento às '+x.a.hora,{body:(p?p.nome:'')+(x.falta?' em '+x.falta+' minutos':' agora')})})}catch(e){}}
 const AVISO_SONECA=3*60000;
+const AVISO_SONECA_ANIV=2*60*60000;
+const AVISO_MAX=3;
+/* Fechar sem perder: o X e o arraste para o lado tiram o cartão da frente e
+   marcam para voltar depois. Ciente encerra de vez. */
+function avisoFechar(d,voltar){if(!d||d.__saindo)return;d.__saindo=1;
+ if(typeof d.__soneca==='function'&&voltar)d.__soneca();
+ if(typeof d.__encerrar==='function'&&!voltar)d.__encerrar();
+ d.classList.add('saindo');d.style.transform=`translateX(${voltar?'120%':'0'})`;
+ setTimeout(()=>{d.remove();avisoPilha()},190)}
+/* Nunca mais de três cartões na tela ao mesmo tempo, para não cobrir o celular. */
+function avisoPilha(){const box=document.getElementById('avisos');if(!box)return;
+ const L=[...box.querySelectorAll('.aviso')];const btn=box.querySelector('.aviso-mais');
+ L.forEach((d,i)=>{d.hidden=i>=AVISO_MAX});
+ const sobra=Math.max(0,L.length-AVISO_MAX);
+ if(sobra){if(!btn){const b=document.createElement('button');b.className='aviso-mais';b.onclick=()=>{AVISO_MAX_TMP();};box.appendChild(b)}
+  box.querySelector('.aviso-mais').textContent='mais '+sobra+(sobra===1?' aviso':' avisos')+' na fila'}
+ else if(btn)btn.remove()}
+function AVISO_MAX_TMP(){const box=document.getElementById('avisos');if(!box)return;
+ box.querySelectorAll('.aviso').forEach(d=>d.hidden=false);const b=box.querySelector('.aviso-mais');if(b)b.remove()}
+/* Arrastar para o lado com o dedo ou com o mouse */
+function avisoArrastar(d){let x0=null,dx=0;
+ const ini=e=>{const t=e.touches?e.touches[0]:e;if(e.target.closest('button,a'))return;x0=t.clientX;dx=0;d.classList.add('arrastando')};
+ const mov=e=>{if(x0==null)return;const t=e.touches?e.touches[0]:e;dx=t.clientX-x0;
+  if(Math.abs(dx)>6){d.style.transform='translateX('+dx+'px)';d.style.opacity=String(Math.max(.25,1-Math.abs(dx)/260))}};
+ const fim=()=>{if(x0==null)return;d.classList.remove('arrastando');x0=null;
+  if(Math.abs(dx)>90){d.style.transform='translateX('+(dx>0?'120%':'-120%')+')';avisoFechar(d,true)}
+  else{d.style.transform='';d.style.opacity=''}};
+ d.addEventListener('touchstart',ini,{passive:true});d.addEventListener('touchmove',mov,{passive:true});
+ d.addEventListener('touchend',fim);d.addEventListener('touchcancel',fim);
+ d.addEventListener('mousedown',ini);window.addEventListener('mousemove',mov);window.addEventListener('mouseup',fim)}
+function avisoBotaoX(){return `<button class="aviso-x" data-f="x" title="Fechar. O aviso volta depois." aria-label="Fechar e ser avisado de novo">×</button>`}
 function avisoMostrar({a,falta,etapa}){let box=document.getElementById('avisos');if(!box){box=document.createElement('div');box.id='avisos';document.body.appendChild(box)}
  /* Chegou o aviso de 5 minutos: o de 15 do mesmo atendimento sai de cena,
     para não ficarem dois cartões da mesma paciente empilhados na tela. */
@@ -3122,14 +3198,16 @@ function avisoMostrar({a,falta,etapa}){let box=document.getElementById('avisos')
  const p=pac(a.pacienteId);const d=document.createElement('div');d.className='aviso';
  d.dataset.ag=a.id;d.dataset.etapa=etapa;
  const quando=falta>0?`em <b>${falta} ${falta===1?'minuto':'minutos'}</b>`:'<b>agora</b>';
- d.innerHTML=`<button class="aviso-x" data-f="x" title="Fechar agora. O aviso volta em 3 minutos." aria-label="Fechar e ser avisado de novo">×</button>
+ d.innerHTML=`${avisoBotaoX()}
  <div class="aviso-t">${ico('alert',18)} Está chegando a hora do atendimento</div><div class="aviso-n">${anivIco(p)}${esc(p?nomePessoa(p.nome):SEG().pessoa)}</div><div class="aviso-d">Às ${esc(a.hora)}, ${quando}${a.profissional?' · '+esc(a.profissional):''}${a.procedimento?'<br>'+esc(a.procedimento):''}</div>
  <div class="aviso-b">${p?`<button class="btn sm" data-f="ficha">Abrir ficha</button>`:''}<button class="btn ghost sm" data-f="ok" title="Não avisar mais sobre este atendimento hoje">Ciente</button></div>`;
- /* Ciente encerra o assunto. O X só tira da frente e o aviso volta. */
- d.querySelector('[data-f=ok]').onclick=()=>{AVISO.vistos[k]=1;delete AVISO.soneca[k];avisoGravar();d.remove()};
- d.querySelector('[data-f=x]').onclick=()=>{delete AVISO.vistos[k];AVISO.soneca[k]=Date.now()+AVISO_SONECA;avisoGravar();d.remove();toast('Aviso fechado. Ele volta em 3 minutos.')};
- const bf=d.querySelector('[data-f=ficha]');if(bf)bf.onclick=()=>{AVISO.vistos[k]=1;delete AVISO.soneca[k];avisoGravar();d.remove();go('paciente',p.id)};
- box.appendChild(d)}
+ /* Ciente encerra o assunto. O X e o arraste só tiram da frente, e o aviso volta. */
+ d.__encerrar=()=>{AVISO.vistos[k]=1;delete AVISO.soneca[k];avisoGravar()};
+ d.__soneca=()=>{delete AVISO.vistos[k];AVISO.soneca[k]=Date.now()+AVISO_SONECA;avisoGravar()};
+ d.querySelector('[data-f=ok]').onclick=()=>avisoFechar(d,false);
+ d.querySelector('[data-f=x]').onclick=()=>avisoFechar(d,true);
+ const bf=d.querySelector('[data-f=ficha]');if(bf)bf.onclick=()=>{d.__encerrar();d.__saindo=1;d.remove();avisoPilha();go('paciente',p.id)};
+ avisoArrastar(d);box.appendChild(d);avisoPilha()}
 function avisoIniciar(){avisoCarregar();clearInterval(AVISO.timer);AVISO.timer=setInterval(()=>{avisoChecar();anivChecar()},20000);setTimeout(avisoChecar,3000);setTimeout(anivChecar,5000);
  try{if('Notification' in window&&Notification.permission==='default'&&!window.pywebview)setTimeout(()=>Notification.requestPermission(),8000)}catch(e){}}
 
@@ -3139,7 +3217,7 @@ function agNovo(a,s){if(s==='Desmarcado'||s==='Faltou')return false;const k=a.da
  const hist=c=>S[c].some(x=>x.pacienteId===a.pacienteId&&((x.data||x.vencimento||x.pagamento||'')<a.data)&&(x.data||x.vencimento||x.pagamento));
  return !hist('evolucoes')&&!hist('tratamentos')&&!S.lancamentos.some(l=>l.pacienteId===a.pacienteId&&l.pagamento&&l.pagamento<a.data)}
 /* ============ Atualização: aviso com botão Atualizar agora ============ */
-const VERSAO_APP='1.9.41';const URL_VERSAO_JSON='https://raw.githubusercontent.com/TheIgor12/blacksolutions/main/versao.json';
+const VERSAO_APP='1.9.42';const URL_VERSAO_JSON='https://raw.githubusercontent.com/TheIgor12/blacksolutions/main/versao.json';
 const numV=v=>String(v||'0').split(/\D+/).filter(Boolean).map(Number);
 function versaoMaior(a,b){const x=numV(a),y=numV(b);for(let i=0;i<Math.max(x.length,y.length);i++){const d=(x[i]||0)-(y[i]||0);if(d)return d>0}return false}
 const ATU={nova:null,timer:null};
@@ -3399,7 +3477,7 @@ function vConfig(){const t=CFG_ABAS.some(a=>a[0]===UI.cfgTab)?UI.cfgTab:'clinica
  const ajuda={clinica:'Nome, contato, endereço, cores, logotipo e tipo de negócio. Esses dados saem nos recibos e nas mensagens.',atendimento:'Agendamento online, lembretes por WhatsApp, aviso na tela e textos dos termos.',financeiro:'Chave Pix da clínica, taxas e fidelidade. Usado nas cobranças e no recebimento.',equipe:'Quem usa o sistema e o que cada pessoa pode ver.',plano:'Plano contratado e troca de plano.',sistema:'Backup, exportação para Excel e apagar dados.'}[t];
  return `<div class="page" style="max-width:980px"><div class="phead"><div><h1>Configurações</h1><p class="sub">${esc(ajuda)}</p></div></div>
  <div class="filters" style="margin-bottom:14px;flex-wrap:wrap">${CFG_ABAS.map(([k,n])=>`<button class="btn ${t===k?'':'ghost'} sm" onclick="UI.cfgTab='${k}';render()">${esc(n)}</button>`).join(' ')}</div>
- ${t==='clinica'?cfgCardClinica()+cfgCardLogo()+cardSegmentoConfig():''}
+ ${t==='clinica'?cfgCardClinica()+cfgCardLogo()+cfgCardFonte()+cardSegmentoConfig():''}
  ${t==='atendimento'?cardAgOnline()+cardMsgsConfig()+cfgCardAnamnese()+cfgCardTermos():''}
  ${t==='financeiro'?cardPixConfig():''}
  ${t==='equipe'?cardAcessoConfig():''}
@@ -3651,6 +3729,7 @@ function telaCopiaNaoAutorizada(){
   await new Promise(r=>setTimeout(r,2500));
   if(!origemAutorizada()){telaCopiaNaoAutorizada();return}}
  try{navigator.storage&&navigator.storage.persist&&navigator.storage.persist()}catch(e){}
+ try{fonteAplicar()}catch(e){}
  try{if(/^https?:/.test(location.protocol)&&'serviceWorker' in navigator&&!window.pywebview)navigator.serviceWorker.register('sw.js')}catch(e){}
  if(NV.ativa){
   if(!window.supabase||!window.supabase.createClient){UI.auth={modo:'offline',temCache:!!(await DB.get('ultimo'))};render();return}
