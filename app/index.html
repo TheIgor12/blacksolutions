@@ -234,6 +234,14 @@ a.btn{text-decoration:none}
 .olhoW{position:relative;display:block;width:100%}.olhoW input{width:100%;padding-right:44px!important}.olhoB{position:absolute;right:6px;top:50%;transform:translateY(-50%);background:none;border:0;cursor:pointer;color:inherit;opacity:.65;padding:6px;line-height:0}.olhoB:hover{opacity:1}
 .dtW{position:relative;display:flex;align-items:center;width:100%}.dtW .dtT{width:100%;padding-right:38px!important}.dtW input[type=date]{position:absolute;right:6px;bottom:0;width:28px;height:100%;opacity:0;pointer-events:none;border:0;padding:0}.dtW .dtB{position:absolute;right:6px;top:50%;transform:translateY(-50%);background:none;border:0;padding:5px;line-height:0;cursor:pointer;color:inherit;opacity:.7}.dtW .dtB:hover{opacity:1}.dtErr{border-color:#dc2626!important;outline-color:#dc2626!important}
 .rsW{position:relative;display:flex;align-items:center;width:100%}.rsW:has(>input[style*="width"]){display:inline-flex;width:auto}.rsW>input{width:100%;padding-left:36px!important}.rsW .rsP{position:absolute;left:11px;top:50%;transform:translateY(-50%);font-size:.92em;opacity:.7;pointer-events:none}
+.azbar{display:flex;flex-wrap:wrap;gap:2px;align-items:center;margin:0 0 12px}
+.azbar button{min-width:22px;height:24px;padding:0 4px;font-size:12px;font-weight:700;line-height:1;border:1px solid var(--line);background:#fff;color:var(--acc);border-radius:5px;cursor:pointer}
+.azbar button:hover:not(:disabled){background:var(--acc);color:#fff;border-color:var(--acc)}
+.azbar button.on{background:var(--acc);color:#fff;border-color:var(--acc)}
+.azbar button:disabled{color:#c3c7ce;cursor:default;background:#fafafa}
+.azbar .azl{font-size:12px;color:var(--mut);margin-right:6px}
+@keyframes azpisca{0%,100%{background:transparent}20%,70%{background:#fff3bf}}
+tr.azflash td,.azflash.card{animation:azpisca 2s ease}
 </style>
 <script>if(/(^|\.)blackflow\.app\.br$/.test(location.hostname)){var bsc=document.createElement('script');bsc.src='/cliques.js';bsc.async=true;bsc.setAttribute('data-modo','app');document.head.appendChild(bsc)}</script></head>
 <body>
@@ -278,6 +286,13 @@ function soDig(v){return String(v==null?'':v).replace(/\D/g,'')}
 function azCmp(a,b){return String(a==null?'':a).localeCompare(String(b==null?'':b),'pt-BR',{sensitivity:'base',numeric:true})}
 function az(L,campo){const f=campo||'nome';return [...(L||[])].sort((a,b)=>azCmp(a&&a[f],b&&b[f]))}
 function azTxt(L){return [...(L||[])].sort(azCmp)}
+/* Indice de letras: clicar no A leva para o primeiro nome com A, e assim por diante */
+const AZ_LETRAS=['A','B','C','D','E','F','G','H','I','J','K','L','M','N','O','P','Q','R','S','T','U','V','W','X','Y','Z','#'];
+function azLetra(nome){const c=norm(nome).charAt(0).toUpperCase();return /[A-Z]/.test(c)?c:'#'}
+function azBarra(L,fn,atual){const tem={};(L||[]).forEach(x=>{tem[azLetra(typeof x==='string'?x:x.nome)]=1});
+ return `<div class="azbar"><span class="azl">Ir para a letra</span>${AZ_LETRAS.map(x=>`<button ${tem[x]?'':'disabled'} class="${atual===x?'on':''}" onclick="${fn}('${x}')" title="${x==='#'?'Começa com número ou símbolo':'Nomes com '+x}">${x}</button>`).join('')}${atual?`<button onclick="${fn}('')" title="Voltar ao começo da lista" style="min-width:auto;padding:0 8px;color:var(--mut)">limpar</button>`:''}</div>`}
+function azPiscar(id){const el=document.getElementById(id);if(!el)return;
+ el.scrollIntoView({block:'center',behavior:'smooth'});el.classList.add('azflash');setTimeout(()=>el.classList.remove('azflash'),2100)}
 function azPor(L,fn){return [...(L||[])].sort((a,b)=>azCmp(fn(a),fn(b)))}
 /* SHA-256 para o codigo de verificacao dos termos. Usa o do navegador e, se nao houver, o proprio. */
 function sha256Puro(msg){const rr=(n,x)=>(x>>>n)|(x<<(32-n));
@@ -1211,12 +1226,16 @@ function pacFiltered(){const raw=UI.pacQuery.trim();const q=norm(raw.replace(/^%
 function pacTable(){const L=pacFiltered();const per=UI.pacPer,pages=Math.max(1,Math.ceil(L.length/per));if(UI.pacPage>=pages)UI.pacPage=pages-1;const pg=L.slice(UI.pacPage*per,UI.pacPage*per+per);
  if(!S.pacientes.length)return `<div class="empty">Nenhum paciente cadastrado. Use <button class="lnk" onclick="go('importar')">Importar Dados</button> ou clique em Novo paciente.</div>`;
  return `<div class="tw"><table class="tbl"><thead><tr><th>Nome</th><th>Celular / WhatsApp</th><th>Nascimento</th><th>Email</th><th>Como conheceu</th><th>Status</th></tr></thead><tbody>
- ${pg.map(p=>{const l=waLink(p.celular);return `<tr><td><span style="display:flex;align-items:center;gap:8px">${avatarPac(p,'sm')}<button class="lnk" onclick="go('paciente','${p.id}')">${esc(p.nome)} (${esc(p.codigo||'')})</button><button class="lnk" title="Anamnese" onclick="anaRapida('${p.id}')">anamnese</button></span></td><td>${esc(p.celular||'-')} ${l?`<a href="${l}" target="_blank" rel="noopener">${waIco()}</a>`:''}</td><td>${br(p.nascimento)}</td><td>${esc(p.email||'-')}</td><td>${esc(p.comoConheceu||'-')}</td><td>${badgeFor(p.status||'Ativo')}</td></tr>`}).join('')||`<tr><td colspan="6" class="empty">Nenhum paciente encontrado.</td></tr>`}</tbody></table></div>
+ ${pg.map(p=>{const l=waLink(p.celular);return `<tr id="pacR_${p.id}"><td><span style="display:flex;align-items:center;gap:8px">${avatarPac(p,'sm')}<button class="lnk" onclick="go('paciente','${p.id}')">${esc(p.nome)} (${esc(p.codigo||'')})</button><button class="lnk" title="Anamnese" onclick="anaRapida('${p.id}')">anamnese</button></span></td><td>${esc(p.celular||'-')} ${l?`<a href="${l}" target="_blank" rel="noopener">${waIco()}</a>`:''}</td><td>${br(p.nascimento)}</td><td>${esc(p.email||'-')}</td><td>${esc(p.comoConheceu||'-')}</td><td>${badgeFor(p.status||'Ativo')}</td></tr>`}).join('')||`<tr><td colspan="6" class="empty">Nenhum paciente encontrado.</td></tr>`}</tbody></table></div>
  <div class="pager"><span>${L.length} Registros &nbsp; Linhas por página <select class="inp" style="padding:3px" onchange="UI.pacPer=+this.value;UI.pacPage=0;refreshPac()">${[10,25,50,100].map(n=>`<option ${n===per?'selected':''}>${n}</option>`).join('')}</select></span>
  <span>Página ${UI.pacPage+1} de ${pages} <button onclick="UI.pacPage=0;refreshPac()">«</button> <button onclick="UI.pacPage=Math.max(0,UI.pacPage-1);refreshPac()">‹</button> <button onclick="UI.pacPage=Math.min(${pages-1},UI.pacPage+1);refreshPac()">›</button> <button onclick="UI.pacPage=${pages-1};refreshPac()">»</button></span></div>`}
-function refreshPac(){const el=$('#pacT');if(el)el.innerHTML=pacTable()}
+function refreshPac(){const el=$('#pacT');if(el)el.innerHTML=pacTable();const b=$('#pacAZ');if(b)b.innerHTML=azBarra(pacFiltered(),'pacIrLetra',UI.pacLetra||'')}
+function pacIrLetra(L){const arr=pacFiltered();UI.pacLetra=L||'';
+ if(!L){UI.pacPage=0;refreshPac();return}
+ const i=arr.findIndex(x=>azLetra(x.nome)===L);if(i<0){refreshPac();return}
+ UI.pacPage=Math.floor(i/UI.pacPer);refreshPac();setTimeout(()=>azPiscar('pacR_'+arr[i].id),60)}
 function vPacientes(){return `<div class="page"><div class="phead"><div><h1>${SEG().pessoas}</h1><p class="sub">Busque, cadastre e acompanhe ${ehSeg('podologia')?'os pacientes da sua clínica':'os seus clientes'}.</p></div><button class="btn" onclick="pacForm()">${ico('plus',16)} Novo ${SEG().pessoa.toLowerCase()}</button></div>
- <div class="card"><input class="inp" style="width:100%;max-width:420px;margin-bottom:12px" placeholder="Pesquise por nome, CPF, celular ou código (use % antes para sobrenome)" value="${esc(UI.pacQuery)}" oninput="UI.pacQuery=this.value;UI.pacPage=0;refreshPac()"><div id="pacT">${pacTable()}</div></div></div>`}
+ <div class="card"><input class="inp" style="width:100%;max-width:420px;margin-bottom:12px" placeholder="Pesquise por nome, CPF, celular ou código (use % antes para sobrenome)" value="${esc(UI.pacQuery)}" oninput="UI.pacQuery=this.value;UI.pacPage=0;refreshPac()"><div id="pacAZ">${azBarra(pacFiltered(),'pacIrLetra',UI.pacLetra||'')}</div><div id="pacT">${pacTable()}</div></div></div>`}
 function pacForm(id){const p=id?pac(id):null;
  formModal(p?'Editar cadastro':'Novo '+SEG().pessoa.toLowerCase(),[{k:'nome',l:'Nome completo',req:true,full:true},{k:'celular',l:'Celular / WhatsApp',req:!p},{k:'nascimento',l:'Data de nascimento',type:'date'},{k:'cpf',l:'CPF'},{k:'telefone',l:'Telefone fixo'},{k:'email',l:'E-mail',type:'email'},{k:'rg',l:'RG'},{k:'sexo',l:'Sexo',type:'select',opts:['','Feminino','Masculino','Outro']},{k:'estadoCivil',l:'Estado civil'},{k:'profissao',l:'Profissão'},{k:'comoConheceu',l:'Como conheceu',type:'select',opts:['','Google','Instagram','Facebook','Indicado por','Passou em frente','Outros']},{k:'indicadoPor',l:'Indicado por (nome de quem indicou)',list:'dlPac'},
   {k:'empresa',l:'Empresa onde trabalha'},{k:'cep',l:'CEP (preenche o endereço sozinho)',cep:{}},{k:'endereco',l:'Endereço'},{k:'numero',l:'Número'},{k:'complemento',l:'Complemento'},{k:'bairro',l:'Bairro'},{k:'cidade',l:'Cidade'},{k:'uf',l:'UF'},{k:'plano',l:'Plano ou convênio'},{k:'responsavel',l:'Responsável'},{k:'status',l:'Status',type:'select',opts:['Ativo','Inativo']},{k:'observacoes',l:'Observações',type:'textarea',full:true,rows:3}],
@@ -2188,16 +2207,43 @@ function avisoServico(v,editando){const nome=str(v).trim();if(nome.length<3)retu
  if(!par.length)return '';
  return `<b class="novo">Confira antes de salvar</b> J\u00e1 existe procedimento parecido: `
   +par.map(y=>`<button class="lnk" type="button" data-mfset="nome" data-mfval="${esc(y.nome)}">${esc(y.nome)}${Number(y.preco)>0?' ('+money(y.preco)+')':''}</button>`).join('');}
-function vServicos(){const L=[...S.servicos].sort((a,b)=>azCmp(a.categoria,b.categoria)||azCmp(a.nome,b.nome));
+function vServicos(){const L=az(S.servicos);
  return `<div class="page"><div class="phead"><div><h1>${ehSeg('podologia')?'Procedimentos e preços':'Serviços e preços'}</h1><p class="sub">${ehSeg('podologia')?'Tabela de procedimentos com o preço de cada atendimento. Quando o paciente é agendado, o valor entra como previsto no financeiro; quando é marcado como atendido, o valor passa a ser cobrado.':'Tabela de serviços com duração, preço e comissão. É usada na agenda, na comanda e nos pacotes.'}</p></div><div style="display:flex;gap:8px;flex-wrap:wrap">${S.tratamentos.length?`<button class="btn ghost" onclick="montarTabelaPrecos()">Montar a tabela pelos orçamentos</button>`:''}<button class="btn" onclick="servForm()">${ico('plus',16)} ${ehSeg('podologia')?'Novo procedimento':'Novo serviço'}</button></div></div>
  ${ehSeg('podologia')?`<div class="note">Lançar o valor da agenda no financeiro: <b>${S.config.lancarAgenda===false?'desligado':'ligado'}</b>. <button class="lnk" onclick="S.config.lancarAgenda=S.config.lancarAgenda===false;save();render()">${S.config.lancarAgenda===false?'Ligar':'Desligar'}</button>. Procedimentos de um plano ou pacote já aprovado na ficha do paciente não geram cobrança por sessão, porque o pacote já foi cobrado. <b>Avaliação e retorno nunca geram cobrança.</b> Procedimentos sem preço também não.</div>`:''}
- <div class="card"><table class="tbl"><tr><th>Serviço</th><th>Categoria</th><th class="num">Duração</th><th class="num">Preço</th><th class="num">Comissão</th><th>Status</th><th></th></tr>
- ${L.map(s=>`<tr><td><b>${esc(s.nome)}</b></td><td>${esc(s.categoria||'-')}</td><td class="num">${s.duracao||30} min</td><td class="num">${semCobranca(s.nome)?'<span class="badge b-ok">Sem cobrança</span>':money(s.preco)}${Number(s.precoPacote)>0?`<br><small style="color:var(--mut)">Pacote: ${money(s.precoPacote)}${s.sessoesPacote?' ('+s.sessoesPacote+' sessões)':''}</small>`:''}</td><td class="num">${s.comissao!==''&&s.comissao!=null?s.comissao+'%':'Padrão do profissional'}</td><td>${badgeFor(s.ativo===false?'Inativo':'Ativo')}</td><td><button class="lnk" onclick="servForm('${s.id}')">Editar</button></td></tr>`).join('')||'<tr><td colspan="7" class="mini-empty">Nenhum serviço cadastrado ainda.</td></tr>'}</table></div></div>`}
+ <div class="card">${azBarra(L,'servIrLetra',UI.servLetra||'')}<table class="tbl"><tr><th>${ehSeg('podologia')?'Procedimento':'Serviço'}</th><th>Categoria</th><th class="num">Duração</th><th class="num">Preço</th><th class="num">Comissão</th><th>Status</th><th></th></tr>
+ ${L.map(s=>`<tr id="servR_${s.id}"><td><b>${esc(s.nome)}</b></td><td>${esc(s.categoria||'-')}</td><td class="num">${s.duracao||30} min</td><td class="num">${semCobranca(s.nome)?'<span class="badge b-ok">Sem cobrança</span>':money(s.preco)}${Number(s.precoPacote)>0?`<br><small style="color:var(--mut)">Pacote: ${money(s.precoPacote)}${s.sessoesPacote?' ('+s.sessoesPacote+' sessões)':''}</small>`:''}</td><td class="num">${s.comissao!==''&&s.comissao!=null?s.comissao+'%':'Padrão do profissional'}</td><td>${badgeFor(s.ativo===false?'Inativo':'Ativo')}</td><td><button class="lnk" onclick="servForm('${s.id}')">Editar</button></td></tr>`).join('')||'<tr><td colspan="7" class="mini-empty">Nenhum serviço cadastrado ainda.</td></tr>'}</table></div></div>`}
+function servIrLetra(L){UI.servLetra=L||'';render();if(!L)return;
+ const arr=az(S.servicos);const i=arr.findIndex(x=>azLetra(x.nome)===L);
+ if(i>=0)setTimeout(()=>azPiscar('servR_'+arr[i].id),60)}
 function servForm(id){const s=id?S.servicos.find(x=>x.id===id):null;
- formModal(s?'Editar serviço':'Novo serviço',[{k:'nome',l:'Nome do serviço',req:true,full:true,list:'dlServNomes',
-   aviso:o=>avisoServico(o.nome,s?s.id:''),auto:o=>(s?{}:servAuto(o.nome))},{k:'categoria',l:'Categoria (ex.: Cabelo, Unhas, Corporal, Facial)'},{k:'duracao',l:'Duração (minutos)',type:'select',opts:[15,30,45,60,75,90,120,150,180]},{k:'preco',l:'Preço por sessão ou atendimento',type:'dinheiro'},{k:'precoPacote',l:'Valor do pacote completo (se for plano)',type:'dinheiro'},{k:'sessoesPacote',l:'Sessões do pacote',type:'number'},{k:'comissao',l:'Comissão deste serviço (%). Vazio usa a do profissional',type:'number'},{k:'ativo',l:'Status',type:'select',opts:['Ativo','Inativo']}],
-  s?{...s,ativo:s.ativo===false?'Inativo':'Ativo'}:{duracao:30,ativo:'Ativo'},
-  o=>{o.ativo=o.ativo!=='Inativo';const fd=new FormData($('#mf'));if(String(fd.get('comissao')).trim()==='')o.comissao='';if(s)Object.assign(s,o);else S.servicos.push({id:uid(),...o})},
+ const nomeTipo=ehSeg('podologia')?'procedimento':'serviço';
+ /* Abre simples. So mostra pacote e ajustes finos para quem pedir, ou para quem ja usa. */
+ const temPac=!!(s&&(Number(s.precoPacote)>0||Number(s.sessoesPacote)>0));
+ const temMais=!!(s&&(str(s.categoria)||(s.comissao!==''&&s.comissao!=null)||s.ativo===false));
+ const sim=v=>String(v)==='Sim';
+ formModal(s?('Editar '+nomeTipo):('Novo '+nomeTipo),[
+  {k:'nome',l:'Nome do '+nomeTipo,req:true,full:true,list:'dlServNomes',
+   aviso:o=>avisoServico(o.nome,s?s.id:''),auto:o=>(s?{}:servAuto(o.nome))},
+  {k:'duracao',l:'Quanto tempo leva, em minutos',type:'select',opts:[15,30,45,60,75,90,120,150,180]},
+  {k:'preco',l:'Quanto o paciente paga por sessão',type:'dinheiro'},
+  {k:'ehPacote',l:'É um pacote com várias sessões?',type:'select',opts:['Não','Sim']},
+  {k:'precoPacote',l:'Valor do pacote inteiro',type:'dinheiro',mostrarSe:o=>sim(o.ehPacote)},
+  {k:'sessoesPacote',l:'Quantas sessões tem o pacote',type:'number',mostrarSe:o=>sim(o.ehPacote)},
+  {k:'mais',l:'Quer ajustar categoria, comissão ou situação?',type:'select',opts:['Não','Sim']},
+  {k:'categoria',l:'Categoria, serve só para organizar a lista',mostrarSe:o=>sim(o.mais)},
+  {k:'comissao',l:'Comissão deste '+nomeTipo+' em porcentagem. Vazio usa a do profissional',type:'number',mostrarSe:o=>sim(o.mais)},
+  {k:'ativo',l:'Situação',type:'select',opts:['Ativo','Inativo'],mostrarSe:o=>sim(o.mais)}],
+  s?{...s,ativo:s.ativo===false?'Inativo':'Ativo',ehPacote:temPac?'Sim':'Não',mais:temMais?'Sim':'Não'}
+   :{duracao:30,ativo:'Ativo',ehPacote:'Não',mais:'Não'},
+  o=>{const fd=new FormData($('#mf'));
+   const ehPac=sim(o.ehPacote),ehMais=sim(o.mais);
+   delete o.ehPacote;delete o.mais;
+   /* O que esta escondido nao e apagado: fica como ja estava no cadastro. */
+   if(!ehPac){o.precoPacote=s?(s.precoPacote||0):0;o.sessoesPacote=s?(s.sessoesPacote||0):0}
+   if(!ehMais){o.categoria=s?str(s.categoria):'';o.comissao=s?(s.comissao??''):'';o.ativo=s?(s.ativo===false?'Inativo':'Ativo'):'Ativo'}
+   else if(String(fd.get('comissao')).trim()==='')o.comissao='';
+   o.ativo=o.ativo!=='Inativo';
+   if(s)Object.assign(s,o);else S.servicos.push({id:uid(),...o})},
   s?`<button class="btn danger" style="margin-right:auto" onclick="delRec('servicos','${s.id}')">Excluir</button>`:'')}
 
 /* ============ Estoque, produtos e lotes ============ */
@@ -2776,7 +2822,7 @@ function agNovo(a,s){if(s==='Desmarcado'||s==='Faltou')return false;const k=a.da
  const hist=c=>S[c].some(x=>x.pacienteId===a.pacienteId&&((x.data||x.vencimento||x.pagamento||'')<a.data)&&(x.data||x.vencimento||x.pagamento));
  return !hist('evolucoes')&&!hist('tratamentos')&&!S.lancamentos.some(l=>l.pacienteId===a.pacienteId&&l.pagamento&&l.pagamento<a.data)}
 /* ============ Atualização: aviso com botão Atualizar agora ============ */
-const VERSAO_APP='1.9.30';const URL_VERSAO_JSON='https://raw.githubusercontent.com/TheIgor12/blacksolutions/main/versao.json';
+const VERSAO_APP='1.9.31';const URL_VERSAO_JSON='https://raw.githubusercontent.com/TheIgor12/blacksolutions/main/versao.json';
 const numV=v=>String(v||'0').split(/\D+/).filter(Boolean).map(Number);
 function versaoMaior(a,b){const x=numV(a),y=numV(b);for(let i=0;i<Math.max(x.length,y.length);i++){const d=(x[i]||0)-(y[i]||0);if(d)return d>0}return false}
 const ATU={nova:null,timer:null};

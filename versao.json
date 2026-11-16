@@ -1,4 +1,4 @@
 {
-  "versao": "1.9.30",
-  "novidades": "Tudo o que é lista de nomes agora aparece em ordem alfabética: pacientes, serviços, produtos, profissionais, protocolos, equipamentos, colunas da agenda, resultados da busca e menu de relatórios. A ordenação respeita acento, ignora maiúscula e entende número, então Laser 2 sessões vem antes de Laser 10 sessões. Nas formas de pagamento, as quatro mais usadas continuam no topo e o resto ficou em ordem."
+  "versao": "1.9.31",
+  "novidades": "Índice de letras nas listas de pacientes e de procedimentos: clique no D e a tela pula direto para o primeiro nome com D, destacando a linha por alguns segundos. As letras sem ninguém cadastrado aparecem apagadas. A lista de procedimentos passou a ser alfabética pura, sem agrupar por categoria. O cadastro de procedimento ficou mais simples: abre com nome, duração e preço, e só mostra pacote, categoria, comissão e situação para quem pedir."
 }
