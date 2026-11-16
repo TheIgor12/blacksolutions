@@ -1,4 +1,4 @@
 {
-  "versao": "1.9.40",
-  "novidades": "Foto pelo celular: o botão Tirar foto abre a câmera na hora e a imagem vai direto para a ficha, sem passar pela galeria. Novo item Inserir foto no menu, com a agenda do dia para escolher quem está em atendimento, e um botão de câmera dentro do próprio agendamento. Na agenda do celular apareceram as setas para voltar e avançar o dia, no topo e no pé da lista. A fonte do sistema foi trocada por uma mais leve, e os nomes importados em caixa alta passam a aparecer com letras normais, sem alterar o cadastro."
+  "versao": "1.9.41",
+  "novidades": "O aviso de atendimento ganhou um X no canto superior direito. O X tira o aviso da frente sem encerrá-lo, e ele volta sozinho três minutos depois. O botão Ciente passou a encerrar o aviso de verdade: antes ele só fechava a janelinha, e o aviso já não voltava de qualquer jeito. E quando chega o aviso de cinco minutos, o de quinze da mesma pessoa sai da tela, em vez de ficarem dois cartões empilhados."
 }
