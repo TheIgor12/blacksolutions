@@ -1,4 +1,4 @@
 {
-  "versao": "1.9.42",
-  "novidades": "As notificações deixaram de travar a tela do celular. Agora aparecem no máximo três de cada vez, com o resto numa fila, ficam na parte de baixo e dá para tocar a tela por trás delas. Cada aviso tem um X no canto e também fecha arrastando para o lado, e nos dois casos ele volta depois: três minutos para atendimento, duas horas para aniversário. O botão Ciente encerra de vez. A fonte do sistema passou a ser a Figtree e agora pode ser escolhida em Configurações, Dados da clínica, entre seis opções com prévia."
+  "versao": "1.9.43",
+  "novidades": "O BlackFlow passou a usar a identidade visual definitiva. O ícone do aplicativo, o favicon e o logotipo agora trazem o monograma BF da marca, no lugar do símbolo antigo. As cores do sistema seguem o gradiente da identidade, azul, violeta e magenta sobre o preto da BlackSolutions. Quem já tinha escolhido uma cor própria em Configurações mantém a sua; só quem estava na cor de fábrica passou para a nova."
 }
