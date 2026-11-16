@@ -25,5 +25,19 @@
       "valor": 50.09,
       "link": ""
     }
+  },
+  "promocao": {
+    "ativa": true,
+    "codigo": "BF2026",
+    "nome": "Black Friday",
+    "plano": "completo",
+    "preco": "R$ 59,90",
+    "valor": 59.9,
+    "meses": 6,
+    "vagas": 50,
+    "usadas": 0,
+    "ate": "2026-11-30",
+    "link": "",
+    "detalhe": "Plano completo por R$ 59,90 por mês nos seis primeiros meses, no lugar de R$ 79,99. Depois do sexto mês volta ao valor normal. Sem fidelidade: dá para cancelar quando quiser."
   }
 }

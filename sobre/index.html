@@ -19,6 +19,22 @@
 <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&display=swap" rel="stylesheet">
 <style>
 img{max-width:100%;height:auto}
+
+.bfx{background:radial-gradient(520px 200px at 82% 0%,rgba(241,57,206,.45),transparent 72%),linear-gradient(104deg,#140b33,#02010f);
+ border-bottom:1px solid rgba(255,255,255,.1);padding:11px 0}
+.bfx .wrap{display:flex;align-items:center;justify-content:center;gap:14px;flex-wrap:wrap;text-align:center}
+.bfx .et{font-size:10.5px;font-weight:800;letter-spacing:.17em;text-transform:uppercase;padding:4px 11px;border-radius:999px;
+ background:linear-gradient(96deg,#1b86fb,#7f22fd 52%,#f139ce);color:#fff;white-space:nowrap}
+.bfx p{margin:0;font-size:14px;color:#efecff;font-weight:600}
+.bfx p b{color:#fff}
+.bfx a{font-size:13px;font-weight:800;color:#02010f;background:#fff;padding:7px 15px;border-radius:999px;text-decoration:none;white-space:nowrap}
+.bfx a:hover{background:#efecff}
+.pbf{border:2px solid var(--azul)!important;position:relative;overflow:hidden}
+.pbf .sel{position:absolute;top:0;right:0;font-size:10px;font-weight:800;letter-spacing:.14em;text-transform:uppercase;
+ padding:6px 14px;border-bottom-left-radius:12px;background:linear-gradient(96deg,#1b86fb,#7f22fd 52%,#f139ce);color:#fff}
+.pbf .pr{color:#fff}
+.pbf .pr s{color:var(--mut);font-size:.5em;font-weight:600;margin-right:8px}
+@media(max-width:620px){.bfx p{font-size:13px}}
 :root{--azul:#5a4cfb;--azul2:#8a3df7;--ciano:#1b86fb;--magenta:#f139ce;--preto:#02010f;--preto2:#0a0820;--card:#11112a;--linha:rgba(255,255,255,.08);--txt:#e8ecf7;--mut:#9aa3ba}
 *{box-sizing:border-box}
 html{scroll-behavior:smooth}
@@ -135,6 +151,10 @@ footer .wrap{display:flex;justify-content:space-between;gap:16px;flex-wrap:wrap;
 </style>
 <script src="/cliques.js" defer></script></head>
 <body>
+<div class="bfx"><div class="wrap">
+ <span class="et">Black Friday</span>
+ <p>Plano completo por <b>R$ 59,90 por mês</b> nos 6 primeiros meses. Primeiras <b>50 clínicas</b>, até 30/11.</p>
+ <a href="#planos">Ver a promoção</a></div></div>
 <header><div class="wrap nav">
  <a class="marca" href="#"><img src="../img/blackflow-icone.png" alt="" width="36" height="36" style="border-radius:9px;box-shadow:0 0 18px rgba(90,76,251,.55)"><span>Black<b>Flow</b> <small style="font-weight:600;color:var(--mut);font-size:12px">by BlackSolutions</small></span></a>
  <nav class="links"><a href="#segmentos">Segmentos</a><a href="#recursos">Recursos</a><a href="#personalize">Sua marca</a><a href="#diferencas">Por que nós</a><a href="#planos">Planos</a><a href="#duvidas">Dúvidas</a><a href="../download/Manual_BlackFlow.pdf" target="_blank">Manual</a></nav>
@@ -267,6 +287,10 @@ footer .wrap{display:flex;justify-content:space-between;gap:16px;flex-wrap:wrap;
 <section id="planos" style="padding-top:0"><div class="wrap">
  <div class="tit revela"><small>PLANOS</small><h2>Comece grátis hoje</h2><p>Experimente tudo por 7 dias. Se gostar, continue com a assinatura mensal.</p></div>
  <div class="planos">
+  <div class="plano pbf revela"><span class="sel">Black Friday</span><h3>Plano completo</h3>
+   <div class="pr"><s>R$ 79,99</s>R$ 59,90 <small>por mês, nos 6 primeiros meses</small></div>
+   <ul><li>Tudo do plano completo, sem corte de recurso</li><li>Depois do sexto mês volta a R$ 79,99 por mês</li><li>Sem fidelidade, cancela quando quiser</li><li>Só para as primeiras 50 clínicas, até 30/11</li></ul>
+   <a class="btn" href="https://wa.me/5547988432859?text=Quero%20a%20Black%20Friday%20do%20BlackFlow%2C%20R%24%2059%2C90%20por%20m%C3%AAs" target="_blank" rel="noopener">Garantir a minha vaga</a></div>
   <div class="plano revela"><h3>Teste grátis</h3><div class="pr">7 dias <small>sem custo</small></div><ul><li>Todos os recursos liberados</li><li>Importação das suas planilhas</li><li>Equipe ilimitada</li><li>Sem cartão de crédito para começar</li></ul><a class="btn" href="https://blackflow.app.br"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg> Abrir o BlackFlow</a></div>
   <div class="plano dest revela"><h3>Assinatura mensal</h3><div class="pr">Mensal <small>por clínica</small></div><ul><li>Tudo do teste grátis</li><li>Dados guardados na nuvem, no Brasil</li><li>Atualizações automáticas</li><li>Sua cor e seu logotipo</li></ul><div class="pag"><span>Pix</span><span>Cartão de crédito</span></div><p style="color:var(--mut);font-size:14px;margin:14px 0 0">O valor e o link de pagamento aparecem dentro do programa, na tela de assinatura.</p></div>
  </div>

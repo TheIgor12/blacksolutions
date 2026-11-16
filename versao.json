@@ -1,4 +1,4 @@
 {
-  "versao": "1.9.43",
-  "novidades": "O BlackFlow passou a usar a identidade visual definitiva. O ícone do aplicativo, o favicon e o logotipo agora trazem o monograma BF da marca, no lugar do símbolo antigo. As cores do sistema seguem o gradiente da identidade, azul, violeta e magenta sobre o preto da BlackSolutions. Quem já tinha escolhido uma cor própria em Configurações mantém a sua; só quem estava na cor de fábrica passou para a nova."
+  "versao": "1.9.44",
+  "novidades": "O símbolo passou a ser o da identidade final, recortado da arte original: ícone do aplicativo, favicon e logotipo. O seletor de letra foi corrigido, porque um erro de aspas fazia as seis prévias saírem todas na mesma letra, e agora abre como primeiro cartão em Configurações, com sete opções e exemplo grande. A letra padrão passou a ser Montserrat nos títulos, a mesma do logotipo, e Figtree no texto. Entrou a promoção de Black Friday: plano completo por R$ 59,90 por mês nos seis primeiros meses, para as primeiras cinquenta clínicas, até 30 de novembro."
 }
