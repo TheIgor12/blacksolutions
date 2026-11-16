@@ -2975,7 +2975,7 @@ function agNovo(a,s){if(s==='Desmarcado'||s==='Faltou')return false;const k=a.da
  const hist=c=>S[c].some(x=>x.pacienteId===a.pacienteId&&((x.data||x.vencimento||x.pagamento||'')<a.data)&&(x.data||x.vencimento||x.pagamento));
  return !hist('evolucoes')&&!hist('tratamentos')&&!S.lancamentos.some(l=>l.pacienteId===a.pacienteId&&l.pagamento&&l.pagamento<a.data)}
 /* ============ Atualização: aviso com botão Atualizar agora ============ */
-const VERSAO_APP='1.9.34';const URL_VERSAO_JSON='https://raw.githubusercontent.com/TheIgor12/blacksolutions/main/versao.json';
+const VERSAO_APP='1.9.35';const URL_VERSAO_JSON='https://raw.githubusercontent.com/TheIgor12/blacksolutions/main/versao.json';
 const numV=v=>String(v||'0').split(/\D+/).filter(Boolean).map(Number);
 function versaoMaior(a,b){const x=numV(a),y=numV(b);for(let i=0;i<Math.max(x.length,y.length);i++){const d=(x[i]||0)-(y[i]||0);if(d)return d>0}return false}
 const ATU={nova:null,timer:null};
@@ -3458,7 +3458,35 @@ function removerMembro(id,email){confirmModal(`Remover <b>${esc(email)}</b> da c
 document.addEventListener('click',e=>{const a=e.target.closest&&e.target.closest('a[target=_blank]');if(a&&window.pywebview&&window.pywebview.api&&window.pywebview.api.abrir_link){e.preventDefault();window.pywebview.api.abrir_link(a.href)}});
 
 /* ============ Início do aplicativo ============ */
-(async function(){try{navigator.storage&&navigator.storage.persist&&navigator.storage.persist()}catch(e){}
+/* ====== Trava de origem ======
+   O BlackFlow roda no endereço oficial e no programa instalado. Uma cópia solta
+   do arquivo, salva pelo navegador ou repassada por terceiros, não abre.
+   Não é proteção forte: quem edita o arquivo contorna. Serve para que a cópia
+   não seja o caminho fácil, e para deixar claro que ela não é autorizada. */
+const ORIGENS_OK=['blackflow.app.br','www.blackflow.app.br','localhost','127.0.0.1','[::1]',''];
+function origemAutorizada(){
+ if(window.pywebview)return true;
+ const h=String(location.hostname||'').toLowerCase();
+ if(/\.netlify\.app$/.test(h))return true;
+ if(h===''||location.protocol==='file:')return !!window.pywebview;
+ return ORIGENS_OK.includes(h)&&h!==''}
+function telaCopiaNaoAutorizada(){
+ document.title='BlackFlow';
+ document.body.innerHTML=`<div style="min-height:100vh;display:flex;align-items:center;justify-content:center;padding:24px;font-family:system-ui,-apple-system,'Segoe UI',Roboto,Arial,sans-serif;background:#f2f2f3;color:#1f2328">
+ <div style="max-width:520px;background:#fff;border:1px solid #e5e7eb;border-radius:14px;padding:28px;text-align:center">
+  <h1 style="font-size:20px;margin:0 0 10px">Esta cópia do BlackFlow não é autorizada</h1>
+  <p style="line-height:1.6;color:#4b5563;margin:0 0 10px">Você está abrindo um arquivo solto, fora do endereço oficial. Nesta cópia nada funciona: a agenda não sincroniza, as fotos não ficam guardadas, o agendamento online não responde e os termos não podem ser assinados pelo celular do paciente.</p>
+  <p style="line-height:1.6;color:#4b5563;margin:0 0 18px">Abra o sistema no endereço oficial, com a sua conta. Os seus dados estão lá.</p>
+  <a href="https://blackflow.app.br" style="display:inline-block;background:#0a4bde;color:#fff;text-decoration:none;font-weight:700;padding:12px 20px;border-radius:10px">Abrir o BlackFlow</a>
+  <p style="font-size:12px;color:#9ca3af;margin:18px 0 0">Precisa de ajuda? suporte@blacksolutions.net.br</p>
+ </div></div>`}
+(async function(){
+ /* O programa instalado injeta o pywebview depois do carregamento, por isso a
+    segunda conferência. Enquanto isso o sistema não abre. */
+ if(!origemAutorizada()){
+  await new Promise(r=>setTimeout(r,2500));
+  if(!origemAutorizada()){telaCopiaNaoAutorizada();return}}
+ try{navigator.storage&&navigator.storage.persist&&navigator.storage.persist()}catch(e){}
  try{if(/^https?:/.test(location.protocol)&&'serviceWorker' in navigator&&!window.pywebview)navigator.serviceWorker.register('sw.js')}catch(e){}
  if(NV.ativa){
   if(!window.supabase||!window.supabase.createClient){UI.auth={modo:'offline',temCache:!!(await DB.get('ultimo'))};render();return}
