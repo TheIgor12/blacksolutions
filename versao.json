@@ -1,4 +1,4 @@
 {
-  "versao": "1.9.37",
-  "novidades": "Botão Voltar para a agenda fixo no topo da ficha, em todas as abas (Financeiro, Exames, Documentos, Anamnese e as demais); a agenda volta no mesmo dia em que estava. O aviso de aniversário também reconhece datas de nascimento gravadas como dia/mês/ano."
+  "versao": "1.9.38",
+  "novidades": "Botão Voltar para a agenda fixo no topo de todas as telas do sistema: Início, Pacientes, ficha do paciente, Financeiro, Dashboard, Exames, Relatórios, Configurações e as demais. Ele volta para a agenda no mesmo dia em que ela estava."
 }

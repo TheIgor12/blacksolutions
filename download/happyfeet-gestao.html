@@ -855,7 +855,7 @@ function shell(content){const c=S.config;
  <datalist id="dlProdNomes">${az(S.produtos).map(x=>`<option value="${esc(x.nome)}">${Number(x.preco)>0?money(x.preco):''}</option>`).join('')}</datalist>
  <datalist id="dlServNomes">${az(S.servicos).map(x=>`<option value="${esc(x.nome)}">${Number(x.preco)>0?money(x.preco):''}</option>`).join('')}</datalist>
  <datalist id="dlServ">${az(S.servicos.filter(x=>x.ativo!==false)).map(x=>`<option value="${esc(x.nome)}">`).join('')}</datalist><datalist id="dlProf">${az(S.profissionais).map(p=>`<option value="${esc(p.nome)}">`).join('')}</datalist>
- ${(()=>{const d=diasTeste();return d!=null&&!UI.auth?`<div style="background:${d<=3?'var(--warn-soft)':'var(--acc-soft)'};padding:8px 16px;font-size:13px;display:flex;justify-content:center;gap:12px;align-items:center;flex-wrap:wrap"><span>Teste grátis da clínica: <b>${d<=0?'termina hoje':d===1?'falta 1 dia':'faltam '+d+' dias'}</b></span><button class="btn sm" onclick="abrirAssinatura()">Assinar com Pix ou cartão</button></div>`:''})()}<main>${content}</main>`}
+ ${(()=>{const d=diasTeste();return d!=null&&!UI.auth?`<div style="background:${d<=3?'var(--warn-soft)':'var(--acc-soft)'};padding:8px 16px;font-size:13px;display:flex;justify-content:center;gap:12px;align-items:center;flex-wrap:wrap"><span>Teste grátis da clínica: <b>${d<=0?'termina hoje':d===1?'falta 1 dia':'faltam '+d+' dias'}</b></span><button class="btn sm" onclick="abrirAssinatura()">Assinar com Pix ou cartão</button></div>`:''})()}<main>${barraAgenda()}${content}</main>`}
 const FUNCS=[['Comandas','comandas'],['Caixa do dia','caixa'],['Serviços e preços','servicos'],['Estoque e produtos','estoque'],['Comissões e salão-parceiro','comissoes'],['Protocolos','protocolos'],['Equipamentos','equipamentos'],['Segmento do negócio','config'],['Agenda','agenda'],['Pacientes','pacientes'],['Novo paciente','novoPaciente'],['Financeiro','financeiro'],['Conta Corrente','fin:conta'],['Fluxo de Caixa','fin:fluxo'],['Contas a Pagar','fin:pagar'],['Contas a Receber','fin:receber'],['Inadimplência e cobrança','fin:inad'],['Imposto de Renda','fin:ir'],['Dashboard Analítico','dashboard'],['Relatórios','relatorios'],['Aniversariantes','rel:pac_aniv'],['Alertas de retorno','rel:pac_ret'],['Profissionais','profissionais'],['Importar dados do Excel','importar'],['Backup dos dados','config'],['Configurações','config']];
 function goFunc(f){if(f==='novoPaciente'){go('pacientes');pacForm();return}if(f.startsWith('fin:')){UI.finTab=f.slice(4);go('financeiro');return}if(f.startsWith('rel:')){UI.rel=f.slice(4);go('relatorios');return}go(f)}
 function globalSearch(q){const r=$('#gsr');const n=norm(q);if(!n){r.classList.remove('on');return}
@@ -1302,7 +1302,7 @@ function vPaciente(){const p=pac(UI.param);if(!p)return `<div class="page"><div 
  const tabs=abasCliente();if(!tabs.some(([k])=>k===UI.pacTab))UI.pacTab='geral';
  const l=waLink(p.celular);
  const body={geral:pGeral,prontuario:pPront,orcamentos:pOrc,financeiro:pFin,sessoes:pSess,evolucao:pEvo,anamnese:pAna,agendamentos:pAg,comandasC:pComandasC,avaliacao:pAvaliacao,fotos:pFotos,exames:pExames,documentos:pDocs,termos:pTermos,aplicacoes:pAplicacoes,ficha:pFicha}[UI.pacTab](p);
- return `<div class="volta-ag"><button class="btn sm" onclick="voltarAgenda()">${ico('back',15)} Voltar para a agenda</button><button class="lnk" onclick="go('pacientes')">Ir para ${SEG().pessoas}</button></div>
+ return `
  <div class="phd">${avatarPac(p,'xl')}<div style="flex:1;min-width:220px"><h1>${anivIco(p)}${esc(p.nome)} <small>(${esc(p.codigo||'')})</small></h1><div style="margin:6px 0;color:var(--mut)">${esc(p.celular||'Sem celular')} ${l?`<a href="${l}" target="_blank" rel="noopener">${waIco()}</a>`:''}</div>${badgeFor(p.status||'Ativo')} ${anivSelo(p)}${p.criadoPorImportacao?'<span class="badge b-warn">Cadastro incompleto</span>':''}</div>
  <div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn ghost sm" onclick="pacForm('${p.id}')">Editar cadastro</button><button class="btn ghost sm" onclick="window.print()">${ico('print',15)} Imprimir</button><button class="btn ghost sm" style="color:var(--bad)" onclick="delPac('${p.id}')">Excluir</button></div></div>
  <div class="tabs" style="padding-left:24px">${tabs.map(([k,t])=>`<button class="${UI.pacTab===k?'on':''}" onclick="UI.pacTab='${k}';render()">${t}</button>`).join('')}</div><div class="page">${body}</div>`}
@@ -2779,6 +2779,10 @@ function anivCanto(p,ref){const a=anivDias(p,ref);if(!a||a.dias>ANIV_ANTES)retur
  const txt=hoje?(noDia?'Aniversário neste dia':'Aniversário hoje'):'Aniversário em '+a.dias+(a.dias===1?' dia':' dias');
  return `<span class="aniv-canto" title="${txt} (${br(a.dia)}), ${a.idade} anos"><b>${hoje?'\u{1F382}':'\u{1F381}'}</b><small>${txt}<br>${a.idade} anos</small></span>`}
 function voltarAgenda(){closeModal();go('agenda')}
+/* Barra fixa em todas as telas, menos na propria agenda: um clique volta para a
+   agenda no mesmo dia em que ela estava. Na ficha do paciente tambem leva para a lista. */
+function barraAgenda(){if(UI.auth||UI.view==='agenda')return '';try{if(typeof podeTela==='function'&&!podeTela('agenda'))return ''}catch(e){}
+ return `<div class="volta-ag"><button class="btn sm" onclick="voltarAgenda()">${ico('back',15)} Voltar para a agenda</button>${UI.view==='paciente'?`<button class="lnk" onclick="go('pacientes')">Ir para ${SEG().pessoas}</button>`:''}</div>`}
 function anivSelo(p){const a=anivDias(p);if(!a||a.dias>ANIV_ANTES)return '';
  return a.dias===0?`<span class="badge b-warn">\u{1F382} Faz aniversário hoje, ${a.idade} anos</span> `:`<span class="badge b-warn">\u{1F381} Aniversário em ${a.dias} ${a.dias===1?'dia':'dias'} (${br(a.dia)})</span> `}
 function anivProximos(){return S.pacientes.map(p=>({p,a:anivDias(p)})).filter(x=>x.a&&x.a.dias<=ANIV_ANTES).sort((x,y)=>x.a.dias-y.a.dias||azCmp(x.p.nome,y.p.nome))}
@@ -3043,7 +3047,7 @@ function agNovo(a,s){if(s==='Desmarcado'||s==='Faltou')return false;const k=a.da
  const hist=c=>S[c].some(x=>x.pacienteId===a.pacienteId&&((x.data||x.vencimento||x.pagamento||'')<a.data)&&(x.data||x.vencimento||x.pagamento));
  return !hist('evolucoes')&&!hist('tratamentos')&&!S.lancamentos.some(l=>l.pacienteId===a.pacienteId&&l.pagamento&&l.pagamento<a.data)}
 /* ============ Atualização: aviso com botão Atualizar agora ============ */
-const VERSAO_APP='1.9.37';const URL_VERSAO_JSON='https://raw.githubusercontent.com/TheIgor12/blacksolutions/main/versao.json';
+const VERSAO_APP='1.9.38';const URL_VERSAO_JSON='https://raw.githubusercontent.com/TheIgor12/blacksolutions/main/versao.json';
 const numV=v=>String(v||'0').split(/\D+/).filter(Boolean).map(Number);
 function versaoMaior(a,b){const x=numV(a),y=numV(b);for(let i=0;i<Math.max(x.length,y.length);i++){const d=(x[i]||0)-(y[i]||0);if(d)return d>0}return false}
 const ATU={nova:null,timer:null};
