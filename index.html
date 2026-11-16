@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>BlackFlow</title>
-<link rel="preconnect" href="https://fonts.googleapis.com"><link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800&display=swap" rel="stylesheet">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
 <link rel="icon" id="fav">
 <meta name="theme-color" content="#0b0d12"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="BlackFlow"><meta name="apple-mobile-web-app-status-bar-style" content="black">
 <script>if(/^https?:/.test(location.protocol)){document.write('<link rel="manifest" href="manifest.webmanifest"><link rel="apple-touch-icon" href="icone-180.png">')}</script>
@@ -14,7 +14,7 @@
 <style>
 :root{--acc:#0b6cf2;--acc-soft:color-mix(in srgb,var(--acc) 9%,#fff);--navy:#254775;--bg:#f2f2f3;--card:#fff;--ink:#1f2328;--mut:#6b7280;--line:#e5e7eb;--top:#122b63;--ok:#2e9d5b;--ok-soft:#e5f5ec;--warn:#b77d00;--warn-soft:#fff5d6;--bad:#d64545;--bad-soft:#fde8e8;--info:#2f7fc1;--info-soft:#e6f0fa}
 *{box-sizing:border-box}
-body{margin:0;font-family:Nunito,"Segoe UI",Arial,sans-serif;background:var(--bg);color:var(--ink);font-size:14px}
+body{margin:0;font-family:"Plus Jakarta Sans",system-ui,-apple-system,"Segoe UI",Roboto,Arial,sans-serif;background:var(--bg);color:var(--ink);font-size:14px;-webkit-font-smoothing:antialiased;-moz-osx-font-smoothing:grayscale;letter-spacing:-0.004em}
 input,select,textarea,button{font-family:inherit}
 .top{position:sticky;top:0;z-index:30;height:48px;background:linear-gradient(90deg,color-mix(in srgb,var(--top) 80%,#000),var(--top) 55%,color-mix(in srgb,var(--top) 80%,#fff));color:#fff;display:flex;align-items:center;gap:12px;padding:0 12px}
 .ico{background:none;border:0;color:inherit;cursor:pointer;padding:6px;border-radius:6px;display:inline-flex;align-items:center}
@@ -257,6 +257,24 @@ a.btn{text-decoration:none}
 .azbar .azl{font-size:12px;color:var(--mut);margin-right:6px}
 @keyframes azpisca{0%,100%{background:transparent}20%,70%{background:#fff3bf}}
 tr.azflash td,.azflash.card{animation:azpisca 2s ease}
+/* Tipografia: menos peso e mais respiro. A fonte anterior era arredondada e
+   pesada; esta tem traço mais fino, que combina com clínica, estética e salão. */
+h1,h2,h3{font-weight:600;letter-spacing:-0.018em}
+h1{letter-spacing:-0.024em}
+th{font-weight:600;letter-spacing:.01em}
+.badge,.tag{font-weight:600;letter-spacing:.01em}
+.btn{font-weight:600;letter-spacing:-0.005em}
+.sub,small{letter-spacing:0}
+.menu button{font-weight:500}
+.menu button.on{font-weight:600}
+/* Setas de dia da agenda no celular */
+.agc-seta{width:42px;height:44px;flex:0 0 42px;display:flex;align-items:center;justify-content:center;font-size:20px;font-weight:600;
+ background:var(--card,#fff);border:1px solid var(--line,#e5e7eb);border-radius:12px;color:var(--acc);cursor:pointer;line-height:1}
+.agc-seta:active{background:var(--acc);color:#fff}
+.agc-pe{display:flex;gap:8px;margin-top:12px}
+.agc-pe button{flex:1;padding:11px;border:1px solid var(--line,#e5e7eb);background:var(--card,#fff);border-radius:12px;font:inherit;font-weight:600;color:var(--acc);cursor:pointer}
+.fotbt{display:flex;gap:8px;flex-wrap:wrap}
+.fotbt label{cursor:pointer}
 </style>
 <script>if(/(^|\.)blackflow\.app\.br$/.test(location.hostname)){var bsc=document.createElement('script');bsc.src='/cliques.js';bsc.async=true;bsc.setAttribute('data-modo','app');document.head.appendChild(bsc)}</script></head>
 <body>
@@ -297,6 +315,21 @@ function waLink(p,msg){let d=onlyDigits(p);if(d.length<10)return '';if(!d.starts
    123.456.789-00. Dinheiro e formatado quando a pessoa sai do campo, para nao
    atrapalhar quem digita. */
 function soDig(v){return String(v==null?'':v).replace(/\D/g,'')}
+/* Nome vindo de importação costuma estar todo em maiúscula, o que deixa a tela
+   pesada e difícil de ler. Aqui só a exibição muda; o cadastro continua como
+   foi digitado, e nome que já tem minúscula não é tocado. */
+const NOME_MINUS=['de','da','do','das','dos','e','di','du','del','della','van','von','y'];
+function nomePessoa(v){const t=String(v==null?'':v).trim();
+ if(!t||/[a-zà-ö]/.test(t))return t;
+ return t.toLowerCase().split(/\s+/).map((w,i)=>{
+  if(i>0&&NOME_MINUS.includes(w))return w;
+  return w.replace(/^(.)/,c=>c.toUpperCase()).replace(/([`'´-])(.)/g,(m,a,b)=>a+b.toUpperCase())}).join(' ')}
+/* Botões de foto. No celular, "Tirar foto" abre a câmera direto, sem passar
+   pela galeria, porque o atributo capture diz ao navegador para usar a câmera. */
+function fotoBotoes(onchange,rotulo,multi){const m=multi?' multiple':'';
+ return `<span class="fotbt">
+  <label class="btn sm">${ico('cam',15)} ${rotulo||'Tirar foto'}<input type="file" accept="image/*" capture="environment"${m} style="display:none" onchange="${onchange}"></label>
+  <label class="btn ghost sm">${ico('up',15)} Escolher do aparelho<input type="file" accept="image/*"${m} style="display:none" onchange="${onchange}"></label></span>`}
 /* Ordem alfabetica em portugues: ignora acento e maiuscula e trata numero como numero (2 vem antes de 10) */
 function azCmp(a,b){return String(a==null?'':a).localeCompare(String(b==null?'':b),'pt-BR',{sensitivity:'base',numeric:true})}
 function az(L,campo){const f=campo||'nome';return [...(L||[])].sort((a,b)=>azCmp(a&&a[f],b&&b[f]))}
@@ -407,6 +440,7 @@ function toast(msg){const t=document.createElement('div');t.className='toast';t.
 function download(name,blob){if(window.pywebview&&window.pywebview.api&&window.pywebview.api.salvar_arquivo){const fr=new FileReader();fr.onload=async()=>{const p=await window.pywebview.api.salvar_arquivo(name,String(fr.result).split(',')[1]);if(p)toast('Arquivo salvo em '+p)};fr.readAsDataURL(blob);return}const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=name;document.body.appendChild(a);a.click();setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove()},500)}
 
 const ICONS={
+ cam:'<path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/>',
  card:'<rect x="2" y="5" width="20" height="14" rx="2"/><path d="M2 10h20"/><path d="M6 15h4"/>',
  bell:'<path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/>',
  share:'<circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><path d="M8.6 13.5l6.8 4M15.4 6.5l-6.8 4"/>',
@@ -869,7 +903,7 @@ function render(){if(NV.ativa&&UI.auth){$('#app').innerHTML=vAuth();setTimeout((
  if(soAgenda()&&!VIEWS_AGENDA.includes(UI.view))UI.view='agenda';
  if(perfilAtual()){const livre=['inicio','paciente','blackpay'];const vk=UI.view==='paciente'?'pacientes':UI.view;
   if(!livre.includes(UI.view)&&!podeTela(vk)||UI.view==='paciente'&&!podeTela('pacientes')){const m=menuItens();UI.view=m.length?m[0][0]:'inicio';UI.param=null}}
- const V={inicio:vInicio,agenda:vAgenda,pacientes:vPacientes,paciente:vPaciente,financeiro:vFinanceiro,dashboard:vDashboard,relatorios:vRelatorios,profissionais:vProfissionais,importar:vImportar,config:vConfig,servicos:vServicos,estoque:vEstoque,exames:vExames,comandas:vComandas,caixa:vCaixa,comissoes:vComissoes,protocolos:vProtocolos,equipamentos:vEquipamentos,confirmacao:vConfirmacao,indicacoes:vIndicacoes,vouchers:vVouchers,blackpay:vBlackPay,prontuarios:vProntuarios};
+ const V={inicio:vInicio,agenda:vAgenda,pacientes:vPacientes,paciente:vPaciente,financeiro:vFinanceiro,dashboard:vDashboard,relatorios:vRelatorios,profissionais:vProfissionais,importar:vImportar,config:vConfig,servicos:vServicos,estoque:vEstoque,exames:vExames,comandas:vComandas,caixa:vCaixa,comissoes:vComissoes,protocolos:vProtocolos,equipamentos:vEquipamentos,confirmacao:vConfirmacao,indicacoes:vIndicacoes,vouchers:vVouchers,blackpay:vBlackPay,prontuarios:vProntuarios,fotorapida:vFotoRapida};
  let c;try{c=(V[UI.view]||vInicio)()}catch(e){console.error(e);c=`<div class="page"><div class="card">Erro ao montar a tela: ${esc(e.message)}</div></div>`}
  $('#app').innerHTML=shell(c);checarSegmento();if(!UI.regrasOk&&S.servicos.length&&!UI.auth){UI.regrasOk=1;if(regrasClinica())save()}if(!AVISO.timer)avisoIniciar();atuIniciar();if(!UI.auth){fotoIniciar();confAutoIniciar()}}
 
@@ -965,7 +999,7 @@ function vIndicacoes(){const ind=S.pacientes.filter(p=>p.indicadoPor||p.indicado
  return `<div class="page"><div class="phead"><div><h1>Controle de Indicação</h1><p class="sub">Quem indicou quem, quantos já vieram e quais recompensas faltam entregar.</p></div><button class="btn" onclick="indForm()">${ico('plus',16)} Registrar indicação</button></div>
   <div class="grid g3" style="margin-bottom:16px"><div class="kpi"><small>${esc(SEG().pessoas)} indicados</small><b>${ind.length}</b><span>${ind.filter(p=>m[p.id]&&m[p.id].last).length} já foram atendidos</span></div><div class="kpi"><small>Quem indica</small><b>${R.length}</b><span>${R[0]?'Quem mais indica: '+esc(R[0].nome):'Ninguém ainda'}</span></div><div class="kpi ${pend?'r':''}"><small>Recompensas a entregar</small><b>${pend}</b><span>${esc(S.config.recompensaIndicacao||'Defina a recompensa em Configurações')}</span></div></div>
   <div class="card" style="padding:0"><div class="tw"><table class="tbl"><thead><tr><th>Quem indicou</th><th class="num">Indicações</th><th class="num">Já atendidos</th><th>Indicados</th></tr></thead><tbody>
-  ${R.map(r=>`<tr><td>${r.q?`<button class="lnk" onclick="go('paciente','${r.q.id}')">${anivIco(r.q)}${esc(r.nome)}</button>`:esc(r.nome)+' <small style="color:var(--mut)">(não cadastrado)</small>'}</td><td class="num"><b>${r.lista.length}</b></td><td class="num">${r.vieram}</td><td>${r.lista.map(p=>{const veio=m[p.id]&&m[p.id].last;return `<div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin:3px 0"><button class="lnk" onclick="go('paciente','${p.id}')">${esc(p.nome)}</button>${veio?(p.recompensaEntregue?`<span class="badge b-ok">Recompensa entregue em ${br(p.recompensaEntregue)}</span>`:`<button class="btn soft sm" onclick="indEntregar('${p.id}')">Marcar recompensa entregue</button>`):'<span class="badge">Ainda não veio</span>'}</div>`}).join('')}</td></tr>`).join('')||'<tr><td colspan="4" class="empty">Nenhuma indicação registrada. No cadastro do paciente, preencha o campo "Indicado por".</td></tr>'}</tbody></table></div></div></div>`}
+  ${R.map(r=>`<tr><td>${r.q?`<button class="lnk" onclick="go('paciente','${r.q.id}')">${anivIco(r.q)}${esc(r.nome)}</button>`:esc(r.nome)+' <small style="color:var(--mut)">(não cadastrado)</small>'}</td><td class="num"><b>${r.lista.length}</b></td><td class="num">${r.vieram}</td><td>${r.lista.map(p=>{const veio=m[p.id]&&m[p.id].last;return `<div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin:3px 0"><button class="lnk" onclick="go('paciente','${p.id}')">${esc(nomePessoa(p.nome))}</button>${veio?(p.recompensaEntregue?`<span class="badge b-ok">Recompensa entregue em ${br(p.recompensaEntregue)}</span>`:`<button class="btn soft sm" onclick="indEntregar('${p.id}')">Marcar recompensa entregue</button>`):'<span class="badge">Ainda não veio</span>'}</div>`}).join('')}</td></tr>`).join('')||'<tr><td colspan="4" class="empty">Nenhuma indicação registrada. No cadastro do paciente, preencha o campo "Indicado por".</td></tr>'}</tbody></table></div></div></div>`}
 function indForm(){formModal('Registrar indicação',[{k:'indicado',l:SEG().pessoa+' que chegou por indicação',req:true,list:'dlPac',full:true},{k:'indicador',l:'Quem indicou',req:true,list:'dlPac',full:true}],{},o=>{const p=ensurePatient(o.indicado);if(!p){toast('Informe quem chegou');return false}const q=S.pacientes.find(x=>norm(x.nome)===norm(o.indicador));p.indicadoPor=q?q.nome:o.indicador;p.indicadoPorId=q?q.id:'';if(!p.comoConheceu)p.comoConheceu='Indicado por';toast('Indicação registrada')})}
 function indEntregar(id){const p=pac(id);if(!p)return;p.recompensaEntregue=todayISO();save();render();toast('Recompensa marcada como entregue')}
 
@@ -1120,11 +1154,15 @@ function vAgendaCel(){const d=UI.agDate;const base=new Date(d+'T00:00');const t=
  const titulo=d===t?'Hoje':d===addDays(t,1)?'Amanhã':d===addDays(t,-1)?'Ontem':DIAS[base.getDay()];
  return `<div class="agc">
   <div class="agc-top">
+   <button class="agc-seta" onclick="agShift(-1)" title="Dia anterior" aria-label="Dia anterior">‹</button>
    <button class="agc-dia" onclick="agEscolherDia()"><span><b>${esc(titulo)}</b><small>${base.getDate()} de ${MESES[base.getMonth()].toLowerCase()} de ${base.getFullYear()}</small></span>${ico('cal',18)}<em>Trocar dia</em></button>
+   <button class="agc-seta" onclick="agShift(1)" title="Próximo dia" aria-label="Próximo dia">›</button>
    <button class="btn sm" onclick="${ehSeg('podologia')?`agForm(null,null,{data:'${d}'})`:'atendForm()'}">${ico('plus',16)} Agendar</button>
   </div>
   <div class="agc-n">${evs.length?evs.length+(evs.length===1?' agendamento':' agendamentos'):''}</div>
-  ${evs.length?evs.map(a=>{const p=pac(a.pacienteId);const c=agClasse(a);return `<button class="agc-it ${c}" onclick="agModal('${a.id}')"><span class="agc-h">${esc(a.hora||'')}</span><span class="agc-x"><b>${p&&p.foto?`<img class="evav" src="${p.foto}" alt="">`:''}${anivIco(p,a.data)}${esc(p?p.nome:'?')}</b><small>${esc(a.procedimento||'')}${a.profissional?' · '+esc(a.profissional):''}</small></span><span class="agc-st">${rot[c]}</span></button>`}).join(''):`<div class="agc-vazio">Nenhum agendamento neste dia.</div>`}
+  <div class="agc-pe" style="margin:0 0 12px"><button onclick="agShift(-1)">‹ Dia anterior</button>${d!==t?`<button onclick="agShift(0)">Hoje</button>`:''}<button onclick="agShift(1)">Próximo dia ›</button></div>
+  ${evs.length?evs.map(a=>{const p=pac(a.pacienteId);const c=agClasse(a);return `<button class="agc-it ${c}" onclick="agModal('${a.id}')"><span class="agc-h">${esc(a.hora||'')}</span><span class="agc-x"><b>${p&&p.foto?`<img class="evav" src="${p.foto}" alt="">`:''}${anivIco(p,a.data)}${esc(p?nomePessoa(p.nome):'?')}</b><small>${esc(a.procedimento||'')}${a.profissional?' · '+esc(a.profissional):''}</small></span><span class="agc-st">${rot[c]}</span></button>`}).join(''):`<div class="agc-vazio">Nenhum agendamento neste dia.</div>`}
+  <div class="agc-pe"><button onclick="agShift(-1)">‹ Dia anterior</button>${d!==t?`<button onclick="agShift(0)">Hoje</button>`:''}<button onclick="agShift(1)">Próximo dia ›</button></div>
  </div>`}
 function agEscolherDia(){const t=todayISO();let L='';for(let i=-3;i<=21;i++){const ds=addDays(t,i);const dd=new Date(ds+'T00:00');const n=S.agendamentos.filter(a=>a.data===ds&&!['Faltou','Desmarcado'].includes(stAg(a))).length;
   L+=`<button class="agc-op ${ds===UI.agDate?'on':''}" onclick="UI.agDate='${ds}';closeModal();render()"><span><b>${i===0?'Hoje':i===1?'Amanhã':i===-1?'Ontem':DIAS[dd.getDay()]}</b> ${dd.getDate()} de ${MESES[dd.getMonth()].toLowerCase()}</span><small>${n?n+(n===1?' agendamento':' agendamentos'):''}</small></button>`}
@@ -1142,7 +1180,7 @@ function vAgenda(){if(ehCel())return vAgendaCel();const H0=6,H1=22,PX=64;const b
   const lanes=[];const pos=evs.map(a=>{const [h,m]=(a.hora||'08:00').split(':').map(Number);const st=h*60+m,en=st+(a.duracao||30);if(stAg(a)==='Desmarcado')return {a,st,en,L:-1};let L=lanes.findIndex(e=>e<=st);if(L<0){L=lanes.length;lanes.push(en)}else lanes[L]=en;return {a,st,en,L}});
   const nL=Math.max(1,lanes.length);
   const html=pos.map(it=>{const {a,st,L}=it;const p=pac(a.pacienteId);const top=Math.max(0,(st/60-H0)*PX);const hgt=Math.max(30,(a.duracao||30)/60*PX-2);const s=stAg(a);const novo=agNovo(a,s);const cls=s==='Faltou'?'falta':s==='Desmarcado'?'desm':s==='Atendido'?'ok':novo?'novo':s==='Confirmado'?'conf':'agd';
-   return `<div class="ev ${cls}" style="top:${top}px;height:${hgt}px;${agEstilo(it,pos,nL)}" onclick="agModal('${a.id}')" title="${esc(a.hora+' '+(p?p.nome:'')+' · '+(novo?'Paciente novo · ':'')+s+(s==='Desmarcado'?' · horário livre':''))}"><b>${esc(a.hora)} ${p&&p.foto?`<img class="evav" src="${p.foto}" alt="">`:''}${anivIco(p,a.data)}${esc(p?p.nome:'?')}</b><span>${novo?`<i class="evtag">NOVO${s==='Confirmado'?' ✓':''}</i>`:''}${sessTagAg(a)}<i class="evdot" style="background:${profColor(a.profissional)}"></i>${esc(a.profissional||'')}</span><span>${esc(a.procedimento||'')}</span></div>`}).join('');
+   return `<div class="ev ${cls}" style="top:${top}px;height:${hgt}px;${agEstilo(it,pos,nL)}" onclick="agModal('${a.id}')" title="${esc(a.hora+' '+(p?nomePessoa(p.nome):'')+' · '+(novo?'Paciente novo · ':'')+s+(s==='Desmarcado'?' · horário livre':''))}"><b>${esc(a.hora)} ${p&&p.foto?`<img class="evav" src="${p.foto}" alt="">`:''}${anivIco(p,a.data)}${esc(p?nomePessoa(p.nome):'?')}</b><span>${novo?`<i class="evtag">NOVO${s==='Confirmado'?' ✓':''}</i>`:''}${sessTagAg(a)}<i class="evdot" style="background:${profColor(a.profissional)}"></i>${esc(a.profissional||'')}</span><span>${esc(a.procedimento||'')}</span></div>`}).join('');
   let now='';if(ds===t){const n=new Date();const mm=n.getHours()*60+n.getMinutes();if(mm>=H0*60&&mm<=H1*60)now=`<div class="nowline" style="top:${(mm/60-H0)*PX}px"></div>`}
   return {d,ds,lab,prof,html:html+now}}).filter(c=>!profCols||c.lab!=='Sem profissional'||c.html.includes('class="ev'));
  const rets=retornoList().slice(0,12);
@@ -1260,7 +1298,7 @@ function agForm(id,pacienteId,pre){pre=pre||{};const a=id?S.agendamentos.find(x=
   a?`<button class="btn danger" style="margin-right:auto" onclick="delRec('agendamentos','${a.id}')">Excluir</button>`:'')}
 function agModal(id){const a=S.agendamentos.find(x=>x.id===id);if(!a)return;const p=pac(a.pacienteId);const l=p?waLink(p.celular):'';
  openModal(`<h3 style="display:flex;align-items:center;gap:10px">${p?anivCanto(p,a.data):''}${p?`<span onclick="closeModal();go('paciente','${p.id}')" title="Abrir a ficha de ${esc(p.nome)}" style="cursor:pointer">${avatarPac(p,'lg')}</span>`:''}${p?`<a href="javascript:void(0)" onclick="closeModal();go('paciente','${p.id}')" title="Abrir a ficha completa: anamnese, fotos, documentos, financeiro e agendamentos" style="color:inherit;text-decoration:underline;text-underline-offset:3px;display:inline-flex;align-items:center;gap:6px">${esc(p.nome)}${ico('back',14)?'':''}<span style="font-size:12px;font-weight:600;color:var(--mut);text-decoration:none">abrir ficha</span></a>`:'<span>Paciente</span>'}</h3>${p?anaFaixa(p.id,1):''}${p?`<div class="row"><span>Anamnese</span><span>${esc(resumoAnamnese(p))}</span></div>`:''}${p&&str(p.cpf)?`<div class="row"><span>CPF</span><span>${esc(fmtCPF(p.cpf))}</span></div>`:''}${p&&enderecoDe(p)?`<div class="row"><span>Endereço</span><span>${esc(enderecoDe(p))}</span></div>`:''}${p&&(str(p.profissao)||str(p.empresa))?`<div class="row"><span>Trabalho</span><span>${esc([str(p.profissao),str(p.empresa)].filter(Boolean).join(' · '))}</span></div>`:''}<div class="row"><span>Data</span><span>${br(a.data)} às ${esc(a.hora)} (${a.duracao||30} min)</span></div><div class="row"><span>Profissional</span><span>${esc(a.profissional||'-')}</span></div><div class="row"><span>Procedimento</span><span>${esc(a.procedimento||'-')}</span></div><div class="row" style="align-items:center"><span><b>Situação</b></span><span><select id="agSt" onchange="setAgSt('${a.id}',this.value)" style="font-size:14px;font-weight:700;padding:8px 12px;border-radius:8px;border:2px solid ${({Agendado:'#e0a800',Confirmado:'#16a34a',Atendido:'#64748b',Faltou:'#dc2626',Desmarcado:'#999'})[stAg(a)]||'#e0a800'};background:${({Agendado:'#fff3bf',Confirmado:'#c9f2d6',Atendido:'#e6ebf3',Faltou:'#fde8e8',Desmarcado:'#eee'})[stAg(a)]||'#fff3bf'}">${['Agendado','Confirmado','Atendido','Faltou','Desmarcado'].map(x=>`<option value="${x}" ${stAg(a)===x?'selected':''}>${x==='Desmarcado'?'Desmarcou':x}</option>`).join('')}</select></span></div>${agNovo(a,stAg(a))?`<div class="row"><span></span><span><i class="evtag" style="font-size:11px;padding:2px 8px">${esc(SEG().pessoa.toUpperCase())} NOVO</i></span></div>`:''}${serieHTML(a)}${agSessHTML(a)}${a.obs?`<div class="row"><span>Observação</span><span>${esc(a.obs)}</span></div>`:''}${agFinHTML(a)}${lancAgAtivo()?agValHTML(a):''}
- <div class="mact">${l?`<a class="btn green" href="${l}" target="_blank" rel="noopener">WhatsApp</a>`:''}${p?`<button class="btn ghost" onclick="anaRapida('${p.id}')">Anamnese</button><button class="btn ghost" onclick="fotoPerfil('${p.id}')">${p.foto?'Trocar foto':'Inserir foto'}</button><button class="btn ghost" onclick="goPront('${p.id}')">Prontuário</button><button class="btn ghost" onclick="closeModal();go('paciente','${p.id}')">Abrir ficha</button>`:''}${!ehSeg('podologia')&&!soAgenda()&&p?`<button class="btn soft" onclick="comandaDoAgendamento('${a.id}')">Abrir comanda</button>`:''}<button class="btn" onclick="closeModal();agForm('${a.id}')">Editar</button></div>`)}
+ <div class="mact">${l?`<a class="btn green" href="${l}" target="_blank" rel="noopener">WhatsApp</a>`:''}${p?`<button class="btn ghost" onclick="fotoDoAtendimento('${p.id}')">${ico('cam',15)} Foto</button><button class="btn ghost" onclick="anaRapida('${p.id}')">Anamnese</button><button class="btn ghost" onclick="fotoPerfil('${p.id}')">${p.foto?'Trocar foto':'Inserir foto'}</button><button class="btn ghost" onclick="goPront('${p.id}')">Prontuário</button><button class="btn ghost" onclick="closeModal();go('paciente','${p.id}')">Abrir ficha</button>`:''}${!ehSeg('podologia')&&!soAgenda()&&p?`<button class="btn soft" onclick="comandaDoAgendamento('${a.id}')">Abrir comanda</button>`:''}<button class="btn" onclick="closeModal();agForm('${a.id}')">Editar</button></div>`)}
 /* Situação financeira do atendimento, igual ao selo Financeiro Ok do Clinicorp */
 function agFinHTML(a){const l=lancDoAg(a);if(!l||!(Number(l.valor)>0))return '';const sd=saldoL(l),pn=parcNum(l);
  return `<div class="row" style="align-items:center"><span>Financeiro</span><span style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
@@ -1303,7 +1341,7 @@ function vPaciente(){const p=pac(UI.param);if(!p)return `<div class="page"><div 
  const l=waLink(p.celular);
  const body={geral:pGeral,prontuario:pPront,orcamentos:pOrc,financeiro:pFin,sessoes:pSess,evolucao:pEvo,anamnese:pAna,agendamentos:pAg,comandasC:pComandasC,avaliacao:pAvaliacao,fotos:pFotos,exames:pExames,documentos:pDocs,termos:pTermos,aplicacoes:pAplicacoes,ficha:pFicha}[UI.pacTab](p);
  return `
- <div class="phd">${avatarPac(p,'xl')}<div style="flex:1;min-width:220px"><h1>${anivIco(p)}${esc(p.nome)} <small>(${esc(p.codigo||'')})</small></h1><div style="margin:6px 0;color:var(--mut)">${esc(p.celular||'Sem celular')} ${l?`<a href="${l}" target="_blank" rel="noopener">${waIco()}</a>`:''}</div>${badgeFor(p.status||'Ativo')} ${anivSelo(p)}${p.criadoPorImportacao?'<span class="badge b-warn">Cadastro incompleto</span>':''}</div>
+ <div class="phd">${avatarPac(p,'xl')}<div style="flex:1;min-width:220px"><h1>${anivIco(p)}${esc(nomePessoa(p.nome))} <small>(${esc(p.codigo||'')})</small></h1><div style="margin:6px 0;color:var(--mut)">${esc(p.celular||'Sem celular')} ${l?`<a href="${l}" target="_blank" rel="noopener">${waIco()}</a>`:''}</div>${badgeFor(p.status||'Ativo')} ${anivSelo(p)}${p.criadoPorImportacao?'<span class="badge b-warn">Cadastro incompleto</span>':''}</div>
  <div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn ghost sm" onclick="pacForm('${p.id}')">Editar cadastro</button><button class="btn ghost sm" onclick="window.print()">${ico('print',15)} Imprimir</button><button class="btn ghost sm" style="color:var(--bad)" onclick="delPac('${p.id}')">Excluir</button></div></div>
  <div class="tabs" style="padding-left:24px">${tabs.map(([k,t])=>`<button class="${UI.pacTab===k?'on':''}" onclick="UI.pacTab='${k}';render()">${t}</button>`).join('')}</div><div class="page">${body}</div>`}
 function delPac(id){const p=pac(id);confirmModal(`Excluir o paciente <b>${esc(p.nome)}</b> e todos os registros ligados a ele (financeiro, tratamentos, agendamentos, anamneses e evoluções)?`,()=>{['lancamentos','tratamentos','agendamentos','anamneses','evolucoes'].forEach(c=>S[c]=S[c].filter(x=>x.pacienteId!==id));S.pacientes=S.pacientes.filter(x=>x.id!==id);UI.view='pacientes'},'Excluir paciente')}
@@ -2180,7 +2218,7 @@ function planoInfo(k){const a=(typeof ASSINATURA!=='undefined'&&ASSINATURA&&ASSI
  return Object.assign({},d[k]||{},a[k]||{})}
 const planoK=()=>planoContratado()==='agenda'?'agenda':(S.config.plano==='agenda'?'agenda':'completo');
 const soAgenda=()=>planoK()==='agenda';
-const VIEWS_AGENDA=['inicio','agenda','pacientes','paciente','profissionais','servicos','confirmacao','config','blackpay','prontuarios'];
+const VIEWS_AGENDA=['inicio','agenda','pacientes','paciente','profissionais','servicos','confirmacao','config','blackpay','prontuarios','fotorapida'];
 const segK=()=>SEGMENTOS[S.config.segmento]?S.config.segmento:'podologia';
 const SEG=()=>SEGMENTOS[segK()];
 const ehSeg=(...k)=>k.includes(segK());
@@ -2191,8 +2229,8 @@ const r2=v=>Math.round((Number(v)||0)*100)/100;
 const optList=(arr,v)=>arr.map(o=>{const [val,lab]=Array.isArray(o)?o:[o,o];return `<option value="${esc(val)}" ${String(val)===String(v??'')?'selected':''}>${esc(lab)}</option>`}).join('');
 
 function menuItens(){const P=SEG().pessoas;
- if(soAgenda())return menuOrdem([['agenda','Agenda','cal'],['confirmacao','Confirmação e Alertas','bell'],['pacientes',P,'user'],['prontuarios','Prontuário','file'],['profissionais','Profissional','badge'],['servicos',ehSeg('podologia')?'Procedimentos e preços':'Serviços e preços','report']].filter(([k])=>podeTela(k)));
- const base=[['agenda','Agenda','cal'],['confirmacao','Confirmação e Alertas','bell'],['indicacoes','Controle de Indicação','share'],['vouchers','Controle de Voucher','gift'],['dashboard','Dashboard Analítico','chart'],['financeiro','Financeiro','money'],['importar','Importar Dados','up'],['pacientes',P,'user'],['prontuarios','Prontuário','file'],['profissionais','Profissional','badge'],['relatorios','Relatórios','report']];
+ if(soAgenda())return menuOrdem([['agenda','Agenda','cal'],['confirmacao','Confirmação e Alertas','bell'],['pacientes',P,'user'],['prontuarios','Prontuário','file'],['fotorapida','Inserir foto','cam'],['profissionais','Profissional','badge'],['servicos',ehSeg('podologia')?'Procedimentos e preços':'Serviços e preços','report']].filter(([k])=>podeTela(k)));
+ const base=[['agenda','Agenda','cal'],['confirmacao','Confirmação e Alertas','bell'],['indicacoes','Controle de Indicação','share'],['vouchers','Controle de Voucher','gift'],['dashboard','Dashboard Analítico','chart'],['financeiro','Financeiro','money'],['importar','Importar Dados','up'],['pacientes',P,'user'],['prontuarios','Prontuário','file'],['fotorapida','Inserir foto','cam'],['profissionais','Profissional','badge'],['relatorios','Relatórios','report']];
  if(ehSeg('podologia'))return menuOrdem([...base,['exames','Exames','file'],['servicos','Procedimentos e preços','report'],['estoque','Estoque','badge']].filter(([k])=>podeTela(k)));
  const extra=[['comandas','Comandas','file'],['caixa','Caixa do dia','money'],['servicos','Serviços e preços','report'],['estoque',ehSeg('estetica')?'Produtos e lotes':'Estoque','badge'],['comissoes',ehSeg('beleza')?'Comissões e salão-parceiro':'Comissões','chart']];
  if(ehSeg('estetica'))extra.push(['protocolos','Protocolos','report'],['equipamentos','Equipamentos','gear']);
@@ -2788,7 +2826,7 @@ function anivSelo(p){const a=anivDias(p);if(!a||a.dias>ANIV_ANTES)return '';
 function anivProximos(){return S.pacientes.map(p=>({p,a:anivDias(p)})).filter(x=>x.a&&x.a.dias<=ANIV_ANTES).sort((x,y)=>x.a.dias-y.a.dias||azCmp(x.p.nome,y.p.nome))}
 function anivMsgLink(p){return waLink(p.celular,fillMsg(S.config.msgAniversario||MSG_ANIV,{nome:firstName(p.nome),clinica:S.config.clinica}))}
 function anivFaixaInicio(){if(UI.auth)return '';const L=anivProximos();if(!L.length)return '';
- return `<div class="note aniv-faixa" style="margin-bottom:16px"><b>Aniversários</b><br>${L.map(({p,a})=>{const l=a.dias===0?anivMsgLink(p):'';return `${a.dias===0?'\u{1F382}':'\u{1F381}'} <button class="lnk" onclick="go('paciente','${p.id}')">${esc(p.nome)}</button> ${a.dias===0?`faz <b>${a.idade} anos hoje</b>`:`faz ${a.idade} anos em <b>${a.dias} ${a.dias===1?'dia':'dias'}</b> (${br(a.dia)})`}${l?` <a class="lnk" href="${l}" target="_blank" rel="noopener">mandar parabéns</a>`:''}`}).join('<br>')}</div>`}
+ return `<div class="note aniv-faixa" style="margin-bottom:16px"><b>Aniversários</b><br>${L.map(({p,a})=>{const l=a.dias===0?anivMsgLink(p):'';return `${a.dias===0?'\u{1F382}':'\u{1F381}'} <button class="lnk" onclick="go('paciente','${p.id}')">${esc(nomePessoa(p.nome))}</button> ${a.dias===0?`faz <b>${a.idade} anos hoje</b>`:`faz ${a.idade} anos em <b>${a.dias} ${a.dias===1?'dia':'dias'}</b> (${br(a.dia)})`}${l?` <a class="lnk" href="${l}" target="_blank" rel="noopener">mandar parabéns</a>`:''}`}).join('<br>')}</div>`}
 function anivVistos(){try{return JSON.parse(localStorage.getItem('bf_aniv')||'{}')||{}}catch(e){return {}}}
 function anivChecar(){if(UI.auth||!S||!Array.isArray(S.pacientes))return;const V=anivVistos();const novos=[];
  anivProximos().forEach(({p,a})=>{const etapa=a.dias===0?'dia':'antes';const k=p.id+':'+a.dia+':'+etapa;if(V[k])return;V[k]=todayISO();novos.push({p,a})});
@@ -2857,12 +2895,51 @@ function docApagar(id){const d=(S.documentos||[]).find(x=>x.id===id);if(!d)retur
  confirmModal(`Excluir <b>${esc(d.titulo||d.arquivo)}</b>? O arquivo sai deste computador e da nuvem, e não tem como voltar.`,async()=>{
   await fotoApagarArquivo(id);S.documentos=(S.documentos||[]).filter(x=>x.id!==id);save();render();toast('Documento excluído')})}
 function pFotos(p){const L=S.fotos.filter(f=>f.pacienteId===p.id).sort((a,b)=>(b.data||'').localeCompare(a.data||''));const sel=UI.fotoSel||[];const areas=azTxt([...new Set(L.map(f=>f.area||'Sem área'))]);
- return `<div class="card"><div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px"><h2 style="margin:0">${ehSeg('beleza')?'Fotos':ehSeg('podologia')?'Fotos do tratamento':'Fotos de antes e depois'}</h2><span style="display:flex;gap:8px;flex-wrap:wrap">${sel.length===2?`<button class="btn soft sm" onclick="fotoComparar()">Comparar as 2 marcadas</button>`:'<small style="color:var(--mut);align-self:center">Marque 2 fotos para comparar lado a lado</small>'}<label class="btn sm" style="cursor:pointer">${ico('up',14)} Adicionar fotos<input type="file" accept="image/*" multiple style="display:none" onchange="fotoAdd('${p.id}',this)"></label></span></div>
+ return `<div class="card"><div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px"><h2 style="margin:0">${ehSeg('beleza')?'Fotos':ehSeg('podologia')?'Fotos do tratamento':'Fotos de antes e depois'}</h2><span style="display:flex;gap:8px;flex-wrap:wrap">${sel.length===2?`<button class="btn soft sm" onclick="fotoComparar()">Comparar as 2 marcadas</button>`:'<small style="color:var(--mut);align-self:center">Marque 2 fotos para comparar lado a lado</small>'}${fotoBotoes(`fotoAdd('${p.id}',this)`,'Tirar foto agora',1)}</span></div>
  ${areas.map(ar=>`<h2 style="margin-top:16px;font-size:14px">${esc(ar)}</h2><div class="grid g4">${L.filter(f=>(f.area||'Sem área')===ar).map(f=>`<div class="card" style="margin:0;padding:8px;${sel.includes(f.id)?'outline:3px solid var(--acc)':''}"><img src="${fotoMini(f)}" loading="lazy" style="width:100%;height:170px;object-fit:cover;border-radius:8px;cursor:pointer" onclick="fotoVer('${f.id}')">${f.refTipo?`<small style="display:block;color:var(--mut);margin-top:4px">Da ${f.refTipo==='evolucao'?'evolução':'anamnese'} de ${br(f.data)}</small>`:''}<div style="display:flex;justify-content:space-between;align-items:center;margin-top:6px;font-size:12px"><label style="display:flex;gap:4px;align-items:center"><input type="checkbox" ${sel.includes(f.id)?'checked':''} onchange="fotoMarcar('${f.id}')">${br(f.data)} · ${esc(f.momento||'')}</label><button class="lnk" onclick="fotoEditar('${f.id}')">Editar</button></div></div>`).join('')}</div>`).join('')||'<div class="mini-empty">Nenhuma foto ainda.</div>'}
  ${ehSeg('estetica')?'<p class="sub" style="margin-top:12px">Para usar a foto em redes sociais, registre antes a autorização de uso de imagem na aba Termos.</p>':''}</div>`}
 function fotoReduzir(file){return new Promise((res,rej)=>{const r=new FileReader();r.onload=()=>{const img=new Image();img.onload=()=>{const k=Math.min(1,1100/Math.max(img.width,img.height));const c=document.createElement('canvas');c.width=Math.round(img.width*k);c.height=Math.round(img.height*k);c.getContext('2d').drawImage(img,0,0,c.width,c.height);res(c.toDataURL('image/jpeg',0.72))};img.onerror=rej;img.src=r.result};r.onerror=rej;r.readAsDataURL(file)})}
 async function fotoAdd(pid,input){const fs=[...input.files];input.value='';if(!fs.length)return;
  formModal('Dados das fotos',[{k:'data',l:'Data',type:'date',req:true},{k:'area',l:'Área (ex.: Abdômen, Rosto, Cabelo)',req:true},{k:'momento',l:'Momento',type:'select',opts:['Antes','Durante','Depois']},{k:'obs',l:'Observação',full:true}],{data:todayISO(),momento:'Antes'},o=>{(async()=>{let n=0;for(const f of fs){try{const {cheia,thumb}=await fotoPreparar(f);const id=uid();await fotoGuardar(id,cheia);S.fotos.push({id,pacienteId:pid,data:o.data,area:o.area,momento:o.momento,obs:o.obs,thumb,arq:1});n++}catch(e){toast('Não foi possível ler '+f.name)}}save();render();toast(n+(n===1?' foto adicionada':' fotos adicionadas'))})()})}
+/* Atalho que a profissional usa durante o atendimento: abre com a câmera a um
+   toque, sem procurar a paciente e sem passar pela galeria do aparelho. */
+function fotoDoAtendimento(pid){const p=pac(pid);if(!p)return;
+ const emCima=!!($('#modalRoot')&&$('#modalRoot').innerHTML);
+ const html=`<h3>Foto de ${esc(nomePessoa(p.nome))}</h3>
+ <p class="sub" style="margin-bottom:14px">No celular, Tirar foto abre a câmera na hora. A imagem vai direto para a ficha, sem passar pela galeria.</p>
+ <div class="card" style="margin:0 0 10px"><b>Foto do tratamento</b>
+  <p class="sub" style="margin:4px 0 10px">Entra na aba Fotos da paciente, com data, área e momento. É a que serve para comparar antes e depois.</p>
+  ${fotoBotoes(`${emCima?'fecha2()':'closeModal()'};fotoAdd('${pid}',this)`,'Tirar foto agora',1)}</div>
+ <div class="card" style="margin:0"><b>Foto de perfil</b>
+  <p class="sub" style="margin:4px 0 10px">É a que aparece no agendamento e na lista de pacientes, para reconhecer quem chegou.</p>
+  ${fotoBotoes(`${emCima?'fecha2()':'closeModal()'};fotoPerfilSalvar('${pid}',this,0)`,p.foto?'Trocar a foto de perfil':'Tirar foto de perfil')}</div>
+ <div class="mact"><button class="btn ghost" onclick="${emCima?'fecha2()':'closeModal()'}">Fechar</button></div>`;
+ if(emCima)abre2(html,'560px');else openModal(html,true)}
+function fotoRapidaQ(v){UI.frQ=v;render()}
+function vFotoRapida(){const q=norm(UI.frQ||'');const t=todayISO();
+ const hoje=(S.agendamentos||[]).filter(a=>a.data===t&&!['Desmarcado'].includes(stAg(a)))
+   .sort((a,b)=>str(a.hora).localeCompare(str(b.hora)));
+ const vistos={};const doDia=[];
+ hoje.forEach(a=>{const p=pac(a.pacienteId);if(p&&!vistos[p.id]){vistos[p.id]=1;doDia.push({p,a})}});
+ const L=q?az((S.pacientes||[]).filter(x=>norm(x.nome).includes(q))).slice(0,40):[];
+ const linha=(p,a)=>`<div class="pt" style="align-items:center">
+   <span style="flex:0 0 auto">${avatarPac(p,'sm')}</span>
+   <span style="flex:1;min-width:0"><b>${esc(nomePessoa(p.nome))}</b>${a?`<span class="pts">${esc(a.hora||'')} · ${esc(a.procedimento||'')}</span>`:`<span class="pts">${(S.fotos||[]).filter(f=>f.pacienteId===p.id).length} foto(s) na ficha</span>`}</span>
+   <button class="btn sm" onclick="fotoDoAtendimento('${p.id}')">${ico('cam',15)} Foto</button></div>`;
+ return `<div class="page" style="max-width:760px"><div class="phead"><div><h1>Inserir foto</h1>
+  <p class="sub">Escolha quem está em atendimento e tire a foto pelo celular. Ela vai direto para a ficha.</p></div></div>
+ <div class="card">
+  <input class="inp" style="width:100%;max-width:420px" placeholder="Procure pelo nome" value="${esc(UI.frQ||'')}"
+   oninput="clearTimeout(window.__fq);window.__fq=setTimeout(()=>fotoRapidaQ(this.value),250)">
+ </div>
+ ${q?`<div class="card"><h2>Resultado da busca</h2>${L.length?L.map(p=>linha(p,null)).join(''):'<p class="sub">Ninguém encontrado com esse nome.</p>'}</div>`:''}
+ <div class="card"><h2>Agenda de hoje</h2>
+  ${doDia.length?doDia.map(x=>linha(x.p,x.a)).join(''):'<p class="sub">Não há atendimento marcado para hoje. Procure pelo nome no campo acima.</p>'}</div>
+ <div class="card"><h2>Como a foto entra</h2>
+  <p class="sub" style="margin:0 0 8px">No celular, o botão <b>Tirar foto</b> abre a câmera na hora. Depois de fotografar, o sistema pergunta a área e o momento, e guarda na ficha.</p>
+  <p class="sub" style="margin:0 0 8px">No computador, o mesmo botão abre os arquivos, porque não há câmera para usar.</p>
+  <p class="sub" style="margin:0">Dá para chegar aqui por três caminhos: por este menu, clicando no agendamento da paciente e tocando em Foto, ou pela aba Fotos dentro da ficha.</p></div>
+ </div>`}
 function fotoMarcar(id){let s=UI.fotoSel||[];s=s.includes(id)?s.filter(x=>x!==id):[...s,id].slice(-2);UI.fotoSel=s;render()}
 function fotoVer(id){const f=S.fotos.find(x=>x.id===id);openModal(`<h3>${esc(f.area||'')} · ${br(f.data)} · ${esc(f.momento||'')}</h3><img id="fvImg" src="${fotoMini(f)}" style="width:100%;border-radius:10px">${f.obs?`<p>${esc(f.obs)}</p>`:''}<div class="mact"><button class="btn" onclick="closeModal()">Fechar</button></div>`,true);fotoCarregar(f,'fvImg')}
 function fotoComparar(){const [a,b]=(UI.fotoSel||[]).map(id=>S.fotos.find(x=>x.id===id)).filter(Boolean).sort((x,y)=>(x.data||'').localeCompare(y.data||''));if(!a||!b)return;
@@ -3047,7 +3124,7 @@ function agNovo(a,s){if(s==='Desmarcado'||s==='Faltou')return false;const k=a.da
  const hist=c=>S[c].some(x=>x.pacienteId===a.pacienteId&&((x.data||x.vencimento||x.pagamento||'')<a.data)&&(x.data||x.vencimento||x.pagamento));
  return !hist('evolucoes')&&!hist('tratamentos')&&!S.lancamentos.some(l=>l.pacienteId===a.pacienteId&&l.pagamento&&l.pagamento<a.data)}
 /* ============ Atualização: aviso com botão Atualizar agora ============ */
-const VERSAO_APP='1.9.39';const URL_VERSAO_JSON='https://raw.githubusercontent.com/TheIgor12/blacksolutions/main/versao.json';
+const VERSAO_APP='1.9.40';const URL_VERSAO_JSON='https://raw.githubusercontent.com/TheIgor12/blacksolutions/main/versao.json';
 const numV=v=>String(v||'0').split(/\D+/).filter(Boolean).map(Number);
 function versaoMaior(a,b){const x=numV(a),y=numV(b);for(let i=0;i<Math.max(x.length,y.length);i++){const d=(x[i]||0)-(y[i]||0);if(d)return d>0}return false}
 const ATU={nova:null,timer:null};
@@ -3160,7 +3237,7 @@ function confAutoChecar(){if(UI.auth||S.config.confAuto===false)return;const h=S
  confFila(dia)}
 function confFila(dia){const L=filaConf(dia||proxDiaConf());UI.confAutoAberta=1;if(!L.length){toast('Nenhuma mensagem de confirmação pendente');UI.confAutoAberta=0;return}const a=L[0];const p=pac(a.pacienteId);const wl=p?waLink(p.celular,confMsg(a)):'';
  openModal(`<h3>Confirmações de ${br(a.data)}</h3><p class="sub">São ${S.config.horaConfirmacao||'10:00'}: hora de confirmar os horários. Faltam <b>${L.length}</b> ${L.length===1?'mensagem':'mensagens'}.</p>
- <div class="row"><span>${esc(SEG().pessoa)}</span><span><b>${anivIco(p)}${esc(p?p.nome:'?')}</b></span></div><div class="row"><span>Horário</span><span>${esc(a.hora||'')} · ${esc(a.procedimento||'')}</span></div>
+ <div class="row"><span>${esc(SEG().pessoa)}</span><span><b>${anivIco(p)}${esc(p?nomePessoa(p.nome):'?')}</b></span></div><div class="row"><span>Horário</span><span>${esc(a.hora||'')} · ${esc(a.procedimento||'')}</span></div>
  <textarea readonly rows="7" style="width:100%;font-size:13px;margin-top:8px">${esc(confMsg(a))}</textarea>
  <div class="mact"><button class="btn ghost" style="margin-right:auto" onclick="UI.confAutoAberta=0;closeModal()">Depois</button><button class="btn ghost" onclick="S.agendamentos.find(x=>x.id==='${a.id}').confEnviada='pulado';save();confFila('${a.data}')">Pular</button>${wl?`<a class="btn green" href="${wl}" target="_blank" rel="noopener" onclick="confEnviar('${a.id}');setTimeout(()=>confFila('${a.data}'),400)">${waIco()} Enviar e ir para o próximo</a>`:'<span class="sub">Sem celular cadastrado</span>'}</div>`)}
 function confAutoIniciar(){if(UI.confTimer)return;UI.confTimer=setInterval(confAutoChecar,30000);setTimeout(confAutoChecar,6000)}
@@ -3189,7 +3266,7 @@ function fotoPerfil(pid){const p=pac(pid);if(!p)return;
  const emCima=!!($('#modalRoot')&&$('#modalRoot').innerHTML);
  const fechar=emCima?'fecha2()':'closeModal()';
  const html=`<h3>Foto de ${esc(p.nome)}</h3>${p.foto?`<img src="${p.foto}" style="width:220px;height:220px;object-fit:cover;border-radius:50%;display:block;margin:10px auto">`:'<p class="sub">Ainda n\u00e3o h\u00e1 foto.</p>'}
- <div class="mact">${p.foto?`<button class="btn danger" style="margin-right:auto" onclick="const q=pac('${pid}');delete q.foto;${fechar};save();render()">Remover foto</button>`:''}<button class="btn ghost" onclick="${fechar}">Fechar</button><label class="btn" style="cursor:pointer">${ico('up',15)} ${p.foto?'Trocar foto':'Escolher foto'}<input type="file" accept="image/*" style="display:none" onchange="fotoPerfilSalvar('${pid}',this,${emCima?1:0})"></label></div>`;
+ <div class="mact">${p.foto?`<button class="btn danger" style="margin-right:auto" onclick="const q=pac('${pid}');delete q.foto;${fechar};save();render()">Remover foto</button>`:''}<button class="btn ghost" onclick="${fechar}">Fechar</button>${fotoBotoes(`fotoPerfilSalvar('${pid}',this,${emCima?1:0})`,p.foto?'Tirar outra foto':'Tirar foto agora')}</div>`;
  if(emCima)abre2(html,'520px');else openModal(html)}
 async function fotoPerfilSalvar(pid,input,emCima){const f=input.files[0];input.value='';if(!f)return;
  try{const img=await fotoReduzirLado(f,480,0.82);pac(pid).foto=img;
@@ -3216,7 +3293,7 @@ function acessos(){if(!S.config.acessos||typeof S.config.acessos!=='object')S.co
 function emailAtual(){const u=NV.sessao&&NV.sessao.user;return u?String(u.email||'').toLowerCase():''}
 function perfilAtual(){if(!NV.ativa)return null;if(NV.papel==='admin')return null;
  const id=acessos()[emailAtual()];if(!id)return null;return perfis().find(x=>x.id===id)||null}
-function podeTela(k){const pf=perfilAtual();if(!pf)return true;if(k==='prontuarios')k='pacientes';return (pf.telas||[]).includes(k)}
+function podeTela(k){const pf=perfilAtual();if(!pf)return true;if(k==='prontuarios'||k==='fotorapida')k='pacientes';return (pf.telas||[]).includes(k)}
 function pode(k){const pf=perfilAtual();if(!pf)return true;return !!(pf.extras||{})[k]}
 function perfilForm(id){const novo=!id;const pf=novo?{id:'p'+uid().slice(0,6),nome:'',telas:['agenda','pacientes'],extras:{}}:perfis().find(x=>x.id===id);if(!pf)return;
  const chk=(k,n,marc,fn)=>`<label class="chk" style="margin:4px 0"><input type="checkbox" ${marc?'checked':''} onchange="${fn}"> ${esc(n)}</label>`;

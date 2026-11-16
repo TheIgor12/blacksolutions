@@ -1,4 +1,4 @@
 {
-  "versao": "1.9.39",
-  "novidades": "O BlackFlow passou a funcionar apenas no endereço oficial e no programa já instalado. Cópias soltas do arquivo, salvas pelo navegador ou repassadas por terceiros, deixam de abrir e mostram um aviso com o caminho para entrar na conta. Os arquivos de instalação e as 55 cópias antigas saíram do ar."
+  "versao": "1.9.40",
+  "novidades": "Foto pelo celular: o botão Tirar foto abre a câmera na hora e a imagem vai direto para a ficha, sem passar pela galeria. Novo item Inserir foto no menu, com a agenda do dia para escolher quem está em atendimento, e um botão de câmera dentro do próprio agendamento. Na agenda do celular apareceram as setas para voltar e avançar o dia, no topo e no pé da lista. A fonte do sistema foi trocada por uma mais leve, e os nomes importados em caixa alta passam a aparecer com letras normais, sem alterar o cadastro."
 }
