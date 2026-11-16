@@ -1,4 +1,4 @@
 {
-  "versao": "1.9.32",
-  "novidades": "Novo módulo BlackPay, último item do menu lateral. Por enquanto é apenas informativo: apresenta o meio de pagamento que está em desenvolvimento, explica que a operação vai correr por instituição autorizada pelo Banco Central e que o dinheiro da clínica vai direto para a conta da clínica. Tem um botão para a clínica registrar interesse e ser avisada quando abrir."
+  "versao": "1.9.33",
+  "novidades": "Nova aba Prontuário na ficha do paciente, logo depois da Visão Geral. Reúne numa única linha do tempo tudo o que aconteceu com o paciente: agendamentos, atendimentos, evolução, anamnese, exames, documentos, fotos, orçamentos, comandas, financeiro e termos, do mais recente para o mais antigo. Cada registro continua morando na sua aba, e clicar na linha do tempo leva direto até ele. Filtros por Agenda, Clínico, Exames, Financeiro e Fotos. Quatro indicadores no topo: atendimentos realizados, último atendimento, próximo agendamento e valor em aberto. Dentro do agendamento há um botão novo que abre o prontuário. A caixa de upload da tela de Exames ficou bem menor."
 }
