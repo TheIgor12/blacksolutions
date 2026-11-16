@@ -1,4 +1,4 @@
 {
-  "versao": "1.9.35",
-  "novidades": "Exames na ficha do paciente: nova aba Exames e quadro de Exames na Visão Geral, com os arquivos enviados pela tela Exames e os anexados na ficha. A aba Documentos passa a mostrar os demais arquivos. Aniversários: aviso 5 dias antes e outro no dia, com botão de parabéns pelo WhatsApp; presente ao lado do nome nos 5 dias antes e bolo no dia, na agenda, na lista de pacientes, na ficha e nas demais telas; faixa de aniversariantes na tela inicial."
+  "versao": "1.9.36",
+  "novidades": "Corrigido o aviso de atualização que aparecia o tempo todo: a versão 1.9.35 tinha ficado marcada por dentro como 1.9.34. Na janela do agendamento, o aviso de aniversário agora fica no canto superior direito, do outro lado do nome, com o emoji, quantos dias faltam e a idade."
 }
