@@ -1,4 +1,4 @@
 {
-  "versao": "1.9.46",
-  "novidades": "Entrou a Ajuda no menu: quinze respostas passo a passo escritas a partir das telas reais, com busca por palavra. Responde na hora, sem internet e sem custo. Em Configurações dá para ligar um assistente de inteligência artificial do Google, gratuito, com chave própria da clínica, para as dúvidas que a ajuda escrita não cobre. Ele só responde sobre o uso do sistema e não tem acesso a dado de paciente."
+  "versao": "1.9.47",
+  "novidades": "No relatório de Recuperação de pacientes, a lista passou a sair em ordem crescente de dias parado: quem está há menos tempo sem vir aparece em cima, quem está há mais tempo embaixo. Clicando no título Dias parado a ordem inverte, para quando a clínica quiser começar pelos mais antigos."
 }

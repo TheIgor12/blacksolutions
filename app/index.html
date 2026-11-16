@@ -329,6 +329,10 @@ a.btn{text-decoration:none}
 .ajc li{margin-bottom:8px;line-height:1.55}
 .ajn{margin:10px 0 0;padding:10px 12px;background:var(--bg);border-radius:9px;font-size:13px;color:var(--mut);line-height:1.5}
 .iaresp{background:var(--acc-soft);border-radius:11px;padding:14px 16px;margin-top:12px;line-height:1.6;font-size:14.5px}
+.ordbt{background:none;border:0;padding:0;cursor:pointer;font:inherit;font-size:inherit;font-weight:inherit;
+ color:inherit;text-transform:inherit;letter-spacing:inherit;display:inline-flex;align-items:center;gap:4px}
+.ordbt:hover{color:var(--acc)}
+.ordbt i{font-style:normal;font-size:11px;color:var(--acc)}
 tr.azflash td,.azflash.card{animation:azpisca 2s ease}
 /* Tipografia: menos peso e mais respiro. A fonte anterior era arredondada e
    pesada; esta tem traço mais fino, que combina com clínica, estética e salão. */
@@ -2170,7 +2174,8 @@ function recAnalise(servico,diasMin){const t=todayISO(),H=recHistorico();
    const depois=h.itens.some(i=>i.data>=dAv&&i.data<=t&&i.tipo!=='avaliacao'&&recCasa(servico,i.texto));
    if(!depois){G.avaliou.push({...base,dataAv:dAv,diasAv:diffDays(dAv,t)});return}}
   G.nunca.push(base)});
- Object.values(G).forEach(L=>L.sort((a,b)=>b.dias-a.dias));
+ const inv=(UI.rec&&UI.rec.desc)?-1:1;
+ Object.values(G).forEach(L=>L.sort((a,b)=>(a.dias-b.dias)*inv||azCmp(a.p.nome,b.p.nome)));
  return {G,semVisita,comAgenda,
   total:G.abandonou.length+G.avaliou.length+G.naoretornou.length+G.nunca.length}}
 /* Quanto cada grupo vale, pelo preço do serviço no cadastro */
@@ -2237,7 +2242,7 @@ function recDetalhe(serv,L,selDias,livre){const R=recUI();
   <span style="display:flex;gap:8px">
   <button class="btn ghost sm" onclick="recExportar()">${ico('down',15)} Baixar em Excel</button>
   <button class="btn sm" onclick="recAbrirVarios()">Abrir os ${Math.min(10,lista.length)} primeiros no WhatsApp</button></span></div>
- <div class="tw"><table class="tbl"><thead><tr><th>${esc(SEG().pessoa)}</th><th>Celular</th><th>Última vinda</th><th class="num">Dias parado</th><th>${g==='abandonou'?'Sessões':g==='avaliou'?'Avaliação em':g==='naoretornou'?'Fez este serviço':'Último procedimento'}</th><th></th></tr></thead><tbody>
+ <div class="tw"><table class="tbl"><thead><tr><th>${esc(SEG().pessoa)}</th><th>Celular</th><th>Última vinda</th><th class="num"><button class="ordbt" onclick="recSet('desc',!(UI.rec&&UI.rec.desc))" title="Clique para inverter a ordem">Dias parado <i>${(UI.rec&&UI.rec.desc)?'&darr;':'&uarr;'}</i></button></th><th>${g==='abandonou'?'Sessões':g==='avaliou'?'Avaliação em':g==='naoretornou'?'Fez este serviço':'Último procedimento'}</th><th></th></tr></thead><tbody>
   ${lista.slice(0,mostra).map(it=>{const msg=recMsg(g,it,serv);const w=waLink(it.p.celular,msg);
    return `<tr><td><button class="lnk" onclick="goPront('${it.p.id}')">${esc(nomePessoa(it.p.nome))}</button></td>
     <td>${esc(it.p.celular||'-')}</td><td>${br(it.ult)}</td>
@@ -3699,7 +3704,7 @@ function agNovo(a,s){if(s==='Desmarcado'||s==='Faltou')return false;const k=a.da
  const hist=c=>S[c].some(x=>x.pacienteId===a.pacienteId&&((x.data||x.vencimento||x.pagamento||'')<a.data)&&(x.data||x.vencimento||x.pagamento));
  return !hist('evolucoes')&&!hist('tratamentos')&&!S.lancamentos.some(l=>l.pacienteId===a.pacienteId&&l.pagamento&&l.pagamento<a.data)}
 /* ============ Atualização: aviso com botão Atualizar agora ============ */
-const VERSAO_APP='1.9.46';const URL_VERSAO_JSON='https://raw.githubusercontent.com/TheIgor12/blacksolutions/main/versao.json';
+const VERSAO_APP='1.9.47';const URL_VERSAO_JSON='https://raw.githubusercontent.com/TheIgor12/blacksolutions/main/versao.json';
 const numV=v=>String(v||'0').split(/\D+/).filter(Boolean).map(Number);
 function versaoMaior(a,b){const x=numV(a),y=numV(b);for(let i=0;i<Math.max(x.length,y.length);i++){const d=(x[i]||0)-(y[i]||0);if(d)return d>0}return false}
 const ATU={nova:null,timer:null};
