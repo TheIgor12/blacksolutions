@@ -1,4 +1,4 @@
 {
-  "versao": "1.9.33",
-  "novidades": "Nova aba Prontuário na ficha do paciente, logo depois da Visão Geral. Reúne numa única linha do tempo tudo o que aconteceu com o paciente: agendamentos, atendimentos, evolução, anamnese, exames, documentos, fotos, orçamentos, comandas, financeiro e termos, do mais recente para o mais antigo. Cada registro continua morando na sua aba, e clicar na linha do tempo leva direto até ele. Filtros por Agenda, Clínico, Exames, Financeiro e Fotos. Quatro indicadores no topo: atendimentos realizados, último atendimento, próximo agendamento e valor em aberto. Dentro do agendamento há um botão novo que abre o prontuário. A caixa de upload da tela de Exames ficou bem menor."
+  "versao": "1.9.34",
+  "novidades": "Menu lateral reorganizado. A lista de profissionais saiu do topo e passou para o rodapé, logo abaixo de Configurações. Agenda é o primeiro item clicável e todos os outros módulos ficaram em ordem alfabética, com o BlackPay no fim. Prontuário virou módulo próprio do menu: abre a lista de pacientes com busca e índice de letras, mostrando último atendimento, próximo agendamento e quantos registros cada um tem."
 }

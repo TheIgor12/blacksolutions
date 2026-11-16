@@ -47,7 +47,7 @@ input,select,textarea,button{font-family:inherit}
 .menu button:hover{background:var(--acc-soft)}
 .menu button.on{color:var(--acc);font-weight:600;background:var(--acc-soft)}
 .msec{font-size:11px;color:var(--mut);padding:8px 16px 4px;letter-spacing:.08em}
-.mfoot{border-top:1px solid var(--line)}
+.mfoot{border-top:1px solid var(--line);flex:0 0 auto;max-height:46vh;overflow:auto}
 .page{padding:20px 24px;max-width:1440px;margin:0 auto}
 h1{font-size:22px;margin:0}
 h2{font-size:17px;margin:0 0 12px}
@@ -842,9 +842,9 @@ function shell(content){const c=S.config;
  <div class="gsearch"><input id="gs" placeholder="Encontre ${esc(SEG().pessoas.toLowerCase())} ou funções do sistema" oninput="globalSearch(this.value)" onblur="setTimeout(()=>{const r=$('#gsr');if(r)r.classList.remove('on')},200)" autocomplete="off"><div id="gsr" class="gsr"></div></div>
  ${NV.ativa?`<span id="sync" class="sync" title="Sincronização com a nuvem">${syncTxt()}</span>`:''}<button class="ico refr" title="Atualizar: busca os dados novos da nuvem e procura versão nova do sistema" onclick="refrescar(this)">${ico('refresh',17)}</button><div class="user" style="cursor:pointer" onclick="abrirConta()"><span class="av">${esc(initials(nomeUsuario()))}</span><div><b>${esc(nomeUsuario())}</b><small>${esc(c.clinica)}</small></div></div></header>
  <aside class="drawer ${UI.drawer?'open':''}"><div class="brand ${S.config.logo?'':'escuro'}"><img src="${logoClinica()}" alt="${esc(c.clinica)}"></div><div class="prod">BLACKFLOW <span style="font-weight:600">by BlackSolutions</span></div><span class="plan">Versão ${VERSAO_APP}</span><button class="lnk" style="display:block;margin:6px 16px 0;font-size:12px;text-align:left" onclick="UI.drawer=false;render();atuChecar(true)">Procurar atualização</button><button class="lnk" style="display:block;margin:8px 16px 0;font-size:12px;text-align:left" onclick="UI.drawer=false;perguntarSegmento()">Segmento: <b>${esc(SEG().nome)}</b> · trocar</button>
- <div class="menu"><button class="${UI.view==='inicio'?'on':''}" onclick="go('inicio')">${ico('home',18)} Início</button>${menuProfs()}<div class="msec">MÓDULOS</div>
+ <div class="menu"><button class="${UI.view==='inicio'?'on':''}" onclick="go('inicio')">${ico('home',18)} Início</button><div class="msec">MÓDULOS</div>
  ${menuItens().map(([k,l,i])=>`<button class="${(UI.view===k&&!(k==='agenda'&&UI.agProf))||(k==='pacientes'&&UI.view==='paciente')?'on':''}" onclick="${k==='agenda'?"agProf('')":`go('${k}')`}">${ico(i,18)} ${l}</button>`).join('')}</div>
- <div class="mfoot menu">${podeTela('config')?`<button class="${UI.view==='config'?'on':''}" onclick="go('config')">${ico('gear',18)} Configurações</button>`:''}</div></aside>
+ <div class="mfoot menu">${podeTela('config')?`<button class="${UI.view==='config'?'on':''}" onclick="go('config')">${ico('gear',18)} Configurações</button>`:''}${menuProfs()}</div></aside>
  <div class="scrim ${UI.drawer?'open':''}" onclick="toggleDrawer()"></div>
  <datalist id="dlPac">${az(S.pacientes).map(p=>`<option value="${esc(p.nome)}">`).join('')}</datalist>
  <datalist id="dlProdNomes">${az(S.produtos).map(x=>`<option value="${esc(x.nome)}">${Number(x.preco)>0?money(x.preco):''}</option>`).join('')}</datalist>
@@ -864,7 +864,7 @@ function render(){if(NV.ativa&&UI.auth){$('#app').innerHTML=vAuth();setTimeout((
  if(soAgenda()&&!VIEWS_AGENDA.includes(UI.view))UI.view='agenda';
  if(perfilAtual()){const livre=['inicio','paciente','blackpay'];const vk=UI.view==='paciente'?'pacientes':UI.view;
   if(!livre.includes(UI.view)&&!podeTela(vk)||UI.view==='paciente'&&!podeTela('pacientes')){const m=menuItens();UI.view=m.length?m[0][0]:'inicio';UI.param=null}}
- const V={inicio:vInicio,agenda:vAgenda,pacientes:vPacientes,paciente:vPaciente,financeiro:vFinanceiro,dashboard:vDashboard,relatorios:vRelatorios,profissionais:vProfissionais,importar:vImportar,config:vConfig,servicos:vServicos,estoque:vEstoque,exames:vExames,comandas:vComandas,caixa:vCaixa,comissoes:vComissoes,protocolos:vProtocolos,equipamentos:vEquipamentos,confirmacao:vConfirmacao,indicacoes:vIndicacoes,vouchers:vVouchers,blackpay:vBlackPay};
+ const V={inicio:vInicio,agenda:vAgenda,pacientes:vPacientes,paciente:vPaciente,financeiro:vFinanceiro,dashboard:vDashboard,relatorios:vRelatorios,profissionais:vProfissionais,importar:vImportar,config:vConfig,servicos:vServicos,estoque:vEstoque,exames:vExames,comandas:vComandas,caixa:vCaixa,comissoes:vComissoes,protocolos:vProtocolos,equipamentos:vEquipamentos,confirmacao:vConfirmacao,indicacoes:vIndicacoes,vouchers:vVouchers,blackpay:vBlackPay,prontuarios:vProntuarios};
  let c;try{c=(V[UI.view]||vInicio)()}catch(e){console.error(e);c=`<div class="page"><div class="card">Erro ao montar a tela: ${esc(e.message)}</div></div>`}
  $('#app').innerHTML=shell(c);checarSegmento();if(!UI.regrasOk&&S.servicos.length&&!UI.auth){UI.regrasOk=1;if(regrasClinica())save()}if(!AVISO.timer)avisoIniciar();atuIniciar();if(!UI.auth){fotoIniciar();confAutoIniciar()}}
 
@@ -2175,7 +2175,7 @@ function planoInfo(k){const a=(typeof ASSINATURA!=='undefined'&&ASSINATURA&&ASSI
  return Object.assign({},d[k]||{},a[k]||{})}
 const planoK=()=>planoContratado()==='agenda'?'agenda':(S.config.plano==='agenda'?'agenda':'completo');
 const soAgenda=()=>planoK()==='agenda';
-const VIEWS_AGENDA=['inicio','agenda','pacientes','paciente','profissionais','servicos','confirmacao','config','blackpay'];
+const VIEWS_AGENDA=['inicio','agenda','pacientes','paciente','profissionais','servicos','confirmacao','config','blackpay','prontuarios'];
 const segK=()=>SEGMENTOS[S.config.segmento]?S.config.segmento:'podologia';
 const SEG=()=>SEGMENTOS[segK()];
 const ehSeg=(...k)=>k.includes(segK());
@@ -2186,12 +2186,15 @@ const r2=v=>Math.round((Number(v)||0)*100)/100;
 const optList=(arr,v)=>arr.map(o=>{const [val,lab]=Array.isArray(o)?o:[o,o];return `<option value="${esc(val)}" ${String(val)===String(v??'')?'selected':''}>${esc(lab)}</option>`}).join('');
 
 function menuItens(){const P=SEG().pessoas;
- if(soAgenda())return [...[['agenda','Agenda','cal'],['confirmacao','Confirmação e Alertas','bell'],['pacientes',P,'user'],['profissionais','Profissional','badge'],['servicos',ehSeg('podologia')?'Procedimentos e preços':'Serviços e preços','report']].filter(([k])=>podeTela(k)),...BPITEM];
- const base=[['agenda','Agenda','cal'],['confirmacao','Confirmação e Alertas','bell'],['indicacoes','Controle de Indicação','share'],['vouchers','Controle de Voucher','gift'],['dashboard','Dashboard Analítico','chart'],['financeiro','Financeiro','money'],['importar','Importar Dados','up'],['pacientes',P,'user'],['profissionais','Profissional','badge'],['relatorios','Relatórios','report']];
- if(ehSeg('podologia'))return [...[...base,['exames','Exames','file'],['servicos','Procedimentos e preços','report'],['estoque','Estoque','badge']].filter(([k])=>podeTela(k)),...BPITEM];
+ if(soAgenda())return menuOrdem([['agenda','Agenda','cal'],['confirmacao','Confirmação e Alertas','bell'],['pacientes',P,'user'],['prontuarios','Prontuário','file'],['profissionais','Profissional','badge'],['servicos',ehSeg('podologia')?'Procedimentos e preços':'Serviços e preços','report']].filter(([k])=>podeTela(k)));
+ const base=[['agenda','Agenda','cal'],['confirmacao','Confirmação e Alertas','bell'],['indicacoes','Controle de Indicação','share'],['vouchers','Controle de Voucher','gift'],['dashboard','Dashboard Analítico','chart'],['financeiro','Financeiro','money'],['importar','Importar Dados','up'],['pacientes',P,'user'],['prontuarios','Prontuário','file'],['profissionais','Profissional','badge'],['relatorios','Relatórios','report']];
+ if(ehSeg('podologia'))return menuOrdem([...base,['exames','Exames','file'],['servicos','Procedimentos e preços','report'],['estoque','Estoque','badge']].filter(([k])=>podeTela(k)));
  const extra=[['comandas','Comandas','file'],['caixa','Caixa do dia','money'],['servicos','Serviços e preços','report'],['estoque',ehSeg('estetica')?'Produtos e lotes':'Estoque','badge'],['comissoes',ehSeg('beleza')?'Comissões e salão-parceiro':'Comissões','chart']];
  if(ehSeg('estetica'))extra.push(['protocolos','Protocolos','report'],['equipamentos','Equipamentos','gear']);
- return [...[...base,...extra].filter(([k])=>podeTela(k)),...BPITEM]}
+ return menuOrdem([...base,...extra].filter(([k])=>podeTela(k)))}
+/* Agenda sempre em primeiro, o resto em ordem alfabetica, BlackPay por ultimo */
+function menuOrdem(L){const ag=L.filter(([k])=>k==='agenda');
+ return [...ag,...azPor(L.filter(([k])=>k!=='agenda'),x=>x[1]),...BPITEM]}
 /* BlackPay entra sempre por ultimo e nao depende de perfil, porque por enquanto e so informativo */
 const BPITEM=[['blackpay','BlackPay','card']];
 
@@ -2598,7 +2601,29 @@ function pPront(p){const todos=prontEventos(p);const g=UI.ptFiltro||'';
     <span class="sub" style="font-size:11px;white-space:nowrap;align-self:center">${c.l}</span></div>`}).join('')
    :`<div class="mini-empty">${todos.length?'Nada neste filtro.':'Ainda não há nada registrado para este '+esc(SEG().pessoa.toLowerCase())+'.'}</div>`}
  </div>`}
+function prontQ(v){UI.prontQ=v;UI.prontLetra='';render()}
+function prontIrLetra(L){UI.prontLetra=L||'';render();if(!L)return;
+ const arr=prontLista();const i=arr.findIndex(x=>azLetra(x.nome)===L);
+ if(i>=0)setTimeout(()=>azPiscar('prR_'+arr[i].id),60)}
+function prontLista(){const q=norm(UI.prontQ||'');const d=soDig(UI.prontQ);
+ return az((S.pacientes||[]).filter(p=>!q
+  ||norm(p.nome).includes(q)
+  ||(d.length>=3&&soDig(p.cpf).includes(d))
+  ||(!!d&&soDig(p.codigo)===d)))}
+function vProntuarios(){const L=prontLista();const m=lastApptMap();
+ return `<div class="page"><div class="phead"><div><h1>Prontuário</h1><p class="sub">Escolha o ${esc(SEG().pessoa.toLowerCase())} para ver tudo o que aconteceu com ele em uma única linha do tempo.</p></div></div>
+ <div class="card">
+  <input class="inp" style="width:100%;max-width:420px;margin-bottom:12px" placeholder="Pesquise por nome, CPF ou código" value="${esc(UI.prontQ||'')}" oninput="clearTimeout(window.__pq);window.__pq=setTimeout(()=>prontQ(this.value),250)">
+  ${azBarra(L,'prontIrLetra',UI.prontLetra||'')}
+  ${L.length?`<div class="tw"><table class="tbl"><thead><tr><th>${esc(SEG().pessoa)}</th><th>Último atendimento</th><th>Próximo agendamento</th><th>Registros</th><th></th></tr></thead><tbody>
+   ${L.map(p=>{const o=m[p.id]||{};const n=prontEventos(p).length;return `<tr id="prR_${p.id}"><td><span style="display:flex;align-items:center;gap:8px">${avatarPac(p,'sm')}<button class="lnk" onclick="goPront('${p.id}')">${esc(p.nome)}</button></span></td>
+    <td>${o.last?br(o.last)+' <small style="color:var(--mut)">há '+diffDays(o.last,todayISO())+' dias</small>':'<span style="color:var(--mut)">Nenhum</span>'}</td>
+    <td>${o.next?br(o.next):'<span style="color:var(--mut)">Nenhum</span>'}</td>
+    <td>${n}</td><td><button class="btn ghost sm" onclick="goPront('${p.id}')">Abrir prontuário</button></td></tr>`}).join('')}
+   </tbody></table></div>`:`<div class="empty">${S.pacientes.length?'Ninguém encontrado com esse termo.':'Nenhum '+esc(SEG().pessoa.toLowerCase())+' cadastrado ainda.'}</div>`}
+ </div></div>`}
 function goPront(pid){closeModal();UI.ptFiltro='';go('paciente',pid);UI.pacTab='prontuario';render()}
+function podeProntuarios(){return podeTela('pacientes')}
 function pComandasC(p){const L=S.comandas.filter(c=>c.clienteId===p.id).sort((a,b)=>(b.data||'').localeCompare(a.data||''));const cb=cashbackSaldo(p.id);
  return `<div class="card"><div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px"><h2 style="margin:0">Comandas</h2><span>${Number(S.config.cashback)>0?`Cashback disponível: <b>${money(cb)}</b> `:''}<button class="btn sm" onclick="const c=abrirComandaPara('${p.id}');comandaModal(c.id)">${ico('plus',14)} Abrir comanda</button></span></div>
  <table class="tbl mini"><tr><th>Comanda</th><th>Data</th><th>Itens</th><th class="num">Total</th><th>Situação</th></tr>${L.map(c=>`<tr style="cursor:pointer" onclick="comandaModal('${c.id}')"><td>Nº ${c.numero}</td><td>${br(c.data)}</td><td>${c.itens.map(i=>esc(i.descricao)).join(', ')}</td><td class="num">${money(comandaLiquido(c))}</td><td>${badgeFor(c.status==='Fechada'?'Pago':c.status==='Cancelada'?'Cancelado':'Em aberto')}</td></tr>`).join('')||'<tr><td colspan="5" class="mini-empty">Nenhuma comanda.</td></tr>'}</table></div>`}
@@ -2950,7 +2975,7 @@ function agNovo(a,s){if(s==='Desmarcado'||s==='Faltou')return false;const k=a.da
  const hist=c=>S[c].some(x=>x.pacienteId===a.pacienteId&&((x.data||x.vencimento||x.pagamento||'')<a.data)&&(x.data||x.vencimento||x.pagamento));
  return !hist('evolucoes')&&!hist('tratamentos')&&!S.lancamentos.some(l=>l.pacienteId===a.pacienteId&&l.pagamento&&l.pagamento<a.data)}
 /* ============ Atualização: aviso com botão Atualizar agora ============ */
-const VERSAO_APP='1.9.33';const URL_VERSAO_JSON='https://raw.githubusercontent.com/TheIgor12/blacksolutions/main/versao.json';
+const VERSAO_APP='1.9.34';const URL_VERSAO_JSON='https://raw.githubusercontent.com/TheIgor12/blacksolutions/main/versao.json';
 const numV=v=>String(v||'0').split(/\D+/).filter(Boolean).map(Number);
 function versaoMaior(a,b){const x=numV(a),y=numV(b);for(let i=0;i<Math.max(x.length,y.length);i++){const d=(x[i]||0)-(y[i]||0);if(d)return d>0}return false}
 const ATU={nova:null,timer:null};
@@ -3119,7 +3144,7 @@ function acessos(){if(!S.config.acessos||typeof S.config.acessos!=='object')S.co
 function emailAtual(){const u=NV.sessao&&NV.sessao.user;return u?String(u.email||'').toLowerCase():''}
 function perfilAtual(){if(!NV.ativa)return null;if(NV.papel==='admin')return null;
  const id=acessos()[emailAtual()];if(!id)return null;return perfis().find(x=>x.id===id)||null}
-function podeTela(k){const pf=perfilAtual();if(!pf)return true;return (pf.telas||[]).includes(k)}
+function podeTela(k){const pf=perfilAtual();if(!pf)return true;if(k==='prontuarios')k='pacientes';return (pf.telas||[]).includes(k)}
 function pode(k){const pf=perfilAtual();if(!pf)return true;return !!(pf.extras||{})[k]}
 function perfilForm(id){const novo=!id;const pf=novo?{id:'p'+uid().slice(0,6),nome:'',telas:['agenda','pacientes'],extras:{}}:perfis().find(x=>x.id===id);if(!pf)return;
  const chk=(k,n,marc,fn)=>`<label class="chk" style="margin:4px 0"><input type="checkbox" ${marc?'checked':''} onchange="${fn}"> ${esc(n)}</label>`;
