@@ -1,4 +1,4 @@
 {
-  "versao": "1.9.44",
-  "novidades": "O símbolo passou a ser o da identidade final, recortado da arte original: ícone do aplicativo, favicon e logotipo. O seletor de letra foi corrigido, porque um erro de aspas fazia as seis prévias saírem todas na mesma letra, e agora abre como primeiro cartão em Configurações, com sete opções e exemplo grande. A letra padrão passou a ser Montserrat nos títulos, a mesma do logotipo, e Figtree no texto. Entrou a promoção de Black Friday: plano completo por R$ 59,90 por mês nos seis primeiros meses, para as primeiras cinquenta clínicas, até 30 de novembro."
+  "versao": "1.9.45",
+  "novidades": "Entrou em Relatórios a Recuperação de pacientes. Para cada serviço cadastrado o sistema separa a base em quatro situações: quem abandonou o tratamento pela metade, quem fez avaliação e nunca voltou para o procedimento, quem já fez e sumiu, e quem nunca fez. Mostra há quantos dias cada pessoa não aparece, com filtro livre de dias, e traz a mensagem de WhatsApp pronta para cada situação, com o nome, o procedimento e as sessões que faltam já preenchidos. A visão geral lista todos os serviços lado a lado para a clínica escolher por onde começar. O plano completo passou a R$ 79,90 e a promoção de Black Friday vale para as primeiras cem clínicas."
 }

@@ -288,6 +288,30 @@ a.btn{text-decoration:none}
 .promo-sel b{color:#fff}
 .promo-bt{width:100%;justify-content:center;padding:11px;background:#fff;color:#12092b;font-weight:800}
 .promo-bt:hover{background:#efecff}
+.recsum{display:flex;flex-wrap:wrap;gap:12px;margin:0 0 14px}
+.recsum>div{flex:1;min-width:150px;background:var(--acc-soft);border-radius:12px;padding:12px 14px}
+.recsum b{display:block;font-family:var(--ft,var(--ff));font-size:24px;font-weight:800;line-height:1.1;color:var(--ink)}
+.recsum span{font-size:12px;color:var(--mut);font-weight:600}
+.recgrp{display:grid;grid-template-columns:repeat(auto-fit,minmax(165px,1fr));gap:10px;margin:0 0 14px}
+.recg{display:block;text-align:left;cursor:pointer;border:2px solid var(--line);background:var(--card);
+ border-radius:14px;padding:12px 14px;transition:border-color .12s}
+.recg:hover{border-color:var(--acc)}
+.recg.on{border-color:var(--acc);background:var(--acc-soft)}
+.recg b{display:block;font-family:var(--ft,var(--ff));font-size:27px;font-weight:800;line-height:1;color:var(--ink)}
+.recg span{display:block;font-size:12.5px;font-weight:600;color:var(--mut);margin-top:5px;line-height:1.3}
+.recg.on span{color:var(--acc)}
+.recbar{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;margin:14px 0 10px;font-size:13px;font-weight:600;color:var(--mut)}
+.recmsg{display:flex;justify-content:space-between;align-items:flex-start;gap:14px;background:var(--bg);
+ border:1px solid var(--line);border-radius:12px;padding:12px 14px;margin:12px 0}
+.recmsg.col{flex-direction:column;align-items:stretch}
+.recmsg b{font-size:12px;text-transform:uppercase;letter-spacing:.06em;color:var(--mut)}
+.recmsg p{margin:6px 0 0;font-size:13.5px;line-height:1.5;color:var(--ink)}
+.recmsg textarea{width:100%;margin-top:8px;border:1px solid var(--line);border-radius:8px;padding:10px;font:inherit;font-size:13.5px;resize:vertical}
+.recmsg small{color:var(--mut);font-size:11.5px;margin-top:6px;display:block}
+.recq{font-weight:800;color:var(--acc)}
+.recmed{color:var(--warn)}
+.recalto{color:var(--bad)}
+@media(max-width:700px){.recsum>div{min-width:calc(50% - 6px)}.recmsg{flex-direction:column}}
 tr.azflash td,.azflash.card{animation:azpisca 2s ease}
 /* Tipografia: menos peso e mais respiro. A fonte anterior era arredondada e
    pesada; esta tem traço mais fino, que combina com clínica, estética e salão. */
@@ -538,7 +562,7 @@ const waIco=()=>`<span class="wa">${ico('wa',15)}</span>`;
 /* ============ Estado e armazenamento ============ */
 function defaultState(){return {versao:1,config:{clinica:'Minha clínica',usuario:'Administrador',cor:'#5a4cfb',corTopo:'#0a0820',logo:'',
  msgCobranca:'Olá {nome}, tudo bem? Aqui é da {clinica}. Consta em aberto o valor de {valor}, referente a parcelas vencidas desde {vencimento}. Podemos combinar a forma de pagamento?',
- msgRetorno:'Olá {nome}, tudo bem? Aqui é da {clinica}. Já faz um tempo desde o seu último atendimento. Vamos agendar o seu retorno?',diasRetorno:90,segmento:'',taxas:{},descontarTaxa:false,cashback:'',cashbackDias:''},
+ msgRetorno:'Olá {nome}, tudo bem? Aqui é da {clinica}. Já faz um tempo desde o seu último atendimento. Vamos agendar o seu retorno?',diasRetorno:90,msgRec:{},segmento:'',taxas:{},descontarTaxa:false,cashback:'',cashbackDias:''},
  pacientes:[],lancamentos:[],tratamentos:[],anamneses:[],agendamentos:[],contasPagar:[],evolucoes:[],profissionais:[],importacoes:[],servicos:[],produtos:[],documentos:[],movEstoque:[],comandas:[],caixas:[],avaliacoes:[],fotos:[],termos:[],fichas:[],protocolos:[],equipamentos:[],vouchers:[]}}
 let S=defaultState();
 const DB={
@@ -2008,13 +2032,14 @@ function vDashboard(){const [ry,rm]=UI.dashRef.split('-').map(Number);const n=UI
 
 /* ============ Relatórios ============ */
 const REPORTS={
- 'Pacientes':[['pac_aniv','Aniversariantes'],['pac_origem','Como conheceu (origem)'],['pac_ret','Alertas de retorno'],['pac_ult','Último agendamento'],['pac_loc','Localização'],['pac_incomp','Cadastros incompletos']],
+ 'Pacientes':[['pac_aniv','Aniversariantes'],['pac_origem','Como conheceu (origem)'],['pac_ret','Alertas de retorno'],['pac_ult','Último agendamento'],['pac_loc','Localização'],['pac_recup','Recuperação de pacientes'],['pac_incomp','Cadastros incompletos']],
  'Financeiro':[['fin_formas','Recebimentos por forma de pagamento'],['fin_inad','Parcelas em atraso'],['fin_lanc','Todos os lançamentos'],['fin_desp','Despesas por categoria']],
  'Tratamentos':[['tr_aberto','Tratamentos em aberto'],['tr_proc','Procedimentos mais vendidos']],
  'Agendamentos':[['ag_mes','Faltas e desmarcações por mês'],['ag_prof','Atendimentos por profissional']]};
 function repData(id){const t=todayISO();
  switch(id){
  case 'pac_aniv':{const m=pad(UI.relMes);return {filtro:`<label>Mês<select onchange="UI.relMes=+this.value;render()">${MESES.map((x,i)=>`<option value="${i+1}" ${i+1===UI.relMes?'selected':''}>${x}</option>`).join('')}</select></label>`,cols:['Dia','Paciente','Idade que completa','Celular'],rows:S.pacientes.filter(p=>p.nascimento&&p.nascimento.slice(5,7)===m).sort((a,b)=>a.nascimento.slice(8).localeCompare(b.nascimento.slice(8))).map(p=>[p.nascimento.slice(8),p.nome,new Date().getFullYear()-+p.nascimento.slice(0,4),p.celular||''])}}
+ case 'pac_recup':return {html:recHTML(),cols:[],rows:[]};
  case 'pac_origem':{const g={};S.pacientes.forEach(p=>{const k=p.comoConheceu||'Não informado';g[k]=(g[k]||0)+1});const tot=S.pacientes.length||1;return {cols:['Origem','Pacientes','%'],rows:Object.entries(g).sort((a,b)=>b[1]-a[1]).map(([k,v])=>[k,v,(v/tot*100).toFixed(1)+'%'])}}
  case 'pac_ret':return {nota:`Pacientes sem agendamento futuro cujo último atendimento foi há ${S.config.diasRetorno} dias ou mais. O prazo é ajustável em Configurações.`,cols:['Paciente','Celular','Último atendimento','Dias'],rows:retornoList().map(x=>[x.p.nome,x.p.celular||'',br(x.last),x.dias]),wa:0};
  case 'pac_ult':{const m=lastApptMap();return {cols:['Paciente','Último atendimento','Próximo agendamento','Dias desde o último'],rows:S.pacientes.map(p=>{const o=m[p.id]||{};return [p.nome,br(o.last),br(o.next),o.last?diffDays(o.last,t):'']}).sort((a,b)=>(+b[3]||0)-(+a[3]||0))}}
@@ -2029,13 +2054,224 @@ function repData(id){const t=todayISO();
  case 'ag_mes':{const g={};S.agendamentos.forEach(a=>{const k=a.data.slice(0,7);g[k]=g[k]||[0,0,0];g[k][0]++;const s=stAg(a);if(s==='Faltou')g[k][1]++;if(s==='Desmarcado')g[k][2]++});return {cols:['Mês','Agendamentos','Faltas','Desmarcações','% faltas'],rows:Object.entries(g).sort((a,b)=>b[0].localeCompare(a[0])).map(([k,v])=>[monthLabel(k),v[0],v[1],v[2],v[0]?(v[1]/v[0]*100).toFixed(1)+'%':'0%'])}}
  case 'ag_prof':{const g={};S.agendamentos.filter(a=>inRange(a.data)).forEach(a=>{const k=a.profissional||'Não informado';g[k]=g[k]||[0,0,0];g[k][0]++;const s=stAg(a);if(s==='Faltou')g[k][1]++;if(s==='Atendido')g[k][2]++});return {range:true,cols:['Profissional','Agendamentos','Faltas','Marcados como atendidos'],rows:Object.entries(g).sort((a,b)=>b[1][0]-a[1][0]).map(([k,v])=>[k,...v])}}
  }return {cols:[],rows:[]}}
+/* ============ Recuperação de pacientes ============
+   Para cada serviço cadastrado, separa a base da clínica em quatro situações
+   e entrega a mensagem pronta de WhatsApp para cada uma. Serve a qualquer
+   segmento: o que define o serviço é o cadastro de Procedimentos e preços,
+   não uma lista fixa de procedimentos. */
+
+const REC_GRUPOS=[
+ ['abandonou','Abandonou o tratamento','Comprou o pacote, começou e parou antes de terminar as sessões. É quem está mais perto de voltar, porque já pagou.'],
+ ['avaliou','Avaliou e não voltou','Veio para a avaliação e nunca fez o procedimento. Costuma ser dúvida de preço ou de medo, não falta de interesse.'],
+ ['naoretornou','Fez e não voltou','Já fez este serviço e sumiu. É manutenção atrasada: o resultado do procedimento anterior já passou do prazo.'],
+ ['nunca','Nunca fez','É paciente da casa, faz outras coisas aqui, mas nunca passou por este serviço.']];
+const REC_DIAS=[0,15,30,45,60,90,120,180,270,365];
+const REC_MSG_PADRAO={
+ abandonou:'Olá {nome}, tudo bem? Aqui é da {clinica}. Vi que o seu tratamento de {servico} ficou pela metade e ainda faltam {restam} de {sessoes} sessões. O resultado só aparece com o tratamento completo. Quer retomar? Consigo reservar um horário nesta semana.',
+ avaliou:'Olá {nome}, tudo bem? Aqui é da {clinica}. Você fez avaliação aqui conosco e acabou não voltando para o {servico}. Ficou alguma dúvida sobre como funciona ou sobre o valor? Posso te explicar e ver um horário que caiba na sua rotina.',
+ naoretornou:'Olá {nome}, tudo bem? Aqui é da {clinica}. Faz {dias} dias desde o seu último atendimento, quando você fez {ultimo}. Já está na hora de repetir o {servico} para manter o resultado. Quer que eu agende?',
+ nunca:'Olá {nome}, tudo bem? Aqui é da {clinica}. Estamos com horários abertos para {servico} e lembrei de você, que ainda não fez esse procedimento aqui. Quer uma avaliação sem compromisso para ver se é o seu caso?'};
+/* Palavras que não distinguem um serviço de outro e por isso não entram na comparação */
+const REC_PARAR=new Set(['de','da','do','das','dos','com','sem','para','por','em','no','na','os','as','um','uma','pe','pes','sessao','sessoes','unica','unico','simples','completo','completa','geral','pacote','plano','servico','atendimento','procedimento','tratamento']);
+/* Nomes diferentes para a mesma coisa, por segmento. A clínica escreve de um jeito
+   no cadastro e de outro na agenda, e sem isto o relatório perde paciente. */
+const REC_SIN=[
+ ['onicocriptose','unha encravada','encravada','cantoplastia','espicula','onicocriptoses'],
+ ['podoprofilaxia','limpeza dos pes','profilaxia','podologia geral','pe diabetico','calosidade','calo'],
+ ['onicomicose','micose de unha','fungo na unha','laser fungo','laser onicomicose','micose'],
+ ['reflexologia','massagem nos pes','reflexoterapia'],
+ ['avaliacao','consulta','primeira consulta','anamnese','retorno avaliacao'],
+ ['limpeza de pele','limpeza facial','higienizacao facial'],
+ ['depilacao a laser','laser depilacao','fotodepilacao','depilacao laser'],
+ ['drenagem linfatica','drenagem','massagem modeladora'],
+ ['massoterapia','massagem relaxante','massagem terapeutica','quick massage'],
+ ['escova','escova progressiva','escova lisa','progressiva'],
+ ['coloracao','pintura','tintura','retoque de raiz','retoque'],
+ ['manicure','unhas das maos','esmaltacao'],
+ ['pedicure','unhas dos pes','spa dos pes'],
+ ['sobrancelha','design de sobrancelha','henna','micropigmentacao'],
+ ['peeling','peeling quimico','renovacao celular'],
+ ['criolipolise','criofrequencia'],
+ ['radiofrequencia','radio frequencia'],
+ ['botox','toxina botulinica'],
+ ['corte','corte de cabelo','corte feminino','corte masculino']];
+function recTok(s){return norm(s).split(' ').filter(w=>w.length>=4&&!REC_PARAR.has(w))}
+function recSinGrupo(t){const n=norm(t);if(!n)return null;
+ return REC_SIN.find(g=>g.some(x=>n===x||n.includes(x)))||null}
+/* Verdadeiro quando o texto livre da agenda ou do tratamento se refere ao serviço */
+function recCasa(servico,texto){const a=norm(servico),b=norm(texto);
+ if(!a||!b)return false;
+ if(a===b||b.includes(a)||a.includes(b))return true;
+ const ga=recSinGrupo(a),gb=recSinGrupo(b);
+ if(ga&&gb&&ga===gb)return true;
+ const ta=recTok(a);if(!ta.length)return false;
+ const tb=new Set(recTok(b));
+ const bate=ta.filter(w=>tb.has(w)).length;
+ return bate===ta.length||(ta.length>=2&&bate>=2)}
+function recEhAvaliacao(t){const n=norm(t);return /avalia|anamnese|primeira consulta|consulta inicial/.test(n)}
+/* Histórico de cada paciente: última visita, próximo agendamento e tudo o que já passou por ele.
+   Conta como visita o que a agenda conta: passado, não desmarcado e não faltou. */
+function recHistorico(){const t=todayISO(),H={};
+ const põe=(pid,data,texto,tipo)=>{if(!pid||!data)return;
+  const o=H[pid]||(H[pid]={ult:'',prox:'',itens:[]});
+  if(data<=t){if(data>o.ult)o.ult=data}else if(!o.prox||data<o.prox)o.prox=data;
+  o.itens.push({data,texto:str(texto),tipo})};
+ (S.agendamentos||[]).forEach(a=>{const s=stAg(a);
+  if(s==='Desmarcado')return; if(s==='Faltou'&&a.data<=t)return;
+  põe(a.pacienteId,a.data,a.procedimento,recEhAvaliacao(a.procedimento)?'avaliacao':'agenda')});
+ (S.tratamentos||[]).forEach(x=>põe(x.pacienteId,x.data,x.procedimento,'tratamento'));
+ (S.avaliacoes||[]).forEach(x=>põe(x.pacienteId,x.data||x.criadoEm,x.procedimento||'Avaliação','avaliacao'));
+ Object.values(H).forEach(o=>o.itens.sort((a,b)=>a.data.localeCompare(b.data)));
+ return H}
+function recUltimoProc(h){const t=todayISO();
+ const f=[...h.itens].reverse().find(i=>i.data<=t&&i.tipo!=='avaliacao'&&str(i.texto));
+ return f?f.texto:''}
+/* Sessões que faltam num tratamento em aberto do serviço */
+function recPendente(pid,servico){
+ return (S.tratamentos||[]).filter(x=>x.pacienteId===pid&&recCasa(servico,x.procedimento))
+  .map(x=>({tot:Number(x.sessoesTotal)||0,fez:Number(x.sessoesRealizadas)||0,data:x.data,valor:Number(x.valor)||0}))
+  .filter(x=>x.tot>1&&x.fez<x.tot).sort((a,b)=>String(b.data||'').localeCompare(String(a.data||'')))[0]||null}
+/* Separa a base em quatro grupos para um serviço. Cada paciente cai em um só,
+   na ordem de quem está mais perto de voltar. */
+function recAnalise(servico,diasMin){const t=todayISO(),H=recHistorico();
+ const G={abandonou:[],avaliou:[],naoretornou:[],nunca:[]};
+ let semVisita=0,comAgenda=0;
+ (S.pacientes||[]).forEach(p=>{if(p.status==='Inativo')return;
+  const h=H[p.id];
+  if(!h||!h.ult){semVisita++;return}
+  const dias=diffDays(h.ult,t);
+  if(dias<(+diasMin||0))return;
+  if(h.prox){comAgenda++;return}
+  const base={p,dias,ult:h.ult,ultProc:recUltimoProc(h)};
+  const pend=recPendente(p.id,servico);
+  if(pend){G.abandonou.push({...base,tot:pend.tot,fez:pend.fez,restam:pend.tot-pend.fez});return}
+  const feitos=h.itens.filter(i=>i.data<=t&&i.tipo!=='avaliacao'&&recCasa(servico,i.texto));
+  if(feitos.length){const ultimoDoServico=feitos[feitos.length-1].data;
+   G.naoretornou.push({...base,vezes:feitos.length,ultServ:ultimoDoServico,diasServ:diffDays(ultimoDoServico,t)});return}
+  const av=h.itens.filter(i=>i.data<=t&&i.tipo==='avaliacao');
+  if(av.length){const dAv=av[av.length-1].data;
+   const depois=h.itens.some(i=>i.data>=dAv&&i.data<=t&&i.tipo!=='avaliacao'&&recCasa(servico,i.texto));
+   if(!depois){G.avaliou.push({...base,dataAv:dAv,diasAv:diffDays(dAv,t)});return}}
+  G.nunca.push(base)});
+ Object.values(G).forEach(L=>L.sort((a,b)=>b.dias-a.dias));
+ return {G,semVisita,comAgenda,
+  total:G.abandonou.length+G.avaliou.length+G.naoretornou.length+G.nunca.length}}
+/* Quanto cada grupo vale, pelo preço do serviço no cadastro */
+function recValor(servico){const s=(S.servicos||[]).find(x=>norm(x.nome)===norm(servico));
+ return s?(Number(s.preco)||0):0}
+function recMsgTpl(g){const m=(S.config.msgRec||{});return str(m[g])||REC_MSG_PADRAO[g]||''}
+function recMsg(g,it,servico){
+ return fillMsg(recMsgTpl(g),{nome:firstName(it.p.nome),clinica:S.config.clinica,servico:servico,
+  dias:it.dias,ultimo:it.ultProc||'o seu último atendimento',
+  restam:it.restam||'',sessoes:it.tot||'',ultimadata:br(it.ult)})}
+
+/* Tela do relatório. Começa na visão geral, com todos os serviços e os quatro
+   números de cada um, e abre a lista de pacientes ao escolher um serviço. */
+function recUI(){if(!UI.rec)UI.rec={serv:'',dias:60,grupo:'',q:'',edit:false,mostra:20};return UI.rec}
+function recSet(k,v){const R=recUI();R[k]=v;if(k==='serv'||k==='dias'||k==='grupo')R.mostra=20;render()}
+function recServicos(){return az((S.servicos||[]).filter(s=>s.ativo!==false))}
+function recHTML(){const R=recUI(),L=recServicos();
+ if(!L.length)return `<div class="note">Nenhum serviço cadastrado ainda. Este relatório parte do que está em <b>Procedimentos e preços</b>: cadastre os serviços da clínica e ele passa a cruzar sozinho com o histórico dos ${esc(SEG().pessoas.toLowerCase())}.
+  <div style="margin-top:10px"><button class="btn sm" onclick="go('servicos')">Ir para Procedimentos e preços</button></div></div>`;
+ const selDias=`<label>Sem vir há<select onchange="recSet('dias',this.value)">${REC_DIAS.map(d=>`<option value="${d}" ${+R.dias===d?'selected':''}>${d===0?'qualquer tempo':d+' dias ou mais'}</option>`).join('')}</select></label>`;
+ const livre=`<label>Ou escreva os dias<input type="number" min="0" step="1" value="${esc(R.dias)}" oninput="recSet('dias',this.value)" style="width:110px"></label>`;
+ if(!R.serv)return recVisaoGeral(L,selDias,livre);
+ return recDetalhe(R.serv,L,selDias,livre)}
+function recVisaoGeral(L,selDias,livre){const R=recUI();
+ const linhas=L.map(s=>{const a=recAnalise(s.nome,R.dias);const v=Number(s.preco)||0;
+  const som=a.G.abandonou.length+a.G.avaliou.length+a.G.naoretornou.length;
+  return {s,a,v,som,pot:som*v}}).sort((x,y)=>y.pot-x.pot);
+ const tot=linhas.reduce((a,x)=>a+x.pot,0);
+ return `<div class="filters">${selDias}${livre}</div>
+ <div class="note">Para cada serviço cadastrado, quantos ${esc(SEG().pessoas.toLowerCase())} estão parados em cada situação. O potencial multiplica os três primeiros grupos pelo preço do serviço: é quanto entraria se todos voltassem uma vez. Serve para escolher por onde começar, não como previsão.</div>
+ <div class="recsum"><div><b>${linhas.length}</b><span>serviços</span></div>
+  <div><b>${money(tot)}</b><span>potencial parado</span></div>
+  <div><b>${(S.pacientes||[]).length}</b><span>${esc(SEG().pessoas.toLowerCase())} na base</span></div></div>
+ <div class="tw"><table class="tbl"><thead><tr><th>Serviço</th><th class="num">Preço</th>
+  <th class="num">Abandonou</th><th class="num">Avaliou e não voltou</th><th class="num">Fez e não voltou</th><th class="num">Nunca fez</th><th class="num">Potencial</th><th></th></tr></thead><tbody>
+  ${linhas.map(x=>`<tr><td><b>${esc(x.s.nome)}</b>${x.s.categoria?`<br><small style="color:var(--mut)">${esc(x.s.categoria)}</small>`:''}</td>
+   <td class="num">${x.v?money(x.v):'-'}</td>
+   <td class="num ${x.a.G.abandonou.length?'recq':''}">${x.a.G.abandonou.length||'-'}</td>
+   <td class="num ${x.a.G.avaliou.length?'recq':''}">${x.a.G.avaliou.length||'-'}</td>
+   <td class="num ${x.a.G.naoretornou.length?'recq':''}">${x.a.G.naoretornou.length||'-'}</td>
+   <td class="num">${x.a.G.nunca.length||'-'}</td>
+   <td class="num"><b>${x.pot?money(x.pot):'-'}</b></td>
+   <td><button class="btn sm" onclick="recSet('serv',${JSON.stringify(x.s.nome).replace(/"/g,'&quot;')})">Abrir</button></td></tr>`).join('')}
+  </tbody></table></div>`}
+function recDetalhe(serv,L,selDias,livre){const R=recUI();
+ const a=recAnalise(serv,R.dias),v=recValor(serv);
+ const g=R.grupo||REC_GRUPOS.find(x=>a.G[x[0]].length)?.[0]||'naoretornou';
+ const def=REC_GRUPOS.find(x=>x[0]===g)||REC_GRUPOS[0];
+ let lista=a.G[g]||[];
+ const q=norm(R.q);
+ if(q)lista=lista.filter(it=>norm(it.p.nome).includes(q));
+ const mostra=Math.min(lista.length,+R.mostra||20);
+ return `<div class="filters">
+  <label>Serviço<select onchange="recSet('serv',this.value)">${L.map(s=>`<option ${s.nome===serv?'selected':''}>${esc(s.nome)}</option>`).join('')}</select></label>
+  ${selDias}${livre}
+  <label>Procurar ${esc(SEG().pessoa.toLowerCase())}<input value="${esc(R.q)}" oninput="recSet('q',this.value)" placeholder="nome"></label>
+  <button class="btn ghost sm" onclick="recSet('serv','')">Ver todos os serviços</button></div>
+ <div class="recgrp">${REC_GRUPOS.map(([k,nome])=>`<button class="recg ${k===g?'on':''}" onclick="recSet('grupo','${k}')">
+   <b>${a.G[k].length}</b><span>${esc(nome)}</span></button>`).join('')}</div>
+ <div class="note">${esc(def[2])}${v?` Cada retorno vale ${money(v)}, o preço de <b>${esc(serv)}</b> no cadastro.`:''}</div>
+ ${recPainelMsg(g,serv)}
+ ${lista.length?`
+ <div class="recbar"><span>${lista.length} ${lista.length===1?'pessoa':'pessoas'} nesta situação${v?`, ${money(lista.length*v)} parados`:''}</span>
+  <span style="display:flex;gap:8px">
+  <button class="btn ghost sm" onclick="recExportar()">${ico('down',15)} Baixar em Excel</button>
+  <button class="btn sm" onclick="recAbrirVarios()">Abrir os ${Math.min(10,lista.length)} primeiros no WhatsApp</button></span></div>
+ <div class="tw"><table class="tbl"><thead><tr><th>${esc(SEG().pessoa)}</th><th>Celular</th><th>Última vinda</th><th class="num">Dias parado</th><th>${g==='abandonou'?'Sessões':g==='avaliou'?'Avaliação em':g==='naoretornou'?'Fez este serviço':'Último procedimento'}</th><th></th></tr></thead><tbody>
+  ${lista.slice(0,mostra).map(it=>{const msg=recMsg(g,it,serv);const w=waLink(it.p.celular,msg);
+   return `<tr><td><button class="lnk" onclick="goPront('${it.p.id}')">${esc(nomePessoa(it.p.nome))}</button></td>
+    <td>${esc(it.p.celular||'-')}</td><td>${br(it.ult)}</td>
+    <td class="num"><b class="${it.dias>=180?'recalto':it.dias>=90?'recmed':''}">${it.dias}</b></td>
+    <td>${g==='abandonou'?`fez ${it.fez} de ${it.tot}, faltam <b>${it.restam}</b>`
+       :g==='avaliou'?br(it.dataAv)+` (${it.diasAv} dias)`
+       :g==='naoretornou'?`${it.vezes}x, última em ${br(it.ultServ)}`
+       :esc(it.ultProc||'-')}</td>
+    <td>${w?`<a class="btn sm" href="${w}" target="_blank" rel="noopener" onclick="recMarcar('${it.p.id}')">${ico('wa',14)} Chamar</a>`
+        :`<span class="badge warn">sem celular</span>`}</td></tr>`}).join('')}
+  </tbody></table></div>
+ ${lista.length>mostra?`<div style="text-align:center;margin-top:12px"><button class="btn ghost" onclick="recSet('mostra',${mostra+40})">Mostrar mais (${lista.length-mostra} restantes)</button></div>`:''}`
+ :`<div class="note">Ninguém nesta situação com o prazo escolhido. Diminua os dias no filtro acima para ver mais gente.</div>`}`}
+function recPainelMsg(g,serv){const R=recUI();
+ if(!R.edit)return `<div class="recmsg"><div><b>Mensagem deste grupo</b><p>${esc(fillMsg(recMsgTpl(g),{nome:'Maria',clinica:S.config.clinica,servico:serv,dias:'95',ultimo:'Podoprofilaxia',restam:'3',sessoes:'5',ultimadata:br(todayISO())}))}</p></div>
+  <button class="btn ghost sm" onclick="recSet('edit',true)">Editar</button></div>`;
+ return `<div class="recmsg col"><b>Mensagem para "${esc((REC_GRUPOS.find(x=>x[0]===g)||[])[1]||'')}"</b>
+  <textarea id="recTpl" rows="4">${esc(recMsgTpl(g))}</textarea>
+  <small>Disponíveis: {nome} {clinica} {servico} {dias} {ultimo} {ultimadata}${g==='abandonou'?' {restam} {sessoes}':''}</small>
+  <div style="display:flex;gap:8px;margin-top:8px"><button class="btn sm" onclick="recSalvarMsg('${g}')">Salvar</button>
+  <button class="btn ghost sm" onclick="recSet('edit',false)">Cancelar</button>
+  <button class="btn ghost sm" onclick="recRestaurarMsg('${g}')">Voltar ao texto original</button></div></div>`}
+function recSalvarMsg(g){const t=$('#recTpl');if(!t)return;
+ S.config.msgRec=Object.assign({},S.config.msgRec||{},{[g]:t.value});save();recSet('edit',false);toast('Mensagem salva.')}
+function recRestaurarMsg(g){const m=Object.assign({},S.config.msgRec||{});delete m[g];S.config.msgRec=m;save();recSet('edit',false);toast('Texto original restaurado.')}
+function recMarcar(pid){const R=recUI();R.enviados=R.enviados||{};R.enviados[pid]=todayISO()}
+function recListaAtual(){const R=recUI();const a=recAnalise(R.serv,R.dias);
+ const g=R.grupo||REC_GRUPOS.find(x=>a.G[x[0]].length)?.[0]||'naoretornou';
+ let L=a.G[g]||[];const q=norm(R.q);if(q)L=L.filter(it=>norm(it.p.nome).includes(q));return {L,g}}
+function recAbrirVarios(){const R=recUI();const {L,g}=recListaAtual();
+ const com=L.filter(it=>waLink(it.p.celular,'')).slice(0,10);
+ if(!com.length){toast('Nenhum desses tem celular cadastrado.');return}
+ confirmModal(`Vão abrir <b>${com.length}</b> abas, uma por pessoa, com a mensagem já escrita. Você confere e envia cada uma: o sistema não envia nada sozinho.<br><br>Mande com calma, uma a cada poucos minutos. Disparo rápido para muitos números seguidos é o que faz o WhatsApp bloquear o número.`,
+  ()=>{com.forEach((it,i)=>setTimeout(()=>window.open(waLink(it.p.celular,recMsg(g,it,R.serv)),'_blank'),i*350));
+   com.forEach(it=>recMarcar(it.p.id))},'Abrir '+com.length+' conversas')}
+function recExportar(){const R=recUI();const {L,g}=recListaAtual();
+ if(typeof XLSX==='undefined'){toast('Biblioteca de Excel não carregou');return}
+ const cols=['Nome','Celular','Última vinda','Dias parado','Situação','Detalhe','Mensagem'];
+ const nomeG=(REC_GRUPOS.find(x=>x[0]===g)||[])[1]||g;
+ const rows=L.map(it=>[nomePessoa(it.p.nome),it.p.celular||'',br(it.ult),it.dias,nomeG,
+  g==='abandonou'?`fez ${it.fez} de ${it.tot}`:g==='avaliou'?`avaliou em ${br(it.dataAv)}`:g==='naoretornou'?`${it.vezes} vezes`:(it.ultProc||''),
+  recMsg(g,it,R.serv)]);
+ exportRows('recuperacao_'+norm(R.serv).replace(/ /g,'_')+'_'+g,cols,rows)}
+
 function vRelatorios(){const r=repData(UI.rel);const title=Object.values(REPORTS).flat().find(x=>x[0]===UI.rel)?.[1]||'';window._rep=r;
  const mi=new Set(r.money||[]);
  return `<div class="page"><div class="phead"><div><h1>Relatórios</h1><p class="sub">Acompanhe métricas com relatórios da clínica.</p></div></div><div class="split"><div class="card rlist" style="padding:8px">${Object.entries(REPORTS).map(([g,L])=>`<div class="rgrp">${g}</div>${azPor(L,x=>x[1]).map(([k,t])=>`<button class="${UI.rel===k?'on':''}" onclick="UI.rel='${k}';render()">${t}</button>`).join('')}`).join('')}</div>
- <div class="card"><div class="phead"><h2 style="margin:0">${esc(title)}</h2><div style="display:flex;gap:8px"><button class="btn ghost sm" onclick="window.print()">${ico('print',15)} Imprimir</button><button class="btn sm" onclick="exportRows('${UI.rel}',window._rep.cols,window._rep.rows)">${ico('down',15)} Exportar Excel</button></div></div>
+ <div class="card"><div class="phead"><h2 style="margin:0">${esc(title)}</h2><div style="display:flex;gap:8px"><button class="btn ghost sm" onclick="window.print()">${ico('print',15)} Imprimir</button>${r.html?'':`<button class="btn sm" onclick="exportRows('${UI.rel}',window._rep.cols,window._rep.rows)">${ico('down',15)} Exportar Excel</button>`}</div></div>
  ${r.range||r.filtro?`<div class="filters">${r.range?`<label>De<input type="date" value="${UI.de}" onchange="UI.de=this.value;render()"></label><label>Até<input type="date" value="${UI.ate}" onchange="UI.ate=this.value;render()"></label>`:''}${r.filtro||''}</div>`:''}
  ${r.nota?`<div class="note">${esc(r.nota)}</div>`:''}
- <div class="tw"><table class="tbl"><thead><tr>${r.cols.map((c,i)=>`<th class="${mi.has(i)?'num':''}">${esc(c)}</th>`).join('')}${r.wa===0?'<th></th>':''}</tr></thead><tbody>${r.rows.map(row=>`<tr>${row.map((v,i)=>`<td class="${mi.has(i)?'num':''}">${mi.has(i)?money(v):esc(v===''?'-':v)}</td>`).join('')}${r.wa===0?`<td>${(()=>{const l=waLink(row[1],fillMsg(S.config.msgRetorno,{nome:firstName(row[0]),clinica:S.config.clinica}));return l?`<a class="btn green sm" href="${l}" target="_blank" rel="noopener">WhatsApp</a>`:''})()}</td>`:''}</tr>`).join('')||`<tr><td colspan="${r.cols.length+1}" class="empty">Sem dados.</td></tr>`}</tbody></table></div><p class="sub">${r.rows.length} linhas</p></div></div></div>`}
+ ${r.html?r.html:`<div class="tw"><table class="tbl"><thead><tr>${r.cols.map((c,i)=>`<th class="${mi.has(i)?'num':''}">${esc(c)}</th>`).join('')}${r.wa===0?'<th></th>':''}</tr></thead><tbody>${r.rows.map(row=>`<tr>${row.map((v,i)=>`<td class="${mi.has(i)?'num':''}">${mi.has(i)?money(v):esc(v===''?'-':v)}</td>`).join('')}${r.wa===0?`<td>${(()=>{const l=waLink(row[1],fillMsg(S.config.msgRetorno,{nome:firstName(row[0]),clinica:S.config.clinica}));return l?`<a class="btn green sm" href="${l}" target="_blank" rel="noopener">WhatsApp</a>`:''})()}</td>`:''}</tr>`).join('')||`<tr><td colspan="${r.cols.length+1}" class="empty">Sem dados.</td></tr>`}</tbody></table></div><p class="sub">${r.rows.length} linhas</p>`}</div></div></div>`}
 function exportRows(name,cols,rows){if(typeof XLSX==='undefined'){toast('Biblioteca de Excel não carregou');return}const ws=XLSX.utils.aoa_to_sheet([cols,...(rows||[])]);const wb=XLSX.utils.book_new();XLSX.utils.book_append_sheet(wb,ws,'Dados');saveWB(wb,`${name}_${todayISO()}.xlsx`)}
 
 /* ============ Profissionais ============ */
@@ -2282,7 +2518,7 @@ const PLANOS={
 /* O plano contratado vem da nuvem, não da configuração local: é ele que trava os módulos */
 function planoContratado(){const p=String((typeof NV!=='undefined'&&NV.plano)||'').toLowerCase();
  if(p==='agenda')return 'agenda';if(!p||p==='teste')return 'teste';return 'completo'}
-function planoInfo(k){const a=(typeof ASSINATURA!=='undefined'&&ASSINATURA&&ASSINATURA.planos)||{};const d={agenda:{nome:'Só agenda',preco:'R$ 29,90 por mês',valor:29.90},completo:{nome:'Completo',preco:'R$ 79,99 por mês',valor:79.99},upgrade:{nome:'Complemento para o plano completo',preco:'R$ 50,09',valor:50.09}};
+function planoInfo(k){const a=(typeof ASSINATURA!=='undefined'&&ASSINATURA&&ASSINATURA.planos)||{};const d={agenda:{nome:'Só agenda',preco:'R$ 29,90 por mês',valor:29.90},completo:{nome:'Completo',preco:'R$ 79,90 por mês',valor:79.90},upgrade:{nome:'Complemento para o plano completo',preco:'R$ 50,09',valor:50.09}};
  return Object.assign({},d[k]||{},a[k]||{})}
 const planoK=()=>planoContratado()==='agenda'?'agenda':(S.config.plano==='agenda'?'agenda':'completo');
 const soAgenda=()=>planoK()==='agenda';
@@ -3248,7 +3484,7 @@ function agNovo(a,s){if(s==='Desmarcado'||s==='Faltou')return false;const k=a.da
  const hist=c=>S[c].some(x=>x.pacienteId===a.pacienteId&&((x.data||x.vencimento||x.pagamento||'')<a.data)&&(x.data||x.vencimento||x.pagamento));
  return !hist('evolucoes')&&!hist('tratamentos')&&!S.lancamentos.some(l=>l.pacienteId===a.pacienteId&&l.pagamento&&l.pagamento<a.data)}
 /* ============ Atualização: aviso com botão Atualizar agora ============ */
-const VERSAO_APP='1.9.44';const URL_VERSAO_JSON='https://raw.githubusercontent.com/TheIgor12/blacksolutions/main/versao.json';
+const VERSAO_APP='1.9.45';const URL_VERSAO_JSON='https://raw.githubusercontent.com/TheIgor12/blacksolutions/main/versao.json';
 const numV=v=>String(v||'0').split(/\D+/).filter(Boolean).map(Number);
 function versaoMaior(a,b){const x=numV(a),y=numV(b);for(let i=0;i<Math.max(x.length,y.length);i++){const d=(x[i]||0)-(y[i]||0);if(d)return d>0}return false}
 const ATU={nova:null,timer:null};

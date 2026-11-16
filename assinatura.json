@@ -1,5 +1,5 @@
 {
-  "preco": "R$ 79,99 por mês",
+  "preco": "R$ 79,90 por mês",
   "teste_dias": 7,
   "link_pix": "https://www.asaas.com/000/c/99r1jm3tyroucxqv",
   "link_cartao": "https://www.asaas.com/000/c/99r1jm3tyroucxqv",
@@ -15,8 +15,8 @@
     },
     "completo": {
       "nome": "Completo",
-      "preco": "R$ 79,99 por mês",
-      "valor": 79.99,
+      "preco": "R$ 79,90 por mês",
+      "valor": 79.9,
       "link": "https://www.asaas.com/000/c/99r1jm3tyroucxqv"
     },
     "upgrade": {
@@ -34,10 +34,10 @@
     "preco": "R$ 59,90",
     "valor": 59.9,
     "meses": 6,
-    "vagas": 50,
+    "vagas": 100,
     "usadas": 0,
     "ate": "2026-11-30",
     "link": "",
-    "detalhe": "Plano completo por R$ 59,90 por mês nos seis primeiros meses, no lugar de R$ 79,99. Depois do sexto mês volta ao valor normal. Sem fidelidade: dá para cancelar quando quiser."
+    "detalhe": "Plano completo por R$ 59,90 por mês nos seis primeiros meses, no lugar de R$ 79,90. A partir do sétimo mês volta ao valor normal. Sem fidelidade: dá para cancelar quando quiser."
   }
 }
