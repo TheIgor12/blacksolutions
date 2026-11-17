@@ -1375,6 +1375,7 @@ function processarOnline(){const novos=S.agendamentos.filter(a=>a.origem==='onli
  save();return novos.length}
 
 /* ============ Assinatura de termos pelo celular ============ */
+const URL_VALIDAR='https://blackflow.app.br/validar/';
 const URL_ASSINAR='https://blackflow.app.br/assinar/?t=';
 async function termoRemoto(pid,tipo){if(!NV.ativa||!NV.sb||!NV.clinicaId||NV.offline){toast('Para enviar o termo pelo celular, o BlackFlow precisa estar conectado à nuvem.');return}
  const p=pac(pid);const txt=$('#tmTxt').value.trim();if(!txt){toast('O texto do termo está vazio');return}const proc=$('#tmProc').value.trim();
@@ -4037,6 +4038,8 @@ function contratoLancar(ct){const p=pac(ct.pacienteId);const desc='Contrato '+ct
    de proprio punho, que e o caminho que nao depende de discussao sobre
    assinatura eletronica no juizo. */
 /* ===== Contratos na ficha: ver, conferir a assinatura, imprimir ===== */
+function copiarTexto(t,bt){const r=()=>{const o=bt.textContent;bt.textContent='Copiado';setTimeout(()=>bt.textContent=o,1600)};
+ (navigator.clipboard?navigator.clipboard.writeText(t):Promise.reject()).then(r,()=>toast('Não deu para copiar. Selecione o código acima.'))}
 function contratosDe(pid){return (S.contratos||[]).filter(c=>c.pacienteId===pid).sort((a,b)=>str(b.data).localeCompare(str(a.data)))}
 function contratoSituacao(c){
  if(c.assinatura)return ['ok','Assinado'];
@@ -4092,11 +4095,19 @@ function contratoProva(c){const p=pac(c.pacienteId)||{};const r=c.remoto||{};
  if(c.ip)L.push(['Endereço de internet',c.ip]);
  if(c.agente)L.push(['Dispositivo',str(c.agente).slice(0,110)]);
  if((c.testemunhas||[]).length)L.push(['Testemunhas',c.testemunhas.map(t=>t.nome+(t.cpf?' ('+fmtCPF(t.cpf)+')':'')).join('; ')]);
+ if(c.assinatura)L.push(['Conferência pública',URL_VALIDAR]);
  L.push(['Registrado por',str(c.criadoPor)]);
  return L}
 function contratoComprovante(id){const c=(S.contratos||[]).find(x=>x.id===id);if(!c)return;
  openModal(`<h3>Comprovante da assinatura</h3>
   <table class="tbl mini">${contratoProva(c).map(x=>`<tr><td style="width:40%;color:var(--mut)">${esc(x[0])}</td><td><b>${esc(x[1])}</b></td></tr>`).join('')}</table>
+  ${c.assinatura?`<div class="note" style="margin-top:12px;border-left:3px solid var(--ok)">
+   <b>Qualquer pessoa pode conferir este documento</b>, sem conta e sem acesso ao sistema, em
+   <b>${esc(URL_VALIDAR)}</b>, colando o código de verificação. A conferência é feita no servidor,
+   não depende da clínica, e não mostra o conteúdo do contrato nem dado de saúde.
+   <div style="display:flex;gap:8px;margin-top:10px;flex-wrap:wrap">
+    <button class="btn sm" onclick="copiarTexto('${esc(c.hash)}',this)">Copiar o código</button>
+    <a class="btn ghost sm" href="${esc(URL_VALIDAR)}?c=${esc(c.hash)}" target="_blank" rel="noopener">Abrir a página de validação</a></div></div>`:''}
   <div class="note" style="margin-top:12px">Esta é uma assinatura eletrônica <b>avançada</b>, do artigo 4º, inciso II, da Lei nº 14.063, de 2020. Ela <b>não é</b> assinatura qualificada com certificado ICP-Brasil.
    O que a sustenta é o conjunto acima: autoria, integridade e momento. O código de verificação é calculado sobre o texto no instante da assinatura; alterada uma letra do contrato, o código deixa de bater.</div>
   <div class="mact"><button class="btn ghost" onclick="contratoImprimir('${c.id}')">${ico('print',15)} Imprimir contrato e comprovante</button>
@@ -4143,8 +4154,10 @@ function contratoImprimir(ct){
   <table style="border-collapse:collapse;font-size:10pt;width:100%">${contratoProva(ct).map(x=>
    `<tr><td style="border:1px solid #bbb;padding:5px 7px;width:38%;color:#444">${esc(x[0])}</td><td style="border:1px solid #bbb;padding:5px 7px">${esc(x[1])}</td></tr>`).join('')}</table>
   <p style="font-size:9pt;color:#444;margin-top:12px">Assinatura eletrônica avançada, artigo 4º, inciso II, da Lei nº 14.063, de 2020, e artigo 10, parágrafo 2º, da Medida Provisória nº 2.200-2, de 2001. Não é assinatura qualificada com certificado ICP-Brasil.</p></div>`:''}
- <div class="vf">Contrato nº ${esc(ct.numero)} &middot; código de verificação ${esc(String(ct.hash||'').slice(0,32))}<br>
- Qualquer alteração no texto acima torna este código divergente.</div>
+ <div class="vf"><b>Contrato nº ${esc(ct.numero)}</b><br>
+ Código de verificação: ${esc(String(ct.hash||''))}<br>
+ ${ct.assinatura?`Confira a autenticidade deste documento em ${esc(URL_VALIDAR)}, colando o código acima.<br>`:''}
+ Qualquer alteração no texto deste contrato torna o código divergente.</div>
  </body></html>`);
  w.document.close();setTimeout(()=>{try{w.print()}catch(e){}},400);
  toast('Contrato gerado. Imprima duas vias e colha as assinaturas.')}
@@ -4181,7 +4194,7 @@ async function contratoRemoto(ct){const p=pac(ct.pacienteId);
  const link=URL_ASSINAR+data.token;
  const msg=`Olá ${firstName(p.nome)}, tudo bem? Aqui é da ${S.config.clinica}.\n\nSegue o contrato do seu atendimento`
   +(ct.saldo>0?`, com o saldo de ${money(ct.saldo)} em ${ct.parcelas.length}x`:'')
-  +`. Abra o link no celular, leia até o fim e assine com o dedo:\n\n${link}`;
+  +`. Abra o link no celular, leia até o fim e assine com o dedo:\n\n${link}\n\nDepois de assinar, você pode conferir a autenticidade do documento a qualquer momento em ${URL_VALIDAR}`;
  const wl=waLink(p.celular,msg);
  openModal(`<h3>Contrato pronto para assinar</h3>
   <p>Mande o link para ${esc(nomePessoa(p.nome))}. Ela lê no celular, confirma os dados e assina com o dedo. A assinatura aparece aqui sozinha.</p>
@@ -4413,7 +4426,7 @@ function agNovo(a,s){if(s==='Desmarcado'||s==='Faltou')return false;const k=a.da
  const hist=c=>S[c].some(x=>x.pacienteId===a.pacienteId&&((x.data||x.vencimento||x.pagamento||'')<a.data)&&(x.data||x.vencimento||x.pagamento));
  return !hist('evolucoes')&&!hist('tratamentos')&&!S.lancamentos.some(l=>l.pacienteId===a.pacienteId&&l.pagamento&&l.pagamento<a.data)}
 /* ============ Atualização: aviso com botão Atualizar agora ============ */
-const VERSAO_APP='1.9.55';const URL_VERSAO_JSON='https://raw.githubusercontent.com/TheIgor12/blacksolutions/main/versao.json';
+const VERSAO_APP='1.9.56';const URL_VERSAO_JSON='https://raw.githubusercontent.com/TheIgor12/blacksolutions/main/versao.json';
 const numV=v=>String(v||'0').split(/\D+/).filter(Boolean).map(Number);
 function versaoMaior(a,b){const x=numV(a),y=numV(b);for(let i=0;i<Math.max(x.length,y.length);i++){const d=(x[i]||0)-(y[i]||0);if(d)return d>0}return false}
 const ATU={nova:null,timer:null};

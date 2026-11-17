@@ -1,4 +1,4 @@
 {
-  "versao": "1.9.55",
-  "novidades": "Correção urgente: uma substituição ampla na versão anterior tinha quebrado a lista de abas da ficha do paciente. Corrigido e conferido nos três segmentos. Entrou a aba Contratos na ficha, com o saldo devedor de cada contrato, quantas parcelas estão vencidas e a situação da assinatura. Cada contrato assinado tem agora um Comprovante da assinatura, que é o documento que se leva ao cartório: código de verificação, data, hora, dispositivo, conferência de identidade e testemunhas. A via impressa sai com a assinatura e o comprovante em folha separada. O contrato assinado pelo celular agora volta sozinho para o sistema."
+  "versao": "1.9.56",
+  "novidades": "Entrou a validação pública em blackflow.app.br/validar. Qualquer pessoa, sem conta e sem acesso ao sistema, cola o código de verificação e o servidor confirma se o documento é autêntico, quem assinou, quando abriu, quando assinou e se conferiu o CPF antes. Não mostra o conteúdo do contrato nem dado de saúde. O endereço sai impresso no rodapé do contrato assinado e vai junto na mensagem de WhatsApp. Para ligar, rode o arquivo sql/bs_validacao_publica.sql no Supabase."
 }

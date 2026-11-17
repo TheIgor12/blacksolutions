@@ -1,0 +1,166 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="robots" content="noindex">
+<meta name="theme-color" content="#0a0820">
+<title>Validar documento assinado</title>
+<link rel="icon" href="/favicon.ico">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Montserrat:wght@600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap">
+<style>
+:root{
+ --bg:#f4f3fa;--sup:#fff;--sup2:#f0eefa;--ink:#17132b;--mut:#615b85;--lin:#e2def2;
+ --acc:#5a4cfb;--acc2:#7f22fd;--acc-fr:#efecff;--ok:#0f8a54;--ok-fr:#e3f6ec;--bad:#c22f3f;--bad-fr:#fdeaec;
+ --disp:'Montserrat',system-ui,sans-serif;--txt:'Plus Jakarta Sans',system-ui,sans-serif;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+ --bg:#0a0820;--sup:#13102e;--sup2:#1a1640;--ink:#f3f1ff;--mut:#a49dd0;--lin:#2b2558;
+ --acc:#8b7cff;--acc2:#b075ff;--acc-fr:#221c52;--ok:#4ade9a;--ok-fr:#113a2a;--bad:#ff8b96;--bad-fr:#3d1720;
+ color-scheme:dark}}
+:root[data-theme="dark"]{
+ --bg:#0a0820;--sup:#13102e;--sup2:#1a1640;--ink:#f3f1ff;--mut:#a49dd0;--lin:#2b2558;
+ --acc:#8b7cff;--acc2:#b075ff;--acc-fr:#221c52;--ok:#4ade9a;--ok-fr:#113a2a;--bad:#ff8b96;--bad-fr:#3d1720;
+ color-scheme:dark}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--txt);font-size:15px;line-height:1.55;
+ -webkit-font-smoothing:antialiased;
+ padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));
+ padding-block:28px 60px}
+h1,h2{font-family:var(--disp);font-weight:700;letter-spacing:-.02em;margin:0;text-wrap:balance}
+.wrap{max-width:660px;margin:0 auto}
+.marca{display:flex;align-items:center;gap:11px;margin-bottom:22px}
+.marca .bf{width:38px;height:38px;border-radius:10px;flex:none;display:grid;place-items:center;
+ background:linear-gradient(118deg,#1b86fb,#7f22fd 52%,#f139ce);color:#fff;font-family:var(--disp);font-weight:800;font-size:15px;letter-spacing:-.04em}
+.marca b{font-family:var(--disp);font-size:16px}
+.marca span{display:block;font-size:12px;color:var(--mut)}
+.card{background:var(--sup);border:1px solid var(--lin);border-radius:16px;padding:22px;
+ box-shadow:0 1px 2px rgba(23,19,43,.05),0 8px 26px rgba(23,19,43,.07)}
+.card+.card{margin-top:16px}
+h1{font-size:22px;margin-bottom:6px}
+.sub{color:var(--mut);font-size:14px;margin:0 0 18px}
+label{display:block;font-size:12.5px;font-weight:600;color:var(--mut);margin-bottom:6px}
+textarea{width:100%;border:1.5px solid var(--lin);background:var(--sup);border-radius:11px;padding:12px 13px;
+ font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:13px;line-height:1.5;color:var(--ink);
+ resize:vertical;min-height:84px;outline:none}
+textarea:focus{border-color:var(--acc);box-shadow:0 0 0 3px var(--acc-fr)}
+.bt{display:inline-flex;align-items:center;justify-content:center;gap:7px;border:0;border-radius:11px;
+ padding:12px 20px;cursor:pointer;font:inherit;font-weight:700;font-size:15px;width:100%;margin-top:12px;
+ background:linear-gradient(118deg,var(--acc),var(--acc2));color:#fff}
+.bt:hover{filter:brightness(1.08)}
+.bt:disabled{opacity:.5;cursor:not-allowed;filter:none}
+:where(button,textarea,a):focus-visible{outline:2px solid var(--acc);outline-offset:2px}
+.res{margin-top:18px}
+.selo{display:flex;align-items:center;gap:12px;border-radius:13px;padding:15px 17px;margin-bottom:16px}
+.selo.ok{background:var(--ok-fr);border:1px solid var(--ok)}
+.selo.nao{background:var(--bad-fr);border:1px solid var(--bad)}
+.selo svg{flex:none}
+.selo b{display:block;font-family:var(--disp);font-size:16px;line-height:1.25}
+.selo.ok b{color:var(--ok)}.selo.nao b{color:var(--bad)}
+.selo span{font-size:13px;color:var(--mut);display:block;margin-top:2px}
+table{width:100%;border-collapse:collapse;font-size:14px}
+th{text-align:left;font-weight:600;color:var(--mut);padding:9px 0;width:42%;vertical-align:top;font-size:13px}
+td{padding:9px 0;border-bottom:1px solid var(--lin);word-break:break-word}
+tr:last-child td,tr:last-child th{border-bottom:0}
+code{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:12px;background:var(--sup2);
+ padding:2px 6px;border-radius:5px;word-break:break-all}
+.nota{background:var(--sup2);border-radius:11px;padding:13px 15px;font-size:13px;color:var(--mut);line-height:1.55;margin-top:16px}
+.nota b{color:var(--ink)}
+.rodape{text-align:center;font-size:12.5px;color:var(--mut);margin-top:24px}
+.rodape a{color:var(--acc);text-decoration:none;font-weight:600}
+</style>
+</head>
+<body>
+<div class="wrap">
+ <div class="marca"><div class="bf">BF</div><div><b>BlackFlow</b><span>validação de documento assinado</span></div></div>
+
+ <div class="card">
+  <h1>Este documento é autêntico?</h1>
+  <p class="sub">Cole aqui o código de verificação que está no rodapé do documento. A conferência é feita no servidor e não depende de quem lhe entregou o papel.</p>
+  <label for="cod">Código de verificação</label>
+  <textarea id="cod" spellcheck="false" autocomplete="off" placeholder="Exemplo: 4f3a9c1e8b27d05a6e1f... (pelo menos os 16 primeiros caracteres)"></textarea>
+  <button class="bt" id="bt" onclick="validar()">Conferir documento</button>
+  <div class="res" id="res"></div>
+ </div>
+
+ <div class="card">
+  <h2 style="font-size:16px;margin-bottom:8px">O que esta página prova, e o que não prova</h2>
+  <p style="font-size:14px;margin:0 0 10px"><b>Prova</b> que existe no servidor um documento assinado cujo texto gera exatamente este código, quem o assinou, quando abriu e quando assinou, e se a identidade foi conferida antes da assinatura. Alterada uma única letra do documento, o código deixa de bater e esta página não o encontra.</p>
+  <p style="font-size:14px;margin:0"><b>Não prova</b> identidade com certificado digital do ICP-Brasil. Esta é uma assinatura eletrônica avançada, do artigo 4º, inciso II, da Lei nº 14.063, de 2020, e do artigo 10, parágrafo 2º, da Medida Provisória nº 2.200-2, de 2001.</p>
+  <div class="nota">Por respeito à Lei Geral de Proteção de Dados, esta página não mostra o conteúdo do documento, o CPF nem qualquer informação de saúde. O nome aparece com os nomes do meio abreviados.</div>
+ </div>
+
+ <p class="rodape">BlackFlow, da BlackSolutions · <a href="https://blackflow.app.br/sobre/">blackflow.app.br</a></p>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
+<script>
+const SB = window.supabase && window.supabase.createClient(
+ 'https://blszdbjpxgtloblxlusr.supabase.co',
+ 'sb_publishable_0Tns_mDN2N1iQmw_sEzFXw_SRMy1uXK',
+ {auth:{persistSession:false}});
+
+const esc = s => String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const dt = v => {const d=new Date(v); if(isNaN(d)) return '';
+ return d.toLocaleDateString('pt-BR')+' às '+d.toTimeString().slice(0,5);};
+function decorrido(a,b){const x=new Date(a),y=new Date(b);
+ if(isNaN(x)||isNaN(y))return ''; const s=Math.round((y-x)/1000); if(s<0)return '';
+ if(s<60)return s+(s===1?' segundo':' segundos');
+ const m=Math.floor(s/60); if(m<60)return m+(m===1?' minuto':' minutos');
+ const h=Math.floor(m/60); return h+(h===1?' hora':' horas')+(m%60?' e '+(m%60)+' minutos':'');}
+
+const ICO_OK = '<svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>';
+const ICO_NAO = '<svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18M6 6l12 12"/></svg>';
+
+function mostra(html){document.getElementById('res').innerHTML = html;}
+function erro(titulo, texto){
+ mostra(`<div class="selo nao" style="color:var(--bad)">${ICO_NAO}<div><b>${esc(titulo)}</b><span>${esc(texto)}</span></div></div>`);}
+
+async function validar(){
+ const bt = document.getElementById('bt');
+ const cod = String(document.getElementById('cod').value||'').replace(/[^0-9A-Fa-f]/g,'');
+ if(cod.length < 16){ erro('Código incompleto','Cole pelo menos os 16 primeiros caracteres do código que está no documento.'); return; }
+ if(!SB){ erro('Não foi possível conferir agora','A biblioteca de conexão não carregou. Recarregue a página.'); return; }
+ bt.disabled = true; bt.textContent = 'Conferindo...';
+ mostra('');
+ try{
+  const {data, error} = await SB.rpc('documento_validar', {p_codigo: cod});
+  if(error) throw error;
+  if(!data || !data.ok){
+   const m = (data||{}).erro;
+   if(m === 'curto') erro('Código incompleto','Cole pelo menos os 16 primeiros caracteres.');
+   else erro('Nenhum documento com este código','Ou o código foi copiado com erro, ou o documento foi alterado depois de assinado. Qualquer mudança no texto, mesmo de uma letra, muda o código.');
+   return;
+  }
+  const leitura = (data.aberto_em && data.assinado_em) ? decorrido(data.aberto_em, data.assinado_em) : '';
+  mostra(`
+   <div class="selo ok" style="color:var(--ok)">${ICO_OK}<div><b>Documento autêntico</b>
+    <span>O texto não foi alterado depois da assinatura.</span></div></div>
+   <table>
+    <tr><th>Documento</th><td>${esc(data.titulo||'')}</td></tr>
+    <tr><th>Assinado por</th><td><b>${esc(data.assinante||'')}</b></td></tr>
+    ${data.clinica?`<tr><th>Emitido por</th><td>${esc(data.clinica)}</td></tr>`:''}
+    ${data.aberto_em?`<tr><th>Documento aberto em</th><td>${esc(dt(data.aberto_em))}</td></tr>`:''}
+    <tr><th>Assinado em</th><td><b>${esc(dt(data.assinado_em))}</b></td></tr>
+    ${leitura?`<tr><th>Tempo entre abrir e assinar</th><td>${esc(leitura)}</td></tr>`:''}
+    <tr><th>Identidade conferida</th><td>${data.conferiu_identidade
+      ? 'Sim. Confirmou o '+esc(data.tipo_conferido||'CPF')+' antes de assinar.'
+      : 'Não houve conferência de documento antes da assinatura.'}</td></tr>
+    <tr><th>Código completo</th><td><code>${esc(data.codigo||'')}</code></td></tr>
+   </table>
+   <div class="nota">Confira se o <b>código completo</b> acima é igual, caractere por caractere, ao que está no documento em suas mãos. Se for, o papel que você tem é o mesmo texto que foi assinado.</div>`);
+ }catch(e){
+  erro('Não foi possível conferir agora', (e && e.message) ? e.message : 'Tente novamente em alguns instantes.');
+ }finally{
+  bt.disabled = false; bt.textContent = 'Conferir documento';
+ }
+}
+
+document.getElementById('cod').addEventListener('keydown', e => {
+ if(e.key === 'Enter' && (e.metaKey || e.ctrlKey)) validar();
+});
+const pre = new URLSearchParams(location.search).get('c');
+if(pre){ document.getElementById('cod').value = pre; validar(); }
+</script>
+</body>
+</html>
