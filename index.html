@@ -424,8 +424,8 @@ function soDig(v){return String(v==null?'':v).replace(/\D/g,'')}
    tabela densa; o que muda é o tom. A lista é curta de propósito: fonte demais
    para escolher não ajuda ninguém. */
 const FONTES=[
- {k:'blackflow',n:'BlackFlow',         g:'Montserrat:wght@600;700;800|Figtree:wght@400;500;600;700',
-  t:"'Montserrat'",       f:"'Figtree'",            d:'A letra da nossa marca. Títulos em Montserrat, a mesma do logotipo, e texto em Figtree, que lê bem em tabela cheia.'},
+ {k:'blackflow',n:'BlackFlow',         g:'Montserrat:wght@600;700;800|Plus+Jakarta+Sans:wght@400;500;600;700',
+  t:"'Montserrat'",       f:"'Plus Jakarta Sans'",  d:'A letra da nossa marca. Títulos em Montserrat, a mesma do logotipo, e texto em Plus Jakarta Sans, mais largo e mais fácil de ler na tabela.'},
  {k:'poppins',  n:'Poppins',           g:'Poppins:wght@400;500;600;700',
   t:"'Poppins'",          f:"'Poppins'",            d:'Geométrica e redonda, a mais usada em beleza e estética. Ocupa mais espaço na tabela.'},
  {k:'jakarta',  n:'Plus Jakarta Sans', g:'Plus+Jakarta+Sans:wght@400;500;600;700;800',
@@ -439,6 +439,8 @@ const FONTES=[
  {k:'nunito',   n:'Nunito',            g:'Nunito:wght@400;600;700;800',
   t:"'Nunito'",           f:"'Nunito'",             d:'Arredondada e informal. Era a letra antiga do sistema.'}];
 const FONTE_PADRAO='blackflow';
+/* O corpo ja era Figtree antes do seletor existir, entao o padrao BlackFlow passa a
+   usar Plus Jakarta Sans no texto: assim a troca se enxerga sem comparar lado a lado. */
 function fonteAtual(){const k=str(S.config&&S.config.fonte)||FONTE_PADRAO;return FONTES.find(f=>f.k===k)||FONTES[0]}
 const FONTE_PILHA=",system-ui,-apple-system,'Segoe UI',Roboto,Arial,sans-serif";
 function fonteAplicar(){const f=fonteAtual();const r=document.documentElement.style;
@@ -477,6 +479,10 @@ const AZ_LETRAS=['A','B','C','D','E','F','G','H','I','J','K','L','M','N','O','P'
 function azLetra(nome){const c=norm(nome).charAt(0).toUpperCase();return /[A-Z]/.test(c)?c:'#'}
 function azBarra(L,fn,atual){const tem={};(L||[]).forEach(x=>{tem[azLetra(typeof x==='string'?x:x.nome)]=1});
  return `<div class="azbar"><span class="azl">Ir para a letra</span>${AZ_LETRAS.map(x=>`<button ${tem[x]?'':'disabled'} class="${atual===x?'on':''}" onclick="${fn}('${x}')" title="${x==='#'?'Começa com número ou símbolo':'Nomes com '+x}">${x}</button>`).join('')}${atual?`<button onclick="${fn}('')" title="Voltar ao começo da lista" style="min-width:auto;padding:0 8px;color:var(--mut)">limpar</button>`:''}</div>`}
+/* Leva direto ao cartao da letra e pisca nele, porque descrever o caminho em
+   palavras ja falhou tres vezes. */
+function irParaFonte(){closeModal();UI.cfgTab='clinica';go('config');
+ setTimeout(()=>{const c=$('#cardFonte');if(c){c.scrollIntoView({behavior:'smooth',block:'center'});azPiscar('cardFonte')}},160)}
 function azPiscar(id){const el=document.getElementById(id);if(!el)return;
  el.scrollIntoView({block:'center',behavior:'smooth'});el.classList.add('azflash');setTimeout(()=>el.classList.remove('azflash'),2100)}
 function azPor(L,fn){return [...(L||[])].sort((a,b)=>azCmp(fn(a),fn(b)))}
@@ -3831,7 +3837,7 @@ function agNovo(a,s){if(s==='Desmarcado'||s==='Faltou')return false;const k=a.da
  const hist=c=>S[c].some(x=>x.pacienteId===a.pacienteId&&((x.data||x.vencimento||x.pagamento||'')<a.data)&&(x.data||x.vencimento||x.pagamento));
  return !hist('evolucoes')&&!hist('tratamentos')&&!S.lancamentos.some(l=>l.pacienteId===a.pacienteId&&l.pagamento&&l.pagamento<a.data)}
 /* ============ Atualização: aviso com botão Atualizar agora ============ */
-const VERSAO_APP='1.9.49';const URL_VERSAO_JSON='https://raw.githubusercontent.com/TheIgor12/blacksolutions/main/versao.json';
+const VERSAO_APP='1.9.50';const URL_VERSAO_JSON='https://raw.githubusercontent.com/TheIgor12/blacksolutions/main/versao.json';
 const numV=v=>String(v||'0').split(/\D+/).filter(Boolean).map(Number);
 function versaoMaior(a,b){const x=numV(a),y=numV(b);for(let i=0;i<Math.max(x.length,y.length);i++){const d=(x[i]||0)-(y[i]||0);if(d)return d>0}return false}
 const ATU={nova:null,timer:null};
@@ -4331,6 +4337,8 @@ async function abrirConta(){if(!NV.ativa){go('config');return}const u=NV.sessao.
  ${membros.length?`<h3 style="margin-top:20px">Equipe</h3>${membros.map(m=>`<div class="row"><span>${esc(m.nome||m.email)}<br><small style="color:var(--mut);font-weight:400">${esc(m.email)} . ${m.papel==='admin'?'Administrador':'Usuário'}</small></span><span>${NV.papel==='admin'&&m.user_id!==u.id?`<button class="lnk" style="color:var(--bad)" onclick="removerMembro('${m.user_id}','${esc(m.email)}')">Remover</button>`:''}</span></div>`).join('')}`:''}
  ${convites.length?`<h3 style="margin-top:20px">Convites pendentes</h3>${convites.map(c=>`<div class="row"><span>${esc(c.email)}</span><span><button class="lnk" onclick="cancelarConvite('${esc(c.email)}')">Cancelar</button></span></div>`).join('')}`:''}
  ${NV.papel==='admin'&&!NV.offline?`<h3 style="margin-top:20px">Convidar pessoa da equipe</h3><div class="fgrid"><label>E-mail<input id="cv_email" type="email"></label><label>Perfil<select id="cv_papel"><option value="usuario">Usuário</option><option value="admin">Administrador</option></select></label></div><div class="mact" style="justify-content:flex-start"><button class="btn" onclick="convidar()">Enviar convite</button></div><p class="sub">A pessoa baixa o programa, clica em Criar conta e usa exatamente este e-mail. Ao entrar, ela já cai na sua clínica.</p>`:''}
+ <div class="row"><span>Letra do sistema</span><span><b>${esc(fonteAtual().n)}</b> <button class="lnk" onclick="irParaFonte()">trocar</button></span></div>
+ <div class="row"><span>Versão do sistema</span><span id="verApp">${esc(VERSAO_APP)}</span></div>
  <div class="mact"><button class="btn ghost" onclick="closeModal()">Fechar</button><button class="btn danger" onclick="sair()">Sair</button></div>`,true);
  if(window.pywebview&&window.pywebview.api&&window.pywebview.api.versao){window.pywebview.api.versao().then(v=>{const e=$('#verApp');if(e)e.textContent=v.app})}}
 async function convidar(){const email=val('#cv_email');if(!email){toast('Informe o e-mail');return}const {error}=await NV.sb.rpc('convidar',{p_clinica:NV.clinicaId,p_email:email,p_papel:$('#cv_papel').value});if(error){toast(traduz(error));return}toast('Convite registrado para '+email);abrirConta()}

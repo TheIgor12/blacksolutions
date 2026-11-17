@@ -1,4 +1,4 @@
 {
-  "versao": "1.9.49",
-  "novidades": "A foto do tratamento ficou completa. Depois de fotografar, o sistema pergunta em botões se é foto dos pés ou foto do tratamento, de que parte do corpo, de qual procedimento e em que momento. Nada é digitado: as partes do corpo mudam conforme o segmento da clínica, e quando a pessoa tem procedimento marcado para hoje ele já vem escolhido. O botão de foto passou a existir também no cabeçalho da ficha e na lista do Prontuário. Na tela Inserir foto, o nome agora completa sozinho a partir de duas letras, com as setas do teclado, e um toque no nome já abre a câmera. Na linha do tempo a foto aparece com o nome do procedimento."
+  "versao": "1.9.50",
+  "novidades": "A letra padrão do sistema mudou de verdade: o texto passou a ser Plus Jakarta Sans e os títulos Montserrat, a mesma do logotipo. Antes o padrão era Figtree, que já era a letra do sistema desde sempre, então a troca anterior não aparecia na tela. Para achar o seletor sem procurar: toque no seu nome no canto superior direito, em Letra do sistema, e clique em trocar. O sistema leva até o cartão e pisca nele. A versão do sistema também passou a aparecer nesse mesmo lugar."
 }
