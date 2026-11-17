@@ -345,6 +345,18 @@ a.btn{text-decoration:none}
 .frs small{font-size:12px;color:var(--mut)}
 .frs i{color:var(--acc);display:flex;flex:none}
 .frvazio{padding:12px;font-size:13.5px;color:var(--mut)}
+.pixbt{display:inline-flex!important;align-items:center;gap:6px;width:auto!important;padding:0 11px!important;
+ background:linear-gradient(118deg,var(--acc),color-mix(in srgb,var(--acc) 72%,#a12fe8))!important;color:#fff!important;border:0!important}
+.pixbt span{font-size:13px;font-weight:700;letter-spacing:.01em}
+.pixbt:hover{filter:brightness(1.1)}
+.pixqr{text-align:center;background:var(--bg);border-radius:14px;padding:16px}
+.pixqr img{width:228px;max-width:100%;image-rendering:pixelated;background:#fff;border-radius:10px;padding:8px}
+.pixqr b{display:block;font-family:var(--ft,var(--ff));font-size:27px;font-weight:800;margin-top:10px}
+.pixqr span{display:block;font-size:13px;color:var(--mut)}
+.pixval{font-size:20px!important;font-weight:700;font-variant-numeric:tabular-nums}
+.pixok{display:block;margin-top:5px;font-size:12px;color:var(--ok);font-weight:600}
+.pixerr{display:block;margin-top:5px;font-size:12px;color:var(--warn);line-height:1.45}
+@media(max-width:620px){.pixbt span{display:none}.pixbt{padding:0 9px!important}}
 .fapre{display:flex;gap:8px;align-items:center;flex-wrap:wrap;background:var(--bg);border-radius:12px;padding:10px;margin-bottom:14px}
 .fapre img{width:62px;height:62px;object-fit:cover;border-radius:9px;border:1px solid var(--line)}
 .fapn{font-size:12.5px;color:var(--mut);font-weight:600}
@@ -1023,7 +1035,7 @@ function hello(){const h=new Date().getHours();return h<12?'Bom dia':h<18?'Boa t
 function shell(content){const c=S.config;
  return `<header class="top"><button class="ico" onclick="toggleDrawer()" aria-label="Menu">${ico('menu')}</button>
  <div class="gsearch"><input id="gs" placeholder="Encontre ${esc(SEG().pessoas.toLowerCase())} ou funções do sistema" oninput="globalSearch(this.value)" onblur="setTimeout(()=>{const r=$('#gsr');if(r)r.classList.remove('on')},200)" autocomplete="off"><div id="gsr" class="gsr"></div></div>
- ${NV.ativa?`<span id="sync" class="sync" title="Sincronização com a nuvem">${syncTxt()}</span>`:''}<button class="ico refr" title="Atualizar: busca os dados novos da nuvem e procura versão nova do sistema" onclick="refrescar(this)">${ico('refresh',17)}</button><div class="user" style="cursor:pointer" onclick="abrirConta()"><span class="av">${esc(initials(nomeUsuario()))}</span><div><b>${esc(nomeUsuario())}</b><small>${esc(c.clinica)}</small></div></div></header>
+ ${NV.ativa?`<span id="sync" class="sync" title="Sincronização com a nuvem">${syncTxt()}</span>`:''}<button class="ico pixbt" title="Cobrar por Pix: gera o QR Code na hora, em qualquer tela" onclick="pixAgora()">${ico('money',17)}<span>Pix</span></button><button class="ico refr" title="Atualizar: busca os dados novos da nuvem e procura versão nova do sistema" onclick="refrescar(this)">${ico('refresh',17)}</button><div class="user" style="cursor:pointer" onclick="abrirConta()"><span class="av">${esc(initials(nomeUsuario()))}</span><div><b>${esc(nomeUsuario())}</b><small>${esc(c.clinica)}</small></div></div></header>
  <aside class="drawer ${UI.drawer?'open':''}"><div class="brand ${S.config.logo?'':'escuro'}"><img src="${logoClinica()}" alt="${esc(c.clinica)}"></div><div class="prod">by BlackSolutions</div><span class="plan">Versão ${VERSAO_APP}</span><button class="lnk" style="display:block;margin:6px 16px 0;font-size:12px;text-align:left" onclick="UI.drawer=false;render();atuChecar(true)">Procurar atualização</button><button class="lnk" style="display:block;margin:8px 16px 0;font-size:12px;text-align:left" onclick="UI.drawer=false;perguntarSegmento()">Segmento: <b>${esc(SEG().nome)}</b> · trocar</button>
  <div class="menu"><button class="${UI.view==='inicio'?'on':''}" onclick="go('inicio')">${ico('home',18)} Início</button><div class="msec">MÓDULOS</div>
  ${menuItens().map(([k,l,i])=>`<button class="${(UI.view===k&&!(k==='agenda'&&UI.agProf))||(k==='pacientes'&&UI.view==='paciente')?'on':''}" onclick="${k==='agenda'?"agProf('')":`go('${k}')`}">${ico(i,18)} ${l}</button>`).join('')}</div>
@@ -1196,8 +1208,94 @@ function cobrarPix(lid){const l=S.lancamentos.find(x=>x.id===lid);if(!l)return;i
  <label class="full" style="display:block;margin-top:8px"><span style="font-size:12px;color:var(--mut)">Pix copia e cola</span><textarea id="pixCod" rows="3" readonly style="width:100%;font-family:monospace;font-size:12px">${esc(cod)}</textarea></label>
  <p class="sub" style="margin-top:6px">Recebedor: ${esc(S.config.pixNome||S.config.clinica)} · Chave: ${esc(S.config.pixChave)}. O pagamento cai direto na conta da clínica. Quando o valor entrar, use <b>Baixar</b> para registrar.</p>
  <div class="mact"><button class="btn ghost" onclick="const t=$('#pixCod');t.select();(navigator.clipboard?navigator.clipboard.writeText(t.value):Promise.reject()).then(()=>toast('Código copiado'),()=>{document.execCommand('copy');toast('Código copiado')})">Copiar código</button>${wl?`<a class="btn green" href="${wl}" target="_blank" rel="noopener">${waIco()} Enviar pelo WhatsApp</a>`:''}<button class="btn" onclick="closeModal()">Fechar</button></div>`)}
-function cardPixConfig(){const c=S.config;return `<div class="card"><h2>Pix da clínica</h2><p class="sub" style="margin-bottom:10px">Com a chave cadastrada, cada parcela em aberto ganha o botão <b>Pix</b>, que gera o QR Code e o copia e cola com o valor certo, prontos para mandar pelo WhatsApp. O dinheiro cai direto na conta da clínica, sem taxa do BlackFlow.</p>
- <div class="fgrid" id="cfgPix"><label>Chave Pix (CPF, CNPJ, e-mail, celular ou aleatória)<input name="pixChave" value="${esc(c.pixChave||'')}"></label><label>Nome do recebedor (como está no banco)<input name="pixNome" value="${esc(c.pixNome||'')}" maxlength="25"></label><label>Cidade<input name="pixCidade" value="${esc(c.pixCidade||'')}" maxlength="15"></label></div>
+/* ===== Pix agora: cobrar em qualquer tela, sem depender de parcela lançada =====
+   O profissional termina o atendimento, aperta Pix no topo, digita o valor e
+   mostra o QR Code na própria tela do celular para a pessoa ler. */
+function pixTipoChave(k){const s=String(k||'').trim();if(!s)return '';
+ if(/@/.test(s))return 'E-mail';
+ if(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(s))return 'Chave aleatória';
+ const d=s.replace(/\D/g,'');
+ if(d.length===14)return 'CNPJ';
+ if(d.length===11&&cpfOk(d))return 'CPF';
+ if(d.length===10||d.length===11)return 'Celular';
+ if(d.length===12||d.length===13)return 'Celular com código do país';
+ return ''}
+function pixTipoAviso(k){const t=pixTipoChave(k);
+ if(!String(k||'').trim())return '';
+ return t?`<span class="pixok">Reconhecida como <b>${esc(t)}</b></span>`
+         :`<span class="pixerr">Não reconheci o formato. Confira no aplicativo do banco: a chave aleatória tem 36 caracteres com traços, o celular vai com DDD, o CPF com 11 números e o CNPJ com 14.</span>`}
+function pixTipoMostra(el){const d=$('#pixTipo');if(d)d.innerHTML=pixTipoAviso(el.value)}
+/* Valores que a profissional provavelmente vai cobrar agora */
+function pixSugestoes(){const t=todayISO(),out=[];
+ (S.comandas||[]).filter(c=>c.status==='Aberta').forEach(c=>{const v=comandaLiquido(c);if(v>0){
+  const p=pac(c.clienteId);out.push({v,d:'Comanda nº '+str(c.numero),pid:c.clienteId,n:p?nomePessoa(p.nome):''}) }});
+ (S.lancamentos||[]).filter(l=>l.tipo==='Receita'&&saldoL(l)>0&&str(l.vencimento)<=t).slice(0,4).forEach(l=>{
+  const p=pac(l.pacienteId);out.push({v:saldoL(l),d:str(l.descricao),pid:l.pacienteId,n:p?nomePessoa(p.nome):'',lid:l.id})});
+ (S.agendamentos||[]).filter(a=>a.data===t&&stAg(a)==='Atendido').slice(0,4).forEach(a=>{
+  const s=(S.servicos||[]).find(x=>norm(x.nome)===norm(a.procedimento));const p=pac(a.pacienteId);
+  if(s&&+s.preco>0)out.push({v:+s.preco,d:str(a.procedimento),pid:a.pacienteId,n:p?nomePessoa(p.nome):''})});
+ const vistos=new Set();
+ return out.filter(x=>{const k=x.pid+'|'+x.d+'|'+x.v;if(vistos.has(k))return false;vistos.add(k);return true}).slice(0,6)}
+let PX={valor:0,pid:'',desc:'',lid:''};
+function pixFaltaChave(){openModal(`<h3>Pagamento por Pix</h3>
+ <p>Para gerar o QR Code, cadastre primeiro a chave Pix da clínica. Serve qualquer chave do banco de vocês: aleatória, CPF, CNPJ, e-mail ou celular.</p>
+ <div class="mact"><button class="btn ghost" onclick="closeModal()">Fechar</button>
+ <button class="btn" onclick="closeModal();UI.cfgTab='recebimento';go('config');setTimeout(()=>{const c=$('#cardPix');if(c){c.scrollIntoView({block:'center'});azPiscar('cardPix')}},160)">Cadastrar a chave Pix</button></div>`)}
+function pixAgora(valor,desc,pid,lid){
+ if(!str(S.config.pixChave)){pixFaltaChave();return}
+ PX={valor:+valor||0,pid:str(pid),desc:str(desc),lid:str(lid)};
+ const sug=pixSugestoes();
+ openModal(`<h3>Pagamento por Pix</h3>
+  <p class="sub" style="margin-bottom:12px">Digite o valor e mostre o QR Code na tela para a pessoa ler pelo banco dela. O dinheiro cai direto na conta da clínica.</p>
+  ${sug.length?`<div class="fag"><b>Cobrar agora</b><div class="fachips">${sug.map((x,i)=>
+    `<button type="button" class="fachip" onclick="pixUsar(${i})">${esc(x.n||x.d)} · ${money(x.v)}</button>`).join('')}</div>
+    <input type="hidden" id="pixSug" value="${esc(JSON.stringify(sug))}"></div>`:''}
+  <div class="fgrid2" style="margin-bottom:14px">
+   <label>Valor<input id="pixVal" class="inp pixval" type="text" inputmode="decimal" value="${PX.valor?money(PX.valor).replace('R$ ',''):''}" placeholder="0,00" oninput="pixRecalc()"></label>
+   <label>Do que se trata<input id="pixDesc" class="inp" value="${esc(PX.desc)}" placeholder="opcional" oninput="PX.desc=this.value"></label></div>
+  <div id="pixArea"></div>
+  <div class="mact" id="pixActs"><button class="btn ghost" onclick="closeModal()">Fechar</button></div>`,true);
+ pixRecalc()}
+function pixUsar(i){try{const L=JSON.parse(($('#pixSug')||{}).value||'[]');const x=L[i];if(!x)return;
+ PX.pid=x.pid||'';PX.desc=x.d||'';PX.lid=x.lid||'';
+ const v=$('#pixVal');if(v)v.value=money(x.v).replace('R$ ','');
+ const d=$('#pixDesc');if(d)d.value=PX.desc;
+ document.querySelectorAll('#pixSug').forEach(()=>{});pixRecalc()}catch(e){}}
+function pixLerValor(){const t=str(($('#pixVal')||{}).value).replace(/\./g,'').replace(',','.').replace(/[^\d.]/g,'');
+ const n=parseFloat(t);return isFinite(n)&&n>0?n:0}
+function pixRecalc(){const v=pixLerValor();PX.valor=v;
+ const area=$('#pixArea'),acts=$('#pixActs');if(!area)return;
+ if(!v){area.innerHTML='<p class="sub" style="text-align:center;padding:18px 0">Digite o valor para o QR Code aparecer.</p>';
+  if(acts)acts.innerHTML='<button class="btn ghost" onclick="closeModal()">Fechar</button>';return}
+ const cod=pixCodigo(v,'BF'+Date.now().toString(36).toUpperCase().slice(-10));
+ const img=pixQR(cod);PX.cod=cod;
+ area.innerHTML=`<div class="pixqr">${img?`<img src="${img}" alt="QR Code do Pix de ${money(v)}">`:'<p class="sub">O desenhador de QR Code não carregou. Use o copia e cola abaixo.</p>'}
+   <b>${money(v)}</b><span>${esc(S.config.pixNome||S.config.clinica)}</span></div>
+  <label style="display:block;margin-top:10px"><span style="font-size:12px;color:var(--mut)">Pix copia e cola</span>
+   <textarea id="pixCod2" rows="3" readonly style="width:100%;font-family:monospace;font-size:11.5px">${esc(cod)}</textarea></label>`;
+ const p=PX.pid?pac(PX.pid):null;
+ const msg=`Olá${p?' '+firstName(p.nome):''}, tudo bem? Aqui é da ${S.config.clinica}. Segue o Pix de ${money(v)}${PX.desc?' referente a '+PX.desc:''}.\n\nPix copia e cola:\n${cod}\n\nDepois de pagar, se puder, me envie o comprovante por aqui. Obrigado!`;
+ const wl=p?waLink(p.celular,msg):'';
+ if(acts)acts.innerHTML=`<button class="btn ghost" onclick="closeModal()">Fechar</button>
+  <button class="btn ghost" onclick="pixCopiar()">Copiar código</button>
+  ${wl?`<a class="btn green" href="${wl}" target="_blank" rel="noopener">${ico('wa',15)} Mandar no WhatsApp</a>`:''}
+  <button class="btn" onclick="pixRecebido()">Recebi, registrar</button>`}
+function pixCopiar(){const t=$('#pixCod2');if(!t)return;t.select();
+ (navigator.clipboard?navigator.clipboard.writeText(t.value):Promise.reject())
+  .then(()=>toast('Código copiado'),()=>{try{document.execCommand('copy');toast('Código copiado')}catch(e){toast('Copie manualmente')}})}
+/* Registra a entrada no financeiro, para o Pix nao ficar fora do caixa */
+function pixRecebido(){const v=PX.valor;if(!v){toast('Digite o valor primeiro.');return}
+ const l=PX.lid?S.lancamentos.find(x=>x.id===PX.lid):null;
+ if(l){(l.pagamentos||(l.pagamentos=[])).push({forma:'Pix',valor:v,parcelas:1,data:todayISO()});
+  if(saldoL(l)<=0)l.statusOrig='Pago'}
+ else{S.lancamentos.push({id:uid(),tipo:'Receita',descricao:PX.desc||'Recebimento por Pix',
+  valor:v,forma:'Pix',data:todayISO(),vencimento:todayISO(),pacienteId:PX.pid||'',
+  statusOrig:'Pago',pagamentos:[{forma:'Pix',valor:v,parcelas:1,data:todayISO()}]})}
+ save();closeModal();render();
+ toast('Recebimento de '+money(v)+' registrado no financeiro.')}
+
+function cardPixConfig(){const c=S.config;return `<div class="card" id="cardPix"><h2>Pix da clínica</h2><p class="sub" style="margin-bottom:10px">Com a chave cadastrada, cada parcela em aberto ganha o botão <b>Pix</b>, que gera o QR Code e o copia e cola com o valor certo, prontos para mandar pelo WhatsApp. O dinheiro cai direto na conta da clínica, sem taxa do BlackFlow.</p>
+ <div class="fgrid" id="cfgPix"><label>Chave Pix (CPF, CNPJ, e-mail, celular ou aleatória)<input name="pixChave" value="${esc(c.pixChave||'')}" oninput="pixTipoMostra(this)"><small id="pixTipo">${pixTipoAviso(c.pixChave)}</small></label><label>Nome do recebedor (como está no banco)<input name="pixNome" value="${esc(c.pixNome||'')}" maxlength="25"></label><label>Cidade<input name="pixCidade" value="${esc(c.pixCidade||'')}" maxlength="15"></label></div>
  <div class="mact"><button class="btn" onclick="$('#cfgPix').querySelectorAll('input').forEach(i=>S.config[i.name]=i.value.trim());save();toast('Pix salvo')">Salvar Pix</button></div></div>`}
 function cardMsgsConfig(){const c=S.config;return `<div class="card"><h2>Mensagens de confirmação, aniversário e indicação</h2><div class="fgrid" id="cfgMsg">
  <label class="full">Mensagem de confirmação (variáveis: {nome}, {clinica}, {dia}, {data}, {hora}, {com}, {profissional}, {procedimento}, {endereco})<textarea name="msgConfirmacao" rows="10">${esc(c.msgConfirmacao||(/happy\s*feet/i.test(c.clinica||'')?MSG_CONF_HF:MSG_CONF))}</textarea></label>
@@ -3837,7 +3935,7 @@ function agNovo(a,s){if(s==='Desmarcado'||s==='Faltou')return false;const k=a.da
  const hist=c=>S[c].some(x=>x.pacienteId===a.pacienteId&&((x.data||x.vencimento||x.pagamento||'')<a.data)&&(x.data||x.vencimento||x.pagamento));
  return !hist('evolucoes')&&!hist('tratamentos')&&!S.lancamentos.some(l=>l.pacienteId===a.pacienteId&&l.pagamento&&l.pagamento<a.data)}
 /* ============ Atualização: aviso com botão Atualizar agora ============ */
-const VERSAO_APP='1.9.50';const URL_VERSAO_JSON='https://raw.githubusercontent.com/TheIgor12/blacksolutions/main/versao.json';
+const VERSAO_APP='1.9.51';const URL_VERSAO_JSON='https://raw.githubusercontent.com/TheIgor12/blacksolutions/main/versao.json';
 const numV=v=>String(v||'0').split(/\D+/).filter(Boolean).map(Number);
 function versaoMaior(a,b){const x=numV(a),y=numV(b);for(let i=0;i<Math.max(x.length,y.length);i++){const d=(x[i]||0)-(y[i]||0);if(d)return d>0}return false}
 const ATU={nova:null,timer:null};

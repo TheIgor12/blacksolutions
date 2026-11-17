@@ -1,4 +1,4 @@
 {
-  "versao": "1.9.50",
-  "novidades": "A letra padrão do sistema mudou de verdade: o texto passou a ser Plus Jakarta Sans e os títulos Montserrat, a mesma do logotipo. Antes o padrão era Figtree, que já era a letra do sistema desde sempre, então a troca anterior não aparecia na tela. Para achar o seletor sem procurar: toque no seu nome no canto superior direito, em Letra do sistema, e clique em trocar. O sistema leva até o cartão e pisca nele. A versão do sistema também passou a aparecer nesse mesmo lugar."
+  "versao": "1.9.51",
+  "novidades": "Entrou o botão Pix no topo, visível em qualquer tela. Terminou o atendimento, toca no Pix, digita o valor e o QR Code aparece na hora para a pessoa ler pelo banco dela. Ele já sugere o que cobrar agora: comandas abertas, parcelas vencidas e os procedimentos atendidos hoje, com o valor da tabela. Dá para copiar o código, mandar pelo WhatsApp do paciente e registrar o recebimento no financeiro sem sair da janela. No cadastro da chave, o sistema agora reconhece e avisa o tipo: aleatória, CPF, CNPJ, e-mail ou celular."
 }
