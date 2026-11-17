@@ -333,6 +333,31 @@ a.btn{text-decoration:none}
  color:inherit;text-transform:inherit;letter-spacing:inherit;display:inline-flex;align-items:center;gap:4px}
 .ordbt:hover{color:var(--acc)}
 .ordbt i{font-style:normal;font-size:11px;color:var(--acc)}
+.frbox{position:relative;max-width:460px}
+.frsug{position:absolute;left:0;right:0;top:calc(100% + 6px);z-index:40;background:var(--card);
+ border:1px solid var(--line);border-radius:12px;box-shadow:0 12px 34px rgba(0,0,0,.14);overflow:hidden}
+.frs{display:flex;align-items:center;gap:10px;width:100%;text-align:left;background:none;border:0;
+ padding:9px 12px;cursor:pointer;border-bottom:1px solid var(--line)}
+.frs:last-child{border-bottom:0}
+.frs:hover,.frs.on{background:var(--acc-soft)}
+.frs>span{flex:1;min-width:0;display:flex;flex-direction:column}
+.frs b{font-size:14.5px;font-weight:600;color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.frs small{font-size:12px;color:var(--mut)}
+.frs i{color:var(--acc);display:flex;flex:none}
+.frvazio{padding:12px;font-size:13.5px;color:var(--mut)}
+.fapre{display:flex;gap:8px;align-items:center;flex-wrap:wrap;background:var(--bg);border-radius:12px;padding:10px;margin-bottom:14px}
+.fapre img{width:62px;height:62px;object-fit:cover;border-radius:9px;border:1px solid var(--line)}
+.fapn{font-size:12.5px;color:var(--mut);font-weight:600}
+.fag{margin-bottom:16px}
+.fag>b{display:block;font-size:13px;font-weight:700;margin-bottom:8px;color:var(--ink)}
+.fachips{display:flex;flex-wrap:wrap;gap:7px}
+.fachip{border:1.5px solid var(--line);background:var(--card);border-radius:999px;padding:8px 14px;cursor:pointer;
+ font-size:13.5px;font-weight:600;color:var(--ink);line-height:1.2}
+.fachip:hover{border-color:var(--acc)}
+.fachip.on{background:var(--acc);border-color:var(--acc);color:#fff}
+.fgrid2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.fgrid2 label{display:flex;flex-direction:column;gap:4px;font-size:12px;font-weight:600;color:var(--mut)}
+@media(max-width:560px){.fgrid2{grid-template-columns:1fr}.fachip{padding:9px 14px;font-size:14px}}
 tr.azflash td,.azflash.card{animation:azpisca 2s ease}
 /* Tipografia: menos peso e mais respiro. A fonte anterior era arredondada e
    pesada; esta tem traço mais fino, que combina com clínica, estética e salão. */
@@ -1455,7 +1480,7 @@ function vPaciente(){const p=pac(UI.param);if(!p)return `<div class="page"><div 
  const body={geral:pGeral,prontuario:pPront,orcamentos:pOrc,financeiro:pFin,sessoes:pSess,evolucao:pEvo,anamnese:pAna,agendamentos:pAg,comandasC:pComandasC,avaliacao:pAvaliacao,fotos:pFotos,exames:pExames,documentos:pDocs,termos:pTermos,aplicacoes:pAplicacoes,ficha:pFicha}[UI.pacTab](p);
  return `
  <div class="phd">${avatarPac(p,'xl')}<div style="flex:1;min-width:220px"><h1>${anivIco(p)}${esc(nomePessoa(p.nome))} <small>(${esc(p.codigo||'')})</small></h1><div style="margin:6px 0;color:var(--mut)">${esc(p.celular||'Sem celular')} ${l?`<a href="${l}" target="_blank" rel="noopener">${waIco()}</a>`:''}</div>${badgeFor(p.status||'Ativo')} ${anivSelo(p)}${p.criadoPorImportacao?'<span class="badge b-warn">Cadastro incompleto</span>':''}</div>
- <div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn ghost sm" onclick="pacForm('${p.id}')">Editar cadastro</button><button class="btn ghost sm" onclick="window.print()">${ico('print',15)} Imprimir</button><button class="btn ghost sm" style="color:var(--bad)" onclick="delPac('${p.id}')">Excluir</button></div></div>
+ <div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn sm" onclick="fotoDoAtendimento('${p.id}')">${ico('cam',15)} Foto</button><button class="btn ghost sm" onclick="pacForm('${p.id}')">Editar cadastro</button><button class="btn ghost sm" onclick="window.print()">${ico('print',15)} Imprimir</button><button class="btn ghost sm" style="color:var(--bad)" onclick="delPac('${p.id}')">Excluir</button></div></div>
  <div class="tabs" style="padding-left:24px">${tabs.map(([k,t])=>`<button class="${UI.pacTab===k?'on':''}" onclick="UI.pacTab='${k}';render()">${t}</button>`).join('')}</div><div class="page">${body}</div>`}
 function delPac(id){const p=pac(id);confirmModal(`Excluir o paciente <b>${esc(p.nome)}</b> e todos os registros ligados a ele (financeiro, tratamentos, agendamentos, anamneses e evoluções)?`,()=>{['lancamentos','tratamentos','agendamentos','anamneses','evolucoes'].forEach(c=>S[c]=S[c].filter(x=>x.pacienteId!==id));S.pacientes=S.pacientes.filter(x=>x.id!==id);UI.view='pacientes'},'Excluir paciente')}
 function rows(list){return list.map(([k,v])=>`<div class="row"><span>${esc(k)}</span><span>${v===''||v==null?'-':v}</span></div>`).join('')}
@@ -3126,7 +3151,7 @@ function prontEventos(p){const E=[];
   add(d.data,'',str(d.tipo)==='Exame'?'exame':'doc',str(d.tipo)==='Exame'?'Exame anexado':str(d.tipo||'Documento')+' anexado',str(d.titulo||d.arquivo||''),'documentos'));
 
  (S.fotos||[]).filter(x=>x.pacienteId===p.id).forEach(f=>
-  add(f.data,'','foto','Foto registrada',[str(f.area),str(f.momento)].filter(Boolean).join(' · '),'fotos'));
+  add(f.data,'','foto',f.proc?('Foto de '+str(f.proc)):'Foto registrada',[str(f.area),str(f.momento)].filter(Boolean).join(' · '),'fotos'));
 
  (S.tratamentos||[]).filter(x=>x.pacienteId===p.id).forEach(t=>
   add(t.data,'','orc','Orçamento: '+stTrat(t),[str(t.procedimento),money(t.valor||0),
@@ -3183,10 +3208,10 @@ function vProntuarios(){const L=prontLista();const m=lastApptMap();
   <input class="inp" style="width:100%;max-width:420px;margin-bottom:12px" placeholder="Pesquise por nome, CPF ou código" value="${esc(UI.prontQ||'')}" oninput="clearTimeout(window.__pq);window.__pq=setTimeout(()=>prontQ(this.value),250)">
   ${azBarra(L,'prontIrLetra',UI.prontLetra||'')}
   ${L.length?`<div class="tw"><table class="tbl"><thead><tr><th>${esc(SEG().pessoa)}</th><th>Último atendimento</th><th>Próximo agendamento</th><th>Registros</th><th></th></tr></thead><tbody>
-   ${L.map(p=>{const o=m[p.id]||{};const n=prontEventos(p).length;return `<tr id="prR_${p.id}"><td><span style="display:flex;align-items:center;gap:8px">${avatarPac(p,'sm')}<button class="lnk" onclick="goPront('${p.id}')">${anivIco(p)}${esc(p.nome)}</button></span></td>
+   ${L.map(p=>{const o=m[p.id]||{};const n=prontEventos(p).length;return `<tr id="prR_${p.id}"><td><span style="display:flex;align-items:center;gap:8px">${avatarPac(p,'sm')}<button class="lnk" onclick="goPront('${p.id}')">${anivIco(p)}${esc(nomePessoa(p.nome))}</button></span></td>
     <td>${o.last?br(o.last)+' <small style="color:var(--mut)">há '+diffDays(o.last,todayISO())+' dias</small>':'<span style="color:var(--mut)">Nenhum</span>'}</td>
     <td>${o.next?br(o.next):'<span style="color:var(--mut)">Nenhum</span>'}</td>
-    <td>${n}</td><td><button class="btn ghost sm" onclick="goPront('${p.id}')">Abrir prontuário</button></td></tr>`}).join('')}
+    <td>${n}</td><td><span style="display:flex;gap:6px;justify-content:flex-end"><button class="btn sm" onclick="fotoDoAtendimento('${p.id}')" title="Tirar ou anexar foto">${ico('cam',15)}</button><button class="btn ghost sm" onclick="goPront('${p.id}')">Abrir prontuário</button></span></td></tr>`}).join('')}
    </tbody></table></div>`:`<div class="empty">${S.pacientes.length?'Ninguém encontrado com esse termo.':'Nenhum '+esc(SEG().pessoa.toLowerCase())+' cadastrado ainda.'}</div>`}
  </div></div>`}
 function goPront(pid){closeModal();UI.ptFiltro='';go('paciente',pid);UI.pacTab='prontuario';render()}
@@ -3434,8 +3459,86 @@ function pFotos(p){const L=S.fotos.filter(f=>f.pacienteId===p.id).sort((a,b)=>(b
  ${areas.map(ar=>`<h2 style="margin-top:16px;font-size:14px">${esc(ar)}</h2><div class="grid g4">${L.filter(f=>(f.area||'Sem área')===ar).map(f=>`<div class="card" style="margin:0;padding:8px;${sel.includes(f.id)?'outline:3px solid var(--acc)':''}"><img src="${fotoMini(f)}" loading="lazy" style="width:100%;height:170px;object-fit:cover;border-radius:8px;cursor:pointer" onclick="fotoVer('${f.id}')">${f.refTipo?`<small style="display:block;color:var(--mut);margin-top:4px">Da ${f.refTipo==='evolucao'?'evolução':'anamnese'} de ${br(f.data)}</small>`:''}<div style="display:flex;justify-content:space-between;align-items:center;margin-top:6px;font-size:12px"><label style="display:flex;gap:4px;align-items:center"><input type="checkbox" ${sel.includes(f.id)?'checked':''} onchange="fotoMarcar('${f.id}')">${br(f.data)} · ${esc(f.momento||'')}</label><button class="lnk" onclick="fotoEditar('${f.id}')">Editar</button></div></div>`).join('')}</div>`).join('')||'<div class="mini-empty">Nenhuma foto ainda.</div>'}
  ${ehSeg('estetica')?'<p class="sub" style="margin-top:12px">Para usar a foto em redes sociais, registre antes a autorização de uso de imagem na aba Termos.</p>':''}</div>`}
 function fotoReduzir(file){return new Promise((res,rej)=>{const r=new FileReader();r.onload=()=>{const img=new Image();img.onload=()=>{const k=Math.min(1,1100/Math.max(img.width,img.height));const c=document.createElement('canvas');c.width=Math.round(img.width*k);c.height=Math.round(img.height*k);c.getContext('2d').drawImage(img,0,0,c.width,c.height);res(c.toDataURL('image/jpeg',0.72))};img.onerror=rej;img.src=r.result};r.onerror=rej;r.readAsDataURL(file)})}
+/* ===== Foto do tratamento: o que é, onde é, de que procedimento e em que momento =====
+   Tudo em botão, porque quem está atendendo não tem mão livre para digitar. */
+const FOTO_AREAS={
+ podologia:['Pé direito','Pé esquerdo','Ambos os pés','Unha do hálux','Unhas dos pés','Calcanhar','Planta do pé','Entre os dedos','Dorso do pé'],
+ estetica:['Rosto','Pescoço','Abdômen','Flancos','Culote','Coxas','Glúteos','Braços','Costas','Pernas'],
+ beleza:['Cabelo','Unhas das mãos','Unhas dos pés','Sobrancelha','Cílios','Maquiagem','Barba']};
+const FOTO_TIPOS={
+ podologia:[['pes','Foto dos pés','O estado do pé ou da unha, sem ligar a um procedimento.'],
+            ['proc','Foto do tratamento','Ligada ao procedimento que está sendo feito hoje.']],
+ estetica:[['area','Foto da área','O estado da região, sem ligar a um procedimento.'],
+           ['proc','Foto do tratamento','Ligada ao procedimento que está sendo feito hoje.']],
+ beleza:[['area','Foto do visual','O resultado em si, sem ligar a um serviço.'],
+         ['proc','Foto do serviço','Ligada ao serviço que está sendo feito hoje.']]};
+function fotoSegK(){return ehSeg('podologia')?'podologia':ehSeg('estetica')?'estetica':ehSeg('beleza')?'beleza':'podologia'}
+function fotoAreasDo(){const L=FOTO_AREAS[fotoSegK()]||FOTO_AREAS.podologia;
+ const usadas=azTxt([...new Set((S.fotos||[]).map(f=>str(f.area)).filter(a=>a&&!L.includes(a)))]).slice(0,6);
+ return [...L,...usadas]}
+/* Procedimento do dia: o do agendamento de hoje vem primeiro, depois o cadastro */
+function fotoProcs(pid){const t=todayISO();
+ const hoje=(S.agendamentos||[]).filter(a=>a.pacienteId===pid&&a.data===t&&stAg(a)!=='Desmarcado')
+  .map(a=>str(a.procedimento)).filter(Boolean);
+ const serv=az((S.servicos||[]).filter(s=>s.ativo!==false)).map(s=>s.nome);
+ const vistos=new Set(),out=[];
+ [...hoje,...serv].forEach(n=>{const k=norm(n);if(!k||vistos.has(k))return;vistos.add(k);out.push({n,hoje:hoje.includes(n)})});
+ return out}
+let FA={arqs:[],urls:[]};
+function faLimpa(){FA.urls.forEach(u=>{try{URL.revokeObjectURL(u)}catch(e){}});FA={arqs:[],urls:[]}}
+function faChip(g,v,rot,sel){return `<button type="button" class="fachip${sel?' on':''}" data-g="${g}" data-v="${esc(v)}" onclick="faEscolhe(this)">${esc(rot||v)}</button>`}
+function faEscolhe(bt){const g=bt.dataset.g,v=bt.dataset.v;
+ document.querySelectorAll(`.fachip[data-g="${g}"]`).forEach(b=>b.classList.toggle('on',b===bt));
+ FA[g]=v;
+ if(g==='tipo'){const b=$('#faProcBox');if(b)b.hidden=(v!=='proc');
+  const d=$('#faTipoDesc');const T=(FOTO_TIPOS[fotoSegK()]||FOTO_TIPOS.podologia).find(x=>x[0]===v);
+  if(d&&T)d.textContent=T[2]}
+ if(g==='area'){const o=$('#faOutraBox');if(o){o.hidden=(v!=='__outra');if(v==='__outra'){const i=$('#faOutra');if(i)i.focus()}}}}
 async function fotoAdd(pid,input){const fs=[...input.files];input.value='';if(!fs.length)return;
- formModal('Dados das fotos',[{k:'data',l:'Data',type:'date',req:true},{k:'area',l:'Área (ex.: Abdômen, Rosto, Cabelo)',req:true},{k:'momento',l:'Momento',type:'select',opts:['Antes','Durante','Depois']},{k:'obs',l:'Observação',full:true}],{data:todayISO(),momento:'Antes'},o=>{(async()=>{let n=0;for(const f of fs){try{const {cheia,thumb}=await fotoPreparar(f);const id=uid();await fotoGuardar(id,cheia);S.fotos.push({id,pacienteId:pid,data:o.data,area:o.area,momento:o.momento,obs:o.obs,thumb,arq:1});n++}catch(e){toast('Não foi possível ler '+f.name)}}save();render();toast(n+(n===1?' foto adicionada':' fotos adicionadas'))})()})}
+ const p=pac(pid);if(!p)return;
+ faLimpa(); FA.arqs=fs; FA.pid=pid;
+ FA.urls=fs.map(f=>{try{return URL.createObjectURL(f)}catch(e){return ''}});
+ const tipos=FOTO_TIPOS[fotoSegK()]||FOTO_TIPOS.podologia;
+ FA.tipo=tipos[0][0]; FA.area=''; FA.momento='Antes'; FA.proc='';
+ const procs=fotoProcs(pid), doDia=procs.filter(x=>x.hoje);
+ if(doDia.length){FA.proc=doDia[0].n; FA.tipo='proc'}
+ const html=`<h3>Foto de ${esc(nomePessoa(p.nome))}</h3>
+ <div class="fapre">${FA.urls.map((u,i)=>u?`<img src="${u}" alt="foto ${i+1}">`:'').join('')}
+  <span class="fapn">${fs.length===1?'1 foto':fs.length+' fotos'}</span></div>
+ <div class="fag"><b>O que é esta foto?</b>
+  <div class="fachips">${tipos.map(([k,n])=>faChip('tipo',k,n,k===FA.tipo)).join('')}</div>
+  <p class="sub" id="faTipoDesc" style="margin:7px 0 0">${esc((tipos.find(x=>x[0]===FA.tipo)||tipos[0])[2])}</p></div>
+ <div class="fag" id="faProcBox"${FA.tipo==='proc'?'':' hidden'}><b>De qual procedimento?</b>
+  ${doDia.length?`<p class="sub" style="margin:3px 0 7px">A paciente tem ${doDia.length===1?'este procedimento':'estes procedimentos'} marcado para hoje.</p>`:''}
+  <select id="faProc" class="inp" style="width:100%" onchange="FA.proc=this.value">
+   <option value="">Não ligar a nenhum procedimento</option>
+   ${procs.map(x=>`<option value="${esc(x.n)}" ${x.n===FA.proc?'selected':''}>${esc(x.n)}${x.hoje?' (hoje)':''}</option>`).join('')}
+  </select></div>
+ <div class="fag"><b>${ehSeg('beleza')?'De que parte?':'De que parte do corpo?'}</b>
+  <div class="fachips">${fotoAreasDo().map(a=>faChip('area',a)).join('')}${faChip('area','__outra','Outra')}</div>
+  <div id="faOutraBox" hidden style="margin-top:8px"><input id="faOutra" class="inp" style="width:100%" placeholder="Escreva a parte do corpo"></div></div>
+ <div class="fag"><b>Em que momento?</b>
+  <div class="fachips">${['Antes','Durante','Depois'].map(m=>faChip('momento',m,m,m===FA.momento)).join('')}</div></div>
+ <div class="fag fgrid2"><label>Data<input type="date" id="faData" class="inp" value="${todayISO()}"></label>
+  <label>Observação<input id="faObs" class="inp" placeholder="opcional"></label></div>
+ <div class="mact"><button class="btn ghost" onclick="faLimpa();closeModal()">Cancelar</button>
+  <button class="btn" onclick="faSalvar()">Salvar ${fs.length===1?'a foto':'as '+fs.length+' fotos'}</button></div>`;
+ openModal(html,true)}
+async function faSalvar(){
+ let area=str(FA.area);
+ if(area==='__outra')area=str(($('#faOutra')||{}).value).trim();
+ if(!area){toast('Escolha de que parte é a foto.');return}
+ const proc=FA.tipo==='proc'?str(($('#faProc')||{}).value):'';
+ const data=str(($('#faData')||{}).value)||todayISO();
+ const obs=str(($('#faObs')||{}).value).trim();
+ const arqs=FA.arqs,pid=FA.pid;
+ closeModal();
+ let n=0;
+ for(const f of arqs){try{const {cheia,thumb}=await fotoPreparar(f);const id=uid();await fotoGuardar(id,cheia);
+  S.fotos.push({id,pacienteId:pid,data,area,momento:FA.momento||'',proc,obs,thumb,arq:1,tipo:FA.tipo});n++}
+  catch(e){toast('Não foi possível ler '+f.name)}}
+ faLimpa();save();render();
+ toast(n+(n===1?' foto guardada em ':' fotos guardadas em ')+area)}
 /* Atalho que a profissional usa durante o atendimento: abre com a câmera a um
    toque, sem procurar a paciente e sem passar pela galeria do aparelho. */
 function fotoDoAtendimento(pid){const p=pac(pid);if(!p)return;
@@ -3450,7 +3553,24 @@ function fotoDoAtendimento(pid){const p=pac(pid);if(!p)return;
   ${fotoBotoes(`${emCima?'fecha2()':'closeModal()'};fotoPerfilSalvar('${pid}',this,0)`,p.foto?'Trocar a foto de perfil':'Tirar foto de perfil')}</div>
  <div class="mact"><button class="btn ghost" onclick="${emCima?'fecha2()':'closeModal()'}">Fechar</button></div>`;
  if(emCima)abre2(html,'560px');else openModal(html,true)}
-function fotoRapidaQ(v){UI.frQ=v;render()}
+function fotoRapidaQ(v){UI.frQ=v;UI.frSug=-1;render()}
+/* Sugestao enquanto digita: o nome completa sozinho e um toque ja abre a camera. */
+function frSugestoes(){const q=norm(UI.frQ||'');if(q.length<2)return [];
+ const L=(S.pacientes||[]).filter(p=>p.status!=='Inativo');
+ const comeca=L.filter(p=>norm(p.nome).startsWith(q));
+ const contem=L.filter(p=>!norm(p.nome).startsWith(q)&&norm(p.nome).includes(q));
+ const dig=soDig(UI.frQ||'');
+ const porDoc=dig.length>=3?L.filter(p=>soDig(p.cpf).includes(dig)||soDig(p.codigo)===dig):[];
+ const vistos=new Set(),out=[];
+ [...comeca,...contem,...porDoc].forEach(p=>{if(vistos.has(p.id))return;vistos.add(p.id);out.push(p)});
+ return out.slice(0,8)}
+function frTecla(e){const L=frSugestoes();if(!L.length)return;
+ if(e.key==='ArrowDown'){e.preventDefault();UI.frSug=Math.min((UI.frSug??-1)+1,L.length-1);render();frFoco()}
+ else if(e.key==='ArrowUp'){e.preventDefault();UI.frSug=Math.max((UI.frSug??-1)-1,-1);render();frFoco()}
+ else if(e.key==='Enter'){e.preventDefault();const p=L[UI.frSug>=0?UI.frSug:0];if(p)frEscolhe(p.id)}
+ else if(e.key==='Escape'){UI.frQ='';UI.frSug=-1;render()}}
+function frFoco(){const e=$('#frBusca');if(e){e.focus();const v=e.value;e.value='';e.value=v}}
+function frEscolhe(pid){const p=pac(pid);if(!p)return;UI.frQ='';UI.frSug=-1;render();fotoDoAtendimento(pid)}
 function vFotoRapida(){const q=norm(UI.frQ||'');const t=todayISO();
  const hoje=(S.agendamentos||[]).filter(a=>a.data===t&&!['Desmarcado'].includes(stAg(a)))
    .sort((a,b)=>str(a.hora).localeCompare(str(b.hora)));
@@ -3459,15 +3579,22 @@ function vFotoRapida(){const q=norm(UI.frQ||'');const t=todayISO();
  const L=q?az((S.pacientes||[]).filter(x=>norm(x.nome).includes(q))).slice(0,40):[];
  const linha=(p,a)=>`<div class="pt" style="align-items:center">
    <span style="flex:0 0 auto">${avatarPac(p,'sm')}</span>
-   <span style="flex:1;min-width:0"><b>${esc(nomePessoa(p.nome))}</b>${a?`<span class="pts">${esc(a.hora||'')} · ${esc(a.procedimento||'')}</span>`:`<span class="pts">${(S.fotos||[]).filter(f=>f.pacienteId===p.id).length} foto(s) na ficha</span>`}</span>
+   <span style="flex:1;min-width:0"><button class="lnk" style="font-weight:700;text-align:left" onclick="goPront('${p.id}')">${esc(nomePessoa(p.nome))}</button>${a?`<span class="pts">${esc(a.hora||'')} · ${esc(a.procedimento||'')}</span>`:`<span class="pts">${(S.fotos||[]).filter(f=>f.pacienteId===p.id).length} foto(s) na ficha</span>`}</span>
    <button class="btn sm" onclick="fotoDoAtendimento('${p.id}')">${ico('cam',15)} Foto</button></div>`;
+ const sug=frSugestoes();
  return `<div class="page" style="max-width:760px"><div class="phead"><div><h1>Inserir foto</h1>
   <p class="sub">Escolha quem está em atendimento e tire a foto pelo celular. Ela vai direto para a ficha.</p></div></div>
  <div class="card">
-  <input class="inp" style="width:100%;max-width:420px" placeholder="Procure pelo nome" value="${esc(UI.frQ||'')}"
-   oninput="clearTimeout(window.__fq);window.__fq=setTimeout(()=>fotoRapidaQ(this.value),250)">
+  <div class="frbox">
+   <input id="frBusca" class="inp" style="width:100%" placeholder="Comece a escrever o nome do ${esc(SEG().pessoa.toLowerCase())}" value="${esc(UI.frQ||'')}"
+    autocomplete="off" oninput="fotoRapidaQ(this.value)" onkeydown="frTecla(event)">
+   ${sug.length?`<div class="frsug">${sug.map((p,i)=>`<button class="frs${i===UI.frSug?' on':''}" onclick="frEscolhe('${p.id}')">
+     ${avatarPac(p,'sm')}<span><b>${esc(nomePessoa(p.nome))}</b><small>${esc(p.celular||p.codigo||'')}</small></span>
+     <i>${ico('cam',16)}</i></button>`).join('')}</div>`
+    :(q.length>=2?`<div class="frsug"><div class="frvazio">Ninguém com esse nome. <button class="lnk" onclick="pacForm()">Cadastrar ${esc(SEG().pessoa.toLowerCase())}</button></div></div>`:'')}
+  </div>
+  <p class="sub" style="margin:10px 0 0">Escreva duas letras e o nome aparece sozinho. Um toque no nome já abre a câmera.</p>
  </div>
- ${q?`<div class="card"><h2>Resultado da busca</h2>${L.length?L.map(p=>linha(p,null)).join(''):'<p class="sub">Ninguém encontrado com esse nome.</p>'}</div>`:''}
  <div class="card"><h2>Agenda de hoje</h2>
   ${doDia.length?doDia.map(x=>linha(x.p,x.a)).join(''):'<p class="sub">Não há atendimento marcado para hoje. Procure pelo nome no campo acima.</p>'}</div>
  <div class="card"><h2>Como a foto entra</h2>
@@ -3476,10 +3603,10 @@ function vFotoRapida(){const q=norm(UI.frQ||'');const t=todayISO();
   <p class="sub" style="margin:0">Dá para chegar aqui por três caminhos: por este menu, clicando no agendamento da paciente e tocando em Foto, ou pela aba Fotos dentro da ficha.</p></div>
  </div>`}
 function fotoMarcar(id){let s=UI.fotoSel||[];s=s.includes(id)?s.filter(x=>x!==id):[...s,id].slice(-2);UI.fotoSel=s;render()}
-function fotoVer(id){const f=S.fotos.find(x=>x.id===id);openModal(`<h3>${esc(f.area||'')} · ${br(f.data)} · ${esc(f.momento||'')}</h3><img id="fvImg" src="${fotoMini(f)}" style="width:100%;border-radius:10px">${f.obs?`<p>${esc(f.obs)}</p>`:''}<div class="mact"><button class="btn" onclick="closeModal()">Fechar</button></div>`,true);fotoCarregar(f,'fvImg')}
+function fotoVer(id){const f=S.fotos.find(x=>x.id===id);openModal(`<h3>${esc(f.area||'')} · ${br(f.data)} · ${esc(f.momento||'')}</h3>${f.proc?`<p class="sub" style="margin:-6px 0 10px">Procedimento: <b>${esc(f.proc)}</b></p>`:''}<img id="fvImg" src="${fotoMini(f)}" style="width:100%;border-radius:10px">${f.obs?`<p>${esc(f.obs)}</p>`:''}<div class="mact"><button class="btn" onclick="closeModal()">Fechar</button></div>`,true);fotoCarregar(f,'fvImg')}
 function fotoComparar(){const [a,b]=(UI.fotoSel||[]).map(id=>S.fotos.find(x=>x.id===id)).filter(Boolean).sort((x,y)=>(x.data||'').localeCompare(y.data||''));if(!a||!b)return;
  openModal(`<h3>Comparação</h3><div class="grid g2">${[a,b].map((f,n)=>`<div><img id="fc${n}" src="${fotoMini(f)}" style="width:100%;border-radius:10px"><p style="text-align:center;margin:6px 0"><b>${esc(f.momento||'')}</b> · ${br(f.data)} · ${esc(f.area||'')}</p></div>`).join('')}</div><p class="sub" style="text-align:center">${diffDays(a.data,b.data)} dias entre as fotos</p><div class="mact"><button class="btn ghost" onclick="window.print()">${ico('print',15)} Imprimir</button><button class="btn" onclick="closeModal()">Fechar</button></div>`,true);fotoCarregar(a,'fc0');fotoCarregar(b,'fc1')}
-function fotoEditar(id){const f=S.fotos.find(x=>x.id===id);formModal('Editar foto',[{k:'data',l:'Data',type:'date'},{k:'area',l:'Área'},{k:'momento',l:'Momento',type:'select',opts:['Antes','Durante','Depois']},{k:'obs',l:'Observação',full:true}],f,o=>{Object.assign(f,o)},`<button class="btn danger" style="margin-right:auto" onclick="UI.fotoSel=(UI.fotoSel||[]).filter(x=>x!=='${f.id}');delRec('fotos','${f.id}')">Excluir</button>`)}
+function fotoEditar(id){const f=S.fotos.find(x=>x.id===id);formModal('Editar foto',[{k:'data',l:'Data',type:'date'},{k:'area',l:'Área'},{k:'proc',l:'Procedimento',type:'select',opts:['',...fotoProcs(f.pacienteId).map(x=>x.n)]},{k:'momento',l:'Momento',type:'select',opts:['Antes','Durante','Depois']},{k:'obs',l:'Observação',full:true}],f,o=>{Object.assign(f,o)},`<button class="btn danger" style="margin-right:auto" onclick="UI.fotoSel=(UI.fotoSel||[]).filter(x=>x!=='${f.id}');delRec('fotos','${f.id}')">Excluir</button>`)}
 /* Termos com assinatura na tela */
 const TERMO_PADRAO={
  consentimento:'Eu, {nome}, CPF {cpf}, declaro que fui informada(o) pela {clinica} sobre o procedimento {procedimento}, seus objetivos, cuidados antes e depois, possíveis reações e resultados esperados, que podem variar de pessoa para pessoa. Informei corretamente meu histórico de saúde e autorizo a realização do procedimento.',
@@ -3704,7 +3831,7 @@ function agNovo(a,s){if(s==='Desmarcado'||s==='Faltou')return false;const k=a.da
  const hist=c=>S[c].some(x=>x.pacienteId===a.pacienteId&&((x.data||x.vencimento||x.pagamento||'')<a.data)&&(x.data||x.vencimento||x.pagamento));
  return !hist('evolucoes')&&!hist('tratamentos')&&!S.lancamentos.some(l=>l.pacienteId===a.pacienteId&&l.pagamento&&l.pagamento<a.data)}
 /* ============ Atualização: aviso com botão Atualizar agora ============ */
-const VERSAO_APP='1.9.47';const URL_VERSAO_JSON='https://raw.githubusercontent.com/TheIgor12/blacksolutions/main/versao.json';
+const VERSAO_APP='1.9.49';const URL_VERSAO_JSON='https://raw.githubusercontent.com/TheIgor12/blacksolutions/main/versao.json';
 const numV=v=>String(v||'0').split(/\D+/).filter(Boolean).map(Number);
 function versaoMaior(a,b){const x=numV(a),y=numV(b);for(let i=0;i<Math.max(x.length,y.length);i++){const d=(x[i]||0)-(y[i]||0);if(d)return d>0}return false}
 const ATU={nova:null,timer:null};
