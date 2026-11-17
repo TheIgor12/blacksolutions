@@ -357,6 +357,12 @@ a.btn{text-decoration:none}
 .pixok{display:block;margin-top:5px;font-size:12px;color:var(--ok);font-weight:600}
 .pixerr{display:block;margin-top:5px;font-size:12px;color:var(--warn);line-height:1.45}
 @media(max-width:620px){.pixbt span{display:none}.pixbt{padding:0 9px!important}}
+.ctres{background:var(--acc-soft);border-radius:12px;padding:12px 14px;margin-top:4px}
+.ctres>div{display:flex;justify-content:space-between;gap:12px;padding:4px 0;font-size:13.5px}
+.ctres>div span{color:var(--mut)}
+.ctres>div b{font-variant-numeric:tabular-nums}
+.ctres .forte{border-top:1px solid var(--line);margin-top:4px;padding-top:8px;font-size:15px}
+.ctres .forte b{color:var(--acc);font-weight:800}
 .fapre{display:flex;gap:8px;align-items:center;flex-wrap:wrap;background:var(--bg);border-radius:12px;padding:10px;margin-bottom:14px}
 .fapre img{width:62px;height:62px;object-fit:cover;border-radius:9px;border:1px solid var(--line)}
 .fapn{font-size:12.5px;color:var(--mut);font-weight:600}
@@ -626,8 +632,8 @@ const waIco=()=>`<span class="wa">${ico('wa',15)}</span>`;
 /* ============ Estado e armazenamento ============ */
 function defaultState(){return {versao:1,config:{clinica:'Minha clínica',usuario:'Administrador',cor:'#5a4cfb',corTopo:'#0a0820',logo:'',
  msgCobranca:'Olá {nome}, tudo bem? Aqui é da {clinica}. Consta em aberto o valor de {valor}, referente a parcelas vencidas desde {vencimento}. Podemos combinar a forma de pagamento?',
- msgRetorno:'Olá {nome}, tudo bem? Aqui é da {clinica}. Já faz um tempo desde o seu último atendimento. Vamos agendar o seu retorno?',diasRetorno:90,msgRec:{},iaChave:'',segmento:'',taxas:{},descontarTaxa:false,cashback:'',cashbackDias:''},
- pacientes:[],lancamentos:[],tratamentos:[],anamneses:[],agendamentos:[],contasPagar:[],evolucoes:[],profissionais:[],importacoes:[],servicos:[],produtos:[],documentos:[],movEstoque:[],comandas:[],caixas:[],avaliacoes:[],fotos:[],termos:[],fichas:[],protocolos:[],equipamentos:[],vouchers:[]}}
+ msgRetorno:'Olá {nome}, tudo bem? Aqui é da {clinica}. Já faz um tempo desde o seu último atendimento. Vamos agendar o seu retorno?',diasRetorno:90,msgRec:{},iaChave:'',contratoModelo:'',responsavel:'',profissaoResp:'',registroResp:'',comarca:'',segmento:'',taxas:{},descontarTaxa:false,cashback:'',cashbackDias:''},
+ pacientes:[],lancamentos:[],tratamentos:[],anamneses:[],agendamentos:[],contasPagar:[],evolucoes:[],profissionais:[],importacoes:[],servicos:[],produtos:[],documentos:[],movEstoque:[],comandas:[],caixas:[],avaliacoes:[],fotos:[],termos:[],contratos:[],fichas:[],protocolos:[],equipamentos:[],vouchers:[]}}
 let S=defaultState();
 const DB={
  open(){return new Promise((res,rej)=>{const r=indexedDB.open('happyfeet-gestao',1);r.onupgradeneeded=()=>r.result.createObjectStore('kv');r.onsuccess=()=>res(r.result);r.onerror=()=>rej(r.error)})},
@@ -1545,7 +1551,7 @@ function agForm(id,pacienteId,pre){pre=pre||{};const a=id?S.agendamentos.find(x=
   a?`<button class="btn danger" style="margin-right:auto" onclick="delRec('agendamentos','${a.id}')">Excluir</button>`:'')}
 function agModal(id){const a=S.agendamentos.find(x=>x.id===id);if(!a)return;const p=pac(a.pacienteId);const l=p?waLink(p.celular):'';
  openModal(`<h3 style="display:flex;align-items:center;gap:10px">${p?anivCanto(p,a.data):''}${p?`<span onclick="closeModal();go('paciente','${p.id}')" title="Abrir a ficha de ${esc(p.nome)}" style="cursor:pointer">${avatarPac(p,'lg')}</span>`:''}${p?`<a href="javascript:void(0)" onclick="closeModal();go('paciente','${p.id}')" title="Abrir a ficha completa: anamnese, fotos, documentos, financeiro e agendamentos" style="color:inherit;text-decoration:underline;text-underline-offset:3px;display:inline-flex;align-items:center;gap:6px">${esc(p.nome)}${ico('back',14)?'':''}<span style="font-size:12px;font-weight:600;color:var(--mut);text-decoration:none">abrir ficha</span></a>`:'<span>Paciente</span>'}</h3>${p?anaFaixa(p.id,1):''}${p?`<div class="row"><span>Anamnese</span><span>${esc(resumoAnamnese(p))}</span></div>`:''}${p&&str(p.cpf)?`<div class="row"><span>CPF</span><span>${esc(fmtCPF(p.cpf))}</span></div>`:''}${p&&enderecoDe(p)?`<div class="row"><span>Endereço</span><span>${esc(enderecoDe(p))}</span></div>`:''}${p&&(str(p.profissao)||str(p.empresa))?`<div class="row"><span>Trabalho</span><span>${esc([str(p.profissao),str(p.empresa)].filter(Boolean).join(' · '))}</span></div>`:''}<div class="row"><span>Data</span><span>${br(a.data)} às ${esc(a.hora)} (${a.duracao||30} min)</span></div><div class="row"><span>Profissional</span><span>${esc(a.profissional||'-')}</span></div><div class="row"><span>Procedimento</span><span>${esc(a.procedimento||'-')}</span></div><div class="row" style="align-items:center"><span><b>Situação</b></span><span><select id="agSt" onchange="setAgSt('${a.id}',this.value)" style="font-size:14px;font-weight:700;padding:8px 12px;border-radius:8px;border:2px solid ${({Agendado:'#e0a800',Confirmado:'#16a34a',Atendido:'#64748b',Faltou:'#dc2626',Desmarcado:'#999'})[stAg(a)]||'#e0a800'};background:${({Agendado:'#fff3bf',Confirmado:'#c9f2d6',Atendido:'#e6ebf3',Faltou:'#fde8e8',Desmarcado:'#eee'})[stAg(a)]||'#fff3bf'}">${['Agendado','Confirmado','Atendido','Faltou','Desmarcado'].map(x=>`<option value="${x}" ${stAg(a)===x?'selected':''}>${x==='Desmarcado'?'Desmarcou':x}</option>`).join('')}</select></span></div>${agNovo(a,stAg(a))?`<div class="row"><span></span><span><i class="evtag" style="font-size:11px;padding:2px 8px">${esc(SEG().pessoa.toUpperCase())} NOVO</i></span></div>`:''}${serieHTML(a)}${agSessHTML(a)}${a.obs?`<div class="row"><span>Observação</span><span>${esc(a.obs)}</span></div>`:''}${agFinHTML(a)}${lancAgAtivo()?agValHTML(a):''}
- <div class="mact">${l?`<a class="btn green" href="${l}" target="_blank" rel="noopener">WhatsApp</a>`:''}${pixBt(valorAg(a),a.procedimento,p?p.id:'',(lancDoAg(a)||{}).id||'')}${p?`<button class="btn ghost" onclick="fotoDoAtendimento('${p.id}')">${ico('cam',15)} Foto</button><button class="btn ghost" onclick="anaRapida('${p.id}')">Anamnese</button><button class="btn ghost" onclick="fotoPerfil('${p.id}')">${p.foto?'Trocar foto':'Inserir foto'}</button><button class="btn ghost" onclick="goPront('${p.id}')">Prontuário</button><button class="btn ghost" onclick="closeModal();go('paciente','${p.id}')">Abrir ficha</button>`:''}${!ehSeg('podologia')&&!soAgenda()&&p?`<button class="btn soft" onclick="comandaDoAgendamento('${a.id}')">Abrir comanda</button>`:''}<button class="btn" onclick="closeModal();agForm('${a.id}')">Editar</button></div>`)}
+ <div class="mact">${l?`<a class="btn green" href="${l}" target="_blank" rel="noopener">WhatsApp</a>`:''}${pixBt(valorAg(a),a.procedimento,p?p.id:'',(lancDoAg(a)||{}).id||'')}${p?`<button class="btn ghost" onclick="closeModal();contratoForm('${p.id}','${a.id}')" title="Gera o contrato com o serviço e o plano de pagamento, para a cliente assinar">${ico('doc',15)} Contrato</button>`:''}${p?`<button class="btn ghost" onclick="fotoDoAtendimento('${p.id}')">${ico('cam',15)} Foto</button><button class="btn ghost" onclick="anaRapida('${p.id}')">Anamnese</button><button class="btn ghost" onclick="fotoPerfil('${p.id}')">${p.foto?'Trocar foto':'Inserir foto'}</button><button class="btn ghost" onclick="goPront('${p.id}')">Prontuário</button><button class="btn ghost" onclick="closeModal();go('paciente','${p.id}')">Abrir ficha</button>`:''}${!ehSeg('podologia')&&!soAgenda()&&p?`<button class="btn soft" onclick="comandaDoAgendamento('${a.id}')">Abrir comanda</button>`:''}<button class="btn" onclick="closeModal();agForm('${a.id}')">Editar</button></div>`)}
 /* Situação financeira do atendimento, igual ao selo Financeiro Ok do Clinicorp */
 function agFinHTML(a){const l=lancDoAg(a);if(!l||!(Number(l.valor)>0))return '';const sd=saldoL(l),pn=parcNum(l);
  return `<div class="row" style="align-items:center"><span>Financeiro</span><span style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
@@ -3228,9 +3234,9 @@ function abasCliente(){const filtra=L=>pode('fichaFin')?L:L.filter(([k])=>k!=='f
  if(soAgenda())return [['geral','Visão Geral'],['prontuario','Prontuário'],['agendamentos','Agendamentos']];
  return filtra(abasClienteTodas())}
 function abasClienteTodas(){
- if(ehSeg('estetica'))return [['geral','Visão Geral'],['prontuario','Prontuário'],['sessoes','Pacotes de sessões'],['avaliacao','Avaliação'],['fotos','Antes e depois'],['exames','Exames'],['documentos','Documentos'],['termos','Termos'],['aplicacoes','Produtos aplicados'],['comandasC','Comandas'],['financeiro','Financeiro'],['evolucao','Evolução'],['anamnese','Anamnese'],['agendamentos','Agendamentos']];
- if(ehSeg('beleza'))return [['geral','Visão Geral'],['prontuario','Prontuário'],['comandasC','Comandas'],['sessoes','Pacotes e assinaturas'],['ficha','Ficha técnica'],['fotos','Fotos'],['documentos','Documentos'],['termos','Termos'],['financeiro','Financeiro'],['agendamentos','Agendamentos']];
- return [['geral','Visão Geral'],['prontuario','Prontuário'],['orcamentos','Orçamentos'],['financeiro','Financeiro'],['sessoes','Controle de Sessões'],['evolucao','Evolução'],['anamnese','Anamnese'],['fotos','Fotos'],['exames','Exames'],['documentos','Documentos'],['termos','Termos'],['agendamentos','Agendamentos']]}
+ if(ehSeg('estetica'))return [['geral','Visão Geral'],['prontuario','Prontuário'],['sessoes','Pacotes de sessões'],['avaliacao','Avaliação'],['fotos','Antes e depois'],['exames','Exames'],['documentos','Documentos'],['contratos','termos','Termos'],['aplicacoes','Produtos aplicados'],['comandasC','Comandas'],['financeiro','Financeiro'],['evolucao','Evolução'],['anamnese','Anamnese'],['agendamentos','Agendamentos']];
+ if(ehSeg('beleza'))return [['geral','Visão Geral'],['prontuario','Prontuário'],['comandasC','Comandas'],['sessoes','Pacotes e assinaturas'],['ficha','Ficha técnica'],['fotos','Fotos'],['documentos','Documentos'],['contratos','termos','Termos'],['financeiro','Financeiro'],['agendamentos','Agendamentos']];
+ return [['geral','Visão Geral'],['prontuario','Prontuário'],['orcamentos','Orçamentos'],['financeiro','Financeiro'],['sessoes','Controle de Sessões'],['evolucao','Evolução'],['anamnese','Anamnese'],['fotos','Fotos'],['exames','Exames'],['documentos','Documentos'],['contratos','termos','Termos'],['agendamentos','Agendamentos']]}
 /* ============ Prontuário: tudo do paciente em uma linha do tempo ============ */
 const PT_CAT={
  agenda:{l:'Agenda',cor:'#5a4cfb',g:'agenda'},
@@ -3719,6 +3725,337 @@ function fotoComparar(){const [a,b]=(UI.fotoSel||[]).map(id=>S.fotos.find(x=>x.i
  openModal(`<h3>Comparação</h3><div class="grid g2">${[a,b].map((f,n)=>`<div><img id="fc${n}" src="${fotoMini(f)}" style="width:100%;border-radius:10px"><p style="text-align:center;margin:6px 0"><b>${esc(f.momento||'')}</b> · ${br(f.data)} · ${esc(f.area||'')}</p></div>`).join('')}</div><p class="sub" style="text-align:center">${diffDays(a.data,b.data)} dias entre as fotos</p><div class="mact"><button class="btn ghost" onclick="window.print()">${ico('print',15)} Imprimir</button><button class="btn" onclick="closeModal()">Fechar</button></div>`,true);fotoCarregar(a,'fc0');fotoCarregar(b,'fc1')}
 function fotoEditar(id){const f=S.fotos.find(x=>x.id===id);formModal('Editar foto',[{k:'data',l:'Data',type:'date'},{k:'area',l:'Área'},{k:'proc',l:'Procedimento',type:'select',opts:['',...fotoProcs(f.pacienteId).map(x=>x.n)]},{k:'momento',l:'Momento',type:'select',opts:['Antes','Durante','Depois']},{k:'obs',l:'Observação',full:true}],f,o=>{Object.assign(f,o)},`<button class="btn danger" style="margin-right:auto" onclick="UI.fotoSel=(UI.fotoSel||[]).filter(x=>x!=='${f.id}');delRec('fotos','${f.id}')">Excluir</button>`)}
 /* Termos com assinatura na tela */
+const CONTRATO_PADRAO=`CONTRATO DE PRESTAÇÃO DE SERVIÇOS DE PODOLOGIA E CONFISSÃO DE DÍVIDA
+
+Contrato nº {numero}, emitido em {data_extenso}.
+
+DAS PARTES
+
+CONTRATADA: {clinica}, inscrita no Cadastro Nacional da Pessoa Jurídica sob o nº {cnpj}, com estabelecimento na {endereco_clinica}, neste ato representada por {responsavel}, {profissao_resp}, inscrita no Conselho ou registro profissional sob o nº {registro_resp}.
+
+CONTRATANTE: {nome}, inscrita no Cadastro de Pessoas Físicas sob o nº {cpf}, portadora do documento de identidade nº {rg}, residente e domiciliada na {endereco}, telefone {telefone}, endereço eletrônico {email}.
+
+As partes, acima qualificadas, têm entre si justo e contratado o presente instrumento particular, que se regerá pelas cláusulas seguintes e, no que for omisso, pela Lei nº 10.406, de 10 de janeiro de 2002, Código Civil, e pela Lei nº 8.078, de 11 de setembro de 1990, Código de Defesa do Consumidor.
+
+CLÁUSULA PRIMEIRA. DO OBJETO
+
+1.1. O objeto deste contrato é a prestação, pela CONTRATADA à CONTRATANTE, dos seguintes serviços de podologia:
+
+{servicos}
+
+1.2. Os serviços descritos no item 1.1 foram previamente explicados à CONTRATANTE, que declara ter compreendido a técnica empregada, a finalidade, os cuidados anteriores e posteriores, as reações possíveis e o fato de que os resultados variam conforme as condições individuais de cada pessoa, não constituindo promessa de resultado.
+
+1.3. A CONTRATADA presta serviços de podologia, atividade de natureza técnica e estética, e não exerce atividade médica. Não há, neste contrato, promessa de diagnóstico, de cura ou de tratamento de doença.
+
+CLÁUSULA SEGUNDA. DO PREÇO E DA FORMA DE PAGAMENTO
+
+2.1. Pelos serviços descritos na Cláusula Primeira, a CONTRATANTE pagará à CONTRATADA o valor total de {valor_total} ({valor_total_extenso}).
+
+2.2. O pagamento será realizado da seguinte forma:
+
+{plano_pagamento}
+
+2.3. O recebimento de qualquer parcela em atraso constitui mera tolerância e não importa novação, renúncia ou alteração das condições aqui pactuadas.
+
+CLÁUSULA TERCEIRA. DA CONFISSÃO DA DÍVIDA
+
+3.1. A CONTRATANTE declara que os serviços descritos na Cláusula Primeira foram integralmente prestados e recebidos a contento, e reconhece dever à CONTRATADA o saldo de {saldo} ({saldo_extenso}), líquido, certo e exigível nas datas indicadas no item 2.2.
+
+3.2. Esta cláusula vale como confissão de dívida, nos termos do artigo 389 do Código Civil, e o presente instrumento vale como documento de dívida para os fins do artigo 1º da Lei nº 9.492, de 10 de setembro de 1997.
+
+3.3. Não havendo saldo em aberto na data da assinatura, esta cláusula não produz efeito.
+
+CLÁUSULA QUARTA. DA MORA
+
+4.1. O atraso no pagamento de qualquer parcela sujeitará a CONTRATANTE, independentemente de notificação, a:
+
+a) multa moratória de 2% (dois por cento) sobre o valor da parcela vencida, observado o limite do artigo 52, parágrafo 1º, do Código de Defesa do Consumidor;
+
+b) juros de mora de 1% (um por cento) ao mês, calculados pro rata die desde o vencimento, conforme convencionado pelas partes na forma do artigo 406 do Código Civil;
+
+c) correção monetária pelo Índice Nacional de Preços ao Consumidor Amplo, IPCA, apurado pelo Instituto Brasileiro de Geografia e Estatística, desde o vencimento, na forma do parágrafo único do artigo 389 do Código Civil.
+
+4.2. O vencimento de qualquer parcela não paga, decorridos 30 (trinta) dias, tornará exigível a integralidade do saldo devedor, independentemente de interpelação judicial ou extrajudicial.
+
+CLÁUSULA QUINTA. DAS OBRIGAÇÕES DA CONTRATADA
+
+5.1. Executar os serviços com a técnica adequada, utilizando material esterilizado e descartável quando for o caso, e observando as normas sanitárias aplicáveis.
+
+5.2. Prestar à CONTRATANTE informação clara, adequada e ostensiva sobre o serviço, o preço, a forma de pagamento e os riscos, na forma dos artigos 6º, inciso III, e 31 do Código de Defesa do Consumidor.
+
+5.3. Manter sigilo sobre as informações clínicas da CONTRATANTE.
+
+5.4. Fornecer recibo ou documento fiscal de cada pagamento recebido.
+
+CLÁUSULA SEXTA. DAS OBRIGAÇÕES DA CONTRATANTE
+
+6.1. Prestar informações verdadeiras e completas sobre seu estado de saúde, sobre medicamentos em uso e sobre condições que possam interferir no procedimento, especialmente diabetes, alterações circulatórias, uso de anticoagulantes, imunossupressão e alergias.
+
+6.2. Seguir as orientações de cuidado posterior transmitidas pela CONTRATADA.
+
+6.3. Efetuar os pagamentos nas datas pactuadas no item 2.2.
+
+6.4. A CONTRATANTE declara estar ciente de que a omissão ou a inexatidão das informações do item 6.1 pode comprometer o resultado do tratamento e afasta a responsabilidade da CONTRATADA quanto a consequências daí decorrentes.
+
+CLÁUSULA SÉTIMA. DOS AGENDAMENTOS, CANCELAMENTOS E REMARCAÇÕES
+
+7.1. O cancelamento ou a remarcação de horário agendado deverá ser comunicado à CONTRATADA com antecedência mínima de 6 (seis) horas, por qualquer meio idôneo, inclusive aplicativo de mensagens.
+
+7.2. O não comparecimento sem a comunicação prevista no item 7.1 sujeitará a CONTRATANTE ao pagamento de taxa correspondente a 30% (trinta por cento) do valor da sessão não realizada, destinada a cobrir o custo do horário reservado e não aproveitado.
+
+7.3. Em se tratando de pacote com número determinado de sessões, o não comparecimento sem comunicação prévia não consome a sessão contratada, que permanece disponível para remarcação dentro do prazo de validade do pacote, ressalvada a cobrança da taxa prevista no item 7.2.
+
+7.4. O pacote de sessões tem validade de {validade_pacote} contados da data deste contrato.
+
+7.5. A CONTRATANTE poderá rescindir este contrato a qualquer tempo, pagando os serviços já prestados e, havendo pacote não integralmente utilizado, recebendo a devolução proporcional dos valores pagos e não usufruídos, deduzida a taxa prevista no item 7.2 quando aplicável.
+
+7.6. A remarcação está sujeita à disponibilidade da agenda.
+
+CLÁUSULA OITAVA. DA PROTEÇÃO DE DADOS PESSOAIS
+
+8.1. A CONTRATADA trata os dados pessoais e os dados pessoais sensíveis de saúde da CONTRATANTE para a finalidade exclusiva de executar este contrato, de cumprir obrigações legais e regulatórias e de exercer direitos em processo judicial ou administrativo, nos termos do artigo 7º, incisos II e V, e do artigo 11, inciso II, alíneas "a", "d" e "f", da Lei nº 13.709, de 14 de agosto de 2018.
+
+8.2. Os dados serão conservados pelo prazo necessário ao cumprimento das finalidades acima e, no mínimo, pelo prazo prescricional aplicável.
+
+8.3. A CONTRATANTE pode, a qualquer tempo, requerer confirmação de tratamento, acesso, correção, anonimização, portabilidade e informação sobre compartilhamento, na forma do artigo 18 da mesma lei, pelos canais de atendimento da CONTRATADA.
+
+8.4. O uso de imagem para divulgação depende de autorização específica e separada, não suprida por este contrato.
+
+CLÁUSULA NONA. DO PROTESTO E DOS CADASTROS DE PROTEÇÃO AO CRÉDITO
+
+9.1. Vencida e não paga qualquer parcela, a CONTRATADA poderá, após comunicação prévia à CONTRATANTE com prazo de 10 (dez) dias para pagamento, levar o presente instrumento a protesto, na forma do artigo 1º da Lei nº 9.492, de 1997.
+
+9.2. A CONTRATADA poderá, igualmente, comunicar a inadimplência aos cadastros de proteção ao crédito, observada a prévia comunicação por escrito à CONTRATANTE exigida pelo artigo 43, parágrafo 2º, do Código de Defesa do Consumidor.
+
+9.3. Quitada a dívida, a CONTRATADA providenciará a baixa do protesto e a exclusão do registro no prazo de 5 (cinco) dias úteis contados da confirmação do pagamento.
+
+CLÁUSULA DÉCIMA. DA ASSINATURA ELETRÔNICA
+
+10.1. As partes concordam expressamente em firmar este contrato por assinatura eletrônica, e reconhecem sua validade e eficácia, nos termos do artigo 10, parágrafo 2º, da Medida Provisória nº 2.200-2, de 24 de agosto de 2001, e do artigo 4º da Lei nº 14.063, de 23 de setembro de 2020.
+
+10.2. As partes reconhecem como prova da autoria e da integridade deste instrumento o conjunto de evidências registrado pelo sistema utilizado, composto por código de verificação obtido pela função criptográfica SHA-256 aplicada ao texto integral, data e hora do aceite, endereço de protocolo de internet, identificação do dispositivo e conferência dos dados pessoais informados pela CONTRATANTE no momento da assinatura.
+
+10.3. Qualquer alteração posterior no texto deste contrato torna o código de verificação divergente, o que é suficiente para demonstrar a adulteração.
+
+CLÁUSULA DÉCIMA PRIMEIRA. DAS DISPOSIÇÕES FINAIS E DO FORO
+
+11.1. A nulidade de qualquer cláusula não prejudica as demais.
+
+11.2. Este contrato obriga as partes e seus sucessores.
+
+11.3. Fica eleito o foro da Comarca de {comarca}, local de prestação do serviço e do estabelecimento da CONTRATADA, para dirimir as controvérsias oriundas deste instrumento, ressalvada a faculdade da CONTRATANTE, na condição de consumidora, de ajuizar ação no foro de seu domicílio, conforme o artigo 101, inciso I, do Código de Defesa do Consumidor.
+
+E por estarem assim justas e contratadas, as partes firmam o presente instrumento.
+
+{assinaturas}
+`;
+
+/* ===== Contrato de prestação de serviços com confissão de dívida =====
+   Nasce do atendimento, puxa sozinho os dados da cliente, o serviço prestado e
+   o plano de pagamento, e vira documento de dívida assinável pelo celular. */
+const CONTRATO_PERIODO=[['mensal','Mensal, a cada 30 dias',30],['quinzenal','Quinzenal, a cada 15 dias',15],['semanal','Semanal, a cada 7 dias',7]];
+const UNI=['','um','dois','três','quatro','cinco','seis','sete','oito','nove','dez','onze','doze','treze','quatorze','quinze','dezesseis','dezessete','dezoito','dezenove'];
+const DEZ=['','','vinte','trinta','quarenta','cinquenta','sessenta','setenta','oitenta','noventa'];
+const CEM=['','cento','duzentos','trezentos','quatrocentos','quinhentos','seiscentos','setecentos','oitocentos','novecentos'];
+function trioExtenso(n){if(n===0)return '';if(n===100)return 'cem';
+ const c=Math.floor(n/100),r=n%100,p=[];
+ if(c)p.push(CEM[c]);
+ if(r){if(r<20)p.push(UNI[r]);else{const d=Math.floor(r/10),u=r%10;p.push(DEZ[d]+(u?' e '+UNI[u]:''))}}
+ return p.join(' e ')}
+/* Valor por extenso, como exige documento levado a protesto.
+   A regra do "e" em portugues: entra antes do ultimo grupo so quando ele e
+   menor que cem ou e centena redonda. Mil duzentos e trinta e quatro, mas
+   mil e duzentos esta errado; mil e cem e mil e cinquenta estao certos. */
+function grupoExtenso(q,base,sing,plur){
+ if(base===1000)return (q===1?'':trioExtenso(q)+' ')+'mil';
+ return trioExtenso(q)+' '+(q===1?sing:plur)}
+function reaisExtenso(reais){
+ if(reais===0)return '';
+ const G=[[1000000000,'bilhao','bilhoes'],[1000000,'milhao','milhoes'],[1000,'mil','mil']];
+ const partes=[];let resto=reais;
+ G.forEach(([base,sing,plur])=>{const q=Math.floor(resto/base);
+  if(q){partes.push(grupoExtenso(q,base,sing==='bilhao'?'bilh\u00e3o':sing==='milhao'?'milh\u00e3o':sing,
+   plur==='bilhoes'?'bilh\u00f5es':plur==='milhoes'?'milh\u00f5es':plur));resto%=base}});
+ if(resto)partes.push(trioExtenso(resto));
+ if(partes.length===1)return partes[0];
+ const ultimo=reais%1000;
+ const liga=(ultimo>0&&ultimo<100)||(ultimo%100===0&&ultimo>0)?' e ':' ';
+ return partes.slice(0,-1).join(' ')+liga+partes[partes.length-1]}
+function numExtenso(v){const n=Math.round((+v||0)*100);
+ const reais=Math.floor(n/100),cent=n%100;
+ if(reais===0&&cent===0)return 'zero real';
+ let out='';
+ if(reais){const t=reaisExtenso(reais);
+  /* milhao e bilhao redondos pedem "de reais" */
+  const redondo=reais>=1000000&&reais%1000000===0;
+  out=t+(redondo?' de ':' ')+(reais===1?'real':'reais')}
+ if(cent)out+=(out?' e ':'')+trioExtenso(cent)+' '+(cent===1?'centavo':'centavos');
+ return out}
+function dataExtenso(iso){const M=['janeiro','fevereiro','março','abril','maio','junho','julho','agosto','setembro','outubro','novembro','dezembro'];
+ const d=new Date(String(iso)+'T12:00:00');if(isNaN(d))return '';
+ return `${d.getDate()} de ${M[d.getMonth()]} de ${d.getFullYear()}`}
+function somaDias(iso,n){const d=new Date(String(iso)+'T12:00:00');d.setDate(d.getDate()+(+n||0));return d.toISOString().slice(0,10)}
+function contratoNumero(){const ano=new Date().getFullYear();
+ const n=(S.contratos||[]).filter(c=>String(c.numero||'').startsWith(ano+'/')).length+1;
+ return ano+'/'+String(n).padStart(4,'0')}
+/* Parcelas calculadas, com o centavo da diferença indo na primeira */
+function contratoParcelas(saldo,qtd,primeira,dias){const q=Math.max(1,+qtd||1);
+ const tot=Math.round((+saldo||0)*100);const base=Math.floor(tot/q);const sobra=tot-base*q;
+ const L=[];for(let i=0;i<q;i++)L.push({n:i+1,valor:(base+(i===0?sobra:0))/100,venc:somaDias(primeira,i*(+dias||30))});
+ return L}
+function contratoServicosDe(pid,agId){const out=[];
+ const a=(S.agendamentos||[]).find(x=>x.id===agId);
+ if(a){const v=valorAg(a);out.push({desc:str(a.procedimento),valor:v});
+  (a.extras||[]).forEach(e=>{if(str(e.desc))out.push({desc:str(e.desc),valor:+e.valor||0})})}
+ if(!out.length){const c=(S.comandas||[]).find(x=>x.clienteId===pid&&x.status==='Aberta');
+  if(c)(c.itens||[]).forEach(i=>out.push({desc:str(i.desc),valor:(+i.valor||0)*(+i.qtd||1)}))}
+ if(!out.length)out.push({desc:'',valor:0});
+ return out}
+let CT={};
+function contratoForm(pid,agId){const p=pac(pid);if(!p){toast('Paciente não encontrado.');return}
+ const serv=contratoServicosDe(pid,agId);
+ const tot=serv.reduce((s,x)=>s+(+x.valor||0),0);
+ CT={pid,agId:str(agId),serv,entrada:0,formaEntrada:'Pix',qtd:1,primeira:somaDias(todayISO(),30),dias:30,validade:'90 (noventa) dias'};
+ openModal(contratoHTML(p,tot),true);setTimeout(contratoRecalc,30)}
+function contratoHTML(p,tot){
+ const falta=[!str(p.cpf)&&'CPF',!str(p.celular)&&'celular',!enderecoDe(p)&&'endereço'].filter(Boolean);
+ return `<h3>Contrato de ${esc(nomePessoa(p.nome))}</h3>
+ <p class="sub" style="margin-bottom:12px">Os dados da cliente, o serviço e o plano de pagamento entram sozinhos no contrato. Você não digita nada disso duas vezes.</p>
+ ${falta.length?`<div class="note" style="border-left:3px solid var(--warn);margin-bottom:12px">Faltam no cadastro: <b>${esc(falta.join(', '))}</b>. Sem esses dados o contrato perde força para protesto, porque o cartório precisa identificar a devedora.
+  <div style="margin-top:8px"><button class="btn ghost sm" onclick="closeModal();pacForm('${p.id}')">Completar o cadastro agora</button></div></div>`:''}
+ <div class="fag"><b>Serviços prestados</b>
+  <div id="ctServ"></div>
+  <button type="button" class="btn ghost sm" style="margin-top:8px" onclick="ctAddServ()">${ico('plus',14)} Acrescentar serviço</button></div>
+ <div class="fag"><b>Entrada paga agora</b>
+  <div class="fgrid2">
+   <label>Valor<input id="ctEntrada" class="inp" type="number" step="0.01" min="0" value="0" oninput="contratoRecalc()"></label>
+   <label>Forma<select id="ctForma" class="inp">${['Pix','Dinheiro','Cartão de débito','Cartão de crédito','Transferência','Não houve entrada'].map(f=>`<option>${f}</option>`).join('')}</select></label></div></div>
+ <div class="fag"><b>Saldo a pagar</b>
+  <div class="fgrid2">
+   <label>Em quantas vezes<input id="ctQtd" class="inp" type="number" min="1" max="36" step="1" value="1" oninput="contratoRecalc()"></label>
+   <label>A cada quanto tempo<select id="ctDias" class="inp" onchange="contratoRecalc()">${CONTRATO_PERIODO.map(([k,n,d])=>`<option value="${d}">${n}</option>`).join('')}</select></label>
+   <label>Primeiro vencimento<input id="ctPrim" class="inp" type="date" value="${somaDias(todayISO(),30)}" oninput="contratoRecalc()"></label>
+   <label>Validade do pacote<input id="ctVal" class="inp" value="90 (noventa) dias" oninput="contratoRecalc()"></label></div></div>
+ <div id="ctResumo"></div>
+ <details style="margin-top:12px"><summary style="cursor:pointer;font-size:13px;color:var(--mut)">Ver o texto completo do contrato</summary>
+  <pre id="ctTexto" style="white-space:pre-wrap;font-size:12px;line-height:1.5;background:var(--bg);padding:12px;border-radius:10px;max-height:300px;overflow:auto;margin-top:8px;font-family:inherit"></pre></details>
+ <div class="mact"><button class="btn ghost" onclick="closeModal()">Cancelar</button>
+  <button class="btn ghost" onclick="contratoSalvar(false)">Assinar aqui no aparelho</button>
+  <button class="btn" onclick="contratoSalvar(true)">${ico('wa',15)} Enviar para assinar pelo celular</button></div>`}
+function ctServHTML(){return CT.serv.map((x,i)=>`<div class="fgrid2" style="margin-bottom:6px">
+  <label><input class="inp ctsd" data-i="${i}" value="${esc(x.desc)}" list="dlServ" placeholder="Procedimento" oninput="ctServMuda(${i},'desc',this.value)"></label>
+  <label style="max-width:150px"><input class="inp" type="number" step="0.01" value="${x.valor||''}" placeholder="0,00" oninput="ctServMuda(${i},'valor',this.value)">
+   ${CT.serv.length>1?`<button type="button" class="lnk" style="font-size:11px" onclick="ctDelServ(${i})">remover</button>`:''}</label></div>`).join('')}
+function ctServMuda(i,k,v){if(!CT.serv[i])return;CT.serv[i][k]=k==='valor'?(parseFloat(v)||0):v;
+ if(k==='desc'){const s=(S.servicos||[]).find(x=>norm(x.nome)===norm(v));
+  if(s&&!CT.serv[i].valor){CT.serv[i].valor=+s.preco||0;$('#ctServ').innerHTML=ctServHTML()}}
+ contratoRecalc()}
+function ctAddServ(){CT.serv.push({desc:'',valor:0});$('#ctServ').innerHTML=ctServHTML();contratoRecalc()}
+function ctDelServ(i){CT.serv.splice(i,1);if(!CT.serv.length)CT.serv=[{desc:'',valor:0}];$('#ctServ').innerHTML=ctServHTML();contratoRecalc()}
+function contratoRecalc(){const sv=$('#ctServ');if(sv&&!sv.children.length)sv.innerHTML=ctServHTML();
+ CT.entrada=parseFloat(($('#ctEntrada')||{}).value)||0;
+ CT.formaEntrada=str(($('#ctForma')||{}).value)||'Pix';
+ CT.qtd=Math.max(1,parseInt(($('#ctQtd')||{}).value)||1);
+ CT.dias=parseInt(($('#ctDias')||{}).value)||30;
+ CT.primeira=str(($('#ctPrim')||{}).value)||somaDias(todayISO(),30);
+ CT.validade=str(($('#ctVal')||{}).value)||'90 (noventa) dias';
+ const tot=CT.serv.reduce((s,x)=>s+(+x.valor||0),0);
+ CT.total=tot; CT.saldo=Math.max(0,tot-CT.entrada);
+ CT.parcelas=CT.saldo>0?contratoParcelas(CT.saldo,CT.qtd,CT.primeira,CT.dias):[];
+ const r=$('#ctResumo');
+ if(r)r.innerHTML=`<div class="ctres">
+   <div><span>Total dos serviços</span><b>${money(tot)}</b></div>
+   <div><span>Entrada</span><b>${money(CT.entrada)}</b></div>
+   <div class="forte"><span>Saldo confessado</span><b>${money(CT.saldo)}</b></div>
+   ${CT.parcelas.length?`<div><span>Parcelas</span><b>${CT.qtd}x de ${money(CT.parcelas[0].valor)}</b></div>
+    <div><span>Primeiro e último vencimento</span><b>${br(CT.parcelas[0].venc)} a ${br(CT.parcelas[CT.parcelas.length-1].venc)}</b></div>`
+   :'<div><span>Situação</span><b>Quitado no ato, sem saldo</b></div>'}</div>`;
+ const t=$('#ctTexto');if(t)t.textContent=contratoTexto()}
+function contratoTexto(){const p=pac(CT.pid)||{};const c=S.config;
+ const serv=CT.serv.filter(x=>str(x.desc)).map((x,i)=>`${String.fromCharCode(97+i)}) ${x.desc}, no valor de ${money(x.valor)};`).join('\n');
+ let plano=`a) Entrada de ${money(CT.entrada)}, paga no ato da assinatura, por ${CT.formaEntrada.toLowerCase()};\n`;
+ if(!CT.entrada)plano='a) Não houve pagamento de entrada;\n';
+ if(CT.parcelas.length)plano+=`b) Saldo de ${money(CT.saldo)} em ${CT.qtd} ${CT.qtd===1?'parcela':'parcelas'}, nos seguintes valores e datas:\n`
+  +CT.parcelas.map(x=>`   Parcela ${x.n} de ${CT.qtd}: ${money(x.valor)}, com vencimento em ${br(x.venc)};`).join('\n');
+ else plano+='b) Não há saldo em aberto. O valor foi integralmente quitado no ato.';
+ const ass=`CONTRATADA\n${str(c.clinica)}\n${str(c.responsavel)||str(c.usuario)||''}\n\nCONTRATANTE\n${nomePessoa(p.nome)}\nCPF ${fmtCPF(p.cpf)||'não informado'}\n\nTESTEMUNHAS\n1. Nome: ____________________________  CPF: ______________________\n2. Nome: ____________________________  CPF: ______________________`;
+ return fillMsg(str(c.contratoModelo)||CONTRATO_PADRAO,{
+  numero:CT.numero||contratoNumero(), data_extenso:dataExtenso(todayISO()),
+  clinica:str(c.clinica)||'(nome da clínica não preenchido)', cnpj:str(c.cnpj)||'(CNPJ não preenchido)',
+  endereco_clinica:str(c.endereco)||'(endereço da clínica não preenchido)',
+  responsavel:str(c.responsavel)||str(c.usuario)||'(responsável não preenchido)',
+  profissao_resp:str(c.profissaoResp)||'podóloga', registro_resp:str(c.registroResp)||'(não informado)',
+  nome:nomePessoa(p.nome), cpf:fmtCPF(p.cpf)||'não informado', rg:str(p.rg)||'não informado',
+  endereco:enderecoDe(p)||'(endereço não informado no cadastro)', telefone:str(p.celular)||'não informado', email:str(p.email)||'não informado',
+  servicos:serv||'(nenhum serviço descrito)', valor_total:money(CT.total), valor_total_extenso:numExtenso(CT.total),
+  plano_pagamento:plano, saldo:money(CT.saldo), saldo_extenso:numExtenso(CT.saldo),
+  validade_pacote:CT.validade, comarca:str(c.comarca)||str(c.pixCidade)||'(comarca não preenchida)',
+  assinaturas:ass})}
+async function contratoSalvar(remoto){
+ const p=pac(CT.pid);if(!p)return;
+ if(!CT.serv.some(x=>str(x.desc))){toast('Descreva ao menos um serviço prestado.');return}
+ CT.numero=CT.numero||contratoNumero();
+ const txt=contratoTexto();
+ const base={id:uid(),numero:CT.numero,pacienteId:CT.pid,agId:CT.agId,data:todayISO(),
+  servicos:CT.serv.filter(x=>str(x.desc)),total:CT.total,entrada:CT.entrada,formaEntrada:CT.formaEntrada,
+  saldo:CT.saldo,parcelas:CT.parcelas,texto:txt,hash:await sha256Hex(txt),criadoPor:nomeUsuario()};
+ (S.contratos||(S.contratos=[])).push(base);
+ contratoLancar(base);
+ closeModal();save();
+ if(remoto)await contratoRemoto(base);
+ else contratoAssinarAqui(base);
+ render()}
+/* O contrato cria o financeiro: entrada paga e parcelas em aberto */
+function contratoLancar(ct){const p=pac(ct.pacienteId);const desc='Contrato '+ct.numero+': '+ct.servicos.map(s=>s.desc).join(', ');
+ if(ct.entrada>0&&ct.formaEntrada!=='Não houve entrada'){
+  S.lancamentos.push({id:uid(),tipo:'Receita',descricao:desc+' (entrada)',valor:ct.entrada,forma:ct.formaEntrada,
+   data:ct.data,vencimento:ct.data,pacienteId:ct.pacienteId,contratoId:ct.id,statusOrig:'Pago',
+   pagamentos:[{forma:ct.formaEntrada,valor:ct.entrada,parcelas:1,data:ct.data}]})}
+ ct.parcelas.forEach(x=>S.lancamentos.push({id:uid(),tipo:'Receita',
+  descricao:desc+` (parcela ${x.n}/${ct.parcelas.length})`,valor:x.valor,data:ct.data,vencimento:x.venc,
+  pacienteId:ct.pacienteId,contratoId:ct.id,pagamentos:[]}))}
+function contratoAssinarAqui(ct){const p=pac(ct.pacienteId);
+ openModal(`<h3>Assinatura de ${esc(nomePessoa(p.nome))}</h3>
+  <p class="sub">Entregue o aparelho para a cliente ler e assinar com o dedo. O contrato já foi lançado no financeiro.</p>
+  <pre style="white-space:pre-wrap;font-size:11.5px;line-height:1.5;background:var(--bg);padding:12px;border-radius:10px;max-height:240px;overflow:auto;font-family:inherit">${esc(ct.texto)}</pre>
+  <p class="sub" style="margin:10px 0 6px">Assinatura:</p>
+  <canvas id="ctCv" width="640" height="170" style="width:100%;border:1px dashed var(--line);border-radius:10px;background:#fff;touch-action:none"></canvas>
+  <div class="mact"><button class="btn ghost" style="margin-right:auto" onclick="const c=$('#ctCv');c.getContext('2d').clearRect(0,0,c.width,c.height);c.dataset.ok=''">Limpar</button>
+   <button class="btn ghost" onclick="closeModal()">Assinar depois</button>
+   <button class="btn" onclick="contratoFirmar('${ct.id}')">Confirmar assinatura</button></div>`,true);
+ const c=$('#ctCv'),x=c.getContext('2d');x.lineWidth=2.4;x.lineCap='round';x.strokeStyle='#111';let on=false;
+ const pt=e=>{const r=c.getBoundingClientRect();return [(e.clientX-r.left)*c.width/r.width,(e.clientY-r.top)*c.height/r.height]};
+ c.onpointerdown=e=>{on=true;c.setPointerCapture(e.pointerId);const [a,b]=pt(e);x.beginPath();x.moveTo(a,b)};
+ c.onpointermove=e=>{if(!on)return;const [a,b]=pt(e);x.lineTo(a,b);x.stroke();c.dataset.ok='1'};
+ c.onpointerup=()=>{on=false}}
+function contratoFirmar(id){const ct=(S.contratos||[]).find(x=>x.id===id);const c=$('#ctCv');
+ if(!ct)return; if(!c||!c.dataset.ok){toast('Peça para a cliente assinar no quadro.');return}
+ ct.assinatura=c.toDataURL('image/png');ct.assinadoEm=new Date().toISOString();
+ ct.agente=(navigator.userAgent||'').slice(0,300);ct.meio='presencial';
+ closeModal();save();render();toast('Contrato assinado e lançado no financeiro.')}
+async function contratoRemoto(ct){const p=pac(ct.pacienteId);
+ if(!NV.ativa||!NV.sb||!NV.clinicaId||NV.offline){toast('Para enviar pelo celular, o BlackFlow precisa estar conectado à nuvem.');contratoAssinarAqui(ct);return}
+ const reg={clinica_id:NV.clinicaId,termo_id:String(ct.id),titulo:'Contrato de prestação de serviços nº '+ct.numero,
+  texto:ct.texto,paciente:p.nome,clinica_nome:S.config.clinica};
+ const cf=confereDoPaciente(p);
+ if(cf){reg.confere_tipo=cf.tipo;reg.confere_hash=await sha256Hex(String(ct.id)+':'+cf.valor)}
+ let {data,error}=await NV.sb.from('assinaturas').insert(reg).select('token').single();
+ if(error&&cf){delete reg.confere_tipo;delete reg.confere_hash;
+  ({data,error}=await NV.sb.from('assinaturas').insert(reg).select('token').single())}
+ if(error){toast('Não foi possível criar o link: '+traduz(error));contratoAssinarAqui(ct);return}
+ ct.remoto={token:data.token,enviado:new Date().toISOString(),confere:!!cf};save();
+ const link=URL_ASSINAR+data.token;
+ const msg=`Olá ${firstName(p.nome)}, tudo bem? Aqui é da ${S.config.clinica}.\n\nSegue o contrato do seu atendimento`
+  +(ct.saldo>0?`, com o saldo de ${money(ct.saldo)} em ${ct.parcelas.length}x`:'')
+  +`. Abra o link no celular, leia até o fim e assine com o dedo:\n\n${link}`;
+ const wl=waLink(p.celular,msg);
+ openModal(`<h3>Contrato pronto para assinar</h3>
+  <p>Mande o link para ${esc(nomePessoa(p.nome))}. Ela lê no celular, confirma os dados e assina com o dedo. A assinatura aparece aqui sozinha.</p>
+  <div class="note" style="margin-bottom:10px">${cf?'Antes de assinar, o sistema pede que ela confirme o CPF, para provar que foi ela quem assinou.':'Atenção: a conferência de identidade não está ativa. O contrato fica mais fraco como prova.'}</div>
+  <label class="full"><span class="sub">Link</span><input id="ctLink" class="inp" readonly value="${esc(link)}"></label>
+  <div class="mact"><button class="btn ghost" onclick="const t=$('#ctLink');t.select();(navigator.clipboard?navigator.clipboard.writeText(t.value):Promise.reject()).then(()=>toast('Link copiado'),()=>toast('Copie manualmente'))">Copiar link</button>
+   ${wl?`<a class="btn green" href="${wl}" target="_blank" rel="noopener" onclick="closeModal()">${ico('wa',15)} Mandar no WhatsApp</a>`:'<span class="badge warn">sem celular na ficha</span>'}</div>`,true)}
+
 const TERMO_PADRAO={
  consentimento:'Eu, {nome}, CPF {cpf}, declaro que fui informada(o) pela {clinica} sobre o procedimento {procedimento}, seus objetivos, cuidados antes e depois, possíveis reações e resultados esperados, que podem variar de pessoa para pessoa. Informei corretamente meu histórico de saúde e autorizo a realização do procedimento.',
  imagem:'Eu, {nome}, CPF {cpf}, autorizo a {clinica} a usar as fotos e vídeos do meu tratamento ({procedimento}) em suas redes sociais, site e materiais de divulgação, sem identificação do meu nome, de forma gratuita. Posso cancelar esta autorização a qualquer momento, por escrito, valendo para publicações futuras.'};
@@ -3942,7 +4279,7 @@ function agNovo(a,s){if(s==='Desmarcado'||s==='Faltou')return false;const k=a.da
  const hist=c=>S[c].some(x=>x.pacienteId===a.pacienteId&&((x.data||x.vencimento||x.pagamento||'')<a.data)&&(x.data||x.vencimento||x.pagamento));
  return !hist('evolucoes')&&!hist('tratamentos')&&!S.lancamentos.some(l=>l.pacienteId===a.pacienteId&&l.pagamento&&l.pagamento<a.data)}
 /* ============ Atualização: aviso com botão Atualizar agora ============ */
-const VERSAO_APP='1.9.52';const URL_VERSAO_JSON='https://raw.githubusercontent.com/TheIgor12/blacksolutions/main/versao.json';
+const VERSAO_APP='1.9.53';const URL_VERSAO_JSON='https://raw.githubusercontent.com/TheIgor12/blacksolutions/main/versao.json';
 const numV=v=>String(v||'0').split(/\D+/).filter(Boolean).map(Number);
 function versaoMaior(a,b){const x=numV(a),y=numV(b);for(let i=0;i<Math.max(x.length,y.length);i++){const d=(x[i]||0)-(y[i]||0);if(d)return d>0}return false}
 const ATU={nova:null,timer:null};
@@ -4230,7 +4567,7 @@ function exportAll(){if(!pode('exportar')){toast('O seu perfil de acesso não pe
 // Preencha com os dados do seu projeto Supabase. Em branco, o sistema funciona só neste computador.
 const NUVEM={url:'https://blszdbjpxgtloblxlusr.supabase.co',chave:'sb_publishable_0Tns_mDN2N1iQmw_sEzFXw_SRMy1uXK'};
 const NV={ativa:!!(NUVEM.url&&NUVEM.chave),sb:null,sessao:null,clinicaId:null,papel:'',nomeClinica:'',hashes:{},cursor:0,status:'local',ocupado:false,offline:false,timer:null};
-const COLS=['vouchers','documentos','pacientes','lancamentos','tratamentos','anamneses','agendamentos','contasPagar','evolucoes','profissionais','importacoes','servicos','produtos','movEstoque','comandas','caixas','avaliacoes','fotos','termos','fichas','protocolos','equipamentos'];
+const COLS=['vouchers','documentos','pacientes','lancamentos','tratamentos','anamneses','agendamentos','contasPagar','evolucoes','profissionais','importacoes','servicos','produtos','movEstoque','comandas','caixas','avaliacoes','fotos','contratos','termos','fichas','protocolos','equipamentos'];
 const URL_ASSINATURA='https://raw.githubusercontent.com/TheIgor12/blacksolutions/main/assinatura.json';
 let ASSINATURA=null;
 /* O prazo da degustação fica em um lugar só, no assinatura.json, para mudar

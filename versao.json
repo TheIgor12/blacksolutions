@@ -1,4 +1,4 @@
 {
-  "versao": "1.9.52",
-  "novidades": "O Pix passou a aparecer em sete lugares, com o valor já preenchido quando existe: na janela do agendamento, ao lado do WhatsApp, com o valor do atendimento; na comanda aberta, com o líquido; no cabeçalho da ficha; na aba Financeiro da ficha; na lista do Prontuário; no Caixa do dia; e no topo, em qualquer tela. Em todos, um toque mostra o QR Code na hora."
+  "versao": "1.9.53",
+  "novidades": "Entrou o Contrato de prestação de serviços com confissão de dívida, dentro da janela do agendamento, ao lado do Pix. Ele puxa sozinho o nome, o CPF, o endereço e o telefone da cliente, o serviço que foi prestado e o valor. Você informa a entrada, em quantas vezes fica o saldo e a data do primeiro vencimento, e o sistema calcula as parcelas, escreve o valor por extenso e gera o texto inteiro. Dá para assinar ali no aparelho ou mandar por WhatsApp para a cliente assinar pelo celular, com conferência de CPF. Assinado, o contrato lança a entrada como paga e cada parcela em aberto no financeiro."
 }
