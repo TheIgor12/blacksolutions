@@ -1,4 +1,4 @@
 {
-  "versao": "1.9.51",
-  "novidades": "Entrou o botão Pix no topo, visível em qualquer tela. Terminou o atendimento, toca no Pix, digita o valor e o QR Code aparece na hora para a pessoa ler pelo banco dela. Ele já sugere o que cobrar agora: comandas abertas, parcelas vencidas e os procedimentos atendidos hoje, com o valor da tabela. Dá para copiar o código, mandar pelo WhatsApp do paciente e registrar o recebimento no financeiro sem sair da janela. No cadastro da chave, o sistema agora reconhece e avisa o tipo: aleatória, CPF, CNPJ, e-mail ou celular."
+  "versao": "1.9.52",
+  "novidades": "O Pix passou a aparecer em sete lugares, com o valor já preenchido quando existe: na janela do agendamento, ao lado do WhatsApp, com o valor do atendimento; na comanda aberta, com o líquido; no cabeçalho da ficha; na aba Financeiro da ficha; na lista do Prontuário; no Caixa do dia; e no topo, em qualquer tela. Em todos, um toque mostra o QR Code na hora."
 }
