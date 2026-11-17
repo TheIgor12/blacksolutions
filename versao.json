@@ -1,4 +1,4 @@
 {
-  "versao": "1.9.53",
-  "novidades": "Entrou o Contrato de prestação de serviços com confissão de dívida, dentro da janela do agendamento, ao lado do Pix. Ele puxa sozinho o nome, o CPF, o endereço e o telefone da cliente, o serviço que foi prestado e o valor. Você informa a entrada, em quantas vezes fica o saldo e a data do primeiro vencimento, e o sistema calcula as parcelas, escreve o valor por extenso e gera o texto inteiro. Dá para assinar ali no aparelho ou mandar por WhatsApp para a cliente assinar pelo celular, com conferência de CPF. Assinado, o contrato lança a entrada como paga e cada parcela em aberto no financeiro."
+  "versao": "1.9.54",
+  "novidades": "O contrato ganhou campos para as duas testemunhas, com nome e CPF, e um botão para imprimir a via em papel, pronta para assinar de próprio punho. Duas testemunhas assinando tornam o contrato título executivo pelo artigo 784, inciso III, do Código de Processo Civil, sem depender de discussão sobre assinatura eletrônica em juízo. A via impressa traz o código de verificação no rodapé. Quando o atendimento ainda espera confirmação de valor, o contrato usa o preço de tabela em vez de abrir zerado."
 }

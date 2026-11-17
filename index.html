@@ -3905,7 +3905,10 @@ function contratoParcelas(saldo,qtd,primeira,dias){const q=Math.max(1,+qtd||1);
  return L}
 function contratoServicosDe(pid,agId){const out=[];
  const a=(S.agendamentos||[]).find(x=>x.id===agId);
- if(a){const v=valorAg(a);out.push({desc:str(a.procedimento),valor:v});
+ if(a){/* quando o atendimento ainda espera confirmacao de valor, valorAg devolve
+       zero: cai no preco de tabela para a podologa nao ter de digitar de novo */
+  let v=valorAg(a); if(!v)v=precoProc(a.procedimento)||precoTabela(a.procedimento)||0;
+  out.push({desc:str(a.procedimento),valor:v});
   (a.extras||[]).forEach(e=>{if(str(e.desc))out.push({desc:str(e.desc),valor:+e.valor||0})})}
  if(!out.length){const c=(S.comandas||[]).find(x=>x.clienteId===pid&&x.status==='Aberta');
   if(c)(c.itens||[]).forEach(i=>out.push({desc:str(i.desc),valor:(+i.valor||0)*(+i.qtd||1)}))}
@@ -3936,10 +3939,18 @@ function contratoHTML(p,tot){
    <label>A cada quanto tempo<select id="ctDias" class="inp" onchange="contratoRecalc()">${CONTRATO_PERIODO.map(([k,n,d])=>`<option value="${d}">${n}</option>`).join('')}</select></label>
    <label>Primeiro vencimento<input id="ctPrim" class="inp" type="date" value="${somaDias(todayISO(),30)}" oninput="contratoRecalc()"></label>
    <label>Validade do pacote<input id="ctVal" class="inp" value="90 (noventa) dias" oninput="contratoRecalc()"></label></div></div>
+ <div class="fag"><b>Testemunhas</b>
+  <p class="sub" style="margin:0 0 8px">Duas testemunhas tornam o contrato título executivo pelo artigo 784, inciso III, do Código de Processo Civil, sem depender de discussão sobre assinatura eletrônica. Podem ser a auxiliar e qualquer pessoa presente, desde que não sejam partes. Deixe em branco se a cliente vai assinar pelo celular.</p>
+  <div class="fgrid2">
+   <label>1ª testemunha<input id="ctT1" class="inp" placeholder="nome completo" oninput="contratoRecalc()"></label>
+   <label>CPF<input id="ctT1c" class="inp" inputmode="numeric" placeholder="só números" oninput="contratoRecalc()"></label>
+   <label>2ª testemunha<input id="ctT2" class="inp" placeholder="nome completo" oninput="contratoRecalc()"></label>
+   <label>CPF<input id="ctT2c" class="inp" inputmode="numeric" placeholder="só números" oninput="contratoRecalc()"></label></div></div>
  <div id="ctResumo"></div>
  <details style="margin-top:12px"><summary style="cursor:pointer;font-size:13px;color:var(--mut)">Ver o texto completo do contrato</summary>
   <pre id="ctTexto" style="white-space:pre-wrap;font-size:12px;line-height:1.5;background:var(--bg);padding:12px;border-radius:10px;max-height:300px;overflow:auto;margin-top:8px;font-family:inherit"></pre></details>
  <div class="mact"><button class="btn ghost" onclick="closeModal()">Cancelar</button>
+  <button class="btn ghost" onclick="contratoSalvar('papel')">${ico('print',15)} Imprimir para assinar no papel</button>
   <button class="btn ghost" onclick="contratoSalvar(false)">Assinar aqui no aparelho</button>
   <button class="btn" onclick="contratoSalvar(true)">${ico('wa',15)} Enviar para assinar pelo celular</button></div>`}
 function ctServHTML(){return CT.serv.map((x,i)=>`<div class="fgrid2" style="margin-bottom:6px">
@@ -3959,6 +3970,8 @@ function contratoRecalc(){const sv=$('#ctServ');if(sv&&!sv.children.length)sv.in
  CT.dias=parseInt(($('#ctDias')||{}).value)||30;
  CT.primeira=str(($('#ctPrim')||{}).value)||somaDias(todayISO(),30);
  CT.validade=str(($('#ctVal')||{}).value)||'90 (noventa) dias';
+ CT.test=[{nome:str(($('#ctT1')||{}).value).trim(),cpf:soDig(($('#ctT1c')||{}).value)},
+          {nome:str(($('#ctT2')||{}).value).trim(),cpf:soDig(($('#ctT2c')||{}).value)}];
  const tot=CT.serv.reduce((s,x)=>s+(+x.valor||0),0);
  CT.total=tot; CT.saldo=Math.max(0,tot-CT.entrada);
  CT.parcelas=CT.saldo>0?contratoParcelas(CT.saldo,CT.qtd,CT.primeira,CT.dias):[];
@@ -3978,7 +3991,10 @@ function contratoTexto(){const p=pac(CT.pid)||{};const c=S.config;
  if(CT.parcelas.length)plano+=`b) Saldo de ${money(CT.saldo)} em ${CT.qtd} ${CT.qtd===1?'parcela':'parcelas'}, nos seguintes valores e datas:\n`
   +CT.parcelas.map(x=>`   Parcela ${x.n} de ${CT.qtd}: ${money(x.valor)}, com vencimento em ${br(x.venc)};`).join('\n');
  else plano+='b) Não há saldo em aberto. O valor foi integralmente quitado no ato.';
- const ass=`CONTRATADA\n${str(c.clinica)}\n${str(c.responsavel)||str(c.usuario)||''}\n\nCONTRATANTE\n${nomePessoa(p.nome)}\nCPF ${fmtCPF(p.cpf)||'não informado'}\n\nTESTEMUNHAS\n1. Nome: ____________________________  CPF: ______________________\n2. Nome: ____________________________  CPF: ______________________`;
+ const tw=(CT.test||[]).filter(t=>str(t.nome));
+ const linhaT=(i)=>{const t=tw[i];return t?`${i+1}. Nome: ${t.nome}   CPF: ${fmtCPF(t.cpf)||t.cpf||'____________'}`
+  :`${i+1}. Nome: ____________________________________   CPF: ______________________`};
+ const ass=`CONTRATADA\n${str(c.clinica)}\n${str(c.responsavel)||str(c.usuario)||''}\n\nCONTRATANTE\n${nomePessoa(p.nome)}\nCPF ${fmtCPF(p.cpf)||'não informado'}\n\nTESTEMUNHAS\n${linhaT(0)}\n${linhaT(1)}`;
  return fillMsg(str(c.contratoModelo)||CONTRATO_PADRAO,{
   numero:CT.numero||contratoNumero(), data_extenso:dataExtenso(todayISO()),
   clinica:str(c.clinica)||'(nome da clínica não preenchido)', cnpj:str(c.cnpj)||'(CNPJ não preenchido)',
@@ -3998,11 +4014,13 @@ async function contratoSalvar(remoto){
  const txt=contratoTexto();
  const base={id:uid(),numero:CT.numero,pacienteId:CT.pid,agId:CT.agId,data:todayISO(),
   servicos:CT.serv.filter(x=>str(x.desc)),total:CT.total,entrada:CT.entrada,formaEntrada:CT.formaEntrada,
-  saldo:CT.saldo,parcelas:CT.parcelas,texto:txt,hash:await sha256Hex(txt),criadoPor:nomeUsuario()};
+  saldo:CT.saldo,parcelas:CT.parcelas,testemunhas:(CT.test||[]).filter(t=>str(t.nome)),
+  texto:txt,hash:await sha256Hex(txt),criadoPor:nomeUsuario()};
  (S.contratos||(S.contratos=[])).push(base);
  contratoLancar(base);
  closeModal();save();
- if(remoto)await contratoRemoto(base);
+ if(remoto==='papel')contratoImprimir(base);
+ else if(remoto)await contratoRemoto(base);
  else contratoAssinarAqui(base);
  render()}
 /* O contrato cria o financeiro: entrada paga e parcelas em aberto */
@@ -4014,6 +4032,29 @@ function contratoLancar(ct){const p=pac(ct.pacienteId);const desc='Contrato '+ct
  ct.parcelas.forEach(x=>S.lancamentos.push({id:uid(),tipo:'Receita',
   descricao:desc+` (parcela ${x.n}/${ct.parcelas.length})`,valor:x.valor,data:ct.data,vencimento:x.venc,
   pacienteId:ct.pacienteId,contratoId:ct.id,pagamentos:[]}))}
+/* Via em papel, para quando a clinica quiser as duas testemunhas assinando
+   de proprio punho, que e o caminho que nao depende de discussao sobre
+   assinatura eletronica no juizo. */
+function contratoImprimir(ct){const p=pac(ct.pacienteId);const w=window.open('','_blank');
+ if(!w){toast('Libere as janelas do navegador para imprimir.');return}
+ const corpo=esc(ct.texto).replace(/\n/g,'<br>');
+ w.document.write(`<html><head><meta charset="utf-8"><title>Contrato ${esc(ct.numero)}</title>
+ <style>@page{margin:2.5cm}body{font-family:"Times New Roman",Times,serif;font-size:11.5pt;line-height:1.55;text-align:justify;color:#000}
+ .ass{margin-top:46px;page-break-inside:avoid}.ass div{margin-top:34px}
+ .ln{border-top:1px solid #000;width:360px;padding-top:3px;font-size:10.5pt}
+ .vf{margin-top:30px;font-size:9pt;color:#444;border-top:1px dashed #999;padding-top:8px}</style></head><body>
+ ${corpo}
+ <div class="ass">
+  <div><div class="ln">${esc(nomePessoa(p.nome))}<br>CONTRATANTE &middot; CPF ${esc(fmtCPF(p.cpf)||'')}</div></div>
+  <div><div class="ln">${esc(str(S.config.responsavel)||str(S.config.usuario)||'')}<br>CONTRATADA &middot; ${esc(str(S.config.clinica))}</div></div>
+  <div><div class="ln">1ª testemunha${(ct.testemunhas||[])[0]?' &middot; '+esc(ct.testemunhas[0].nome)+' &middot; CPF '+esc(fmtCPF(ct.testemunhas[0].cpf)||''):' &middot; Nome e CPF'}</div></div>
+  <div><div class="ln">2ª testemunha${(ct.testemunhas||[])[1]?' &middot; '+esc(ct.testemunhas[1].nome)+' &middot; CPF '+esc(fmtCPF(ct.testemunhas[1].cpf)||''):' &middot; Nome e CPF'}</div></div>
+ </div>
+ <div class="vf">Contrato nº ${esc(ct.numero)} &middot; código de verificação ${esc(String(ct.hash||'').slice(0,32))}<br>
+ Qualquer alteração no texto acima torna este código divergente.</div>
+ </body></html>`);
+ w.document.close();setTimeout(()=>{try{w.print()}catch(e){}},400);
+ toast('Contrato gerado. Imprima duas vias e colha as assinaturas.')}
 function contratoAssinarAqui(ct){const p=pac(ct.pacienteId);
  openModal(`<h3>Assinatura de ${esc(nomePessoa(p.nome))}</h3>
   <p class="sub">Entregue o aparelho para a cliente ler e assinar com o dedo. O contrato já foi lançado no financeiro.</p>
@@ -4279,7 +4320,7 @@ function agNovo(a,s){if(s==='Desmarcado'||s==='Faltou')return false;const k=a.da
  const hist=c=>S[c].some(x=>x.pacienteId===a.pacienteId&&((x.data||x.vencimento||x.pagamento||'')<a.data)&&(x.data||x.vencimento||x.pagamento));
  return !hist('evolucoes')&&!hist('tratamentos')&&!S.lancamentos.some(l=>l.pacienteId===a.pacienteId&&l.pagamento&&l.pagamento<a.data)}
 /* ============ Atualização: aviso com botão Atualizar agora ============ */
-const VERSAO_APP='1.9.53';const URL_VERSAO_JSON='https://raw.githubusercontent.com/TheIgor12/blacksolutions/main/versao.json';
+const VERSAO_APP='1.9.54';const URL_VERSAO_JSON='https://raw.githubusercontent.com/TheIgor12/blacksolutions/main/versao.json';
 const numV=v=>String(v||'0').split(/\D+/).filter(Boolean).map(Number);
 function versaoMaior(a,b){const x=numV(a),y=numV(b);for(let i=0;i<Math.max(x.length,y.length);i++){const d=(x[i]||0)-(y[i]||0);if(d)return d>0}return false}
 const ATU={nova:null,timer:null};
