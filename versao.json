@@ -1,4 +1,4 @@
 {
-  "versao": "1.9.54",
-  "novidades": "O contrato ganhou campos para as duas testemunhas, com nome e CPF, e um botão para imprimir a via em papel, pronta para assinar de próprio punho. Duas testemunhas assinando tornam o contrato título executivo pelo artigo 784, inciso III, do Código de Processo Civil, sem depender de discussão sobre assinatura eletrônica em juízo. A via impressa traz o código de verificação no rodapé. Quando o atendimento ainda espera confirmação de valor, o contrato usa o preço de tabela em vez de abrir zerado."
+  "versao": "1.9.55",
+  "novidades": "Correção urgente: uma substituição ampla na versão anterior tinha quebrado a lista de abas da ficha do paciente. Corrigido e conferido nos três segmentos. Entrou a aba Contratos na ficha, com o saldo devedor de cada contrato, quantas parcelas estão vencidas e a situação da assinatura. Cada contrato assinado tem agora um Comprovante da assinatura, que é o documento que se leva ao cartório: código de verificação, data, hora, dispositivo, conferência de identidade e testemunhas. A via impressa sai com a assinatura e o comprovante em folha separada. O contrato assinado pelo celular agora volta sozinho para o sistema."
 }

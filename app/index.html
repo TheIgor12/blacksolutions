@@ -1391,7 +1391,8 @@ async function termoRemoto(pid,tipo){if(!NV.ativa||!NV.sb||!NV.clinicaId||NV.off
  openModal(`<h3>Link de assinatura criado</h3><p>Mande o link para ${esc(p.nome)}. Ela abre no celular, lê o termo inteiro e assina com o dedo. A assinatura aparece aqui sozinha na aba Termos.</p>
  <div class="note" style="margin-bottom:10px">${cfOff?'Atenção: a conferência de identidade ainda não está ativa no banco de dados. Rode o script bs_assinatura_prova.sql no Supabase para ativar.':cf?`Antes de assinar, o sistema vai pedir ${cf.tipo==='nascimento'?'a data de nascimento':'os quatro últimos números do documento'} e conferir com o cadastro. Quem receber o link encaminhado e não souber esse dado não consegue assinar.`:'Atenção: este paciente não tem data de nascimento nem documento no cadastro, então o link vai abrir sem conferência de identidade. Preencha um dos dois na ficha para que o sistema confira quem está assinando.'}</div><textarea id="tmLink" rows="2" readonly style="width:100%;font-size:13px">${esc(link)}</textarea>
  <div class="mact"><button class="btn ghost" onclick="const t=$('#tmLink');t.select();(navigator.clipboard?navigator.clipboard.writeText(t.value):Promise.reject()).then(()=>toast('Link copiado'),()=>{document.execCommand('copy');toast('Link copiado')})">Copiar link</button>${wl?`<a class="btn green" href="${wl}" target="_blank" rel="noopener">${waIco()} Enviar pelo WhatsApp</a>`:''}<button class="btn" onclick="closeModal();render()">Fechar</button></div>`)}
-async function termosVerificar(silencioso){if(!NV.ativa||!NV.sb||NV.offline)return;const pend=S.termos.filter(t=>t.remoto&&!t.assinatura&&t.remoto.token);if(!pend.length)return;
+async function termosVerificar(silencioso){try{contratosVerificar(true)}catch(e){}
+if(!NV.ativa||!NV.sb||NV.offline)return;const pend=S.termos.filter(t=>t.remoto&&!t.assinatura&&t.remoto.token);if(!pend.length)return;
  try{const {data,error}=await NV.sb.from('assinaturas').select('token,assinatura,assinado_em,nome_assinou,hash_texto,ip_assinatura,agente,aberto_em,confere_tipo').in('token',pend.map(t=>t.remoto.token)).not('assinado_em','is',null);if(error)throw error;let n=0;
   (data||[]).forEach(r=>{const t=pend.find(x=>x.remoto.token===r.token);if(t&&r.assinatura){t.assinatura=r.assinatura;const d=new Date(r.assinado_em);t.data=iso(d);t.hora=d.toTimeString().slice(0,5);
    t.hash=r.hash_texto||'';t.assinadoEm=r.assinado_em;t.agente=r.agente||'';t.ip=r.ip_assinatura||'';
@@ -1592,7 +1593,7 @@ function pacForm(id){const p=id?pac(id):null;
 function vPaciente(){const p=pac(UI.param);if(!p)return `<div class="page"><div class="card">Paciente não encontrado. <button class="lnk" onclick="go('pacientes')">Voltar</button></div></div>`;
  const tabs=abasCliente();if(!tabs.some(([k])=>k===UI.pacTab))UI.pacTab='geral';
  const l=waLink(p.celular);
- const body={geral:pGeral,prontuario:pPront,orcamentos:pOrc,financeiro:pFin,sessoes:pSess,evolucao:pEvo,anamnese:pAna,agendamentos:pAg,comandasC:pComandasC,avaliacao:pAvaliacao,fotos:pFotos,exames:pExames,documentos:pDocs,termos:pTermos,aplicacoes:pAplicacoes,ficha:pFicha}[UI.pacTab](p);
+ const body={geral:pGeral,prontuario:pPront,orcamentos:pOrc,financeiro:pFin,sessoes:pSess,evolucao:pEvo,anamnese:pAna,agendamentos:pAg,comandasC:pComandasC,avaliacao:pAvaliacao,fotos:pFotos,exames:pExames,documentos:pDocs,termos:pTermos,contratos:pContratos,aplicacoes:pAplicacoes,ficha:pFicha}[UI.pacTab](p);
  return `
  <div class="phd">${avatarPac(p,'xl')}<div style="flex:1;min-width:220px"><h1>${anivIco(p)}${esc(nomePessoa(p.nome))} <small>(${esc(p.codigo||'')})</small></h1><div style="margin:6px 0;color:var(--mut)">${esc(p.celular||'Sem celular')} ${l?`<a href="${l}" target="_blank" rel="noopener">${waIco()}</a>`:''}</div>${badgeFor(p.status||'Ativo')} ${anivSelo(p)}${p.criadoPorImportacao?'<span class="badge b-warn">Cadastro incompleto</span>':''}</div>
  <div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn sm" onclick="pixAgora(0,'','${p.id}','')">${ico('money',15)} Pix</button><button class="btn sm" onclick="fotoDoAtendimento('${p.id}')">${ico('cam',15)} Foto</button><button class="btn ghost sm" onclick="pacForm('${p.id}')">Editar cadastro</button><button class="btn ghost sm" onclick="window.print()">${ico('print',15)} Imprimir</button><button class="btn ghost sm" style="color:var(--bad)" onclick="delPac('${p.id}')">Excluir</button></div></div>
@@ -3234,9 +3235,9 @@ function abasCliente(){const filtra=L=>pode('fichaFin')?L:L.filter(([k])=>k!=='f
  if(soAgenda())return [['geral','Visão Geral'],['prontuario','Prontuário'],['agendamentos','Agendamentos']];
  return filtra(abasClienteTodas())}
 function abasClienteTodas(){
- if(ehSeg('estetica'))return [['geral','Visão Geral'],['prontuario','Prontuário'],['sessoes','Pacotes de sessões'],['avaliacao','Avaliação'],['fotos','Antes e depois'],['exames','Exames'],['documentos','Documentos'],['contratos','termos','Termos'],['aplicacoes','Produtos aplicados'],['comandasC','Comandas'],['financeiro','Financeiro'],['evolucao','Evolução'],['anamnese','Anamnese'],['agendamentos','Agendamentos']];
- if(ehSeg('beleza'))return [['geral','Visão Geral'],['prontuario','Prontuário'],['comandasC','Comandas'],['sessoes','Pacotes e assinaturas'],['ficha','Ficha técnica'],['fotos','Fotos'],['documentos','Documentos'],['contratos','termos','Termos'],['financeiro','Financeiro'],['agendamentos','Agendamentos']];
- return [['geral','Visão Geral'],['prontuario','Prontuário'],['orcamentos','Orçamentos'],['financeiro','Financeiro'],['sessoes','Controle de Sessões'],['evolucao','Evolução'],['anamnese','Anamnese'],['fotos','Fotos'],['exames','Exames'],['documentos','Documentos'],['contratos','termos','Termos'],['agendamentos','Agendamentos']]}
+ if(ehSeg('estetica'))return [['geral','Visão Geral'],['prontuario','Prontuário'],['sessoes','Pacotes de sessões'],['avaliacao','Avaliação'],['fotos','Antes e depois'],['exames','Exames'],['documentos','Documentos'],['termos','Termos'],['contratos','Contratos'],['aplicacoes','Produtos aplicados'],['comandasC','Comandas'],['financeiro','Financeiro'],['evolucao','Evolução'],['anamnese','Anamnese'],['agendamentos','Agendamentos']];
+ if(ehSeg('beleza'))return [['geral','Visão Geral'],['prontuario','Prontuário'],['comandasC','Comandas'],['sessoes','Pacotes e assinaturas'],['ficha','Ficha técnica'],['fotos','Fotos'],['documentos','Documentos'],['termos','Termos'],['contratos','Contratos'],['financeiro','Financeiro'],['agendamentos','Agendamentos']];
+ return [['geral','Visão Geral'],['prontuario','Prontuário'],['orcamentos','Orçamentos'],['financeiro','Financeiro'],['sessoes','Controle de Sessões'],['evolucao','Evolução'],['anamnese','Anamnese'],['fotos','Fotos'],['exames','Exames'],['documentos','Documentos'],['termos','Termos'],['contratos','Contratos'],['agendamentos','Agendamentos']]}
 /* ============ Prontuário: tudo do paciente em uma linha do tempo ============ */
 const PT_CAT={
  agenda:{l:'Agenda',cor:'#5a4cfb',g:'agenda'},
@@ -4035,7 +4036,94 @@ function contratoLancar(ct){const p=pac(ct.pacienteId);const desc='Contrato '+ct
 /* Via em papel, para quando a clinica quiser as duas testemunhas assinando
    de proprio punho, que e o caminho que nao depende de discussao sobre
    assinatura eletronica no juizo. */
-function contratoImprimir(ct){const p=pac(ct.pacienteId);const w=window.open('','_blank');
+/* ===== Contratos na ficha: ver, conferir a assinatura, imprimir ===== */
+function contratosDe(pid){return (S.contratos||[]).filter(c=>c.pacienteId===pid).sort((a,b)=>str(b.data).localeCompare(str(a.data)))}
+function contratoSituacao(c){
+ if(c.assinatura)return ['ok','Assinado'];
+ if(c.remoto&&c.remoto.token)return ['warn','Enviado, aguardando assinatura'];
+ return ['','Sem assinatura'];}
+function pContratos(p){const L=contratosDe(p.id);
+ const pend=L.some(c=>c.remoto&&!c.assinatura);
+ return `<div class="card"><div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px">
+  <div><h2 style="margin:0">Contratos</h2><p class="sub" style="margin:4px 0 0">Contrato de prestação de serviços com confissão de dívida, que é o documento levado a protesto quando a cliente não paga.</p></div>
+  <button class="btn sm" onclick="contratoForm('${p.id}','')">${ico('plus',15)} Novo contrato</button></div>
+ ${L.length?`<div class="tw" style="margin-top:12px"><table class="tbl"><thead><tr>
+   <th>Nº e data</th><th>Serviços</th><th class="num">Total</th><th class="num">Saldo</th><th>Situação</th><th></th></tr></thead><tbody>
+  ${L.map(c=>{const [cls,txt]=contratoSituacao(c);const emAberto=lancDoContrato(c.id).filter(l=>saldoL(l)>0);
+   const dev=emAberto.reduce((a,l)=>a+saldoL(l),0);
+   const venc=emAberto.filter(l=>str(l.vencimento)<todayISO()).length;
+   return `<tr><td><b>${esc(c.numero)}</b><br><small class="sub">${br(c.data)}</small></td>
+   <td>${esc((c.servicos||[]).map(x=>x.desc).join(', '))}${(c.testemunhas||[]).length?`<br><small class="sub">${c.testemunhas.length} testemunha${c.testemunhas.length>1?'s':''}</small>`:''}</td>
+   <td class="num">${money(c.total)}</td>
+   <td class="num">${dev>0?`<b style="color:var(--${venc?'bad':'ink'})">${money(dev)}</b>${venc?`<br><small style="color:var(--bad)">${venc} vencida${venc>1?'s':''}</small>`:''}`:'<span class="badge ok">quitado</span>'}</td>
+   <td><span class="badge ${cls}">${esc(txt)}</span></td>
+   <td style="white-space:nowrap">
+    <button class="btn ghost sm" onclick="contratoVer('${c.id}')">Ver</button>
+    ${c.assinatura?`<button class="btn ghost sm" onclick="contratoComprovante('${c.id}')">Comprovante</button>`:''}
+    <button class="btn ghost sm" onclick="contratoImprimir('${c.id}')">${ico('print',14)}</button></td></tr>`}).join('')}
+  </tbody></table></div>`:'<div class="empty" style="margin-top:12px">Nenhum contrato ainda. O contrato nasce da janela do agendamento ou do botão acima.</div>'}
+ ${pend?`<p class="sub" style="margin-top:10px"><button class="lnk" onclick="contratosVerificar(false)">Verificar assinaturas feitas pelo celular</button></p>`:''}
+ </div>`}
+function lancDoContrato(id){return (S.lancamentos||[]).filter(l=>l.contratoId===id)}
+function contratoVer(id){const c=(S.contratos||[]).find(x=>x.id===id);if(!c)return;const p=pac(c.pacienteId);
+ const [cls,txt]=contratoSituacao(c);
+ openModal(`<h3>Contrato ${esc(c.numero)}</h3>
+  <p class="sub" style="margin:-6px 0 10px">${esc(nomePessoa((p||{}).nome))} · ${br(c.data)} · <span class="badge ${cls}">${esc(txt)}</span></p>
+  <pre style="white-space:pre-wrap;font-size:11.5px;line-height:1.55;background:var(--bg);padding:12px;border-radius:10px;max-height:320px;overflow:auto;font-family:inherit">${esc(c.texto)}</pre>
+  ${c.assinatura?`<div style="margin-top:12px"><p class="sub" style="margin:0 0 4px">Assinatura de ${esc(nomePessoa((p||{}).nome))}:</p>
+   <img src="${c.assinatura}" alt="assinatura" style="max-width:320px;border:1px solid var(--line);border-radius:8px;background:#fff"></div>`:''}
+  <div class="mact">
+   ${!c.assinatura?`<button class="btn ghost" style="margin-right:auto" onclick="closeModal();contratoAssinarAqui(S.contratos.find(x=>x.id==='${c.id}'))">Assinar agora no aparelho</button>`:''}
+   <button class="btn ghost" onclick="contratoImprimir('${c.id}')">${ico('print',15)} Imprimir</button>
+   ${c.assinatura?`<button class="btn ghost" onclick="contratoComprovante('${c.id}')">Comprovante</button>`:''}
+   <button class="btn" onclick="closeModal()">Fechar</button></div>`,true)}
+/* O comprovante e o que se leva ao cartorio e ao juizo: ele e que da peso a
+   assinatura avancada, porque mostra autoria, integridade e o momento. */
+function contratoProva(c){const p=pac(c.pacienteId)||{};const r=c.remoto||{};
+ const L=[['Contrato',str(c.numero)],
+  ['Assinante',nomePessoa(p.nome)+(str(p.cpf)?' · CPF '+fmtCPF(p.cpf):'')],
+  ['Meio',c.meio==='presencial'?'Assinado no aparelho da clínica, presencialmente':r.token?'Assinado pelo celular, por link enviado à assinante':'Não informado'],
+  ['Data e hora',dtBR(c.assinadoEm)||br(c.data)],
+  ['Código de verificação do texto','SHA-256 '+str(c.hash)],
+  ['Valor total',money(c.total)],['Saldo confessado',money(c.saldo)]];
+ if(r.abertoEm)L.push(['Documento aberto em',dtBR(r.abertoEm)]);
+ if(r.abertoEm&&c.assinadoEm)L.push(['Tempo de leitura até assinar',decorrido(r.abertoEm,c.assinadoEm)]);
+ if(r.confereTipo||r.confere)L.push(['Conferência de identidade','Confirmou o '+(r.confereTipo||'CPF')+' antes de assinar']);
+ if(c.ip)L.push(['Endereço de internet',c.ip]);
+ if(c.agente)L.push(['Dispositivo',str(c.agente).slice(0,110)]);
+ if((c.testemunhas||[]).length)L.push(['Testemunhas',c.testemunhas.map(t=>t.nome+(t.cpf?' ('+fmtCPF(t.cpf)+')':'')).join('; ')]);
+ L.push(['Registrado por',str(c.criadoPor)]);
+ return L}
+function contratoComprovante(id){const c=(S.contratos||[]).find(x=>x.id===id);if(!c)return;
+ openModal(`<h3>Comprovante da assinatura</h3>
+  <table class="tbl mini">${contratoProva(c).map(x=>`<tr><td style="width:40%;color:var(--mut)">${esc(x[0])}</td><td><b>${esc(x[1])}</b></td></tr>`).join('')}</table>
+  <div class="note" style="margin-top:12px">Esta é uma assinatura eletrônica <b>avançada</b>, do artigo 4º, inciso II, da Lei nº 14.063, de 2020. Ela <b>não é</b> assinatura qualificada com certificado ICP-Brasil.
+   O que a sustenta é o conjunto acima: autoria, integridade e momento. O código de verificação é calculado sobre o texto no instante da assinatura; alterada uma letra do contrato, o código deixa de bater.</div>
+  <div class="mact"><button class="btn ghost" onclick="contratoImprimir('${c.id}')">${ico('print',15)} Imprimir contrato e comprovante</button>
+   <button class="btn" onclick="closeModal()">Fechar</button></div>`,true)}
+/* Busca no servidor as assinaturas feitas pelo celular */
+async function contratosVerificar(silencioso){
+ if(!NV.ativa||!NV.sb||NV.offline){if(!silencioso)toast('Sem conexão com a nuvem.');return}
+ const pend=(S.contratos||[]).filter(c=>c.remoto&&!c.assinatura&&c.remoto.token);
+ if(!pend.length){if(!silencioso)toast('Nenhum contrato aguardando assinatura.');return}
+ try{const {data,error}=await NV.sb.from('assinaturas')
+   .select('token,assinatura,assinado_em,nome_assinou,hash_texto,ip_assinatura,agente,aberto_em,confere_tipo')
+   .in('token',pend.map(c=>c.remoto.token)).not('assinado_em','is',null);
+  if(error)throw error;
+  let n=0;
+  (data||[]).forEach(r=>{const c=pend.find(x=>x.remoto.token===r.token);
+   if(!c||!r.assinatura)return;
+   c.assinatura=r.assinatura;c.assinadoEm=r.assinado_em;c.hash=r.hash_texto||c.hash;
+   c.agente=r.agente||'';c.ip=r.ip_assinatura||'';c.meio='remoto';
+   c.remoto.assinadoEm=r.assinado_em;c.remoto.nome=r.nome_assinou||'';
+   c.remoto.abertoEm=r.aberto_em||'';c.remoto.confereTipo=r.confere_tipo||'';n++});
+  if(n){save();if(podeRedesenhar())render();
+   toast(n===1?'Um contrato foi assinado pelo celular':n+' contratos foram assinados pelo celular')}
+  else if(!silencioso)toast('Nenhuma assinatura nova ainda')}
+ catch(e){if(!silencioso)toast('Não foi possível verificar: '+traduz(e))}}
+function contratoImprimir(ct){
+ if(typeof ct==='string')ct=(S.contratos||[]).find(x=>x.id===ct);
+ if(!ct)return; const p=pac(ct.pacienteId);const w=window.open('','_blank');
  if(!w){toast('Libere as janelas do navegador para imprimir.');return}
  const corpo=esc(ct.texto).replace(/\n/g,'<br>');
  w.document.write(`<html><head><meta charset="utf-8"><title>Contrato ${esc(ct.numero)}</title>
@@ -4050,6 +4138,11 @@ function contratoImprimir(ct){const p=pac(ct.pacienteId);const w=window.open('',
   <div><div class="ln">1ª testemunha${(ct.testemunhas||[])[0]?' &middot; '+esc(ct.testemunhas[0].nome)+' &middot; CPF '+esc(fmtCPF(ct.testemunhas[0].cpf)||''):' &middot; Nome e CPF'}</div></div>
   <div><div class="ln">2ª testemunha${(ct.testemunhas||[])[1]?' &middot; '+esc(ct.testemunhas[1].nome)+' &middot; CPF '+esc(fmtCPF(ct.testemunhas[1].cpf)||''):' &middot; Nome e CPF'}</div></div>
  </div>
+ ${ct.assinatura?`<div style="page-break-before:always"><h3 style="font-size:12pt">Comprovante da assinatura eletrônica</h3>
+  <p style="margin:4px 0 12px"><img src="${ct.assinatura}" style="max-width:260px;border:1px solid #999"></p>
+  <table style="border-collapse:collapse;font-size:10pt;width:100%">${contratoProva(ct).map(x=>
+   `<tr><td style="border:1px solid #bbb;padding:5px 7px;width:38%;color:#444">${esc(x[0])}</td><td style="border:1px solid #bbb;padding:5px 7px">${esc(x[1])}</td></tr>`).join('')}</table>
+  <p style="font-size:9pt;color:#444;margin-top:12px">Assinatura eletrônica avançada, artigo 4º, inciso II, da Lei nº 14.063, de 2020, e artigo 10, parágrafo 2º, da Medida Provisória nº 2.200-2, de 2001. Não é assinatura qualificada com certificado ICP-Brasil.</p></div>`:''}
  <div class="vf">Contrato nº ${esc(ct.numero)} &middot; código de verificação ${esc(String(ct.hash||'').slice(0,32))}<br>
  Qualquer alteração no texto acima torna este código divergente.</div>
  </body></html>`);
@@ -4320,7 +4413,7 @@ function agNovo(a,s){if(s==='Desmarcado'||s==='Faltou')return false;const k=a.da
  const hist=c=>S[c].some(x=>x.pacienteId===a.pacienteId&&((x.data||x.vencimento||x.pagamento||'')<a.data)&&(x.data||x.vencimento||x.pagamento));
  return !hist('evolucoes')&&!hist('tratamentos')&&!S.lancamentos.some(l=>l.pacienteId===a.pacienteId&&l.pagamento&&l.pagamento<a.data)}
 /* ============ Atualização: aviso com botão Atualizar agora ============ */
-const VERSAO_APP='1.9.54';const URL_VERSAO_JSON='https://raw.githubusercontent.com/TheIgor12/blacksolutions/main/versao.json';
+const VERSAO_APP='1.9.55';const URL_VERSAO_JSON='https://raw.githubusercontent.com/TheIgor12/blacksolutions/main/versao.json';
 const numV=v=>String(v||'0').split(/\D+/).filter(Boolean).map(Number);
 function versaoMaior(a,b){const x=numV(a),y=numV(b);for(let i=0;i<Math.max(x.length,y.length);i++){const d=(x[i]||0)-(y[i]||0);if(d)return d>0}return false}
 const ATU={nova:null,timer:null};
