@@ -44,11 +44,15 @@ begin
     return json_build_object('ok', false, 'erro', 'nao_encontrado');
   end if;
 
-  -- encobre o nome: primeiro e ultimo sobrenome inteiros, o resto por inicial
+  -- Encobre o nome: primeiro nome e ultimo sobrenome inteiros, os do meio por
+  -- inicial. Preposicoes ficam inteiras, porque nao identificam ninguem e
+  -- abreviadas ficariam ilegiveis: "Maria A. d. S. Souza" em vez de
+  -- "Maria A. da S. Souza".
   v_partes := regexp_split_to_array(btrim(coalesce(t.nome_assinou, t.paciente, '')), '\s+');
   v_nome := '';
   for i in 1 .. coalesce(array_length(v_partes, 1), 0) loop
-    if i = 1 or i = array_length(v_partes, 1) then
+    if i = 1 or i = array_length(v_partes, 1)
+       or lower(v_partes[i]) in ('da','de','do','das','dos','e','di','du','del','van','von','y') then
       v_nome := v_nome || v_partes[i] || ' ';
     else
       v_nome := v_nome || left(v_partes[i], 1) || '. ';
