@@ -1,4 +1,4 @@
 {
-  "versao": "1.10.2",
-  "novidades": "Novo Ticket Médio no Financeiro e nos Relatórios: quanto ganhou, ticket médio por atendimento e por paciente, quanto deixou de ganhar (faltas e desmarcações sem remarcação e orçamentos recusados) e quanto perdeu (parcelas vencidas, cancelamentos e taxas da maquininha), por período, mês a mês e por paciente, com comparação com o período anterior. A barbearia passa a ter plano próprio de R$ 34,90 por mês."
+  "versao": "1.10.3",
+  "novidades": "Login mestre: troca o ramo livremente para ver os módulos de cada segmento, e quem participa de mais de uma clínica pode alternar entre elas em Minha conta, Trocar de clínica."
 }

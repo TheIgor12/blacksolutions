@@ -3110,6 +3110,7 @@ function perguntarSegmento(){openModal(`<h3>Qual é o seu tipo de negócio?</h3>
    na nuvem e, a partir daí, o que está no aparelho não manda mais. Trocar de
    PLANO continua livre, porque completo e só agenda existem em todo ramo. */
 function segmentoTravado(){
+ if(NV.mestre)return false;                     // login mestre troca o ramo livremente
  if(!S.config.segmento)return false;            // ainda não escolheu
  if(!NV.ativa)return false;                     // sem nuvem, nada a proteger
  if(NV.segmento)return true;                    // o servidor já gravou
@@ -3121,6 +3122,18 @@ async function segmentoRegistrar(k){
   if(r.data&&r.data.segmento){NV.segmento=r.data.segmento;
    if(S.config.segmento!==NV.segmento&&SEGMENTOS[NV.segmento]){S.config.segmento=NV.segmento;save();render()}}
   return r.data}catch(e){return null}}
+/* Login mestre: troca o ramo na nuvem pela função do suporte, para ver os
+   módulos de cada ramo como o cliente vê. */
+async function segmentoMestre(k){if(!NV.ativa||!NV.sb||!NV.clinicaId)return;
+ try{const r=await NV.sb.rpc('bs_segmento_trocar',{p_clinica:NV.clinicaId,p_segmento:k});if(!r.error)NV.segmento=k;else toast(traduz(r.error))}catch(e){}}
+/* Quem participa de mais de uma clínica escolhe qual abrir */
+function escolherClinica(){const L=NV.membros||[];
+ openModal(`<h3>Trocar de clínica</h3><p class="sub">Escolha qual conta abrir. Os dados de cada uma ficam separados.</p>
+ ${L.map(x=>{const c=x.clinicas||{};const at=x.clinica_id===NV.clinicaId;return `<div class="row"><span>${esc(c.nome||'Clínica')}<br><small style="color:var(--mut);font-weight:400">${x.papel==='admin'?'Administrador':'Usuário'}${c.segmento&&SEGMENTOS[c.segmento]?' . '+esc(SEGMENTOS[c.segmento].nome):''}</small></span><span>${at?'<b>Aberta agora</b>':`<button class="btn sm" onclick="abrirOutraClinica('${x.clinica_id}')">Abrir</button>`}</span></div>`}).join('')}
+ <div class="mact"><button class="btn ghost" onclick="closeModal()">Fechar</button></div>`)}
+async function abrirOutraClinica(id){const x=(NV.membros||[]).find(y=>y.clinica_id===id);if(!x)return;
+ closeModal();toast('Abrindo '+((x.clinicas&&x.clinicas.nome)||'a clínica')+'...');try{await enviar()}catch(e){}
+ clearInterval(NV.timer);await DB.set({clinicaId:id,email:NV.sessao.user.email,nome:(x.clinicas&&x.clinicas.nome)||''},'ultimo');location.reload()}
 function segmentoBloqueado(){const c=(typeof ASSINATURA!=='undefined'&&ASSINATURA&&ASSINATURA.contato)||'';
  openModal(`<h3>O ramo do seu sistema não muda por aqui</h3>
   <p class="sub">O seu sistema está configurado como <b>${esc(SEG().nome)}</b>, que foi o ramo escolhido quando a conta foi criada.</p>
@@ -3131,8 +3144,8 @@ function segmentoBloqueado(){const c=(typeof ASSINATURA!=='undefined'&&ASSINATUR
   <div class="mact">${c?`<a class="btn green" href="${esc(c)}" target="_blank" rel="noopener" onclick="closeModal()">Falar com o suporte</a>`:''}<button class="btn ghost" onclick="closeModal()">Entendi</button></div>`)}
 function escolherSegmento(k){if(!SEGMENTOS[k])return;
  if(S.config.segmento&&k!==S.config.segmento&&segmentoTravado()){closeModal();segmentoBloqueado();return}
- if(planoContratado()==='agenda'&&S.config.segmento&&k!==S.config.segmento){modalLiberar('segmento');return}
- const antes=S.config.segmento;S.config.segmento=k;closeModal();save();segmentoRegistrar(k);render();toast('Segmento: '+SEGMENTOS[k].nome+(antes&&antes!==k?'. Os dados de antes continuam guardados.':''));
+ if(!NV.mestre&&planoContratado()==='agenda'&&S.config.segmento&&k!==S.config.segmento){modalLiberar('segmento');return}
+ const antes=S.config.segmento;S.config.segmento=k;closeModal();save();if(NV.mestre)segmentoMestre(k);else segmentoRegistrar(k);render();toast('Segmento: '+SEGMENTOS[k].nome+(antes&&antes!==k?'. Os dados de antes continuam guardados.':''));
  if(!S.config.plano&&!UI.planoPerguntado){UI.planoPerguntado=true;setTimeout(perguntarPlano,400)}}
 function checarSegmento(){if(UI.auth)return;
  if(CAD){if(!S.config.segmento)S.config.segmento=CAD.segmento;if(!S.config.plano)S.config.plano=CAD.plano;S.config.clinica=S.config.clinica||NV.nomeClinica||S.config.clinica;CAD=null;UI.segPerguntado=true;UI.planoPerguntado=true;save();setTimeout(render,0);return}
@@ -4760,7 +4773,7 @@ function agNovo(a,s){if(s==='Desmarcado'||s==='Faltou')return false;const k=a.da
  const hist=c=>S[c].some(x=>x.pacienteId===a.pacienteId&&((x.data||x.vencimento||x.pagamento||'')<a.data)&&(x.data||x.vencimento||x.pagamento));
  return !hist('evolucoes')&&!hist('tratamentos')&&!S.lancamentos.some(l=>l.pacienteId===a.pacienteId&&l.pagamento&&l.pagamento<a.data)}
 /* ============ Atualização: aviso com botão Atualizar agora ============ */
-const VERSAO_APP='1.10.2';const URL_VERSAO_JSON='https://raw.githubusercontent.com/TheIgor12/blacksolutions/main/versao.json';
+const VERSAO_APP='1.10.3';const URL_VERSAO_JSON='https://raw.githubusercontent.com/TheIgor12/blacksolutions/main/versao.json';
 const numV=v=>String(v||'0').split(/\D+/).filter(Boolean).map(Number);
 function versaoMaior(a,b){const x=numV(a),y=numV(b);for(let i=0;i<Math.max(x.length,y.length);i++){const d=(x[i]||0)-(y[i]||0);if(d)return d>0}return false}
 const ATU={nova:null,timer:null};
@@ -5264,6 +5277,7 @@ async function entrar(sessao){NV.sessao=sessao;NV.offline=false;UI.auth={modo:'c
  const {data:m,error}=await NV.sb.from('membros').select('clinica_id,papel,clinicas(nome,ativa,valido_ate,plano,segmento)').eq('user_id',sessao.user.id);
  if(error){UI.auth={modo:'entrar',email:sessao.user.email,msg:traduz(error)};render();return}
  if(!m.length){UI.auth={modo:'clinica'};render();return}
+ NV.membros=m;try{const r=await NV.sb.rpc('lm_e_mestre');NV.mestre=r.data===true}catch(e){NV.mestre=false}
  const ult=await DB.get('ultimo');const esc_=m.find(x=>ult&&x.clinica_id===ult.clinicaId)||m[0];
  NV.clinicaId=esc_.clinica_id;NV.papel=esc_.papel;NV.nomeClinica=(esc_.clinicas&&esc_.clinicas.nome)||'';
  const cl=esc_.clinicas||{};NV.plano=cl.plano||'';NV.validoAte=cl.valido_ate||'';NV.segmento=cl.segmento||'';if(NV.segmento&&SEGMENTOS[NV.segmento]&&S.config.segmento!==NV.segmento){S.config.segmento=NV.segmento;save()}else if(!NV.segmento&&S.config.segmento)segmentoRegistrar(S.config.segmento);promoCarregar().then(()=>{if(PROMO)render()});if(cl.ativa===false||(cl.valido_ate&&cl.valido_ate<todayISO())){UI.auth={modo:'bloqueado',motivo:cl.ativa===false?'suspenso':(cl.plano==='teste'?'teste':'vencido')};render();carregarAssinatura().then(()=>{if(UI.auth&&UI.auth.modo==='bloqueado')render()});return}
@@ -5311,7 +5325,7 @@ window.addEventListener('online',()=>{if(NV.offline&&NV.sb)location.reload();els
 async function sair(){try{await enviar()}catch(e){}clearInterval(NV.timer);if(NV.sb)await NV.sb.auth.signOut();NV.sessao=null;NV.clinicaId=null;NV.hashes={};NV.cursor=0;S=defaultState();closeModal();UI.auth={modo:'entrar'};render()}
 async function abrirConta(){if(!NV.ativa){go('config');return}const u=NV.sessao.user;
  let membros=[],convites=[];if(!NV.offline){const a=await NV.sb.from('membros').select('user_id,email,nome,papel').eq('clinica_id',NV.clinicaId);membros=a.data||[];if(NV.papel==='admin'){const b=await NV.sb.from('convites').select('email,papel').eq('clinica_id',NV.clinicaId);convites=b.data||[]}}
- openModal(`<h3>Minha conta</h3><div class="row"><span>Nome</span><span>${esc(nomeUsuario())}</span></div><div class="row"><span>E-mail</span><span>${esc(u.email)}</span></div><div class="row"><span>Clínica</span><span>${esc(NV.nomeClinica)}</span></div><div class="row"><span>Perfil</span><span>${NV.papel==='admin'?'Administrador':'Usuário'}</span></div><div class="row"><span>Plano</span><span>${NV.plano==='teste'?'Teste grátis até '+br(NV.validoAte):NV.plano==='cortesia'?'Cortesia, sem vencimento':NV.validoAte?'Assinatura válida até '+br(NV.validoAte):esc(NV.plano||'-')} ${NV.plano!=='cortesia'?'<button class="lnk" onclick="closeModal();abrirAssinatura()">Assinar</button>':''}</span></div><div class="row"><span>Versão</span><span id="verApp">${VERSAO_APP}</span></div>
+ openModal(`<h3>Minha conta</h3><div class="row"><span>Nome</span><span>${esc(nomeUsuario())}</span></div><div class="row"><span>E-mail</span><span>${esc(u.email)}</span></div><div class="row"><span>Clínica</span><span>${esc(NV.nomeClinica)}${(NV.membros||[]).length>1?` <button class="lnk" onclick="closeModal();escolherClinica()">Trocar de clínica</button>`:''}</span></div>${NV.mestre?`<div class="row"><span>Acesso</span><span><b>Login mestre</b>: troca o ramo em Configurações sem trava</span></div>`:''}<div class="row"><span>Perfil</span><span>${NV.papel==='admin'?'Administrador':'Usuário'}</span></div><div class="row"><span>Plano</span><span>${NV.plano==='teste'?'Teste grátis até '+br(NV.validoAte):NV.plano==='cortesia'?'Cortesia, sem vencimento':NV.validoAte?'Assinatura válida até '+br(NV.validoAte):esc(NV.plano||'-')} ${NV.plano!=='cortesia'?'<button class="lnk" onclick="closeModal();abrirAssinatura()">Assinar</button>':''}</span></div><div class="row"><span>Versão</span><span id="verApp">${VERSAO_APP}</span></div>
  ${membros.length?`<h3 style="margin-top:20px">Equipe</h3>${membros.map(m=>`<div class="row"><span>${esc(m.nome||m.email)}<br><small style="color:var(--mut);font-weight:400">${esc(m.email)} . ${m.papel==='admin'?'Administrador':'Usuário'}</small></span><span>${NV.papel==='admin'&&m.user_id!==u.id?`<button class="lnk" style="color:var(--bad)" onclick="removerMembro('${m.user_id}','${esc(m.email)}')">Remover</button>`:''}</span></div>`).join('')}`:''}
  ${convites.length?`<h3 style="margin-top:20px">Convites pendentes</h3>${convites.map(c=>`<div class="row"><span>${esc(c.email)}</span><span><button class="lnk" onclick="cancelarConvite('${esc(c.email)}')">Cancelar</button></span></div>`).join('')}`:''}
  ${NV.papel==='admin'&&!NV.offline?`<h3 style="margin-top:20px">Convidar pessoa da equipe</h3><div class="fgrid"><label>E-mail<input id="cv_email" type="email"></label><label>Perfil<select id="cv_papel"><option value="usuario">Usuário</option><option value="admin">Administrador</option></select></label></div><div class="mact" style="justify-content:flex-start"><button class="btn" onclick="convidar()">Enviar convite</button></div><p class="sub">A pessoa baixa o programa, clica em Criar conta e usa exatamente este e-mail. Ao entrar, ela já cai na sua clínica.</p>`:''}
