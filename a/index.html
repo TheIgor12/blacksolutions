@@ -22,6 +22,9 @@
 label{display:block;font-size:14px;font-weight:600;margin:12px 0 5px}input{width:100%;font:inherit;font-size:16px;padding:12px;border:1.5px solid var(--line);border-radius:10px;background:#fff}input:focus{outline:2px solid var(--acc);border-color:var(--acc)}
 .btn{display:block;width:100%;font:inherit;font-size:17px;font-weight:700;border:0;border-radius:12px;padding:15px;background:var(--acc);color:#fff;cursor:pointer;margin-top:16px;text-align:center;text-decoration:none}.btn:disabled{opacity:.5}.btn.g{background:#fff;color:var(--acc);border:1.5px solid var(--acc)}.btn.wa{background:#25d366}
 .res{background:var(--acc2);border-radius:12px;padding:12px 14px;font-size:14px;margin-top:12px}
+.mk{flex:none;width:21px;height:21px;border-radius:6px;border:1.5px solid var(--line);display:grid;place-items:center;font-size:13px;color:#fff;background:#fff}
+.mk.on{background:var(--acc);border-color:var(--acc)}
+.dica{color:var(--mut);font-size:12.5px;margin:2px 0 8px;font-weight:600;text-transform:uppercase;letter-spacing:.03em}
 .vazio{color:var(--mut);font-size:14px;text-align:center;padding:10px}.msg{text-align:center;padding:26px 8px}.msg .ic{font-size:44px}.msg b{display:block;font-size:20px;margin:6px 0}
 .rod{text-align:center;color:var(--mut);font-size:12px;margin-top:18px}
 .err{background:#fef2f2;color:var(--bad);border-radius:10px;padding:10px 12px;font-size:14px;margin-top:10px}
@@ -41,41 +44,162 @@ const DS=['dom','seg','ter','qua','qui','sex','sáb'],DL=['domingo','segunda-fei
 const addD=(iso,n)=>{const d=new Date(iso+'T12:00');d.setDate(d.getDate()+n);return d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate())};
 const brD=iso=>{const d=new Date(iso+'T12:00');return DL[d.getDay()]+', '+d.getDate()+' de '+MS[d.getMonth()]};
 const money=v=>(Number(v)||0).toLocaleString('pt-BR',{style:'currency',currency:'BRL'});
-const E={dados:null,serv:null,prof:'',dia:'',hora:'',erro:''};
-function aviso(t,s){app.innerHTML=`<div class="c msg"><div class="ic">📅</div><b>${t}</b><p style="color:var(--mut)">${s||''}</p></div>`}
-async function carregar(){if(!/^[a-z0-9-]{3,41}$/.test(slug)){aviso('Link incompleto','Peça o link de agendamento para a clínica.');return}
- const {data,error}=await sb.rpc('agenda_publica',{p_slug:slug});if(error){aviso('Não foi possível abrir a agenda','Verifique a internet e tente de novo.');return}
- if(!data){aviso('Agenda indisponível','O agendamento online desta clínica não está ativo no momento.');return}
- E.dados=data;const c=data.config||{};document.title='Agendar: '+data.clinica;document.getElementById('tit').textContent=data.clinica;document.getElementById('sub').textContent=c.endereco||'Escolha o serviço, o dia e o horário';
- const S=c.servicos||[];if(S.length===1)E.serv=S[0];render()}
+const E={dados:null,sel:[],combo:null,prof:'',dia:'',hora:'',erro:'',nome:'',tel:''};
+
+function aviso(t,sub){app.innerHTML=`<div class="c msg"><div class="ic">📅</div><b>${t}</b><p style="color:var(--mut)">${sub||''}</p></div>`}
+async function carregar(){if(!/^[a-z0-9-]{3,41}$/.test(slug)){aviso('Link incompleto','Peça o link de agendamento para o estabelecimento.');return}
+ const {data,error}=await sb.rpc('agenda_publica',{p_slug:slug});
+ if(error){aviso('Não foi possível abrir a agenda','Verifique a internet e tente de novo.');return}
+ if(!data){aviso('Agenda indisponível','O agendamento online deste estabelecimento não está ativo no momento.');return}
+ E.dados=data;const c=data.config||{};
+ document.title='Agendar: '+data.clinica;
+ document.getElementById('tit').textContent=c.titulo||data.clinica;
+ document.getElementById('sub').textContent=c.endereco||'Escolha o serviço, o dia e o horário';
+ const SV=c.servicos||[];if(SV.length===1&&!(c.combos||[]).length)E.sel=[SV[0].nome];
+ render()}
+
+/* ---- Preço e tempo valem por profissional. Quem escolheu o barbeiro vê o
+   número dele, não uma média que muda depois no balcão. ---- */
+function ajuste(nomeServico,profNome){
+ const c=E.dados.config,base=(c.servicos||[]).find(x=>x.nome===nomeServico)||{duracao:30,preco:0};
+ const a=((c.ajustes||{})[profNome]||{})[nomeServico]||{};
+ return {duracao:+a.duracao||+base.duracao||30, preco:(a.preco!=null?+a.preco:+base.preco)||0};}
+/* Desconto de dia fraco, aplicado na tela antes de a pessoa escolher */
+function comDesconto(nomeServico,valor,dia,hora){
+ const L=(E.dados.config.descontos||{})[nomeServico];if(!Array.isArray(L)||!L.length||!dia)return valor;
+ const dow=new Date(dia+'T12:00').getDay();
+ const h=parseInt(String(hora||'12:00').slice(0,2),10);
+ const turno=h<12?'manha':h<18?'tarde':'noite';
+ const r=L.find(x=>+x.dia===dow&&(x.turno==='dia'||x.turno===turno));
+ if(!r)return valor;const v=+r.valor||0;
+ return r.tipo==='porcento'?Math.round(valor*(1-v/100)*100)/100:Math.max(0,v);}
+
+function escolhidos(){
+ if(E.combo){const c=(E.dados.config.combos||[]).find(x=>x.nome===E.combo);
+  return c?(c.itens||[]).map(it=>({nome:it.servico,
+    duracao:it.duracao!=null?+it.duracao:ajuste(it.servico,E.prof).duracao,
+    preco:it.valor!=null?+it.valor:ajuste(it.servico,E.prof).preco})):[]}
+ return E.sel.map(n=>{const a=ajuste(n,E.prof);return {nome:n,duracao:a.duracao,preco:comDesconto(n,a.preco,E.dia,E.hora)}});}
+function totaisPara(prof){
+ if(E.combo){const c=(E.dados.config.combos||[]).find(x=>x.nome===E.combo);
+  if(!c)return {dur:0,preco:0};
+  return (c.itens||[]).reduce((a,it)=>({
+    dur:a.dur+(it.duracao!=null?+it.duracao:ajuste(it.servico,prof).duracao),
+    preco:a.preco+(it.valor!=null?+it.valor:ajuste(it.servico,prof).preco)}),{dur:0,preco:0})}
+ return E.sel.reduce((a,n)=>{const x=ajuste(n,prof);
+  return {dur:a.dur+x.duracao,preco:a.preco+comDesconto(n,x.preco,E.dia,E.hora)}},{dur:0,preco:0})}
+const duracaoTotal=()=>escolhidos().reduce((a,x)=>a+(+x.duracao||0),0);
+const precoTotal=()=>escolhidos().reduce((a,x)=>a+(+x.preco||0),0);
+const temEscolha=()=>escolhidos().length>0;
 function profs(){return (E.dados.config.profissionais||[])}
-function livres(dia){const c=E.dados.config,s=E.serv;if(!s||!dia)return [];const dur=Math.max(5,+s.duracao||30),passo=Math.max(5,+c.intervalo||30);
- const dow=new Date(dia+'T12:00').getDay();const per=(c.horarios||{})[dow]||[];if((c.bloqueios||[]).includes(dia))return [];
- let lim=-1;if(dia===E.dados.hoje)lim=min(E.dados.agora)+(+c.antecedenciaHoras||0)*60;else if(dia===addD(E.dados.hoje,1)&&(+c.antecedenciaHoras||0)>24)lim=min(E.dados.agora)+((+c.antecedenciaHoras)-24)*60;
+
+/* ---- Horários livres: o passo de oferta é independente da duração, então
+   um serviço de 40 minutos pode começar às 9h15. Sem buraco na agenda. ---- */
+function livres(dia){const c=E.dados.config;if(!temEscolha()||!dia)return [];
+ const dur=Math.max(5,duracaoTotal()),passo=Math.max(5,+c.intervalo||30);
+ const dow=new Date(dia+'T12:00').getDay();const per=(c.horarios||{})[dow]||[];
+ if((c.bloqueios||[]).includes(dia))return [];
+ let lim=-1;if(dia===E.dados.hoje)lim=min(E.dados.agora)+(+c.antecedenciaHoras||0)*60;
+ else if(dia===addD(E.dados.hoje,1)&&(+c.antecedenciaHoras||0)>24)lim=min(E.dados.agora)+((+c.antecedenciaHoras)-24)*60;
  const oc=E.dados.ocupados.filter(o=>o.d===dia);const P=profs();const out=[];
  per.forEach(([a,b])=>{for(let t=min(a);t+dur<=min(b);t+=passo){if(t<lim)continue;const f=t+dur;
   const conf=p=>oc.some(o=>o.i<f&&o.f>t&&(p==null||o.p===p||o.p===''));
-  let ok;if(!P.length)ok=!conf(null);else if(E.prof)ok=!conf(E.prof);else ok=P.some(p=>!conf(p));if(ok&&!out.includes(t))out.push(t)}});
+  let ok;if(!P.length)ok=!conf(null);else if(E.prof)ok=!conf(E.prof);else ok=P.some(p=>!conf(p));
+  if(ok&&!out.includes(t))out.push(t)}});
  return out.sort((x,y)=>x-y).map(hm)}
-function diasLista(){const c=E.dados.config,n=Math.min(90,Math.max(1,+c.diasMax||30));const L=[];for(let i=0;i<=n;i++){const d=addD(E.dados.hoje,i);L.push(d)}return L}
-function render(){const c=E.dados.config,S=c.servicos||[],P=profs();const escolheProf=c.escolherProfissional&&P.length>1;
- const horas=livres(E.dia);let h=`<div class="c"><h2><span class="n">1</span>Serviço</h2><div class="ops">${S.map((s,i)=>`<button class="op ${E.serv&&E.serv.nome===s.nome?'on':''}" onclick="E.serv=E.dados.config.servicos[${i}];E.hora='';render()"><span><b>${esc(s.nome)}</b><small>${+s.duracao||30} minutos</small></span>${c.mostrarPreco&&+s.preco?`<span>${money(s.preco)}</span>`:''}</button>`).join('')||'<p class="vazio">Nenhum serviço disponível.</p>'}</div></div>`;
- let k=2;if(escolheProf)h+=`<div class="c ${E.serv?'':'off'}"><h2><span class="n">${k++}</span>Profissional</h2><div class="ops"><button class="op ${!E.prof?'on':''}" onclick="E.prof='';E.hora='';render()"><b>Sem preferência</b></button>${P.map(p=>`<button class="op ${E.prof===p?'on':''}" onclick="E.prof=${esc(JSON.stringify(p))};E.hora='';render()"><b>${esc(p)}</b></button>`).join('')}</div></div>`;
- h+=`<div class="c ${E.serv?'':'off'}"><h2><span class="n">${k++}</span>Dia</h2><div class="dias">${diasLista().map(d=>{const dt=new Date(d+'T12:00');const tem=E.serv&&livres(d).length;return `<button class="dia ${E.dia===d?'on':''}" ${tem?'':'disabled'} onclick="E.dia='${d}';E.hora='';render()"><small>${DS[dt.getDay()]}</small><b>${dt.getDate()}</b><small>${MS[dt.getMonth()].slice(0,3)}</small></button>`}).join('')}</div></div>`;
- h+=`<div class="c ${E.dia?'':'off'}"><h2><span class="n">${k++}</span>Horário</h2>${E.dia?(horas.length?`<div class="horas">${horas.map(x=>`<button class="hr ${E.hora===x?'on':''}" onclick="E.hora='${x}';render();setTimeout(()=>document.getElementById('fNome').scrollIntoView({behavior:'smooth',block:'center'}),50)">${x}</button>`).join('')}</div>`:'<p class="vazio">Nenhum horário livre neste dia.</p>'):'<p class="vazio">Escolha o dia primeiro.</p>'}</div>`;
- h+=`<div class="c ${E.hora?'':'off'}"><h2><span class="n">${k++}</span>Seus dados</h2><label for="fNome">Nome completo</label><input id="fNome" autocomplete="name" value="${esc(E.nome||'')}" oninput="E.nome=this.value"><label for="fTel">WhatsApp com DDD</label><input id="fTel" type="tel" inputmode="tel" autocomplete="tel" placeholder="(47) 99999-9999" value="${esc(E.tel||'')}" oninput="E.tel=this.value">
-  ${E.hora?`<div class="res"><b>${esc(E.serv.nome)}</b><br>${brD(E.dia)}, às ${E.hora}${E.prof?'<br>Com '+esc(E.prof):''}</div>`:''}${E.erro?`<div class="err">${esc(E.erro)}</div>`:''}<button class="btn" id="bOk" onclick="confirmar()">Confirmar agendamento</button></div>`;
+function diasLista(){const c=E.dados.config,n=Math.min(90,Math.max(1,+c.diasMax||30));const L=[];
+ for(let i=0;i<=n;i++)L.push(addD(E.dados.hoje,i));return L}
+
+function toggleServ(n){E.combo=null;const i=E.sel.indexOf(n);
+ if(i<0)E.sel.push(n);else E.sel.splice(i,1);E.hora='';render()}
+function escolherCombo(n){E.combo=E.combo===n?null:n;E.sel=[];E.hora='';render()}
+function escolherProf(p){E.prof=p;E.hora='';render()}
+
+function render(){const c=E.dados.config,SV=c.servicos||[],P=profs(),CB=(c.combos||[]);
+ const escolheProf=c.escolherProfissional&&P.length>1;
+ const mostraPreco=!!c.mostrarPreco;
+ const horas=livres(E.dia);
+ let k=1,h='';
+
+ /* 1. Serviço, com combos primeiro e escolha de mais de um de uma vez */
+ h+=`<div class="c"><h2><span class="n">${k++}</span>O que você vai fazer</h2>`;
+ if(CB.length){h+=`<p class="dica">Combos, saem mais em conta</p><div class="ops">${CB.map(cb=>{
+   const dur=cb.itens.reduce((a,it)=>a+(it.duracao!=null?+it.duracao:ajuste(it.servico,E.prof).duracao),0);
+   const pr=cb.itens.reduce((a,it)=>a+(it.valor!=null?+it.valor:ajuste(it.servico,E.prof).preco),0);
+   const ch=cb.itens.reduce((a,it)=>a+ajuste(it.servico,E.prof).preco,0);
+   return `<button class="op ${E.combo===cb.nome?'on':''}" onclick="escolherCombo(${JSON.stringify(cb.nome).replace(/"/g,'&quot;')})">
+    <span><b>${esc(cb.nome)}</b><small>${cb.itens.map(it=>esc(it.servico)).join(' + ')} · ${dur} minutos</small></span>
+    ${mostraPreco&&pr?`<span style="text-align:right">${ch>pr?`<s style="color:var(--mut);font-size:13px">${money(ch)}</s><br>`:''}<b>${money(pr)}</b></span>`:''}</button>`}).join('')}</div>`}
+ h+=`${CB.length?'<p class="dica">Ou escolha um ou mais serviços</p>':''}<div class="ops">${SV.map(sv=>{
+   const a=ajuste(sv.nome,E.prof);const pr=comDesconto(sv.nome,a.preco,E.dia,E.hora);
+   const on=E.sel.includes(sv.nome);
+   return `<button class="op ${on?'on':''}" onclick="toggleServ(${JSON.stringify(sv.nome).replace(/"/g,'&quot;')})">
+    <span class="mk ${on?'on':''}">${on?'&#10003;':''}</span>
+    <span style="flex:1"><b>${esc(sv.nome)}</b><small>${a.duracao} minutos</small></span>
+    ${mostraPreco&&pr?`<span>${pr<a.preco?`<s style="color:var(--mut);font-size:13px">${money(a.preco)}</s> `:''}${money(pr)}</span>`:''}</button>`}).join('')||'<p class="vazio">Nenhum serviço disponível.</p>'}</div>`;
+ if(escolhidos().length>1||E.combo)h+=`<div class="res" style="margin-top:12px">${escolhidos().length} ${escolhidos().length===1?'serviço':'serviços'} · <b>${duracaoTotal()} minutos</b>${mostraPreco&&precoTotal()?` · total <b>${money(precoTotal())}</b>`:''}</div>`;
+ h+=`</div>`;
+
+ /* 2. Profissional, com o preço de cada um já visível */
+ if(escolheProf){h+=`<div class="c ${temEscolha()?'':'off'}"><h2><span class="n">${k++}</span>Com quem</h2><div class="ops">
+  <button class="op ${!E.prof?'on':''}" onclick="escolherProf('')"><span><b>Tanto faz</b><small>quem estiver livre no horário</small></span></button>
+  ${P.map(p=>{const t=totaisPara(p);
+    return `<button class="op ${E.prof===p?'on':''}" onclick="escolherProf(${JSON.stringify(p).replace(/"/g,'&quot;')})">
+     <span><b>${esc(p)}</b>${t.dur?`<small>${t.dur} minutos</small>`:''}</span>
+     ${mostraPreco&&t.preco?`<span>${money(t.preco)}</span>`:''}</button>`}).join('')}</div>
+   ${temEscolha()&&P.length>1&&mostraPreco?`<p class="dica" style="text-transform:none;letter-spacing:0;font-weight:400;margin-top:10px">O preço e o tempo mudam conforme quem atende. O valor que aparece aqui é o que você vai pagar.</p>`:''}</div>`}
+
+ /* 3. Dia */
+ h+=`<div class="c ${temEscolha()?'':'off'}"><h2><span class="n">${k++}</span>Que dia</h2><div class="dias">${diasLista().map(d=>{
+   const dt=new Date(d+'T12:00');const tem=temEscolha()&&livres(d).length;
+   return `<button class="dia ${E.dia===d?'on':''}" ${tem?'':'disabled'} onclick="E.dia='${d}';E.hora='';render()"><small>${DS[dt.getDay()]}</small><b>${dt.getDate()}</b><small>${MS[dt.getMonth()].slice(0,3)}</small></button>`}).join('')}</div></div>`;
+
+ /* 4. Horário */
+ h+=`<div class="c ${E.dia?'':'off'}"><h2><span class="n">${k++}</span>Que horas</h2>${E.dia?(horas.length?`<div class="horas">${horas.map(x=>`<button class="hr ${E.hora===x?'on':''}" onclick="E.hora='${x}';render();setTimeout(()=>document.getElementById('fNome').scrollIntoView({behavior:'smooth',block:'center'}),50)">${x}</button>`).join('')}</div><p class="dica" style="margin-top:10px">Horários de ${Math.max(5,+c.intervalo||30)} em ${Math.max(5,+c.intervalo||30)} minutos, já reservando os ${duracaoTotal()} minutos que você precisa.</p>`:'<p class="vazio">Nenhum horário livre neste dia. Tente outro.</p>'):'<p class="vazio">Escolha o dia primeiro.</p>'}</div>`;
+
+ /* 5. Dados e resumo */
+ const L=escolhidos();
+ h+=`<div class="c ${E.hora?'':'off'}"><h2><span class="n">${k++}</span>Seus dados</h2>
+  <label for="fNome">Nome completo</label><input id="fNome" autocomplete="name" value="${esc(E.nome||'')}" oninput="E.nome=this.value">
+  <label for="fTel">WhatsApp com DDD</label><input id="fTel" type="tel" inputmode="tel" autocomplete="tel" placeholder="(47) 99999-9999" value="${esc(E.tel||'')}" oninput="E.tel=this.value">
+  ${E.hora?`<div class="res"><b>${brD(E.dia)}, às ${E.hora}</b>${E.prof?'<br>Com '+esc(E.prof):'<br>Com quem estiver livre'}
+   <div style="margin-top:8px">${L.map(x=>`<div style="display:flex;justify-content:space-between;gap:10px"><span>${esc(x.nome)} <small style="color:var(--mut)">${x.duracao} min</small></span>${mostraPreco&&x.preco?`<span>${money(x.preco)}</span>`:''}</div>`).join('')}</div>
+   ${mostraPreco&&precoTotal()?`<div style="display:flex;justify-content:space-between;border-top:1px solid #0001;margin-top:8px;padding-top:8px;font-weight:700"><span>Total</span><span>${money(precoTotal())}</span></div>`:''}
+   <small style="color:var(--mut);display:block;margin-top:8px">Termina por volta das ${hm(min(E.hora)+duracaoTotal())}. O pagamento é feito no balcão.</small></div>`:''}
+  ${E.erro?`<div class="err">${esc(E.erro)}</div>`:''}
+  <button class="btn" id="bOk" onclick="confirmar()">Confirmar agendamento</button></div>`;
  app.innerHTML=h}
+
+/* ---- Confirmação. Vários serviços entram em sequência, um atrás do outro. ---- */
 async function confirmar(){const nome=(E.nome||'').trim(),tel=(E.tel||'').replace(/\D/g,'');E.erro='';
- if(nome.split(' ').length<2||nome.length<5){E.erro='Informe o seu nome e sobrenome.';render();return}if(tel.length<10||tel.length>13){E.erro='Informe o WhatsApp com DDD.';render();return}
+ const L=escolhidos();
+ if(!L.length){E.erro='Escolha pelo menos um serviço.';render();return}
+ if(nome.split(' ').length<2||nome.length<5){E.erro='Informe o seu nome e sobrenome.';render();return}
+ if(tel.length<10||tel.length>13){E.erro='Informe o WhatsApp com DDD.';render();return}
  const b=document.getElementById('bOk');b.disabled=true;b.textContent='Agendando...';
- const {data,error}=await sb.rpc('agendar_online',{p_slug:slug,p_nome:nome,p_telefone:tel,p_servico:E.serv.nome,p_profissional:E.prof||'',p_data:E.dia,p_hora:E.hora});
- if(error){E.erro=(error.message||'Não foi possível agendar.').replace(/^.*?:\s(?=[A-ZÁÉÍÓÚ])/,'');const r=await sb.rpc('agenda_publica',{p_slug:slug});if(r.data)E.dados=r.data;if(!livres(E.dia).includes(E.hora))E.hora='';render();return}
- const wa=data.whatsapp?String(data.whatsapp).replace(/\D/g,''):'';const txt=encodeURIComponent(`Olá! Acabei de agendar ${data.servico} para ${brD(data.data)}, às ${data.hora}, pelo link online. Meu nome é ${nome}.`);
- const ics='data:text/calendar;charset=utf-8,'+encodeURIComponent(['BEGIN:VCALENDAR','VERSION:2.0','BEGIN:VEVENT','DTSTART:'+data.data.replace(/-/g,'')+'T'+data.hora.replace(':','')+'00','DURATION:PT'+(+E.serv.duracao||30)+'M','SUMMARY:'+data.servico+' - '+data.clinica,'LOCATION:'+(data.endereco||''),'END:VEVENT','END:VCALENDAR'].join('\r\n'));
- app.innerHTML=`<div class="c msg"><div class="ic">✅</div><b>Agendamento confirmado!</b><p>${esc(data.servico)}<br><b style="font-size:17px;display:inline">${brD(data.data)}, às ${data.hora}</b>${data.profissional?'<br>Com '+esc(data.profissional):''}<br>${esc(data.clinica)}${data.endereco?'<br><span style="color:var(--mut)">'+esc(data.endereco)+'</span>':''}</p>
-  <a class="btn g" href="${ics}" download="agendamento.ics">Salvar na agenda do celular</a>${wa?`<a class="btn wa" href="https://wa.me/${wa.length<=11?'55'+wa:wa}?text=${txt}" target="_blank" rel="noopener">Avisar a clínica no WhatsApp</a>`:''}
-  <p style="color:var(--mut);font-size:13px;margin-top:16px">Se precisar desmarcar ou remarcar, fale com a clínica.</p></div>`}
+ const feitos=[];let t=min(E.hora),primeiro=null,falhou='';
+ for(const item of L){
+  const r=await sb.rpc('agendar_online',{p_slug:slug,p_nome:nome,p_telefone:tel,p_servico:item.nome,p_profissional:E.prof||'',p_data:E.dia,p_hora:hm(t)});
+  if(r.error){falhou=(r.error.message||'Não foi possível agendar.').replace(/^.*?:\s(?=[A-ZÁÉÍÓÚ])/,'');break}
+  if(!primeiro)primeiro=r.data;feitos.push({nome:item.nome,hora:hm(t)});t+=(+item.duracao||30)}
+ if(!feitos.length){E.erro=falhou||'Não foi possível agendar.';
+  const rr=await sb.rpc('agenda_publica',{p_slug:slug});if(rr.data)E.dados=rr.data;
+  if(!livres(E.dia).includes(E.hora))E.hora='';b.disabled=false;b.textContent='Confirmar agendamento';render();return}
+ const data=primeiro;
+ const wa=data.whatsapp?String(data.whatsapp).replace(/\D/g,''):'';
+ const lista=feitos.map(f=>f.nome).join(', ');
+ const txt=encodeURIComponent(`Olá! Acabei de agendar ${lista} para ${brD(E.dia)}, às ${E.hora}, pelo link online. Meu nome é ${nome}.`);
+ const ics='data:text/calendar;charset=utf-8,'+encodeURIComponent(['BEGIN:VCALENDAR','VERSION:2.0','BEGIN:VEVENT',
+  'DTSTART:'+E.dia.replace(/-/g,'')+'T'+E.hora.replace(':','')+'00','DURATION:PT'+duracaoTotal()+'M',
+  'SUMMARY:'+lista+' - '+data.clinica,'LOCATION:'+(data.endereco||''),'END:VEVENT','END:VCALENDAR'].join('\r\n'));
+ app.innerHTML=`<div class="c msg"><div class="ic">✅</div><b>Agendamento confirmado!</b>
+  <p>${feitos.map(f=>`${esc(f.nome)} <small style="color:var(--mut)">às ${f.hora}</small>`).join('<br>')}
+  <br><b style="font-size:17px;display:inline">${brD(E.dia)}, às ${E.hora}</b>
+  ${E.prof?'<br>Com '+esc(E.prof):''}<br>${esc(data.clinica)}${data.endereco?'<br><span style="color:var(--mut)">'+esc(data.endereco)+'</span>':''}</p>
+  ${falhou?`<div class="err">Só uma parte foi agendada. ${esc(falhou)} Fale com a ${esc(data.clinica)} para completar.</div>`:''}
+  <a class="btn g" href="${ics}" download="agendamento.ics">Salvar na agenda do celular</a>
+  ${wa?`<a class="btn wa" href="https://wa.me/${wa.length<=11?'55'+wa:wa}?text=${txt}" target="_blank" rel="noopener">Avisar no WhatsApp</a>`:''}
+  <p style="color:var(--mut);font-size:13px;margin-top:16px">Se precisar desmarcar ou remarcar, fale com a gente.</p></div>`}
 carregar();
 </script>
 </body>

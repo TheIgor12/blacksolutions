@@ -159,7 +159,7 @@ a.btn{text-decoration:none}
 .ev{position:absolute;background:#e3ebfd;border-left:3px solid var(--acc);border-radius:3px;padding:2px 5px;font-size:11px;overflow:hidden;cursor:pointer;line-height:1.25;box-shadow:0 1px 2px rgba(0,0,0,.08)}
 .ev b{display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-size:11px}
 .ev span{display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:#33476b}
-.ev.falta{background:#fde8e8;border-left-color:var(--bad)}.ev.agd{background:#fff3bf;border-left:4px solid #e0a800}.ev.conf{background:#c9f2d6;border-left:4px solid #16a34a}.ev.novo{background:#00e5d4;border-left:4px solid #00897f;color:#003a36}.ev.novo span{color:#004d47}.ev.ok{background:#e6ebf3!important;border-left-color:#64748b!important;color:#475569}.evdot{display:inline-block;width:7px;height:7px;border-radius:50%;margin-right:4px;vertical-align:middle}.evtag{font-style:normal;font-size:8.5px;font-weight:800;background:#003a36;color:#fff;border-radius:3px;padding:0 4px;margin-right:4px;vertical-align:middle}.evtag.ok{background:#16a34a}.leg{display:flex;align-items:center;gap:8px;font-size:12px;margin:5px 0}.leg i{width:14px;height:14px;border-radius:3px;display:inline-block}
+.ev.falta{background:#fde8e8;border-left-color:var(--bad)}.ev.agd{background:#fff3bf;border-left:4px solid #e0a800}.ev.conf{background:#c9f2d6;border-left:4px solid #16a34a}.ev.chegou{background:#ffe0cc;border-left:4px solid #c2410c;color:#7c2d12}.ev.chegou span{color:#9a3412}.ev.novo{background:#00e5d4;border-left:4px solid #00897f;color:#003a36}.ev.novo span{color:#004d47}.ev.ok{background:#e6ebf3!important;border-left-color:#64748b!important;color:#475569}.evdot{display:inline-block;width:7px;height:7px;border-radius:50%;margin-right:4px;vertical-align:middle}.evtag{font-style:normal;font-size:8.5px;font-weight:800;background:#003a36;color:#fff;border-radius:3px;padding:0 4px;margin-right:4px;vertical-align:middle}.evtag.ok{background:#16a34a}.leg{display:flex;align-items:center;gap:8px;font-size:12px;margin:5px 0}.leg i{width:14px;height:14px;border-radius:3px;display:inline-block}
 .ev.desm{background:repeating-linear-gradient(135deg,rgba(150,150,150,.12) 0 6px,rgba(150,150,150,.03) 6px 12px);border:1px dashed #b3b3b3;border-left:3px dashed #999;color:#8a8a8a;box-shadow:none;opacity:.5;z-index:0}.ev.desm b{text-decoration:line-through;font-weight:600}.ev.desm span{color:#9a9a9a}.ev.desm:hover{opacity:.95}.ev:not(.desm){z-index:1}
 .ev.ok{background:#e5f5ec;border-left-color:var(--ok)}
 .nowline{position:absolute;left:0;right:0;height:2px;background:var(--acc);z-index:3}
@@ -237,7 +237,7 @@ a.btn{text-decoration:none}
 .agc-it{width:100%;display:flex;align-items:center;gap:12px;background:#fff;border:1px solid var(--line,#e5e7eb);border-left:5px solid #e0a800;border-radius:10px;padding:10px 12px;margin-bottom:8px;text-align:left;cursor:pointer;font:inherit;color:inherit}
 .agc-h{font-weight:800;font-size:15px;min-width:46px}.agc-x{flex:1;min-width:0;display:flex;flex-direction:column}.agc-x b{font-size:15px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.agc-x small{color:var(--mut);font-size:12px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .agc-st{font-size:11px;font-weight:700;padding:3px 8px;border-radius:20px;background:#fff3bf;color:#7a5c00;white-space:nowrap}
-.agc-it.conf{border-left-color:#16a34a}.agc-it.conf .agc-st{background:#c9f2d6;color:#14532d}
+.agc-it.conf{border-left-color:#16a34a}.agc-it.conf .agc-st{background:#c9f2d6;color:#14532d}.agc-it.chegou{border-left-color:#c2410c}.agc-it.chegou .agc-st{background:#ffe0cc;color:#7c2d12}
 .agc-it.novo{border-left-color:#00897f}.agc-it.novo .agc-st{background:#00e5d4;color:#003a36}
 .agc-it.ok{border-left-color:#64748b}.agc-it.ok .agc-st{background:#e6ebf3;color:#475569}
 .agc-it.falta{border-left-color:#dc2626}.agc-it.falta .agc-st{background:#fde8e8;color:#991b1b}
@@ -633,7 +633,7 @@ const waIco=()=>`<span class="wa">${ico('wa',15)}</span>`;
 function defaultState(){return {versao:1,config:{clinica:'Minha clínica',usuario:'Administrador',cor:'#5a4cfb',corTopo:'#0a0820',logo:'',
  msgCobranca:'Olá {nome}, tudo bem? Aqui é da {clinica}. Consta em aberto o valor de {valor}, referente a parcelas vencidas desde {vencimento}. Podemos combinar a forma de pagamento?',
  msgRetorno:'Olá {nome}, tudo bem? Aqui é da {clinica}. Já faz um tempo desde o seu último atendimento. Vamos agendar o seu retorno?',diasRetorno:90,msgRec:{},iaChave:'',contratoModelo:'',responsavel:'',profissaoResp:'',registroResp:'',comarca:'',segmento:'',taxas:{},descontarTaxa:false,cashback:'',cashbackDias:''},
- pacientes:[],lancamentos:[],tratamentos:[],anamneses:[],agendamentos:[],contasPagar:[],evolucoes:[],profissionais:[],importacoes:[],servicos:[],produtos:[],documentos:[],movEstoque:[],comandas:[],caixas:[],avaliacoes:[],fotos:[],termos:[],contratos:[],fichas:[],protocolos:[],equipamentos:[],vouchers:[]}}
+ pacientes:[],lancamentos:[],tratamentos:[],anamneses:[],agendamentos:[],contasPagar:[],evolucoes:[],profissionais:[],importacoes:[],servicos:[],produtos:[],documentos:[],movEstoque:[],comandas:[],caixas:[],avaliacoes:[],fotos:[],termos:[],contratos:[],fichas:[],protocolos:[],equipamentos:[],vouchers:[],combos:[]}}
 let S=defaultState();
 const DB={
  open(){return new Promise((res,rej)=>{const r=indexedDB.open('happyfeet-gestao',1);r.onupgradeneeded=()=>r.result.createObjectStore('kv');r.onsuccess=()=>res(r.result);r.onerror=()=>rej(r.error)})},
@@ -835,8 +835,8 @@ function stTrat(t){const s=norm(t.statusOrig);if(/conclu|finaliz|executad/.test(
  if(/follow/.test(s))return 'Em follow up';if(/aberto|pendente|aguard|negocia/.test(s))return 'Em aberto';
  if((t.sessoesTotal||0)>0&&(t.sessoesRealizadas||0)>=t.sessoesTotal)return 'Concluído';return 'Aprovado'}
 function stAg(a){const s=norm(a.status);if(/falt|nao compareceu|ausen/.test(s))return 'Faltou';if(/desmarc|cancel|remarc/.test(s))return 'Desmarcado';
- if(/atendid|conclu|finaliz|realizad/.test(s))return 'Atendido';if(/confirm/.test(s))return 'Confirmado';return 'Agendado'}
-function badgeFor(st){const m={'Pago':'b-ok','Concluído':'b-ok','Atendido':'b-ok','Aprovado':'b-ok','Ativo':'b-ok','Confirmado':'b-info','A vencer':'b-info','Agendado':'b-info','Em aberto':'b-warn','Em follow up':'b-warn','Em atraso':'b-bad','Previsto':'b-warn','Faltou':'b-bad','Reprovado':'b-bad','Inativo':'b-mut','Cancelado':'b-mut','Desmarcado':'b-mut'};return `<span class="badge ${m[st]||'b-mut'}">${esc(st)}</span>`}
+ if(/atendid|conclu|finaliz|realizad/.test(s))return 'Atendido';if(/chegou|na recep|aguardando/.test(s))return 'Chegou';if(/confirm/.test(s))return 'Confirmado';return 'Agendado'}
+function badgeFor(st){const m={'Pago':'b-ok','Concluído':'b-ok','Atendido':'b-ok','Aprovado':'b-ok','Ativo':'b-ok','Confirmado':'b-info','Chegou':'b-warn','A vencer':'b-info','Agendado':'b-info','Em aberto':'b-warn','Em follow up':'b-warn','Em atraso':'b-bad','Previsto':'b-warn','Faltou':'b-bad','Reprovado':'b-bad','Inativo':'b-mut','Cancelado':'b-mut','Desmarcado':'b-mut'};return `<span class="badge ${m[st]||'b-mut'}">${esc(st)}</span>`}
 function entradasList(){const out=[];S.lancamentos.forEach(l=>{if(stLanc(l)==='Cancelado')return;const P=pagosL(l);
  if(P.length)P.forEach(x=>{const v=Number(x.valor)||0;if(v>0.004)out.push({data:x.data||l.vencimento,valor:r2(v),l,pg:x})});
  else if(pagoEf(l)>0)out.push({data:l.pagamento||l.vencimento,valor:pagoEf(l),l});});return out}
@@ -1065,7 +1065,7 @@ function render(){if(NV.ativa&&UI.auth){$('#app').innerHTML=vAuth();setTimeout((
  if(soAgenda()&&!VIEWS_AGENDA.includes(UI.view))UI.view='agenda';
  if(perfilAtual()){const livre=['inicio','paciente','blackpay'];const vk=UI.view==='paciente'?'pacientes':UI.view;
   if(!livre.includes(UI.view)&&!podeTela(vk)||UI.view==='paciente'&&!podeTela('pacientes')){const m=menuItens();UI.view=m.length?m[0][0]:'inicio';UI.param=null}}
- const V={inicio:vInicio,agenda:vAgenda,pacientes:vPacientes,paciente:vPaciente,financeiro:vFinanceiro,dashboard:vDashboard,relatorios:vRelatorios,profissionais:vProfissionais,importar:vImportar,config:vConfig,servicos:vServicos,estoque:vEstoque,exames:vExames,comandas:vComandas,caixa:vCaixa,comissoes:vComissoes,protocolos:vProtocolos,equipamentos:vEquipamentos,confirmacao:vConfirmacao,indicacoes:vIndicacoes,vouchers:vVouchers,blackpay:vBlackPay,prontuarios:vProntuarios,fotorapida:vFotoRapida,ajuda:vAjuda};
+ const V={inicio:vInicio,agenda:vAgenda,pacientes:vPacientes,paciente:vPaciente,financeiro:vFinanceiro,dashboard:vDashboard,relatorios:vRelatorios,profissionais:vProfissionais,importar:vImportar,config:vConfig,servicos:vServicos,combos:vCombos,estoque:vEstoque,exames:vExames,comandas:vComandas,caixa:vCaixa,comissoes:vComissoes,protocolos:vProtocolos,equipamentos:vEquipamentos,confirmacao:vConfirmacao,indicacoes:vIndicacoes,vouchers:vVouchers,blackpay:vBlackPay,prontuarios:vProntuarios,fotorapida:vFotoRapida,ajuda:vAjuda};
  let c;try{c=(V[UI.view]||vInicio)()}catch(e){console.error(e);c=`<div class="page"><div class="card">Erro ao montar a tela: ${esc(e.message)}</div></div>`}
  $('#app').innerHTML=shell(c);try{fonteAplicar()}catch(e){}checarSegmento();if(!UI.regrasOk&&S.servicos.length&&!UI.auth){UI.regrasOk=1;if(regrasClinica())save()}if(!AVISO.timer)avisoIniciar();atuIniciar();if(!UI.auth){fotoIniciar();confAutoIniciar()}}
 
@@ -1356,8 +1356,26 @@ async function agOnPublicar(b){const f=$('#agOnF');const v=n=>f.querySelector(`[
  const serv=S.servicos.filter(x=>servIds.includes(x.id));if(!serv.length){toast('Escolha pelo menos um serviço.');return}
  const bloq=v('bloqueios').split(/[,;\s]+/).filter(Boolean).map(t=>{const m=t.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);return m?m[3]+'-'+pad(m[2])+'-'+pad(m[1]):null});if(bloq.includes(null)){toast('Confira as datas dos dias fechados: use dia/mês/ano.');return}
  const cfg={ativo:v('ativo')==='sim',slug,titulo:v('titulo'),whatsapp:v('whatsapp'),endereco:v('endereco'),horarios,intervalo:+v('intervalo')||30,antecedenciaHoras:Math.max(0,+v('antecedenciaHoras')||0),diasMax:Math.min(90,Math.max(1,+v('diasMax')||30)),mostrarPreco:v('mostrarPreco')==='sim',escolherProfissional:v('escolherProfissional')==='sim',servicos:servIds,profissionais:profIds,bloqueios:bloq};
+ const profsPub=S.profissionais.filter(x=>profIds.includes(x.id));
+ /* O ajuste de cada profissional vai junto, para o cliente ver na hora o preço e o
+    tempo de quem ele escolheu, e não um preço médio que muda depois na comanda. */
+ const ajustes=p=>{const o={};serv.forEach(x=>{const a=(x.porProf||{})[p.id];if(!a)return;
+   const e={};if(a.preco!==''&&a.preco!=null&&+a.preco>0&&cfg.mostrarPreco)e.preco=+a.preco;
+   if(a.duracao!==''&&a.duracao!=null&&+a.duracao>0)e.duracao=+a.duracao;
+   if(Object.keys(e).length)o[x.nome]=e});return o};
+ const combosPub=(S.combos||[]).filter(c=>c.ativo!==false&&(c.itens||[]).length
+   &&(c.itens||[]).every(it=>serv.some(x=>x.id===it.servicoId)))
+  .map(c=>({nome:c.nome,
+    itens:(c.itens||[]).map(it=>{const sv=S.servicos.find(x=>x.id===it.servicoId);
+      return {servico:sv?sv.nome:'',valor:(it.valor!==''&&it.valor!=null)?+it.valor:null,duracao:(it.duracao!==''&&it.duracao!=null)?+it.duracao:null}}),
+    preco:cfg.mostrarPreco?comboTotal(c):0,cheio:cfg.mostrarPreco?comboCheio(c):0,duracao:comboDuracao(c)}));
+ const descontosPub={};serv.forEach(x=>{if(Array.isArray(x.descontos)&&x.descontos.length)descontosPub[x.nome]=x.descontos});
  const pub={titulo:cfg.titulo||S.config.clinica,whatsapp:onlyDigits(cfg.whatsapp),endereco:cfg.endereco,horarios,intervalo:cfg.intervalo,antecedenciaHoras:cfg.antecedenciaHoras,diasMax:cfg.diasMax,mostrarPreco:cfg.mostrarPreco,escolherProfissional:cfg.escolherProfissional,bloqueios:bloq,
-  servicos:serv.map(x=>({nome:x.nome,duracao:+x.duracao||30,preco:cfg.mostrarPreco?(+x.preco||0):0})),profissionais:S.profissionais.filter(x=>profIds.includes(x.id)).map(x=>x.nome)};
+  segmento:S.config.segmento||'',varios:temPorProf(),
+  servicos:serv.map(x=>({nome:x.nome,duracao:+x.duracao||30,preco:cfg.mostrarPreco?(+x.preco||0):0})),
+  profissionais:profsPub.map(x=>x.nome),
+  ajustes:Object.fromEntries(profsPub.map(x=>[x.nome,ajustes(x)]).filter(([,o])=>Object.keys(o).length)),
+  combos:combosPub,descontos:descontosPub};
  const t0=b.textContent;b.disabled=true;b.textContent='Publicando...';
  try{const {error}=await NV.sb.from('agenda_online').upsert({clinica_id:NV.clinicaId,slug,ativo:cfg.ativo,config:pub,atualizado_em:new Date().toISOString()},{onConflict:'clinica_id'});
   if(error){toast(/duplicate|unique/i.test(error.message)?'Esse endereço de link já está em uso por outra clínica. Escolha outro.':/relation|does not exist/i.test(error.message)?'O agendamento online ainda não foi ativado no servidor.':'Não foi possível publicar: '+error.message);return}
@@ -1402,7 +1420,7 @@ if(!NV.ativa||!NV.sb||NV.offline)return;const pend=S.termos.filter(t=>t.remoto&&
 
 /* Agenda no celular: só o dia escolhido, em lista simples */
 function ehCel(){return window.innerWidth<700}
-function agClasse(a){const s=stAg(a);return s==='Faltou'?'falta':s==='Desmarcado'?'desm':s==='Atendido'?'ok':agNovo(a,s)?'novo':s==='Confirmado'?'conf':'agd'}
+function agClasse(a){const s=stAg(a);return s==='Faltou'?'falta':s==='Chegou'?'chegou':s==='Desmarcado'?'desm':s==='Atendido'?'ok':agNovo(a,s)?'novo':s==='Confirmado'?'conf':'agd'}
 function vAgendaCel(){const d=UI.agDate;const base=new Date(d+'T00:00');const t=todayISO();
  const evs=S.agendamentos.filter(a=>a.data===d).sort((a,b)=>(a.hora||'').localeCompare(b.hora||''));
  const rot={agd:'Agendado',conf:'Confirmado',novo:'Novo',ok:'Atendido',falta:'Faltou',desm:'Desmarcou · horário livre'};
@@ -1525,7 +1543,7 @@ function serieHTML(a){if(!a.serieId)return '';
 function agForm(id,pacienteId,pre){pre=pre||{};const a=id?S.agendamentos.find(x=>x.id===id):null;const p=a?pac(a.pacienteId):(pacienteId?pac(pacienteId):null);
  formModal(a?'Editar agendamento':'Novo agendamento',[{k:'paciente',l:SEG().pessoa,req:true,list:'dlPac',full:true,aviso:o=>avisoPaciente(o.paciente)},{k:'celular',l:'Celular / WhatsApp',full:true,req:true,mostrarSe:o=>pacPedeCelular(o.paciente)},
    {k:'cpf',l:'CPF',mostrarSe:o=>pacPedeCPF(o.paciente)},
-   {k:'nascimento',l:'Data de nascimento',type:'date',mostrarSe:o=>pacPedeCPF(o.paciente)},{k:'data',l:'Data',type:'date',req:true},{k:'hora',l:'Hora',type:'hora15',req:true},{k:'duracao',l:'Duração (minutos)',type:'select',opts:[15,30,45,60,75,90,120,150,180]},{k:'profissional',l:'Profissional',list:'dlProf'},{k:'procedimento',l:ehSeg('podologia')?'Procedimento':'Serviço',full:true,list:'dlServ'},{k:'status',l:'Status',type:'select',opts:['Agendado','Confirmado','Atendido','Faltou','Desmarcado']},
+   {k:'nascimento',l:'Data de nascimento',type:'date',mostrarSe:o=>pacPedeCPF(o.paciente)},{k:'data',l:'Data',type:'date',req:true},{k:'hora',l:'Hora',type:'hora15',req:true},{k:'duracao',l:'Duração (minutos)',type:'select',opts:[15,30,45,60,75,90,120,150,180]},{k:'profissional',l:'Profissional',list:'dlProf'},{k:'encaixe',l:'Encaixe, sem hora marcada',type:'select',opts:['Não','Sim'],mostrarSe:o=>temPorProf()},{k:'procedimento',l:ehSeg('podologia')?'Procedimento':'Serviço',full:true,list:'dlServ',auto:o=>{const sv=servPorNome(o.procedimento);if(!sv)return {};return {duracao:servAjuste(sv,o.profissional).duracao}},aviso:o=>{if(!temPorProf())return '';const sv=servPorNome(o.procedimento);if(!sv)return '';const aj=servAjuste(sv,o.profissional);const pr=descontoDoDia(sv,aj.preco,o.data,o.hora);const base=precoTabela(sv.nome);return o.profissional?`${esc(o.profissional)} cobra ${money(pr)} e leva ${aj.duracao} minutos neste serviço${pr<base?', já com o desconto do dia':''}.`:`Valor de tabela ${money(base)} em ${+sv.duracao||30} minutos. Escolha o profissional para ver o preço dele.`}},{k:'status',l:'Status',type:'select',opts:['Agendado','Confirmado','Chegou','Atendido','Faltou','Desmarcado']},
    ...(a?[]:[{k:'repetir',l:'Repetir este atendimento',type:'select',opts:REPETE,full:true},
     {k:'vezes',l:'Quantos atendimentos no total, contando este',type:'select',opts:[2,3,4,5,6,8,10,12,16,20,24],mostrarSe:o=>str(o.repetir)&&str(o.repetir)!=='Não repete'}]),
    {k:'obs',l:'Observação',type:'textarea',rows:2,full:true},
@@ -1545,7 +1563,8 @@ function agForm(id,pacienteId,pre){pre=pre||{};const a=id?S.agendamentos.find(x=
    if(o.nascimento&&str(o.nascimento)!==str(pp.nascimento))pp.nascimento=str(o.nascimento);
    ['cep','endereco','numero','bairro','cidade','uf','profissao','empresa'].forEach(k=>{const v=k==='cep'?fmtCEP(o[k]):str(o[k]);if(v&&v!==str(pp[k]))pp[k]=v});
    if(!jaExistia)setTimeout(()=>{toast(SEG().pessoa+' novo cadastrado: '+pp.nome);convidarAnamnese(pp.id)},120);
-   const rec={pacienteId:pp.id,data:o.data,hora:o.hora,duracao:o.duracao||30,profissional:ensureProf(o.profissional),procedimento:o.procedimento,status:o.status,obs:o.obs};
+   const rec={pacienteId:pp.id,data:o.data,hora:o.hora,duracao:o.duracao||30,profissional:ensureProf(o.profissional),procedimento:o.procedimento,status:o.status,obs:o.obs,encaixe:String(o.encaixe)==='Sim'};
+   delete o.encaixe;
    const ant=a?stAg(a):'';let ag=a;if(a)Object.assign(a,rec);else{ag={id:uid(),origem:'manual',...rec};S.agendamentos.push(ag)}UI.agDate=o.data;
    const modoRep=str(o.repetir);
    if(!a&&modoRep&&modoRep!=='Não repete'){const nv=Math.max(2,Math.min(24,Number(o.vezes)||4));
@@ -2884,7 +2903,8 @@ function ccpResumo(k,r){if(!r)return 'Ignorada';if(CCP[k].info)return 'Não prec
 const SEGMENTOS={
  podologia:{nome:'Podologia',pessoa:'Paciente',pessoas:'Pacientes',desc:'Prontuário, anamnese, controle de sessões, evolução e retorno.'},
  estetica:{nome:'Estética',pessoa:'Cliente',pessoas:'Clientes',desc:'Pacotes de sessões, avaliação corporal e facial, fotos de antes e depois, termos, produtos por lote, protocolos e equipamentos.'},
- beleza:{nome:'Salão de beleza',pessoa:'Cliente',pessoas:'Clientes',desc:'Atendimento com vários serviços e profissionais, comanda, caixa do dia, comissões, salão-parceiro, estoque, pacotes, fidelidade e ficha técnica.'}
+ beleza:{nome:'Salão de beleza',pessoa:'Cliente',pessoas:'Clientes',desc:'Atendimento com vários serviços e profissionais, comanda, caixa do dia, comissões, salão-parceiro, estoque, pacotes, fidelidade e ficha técnica.'},
+ barbearia:{nome:'Barbearia',pessoa:'Cliente',pessoas:'Clientes',desc:'Preço e tempo por barbeiro, combos de corte e barba, encaixe sem hora marcada, aviso de cliente na recepção, retorno por serviço e agendamento pelo celular do cliente.'}
 };
 /* Plano: só agenda, para quem quer o sistema enxuto, ou completo */
 const PLANOS={
@@ -2897,7 +2917,7 @@ function planoInfo(k){const a=(typeof ASSINATURA!=='undefined'&&ASSINATURA&&ASSI
  return Object.assign({},d[k]||{},a[k]||{})}
 const planoK=()=>planoContratado()==='agenda'?'agenda':(S.config.plano==='agenda'?'agenda':'completo');
 const soAgenda=()=>planoK()==='agenda';
-const VIEWS_AGENDA=['inicio','agenda','pacientes','paciente','profissionais','servicos','confirmacao','config','blackpay','prontuarios','fotorapida'];
+const VIEWS_AGENDA=['inicio','agenda','pacientes','paciente','profissionais','servicos','combos','confirmacao','config','blackpay','prontuarios','fotorapida'];
 const segK=()=>SEGMENTOS[S.config.segmento]?S.config.segmento:'podologia';
 const SEG=()=>SEGMENTOS[segK()];
 const ehSeg=(...k)=>k.includes(segK());
@@ -2908,11 +2928,12 @@ const r2=v=>Math.round((Number(v)||0)*100)/100;
 const optList=(arr,v)=>arr.map(o=>{const [val,lab]=Array.isArray(o)?o:[o,o];return `<option value="${esc(val)}" ${String(val)===String(v??'')?'selected':''}>${esc(lab)}</option>`}).join('');
 
 function menuItens(){const P=SEG().pessoas;
- if(soAgenda())return menuOrdem([['agenda','Agenda','cal'],['confirmacao','Confirmação e Alertas','bell'],['pacientes',P,'user'],['prontuarios','Prontuário','file'],['ajuda','Ajuda','alert'],['fotorapida','Inserir foto','cam'],['profissionais','Profissional','badge'],['servicos',ehSeg('podologia')?'Procedimentos e preços':'Serviços e preços','report']].filter(([k])=>podeTela(k)));
+ if(soAgenda())return menuOrdem([['agenda','Agenda','cal'],['confirmacao','Confirmação e Alertas','bell'],['pacientes',P,'user'],['prontuarios','Prontuário','file'],['ajuda','Ajuda','alert'],['fotorapida','Inserir foto','cam'],['profissionais','Profissional','badge'],...(temPorProf()?[['combos','Combos','gift']]:[]),['servicos',ehSeg('podologia')?'Procedimentos e preços':'Serviços e preços','report']].filter(([k])=>podeTela(k)));
  const base=[['agenda','Agenda','cal'],['confirmacao','Confirmação e Alertas','bell'],['indicacoes','Controle de Indicação','share'],['vouchers','Controle de Voucher','gift'],['dashboard','Dashboard Analítico','chart'],['financeiro','Financeiro','money'],['importar','Importar Dados','up'],['pacientes',P,'user'],['prontuarios','Prontuário','file'],['ajuda','Ajuda','alert'],['fotorapida','Inserir foto','cam'],['profissionais','Profissional','badge'],['relatorios','Relatórios','report']];
  if(ehSeg('podologia'))return menuOrdem([...base,['exames','Exames','file'],['servicos','Procedimentos e preços','report'],['estoque','Estoque','badge']].filter(([k])=>podeTela(k)));
  const extra=[['comandas','Comandas','file'],['caixa','Caixa do dia','money'],['servicos','Serviços e preços','report'],['estoque',ehSeg('estetica')?'Produtos e lotes':'Estoque','badge'],['comissoes',ehSeg('beleza')?'Comissões e salão-parceiro':'Comissões','chart']];
  if(ehSeg('estetica'))extra.push(['protocolos','Protocolos','report'],['equipamentos','Equipamentos','gear']);
+ if(temPorProf())extra.push(['combos','Combos','gift']);
  return menuOrdem([...base,...extra].filter(([k])=>podeTela(k)))}
 /* Agenda sempre em primeiro, o resto em ordem alfabetica, BlackPay por ultimo */
 function menuOrdem(L){const ag=L.filter(([k])=>k==='agenda');
@@ -2989,8 +3010,112 @@ function avisoServico(v,editando){const nome=str(v).trim();if(nome.length<3)retu
 function vServicos(){const L=az(S.servicos);
  return `<div class="page"><div class="phead"><div><h1>${ehSeg('podologia')?'Procedimentos e preços':'Serviços e preços'}</h1><p class="sub">${ehSeg('podologia')?'Tabela de procedimentos com o preço de cada atendimento. Quando o paciente é agendado, o valor entra como previsto no financeiro; quando é marcado como atendido, o valor passa a ser cobrado.':'Tabela de serviços com duração, preço e comissão. É usada na agenda, na comanda e nos pacotes.'}</p></div><div style="display:flex;gap:8px;flex-wrap:wrap">${S.tratamentos.length?`<button class="btn ghost" onclick="montarTabelaPrecos()">Montar a tabela pelos orçamentos</button>`:''}<button class="btn" onclick="servForm()">${ico('plus',16)} ${ehSeg('podologia')?'Novo procedimento':'Novo serviço'}</button></div></div>
  ${ehSeg('podologia')?`<div class="note">Lançar o valor da agenda no financeiro: <b>${S.config.lancarAgenda===false?'desligado':'ligado'}</b>. <button class="lnk" onclick="S.config.lancarAgenda=S.config.lancarAgenda===false;save();render()">${S.config.lancarAgenda===false?'Ligar':'Desligar'}</button>. Procedimentos de um plano ou pacote já aprovado na ficha do paciente não geram cobrança por sessão, porque o pacote já foi cobrado. <b>Avaliação e retorno nunca geram cobrança.</b> Procedimentos sem preço também não.</div>`:''}
+ ${temPorProf()?`<div class="note" style="margin-bottom:14px">Em ${esc(SEG().nome.toLowerCase())}, o mesmo serviço costuma mudar de preço conforme quem atende. Use <b>Por profissional</b> na linha do serviço. Para vender corte e barba juntos, monte um <button class="lnk" onclick="go('combos')">combo</button>.</div>`:''}
  <div class="card">${azBarra(L,'servIrLetra',UI.servLetra||'')}<table class="tbl"><tr><th>${ehSeg('podologia')?'Procedimento':'Serviço'}</th><th>Categoria</th><th class="num">Duração</th><th class="num">Preço</th><th class="num">Comissão</th><th>Status</th><th></th></tr>
- ${L.map(s=>`<tr id="servR_${s.id}"><td><b>${esc(s.nome)}</b></td><td>${esc(s.categoria||'-')}</td><td class="num">${s.duracao||30} min</td><td class="num">${semCobranca(s.nome)?'<span class="badge b-ok">Sem cobrança</span>':money(s.preco)}${Number(s.precoPacote)>0?`<br><small style="color:var(--mut)">Pacote: ${money(s.precoPacote)}${s.sessoesPacote?' ('+s.sessoesPacote+' sessões)':''}</small>`:''}</td><td class="num">${s.comissao!==''&&s.comissao!=null?s.comissao+'%':'Padrão do profissional'}</td><td>${badgeFor(s.ativo===false?'Inativo':'Ativo')}</td><td><button class="lnk" onclick="servForm('${s.id}')">Editar</button></td></tr>`).join('')||'<tr><td colspan="7" class="mini-empty">Nenhum serviço cadastrado ainda.</td></tr>'}</table></div></div>`}
+ ${L.map(s=>`<tr id="servR_${s.id}"><td><b>${esc(s.nome)}</b></td><td>${esc(s.categoria||'-')}</td><td class="num">${s.duracao||30} min</td><td class="num">${semCobranca(s.nome)?'<span class="badge b-ok">Sem cobrança</span>':money(s.preco)}${Number(s.precoPacote)>0?`<br><small style="color:var(--mut)">Pacote: ${money(s.precoPacote)}${s.sessoesPacote?' ('+s.sessoesPacote+' sessões)':''}</small>`:''}</td><td class="num">${s.comissao!==''&&s.comissao!=null?s.comissao+'%':'Padrão do profissional'}</td><td>${badgeFor(s.ativo===false?'Inativo':'Ativo')}</td><td><button class="lnk" onclick="servForm('${s.id}')">Editar</button>${temPorProf()?`<br><button class="lnk" onclick="servProfModal('${s.id}')">Por profissional</button>`:''}</td></tr>`).join('')||'<tr><td colspan="7" class="mini-empty">Nenhum serviço cadastrado ainda.</td></tr>'}</table></div></div>`}
+/* Preço e tempo por profissional, e desconto por dia: só faz sentido onde o
+   mesmo serviço muda de preço conforme quem atende. */
+const temPorProf=()=>ehSeg('barbearia')||ehSeg('beleza');
+function servProfModal(id){const sv=S.servicos.find(x=>x.id===id);if(!sv)return;
+ const P=S.profissionais.filter(p=>p.ativo!==false);
+ const pp=sv.porProf||{};
+ const linhas=P.map(p=>{const a=pp[p.id]||{};
+  return `<tr><td><b>${esc(p.nome)}</b></td>
+   <td><input id="pp_${p.id}_preco" inputmode="decimal" placeholder="${money(precoTabela(sv.nome))}" value="${a.preco!==''&&a.preco!=null?a.preco:''}" style="width:110px"></td>
+   <td><input id="pp_${p.id}_dur" type="number" min="5" step="5" placeholder="${+sv.duracao||30}" value="${a.duracao!==''&&a.duracao!=null?a.duracao:''}" style="width:90px"></td></tr>`}).join('');
+ const D=Array.isArray(sv.descontos)?sv.descontos:[];
+ const d0=D[0]||{};
+ openModal(`<h3>${esc(sv.nome)}</h3>
+  <p class="sub">Preço e tempo de cada profissional. Deixe em branco para usar o padrão do serviço, que é ${money(precoTabela(sv.nome))} em ${+sv.duracao||30} minutos.</p>
+  ${P.length?`<div style="overflow:auto"><table class="tbl"><tr><th>Profissional</th><th>Preço</th><th>Minutos</th></tr>${linhas}</table></div>`:'<p class="note">Cadastre os profissionais primeiro.</p>'}
+  <h3 style="margin-top:18px;font-size:15px">Desconto em dia fraco</h3>
+  <p class="sub">Um desconto automático em um dia da semana. O sistema já aplica o valor com desconto na comanda e mostra o preço certo no agendamento pela internet.</p>
+  <div class="fgrid">
+   <div><label>Dia</label><select id="dcDia"><option value="">Sem desconto</option>${['Domingo','Segunda','Terça','Quarta','Quinta','Sexta','Sábado'].map((n,i)=>`<option value="${i}" ${String(d0.dia)===String(i)?'selected':''}>${n}</option>`).join('')}</select></div>
+   <div><label>Período</label><select id="dcTurno"><option value="dia" ${d0.turno==='dia'?'selected':''}>O dia inteiro</option><option value="manha" ${d0.turno==='manha'?'selected':''}>Manhã</option><option value="tarde" ${d0.turno==='tarde'?'selected':''}>Tarde</option><option value="noite" ${d0.turno==='noite'?'selected':''}>Noite</option></select></div>
+   <div><label>Desconto em porcentagem</label><input id="dcValor" type="number" min="0" max="90" value="${d0.tipo==='porcento'?(d0.valor||''):''}"></div>
+  </div>
+  <div class="mact"><button class="btn ghost" onclick="closeModal()">Cancelar</button><button class="btn" onclick="servProfSalvar('${sv.id}')">Salvar</button></div>`)}
+function servProfSalvar(id){const sv=S.servicos.find(x=>x.id===id);if(!sv)return;
+ const pp={};
+ S.profissionais.filter(p=>p.ativo!==false).forEach(p=>{
+  const pr=$('#pp_'+p.id+'_preco'),du=$('#pp_'+p.id+'_dur');
+  const vp=pr?parseNum(pr.value):'',vd=du?du.value.trim():'';
+  if(vp!==''&&vp>0||vd!=='')pp[p.id]={preco:vp!==''&&vp>0?vp:'',duracao:vd!==''?+vd:''}});
+ sv.porProf=pp;
+ const dia=$('#dcDia')?$('#dcDia').value:'',val=$('#dcValor')?+$('#dcValor').value:0;
+ sv.descontos=(dia!==''&&val>0)?[{dia:+dia,turno:$('#dcTurno').value||'dia',tipo:'porcento',valor:val}]:[];
+ save();closeModal();render();toast('Ajustes salvos.')}
+/* ============ Combos: corte mais barba em um agendamento só ============
+   O combo é uma casca de venda. Na agenda e no financeiro ele se desmonta nos
+   serviços que o formam, cada um com o seu profissional e a sua comissão. */
+const combo=id=>(S.combos||[]).find(c=>c.id===id);
+function comboTotal(c,profNome){const L=(c&&c.itens)||[];
+ return L.reduce((a,it)=>{const sv=S.servicos.find(x=>x.id===it.servicoId);
+  const cheio=sv?servAjuste(sv,profNome).preco:0;
+  return a+(it.valor!==''&&it.valor!=null?+it.valor:cheio)},0)}
+function comboDuracao(c,profNome){const L=(c&&c.itens)||[];
+ return L.reduce((a,it)=>{const sv=S.servicos.find(x=>x.id===it.servicoId);
+  const cheia=sv?servAjuste(sv,profNome).duracao:30;
+  return a+(it.duracao!==''&&it.duracao!=null?+it.duracao:cheia)},0)}
+function comboCheio(c,profNome){const L=(c&&c.itens)||[];
+ return L.reduce((a,it)=>{const sv=S.servicos.find(x=>x.id===it.servicoId);return a+(sv?servAjuste(sv,profNome).preco:0)},0)}
+function vCombos(){const L=(S.combos||[]).slice().sort((a,b)=>azCmp(a.nome,b.nome));
+ return `<div class="page"><div class="phead"><div><h1>Combos</h1><p class="sub">Junte serviços que saem juntos, como corte e barba, com preço fechado. O cliente escolhe o combo em um toque, e na agenda ele entra como atendimentos em sequência, cada um com o seu profissional.</p></div><button class="btn" onclick="comboForm()">${ico('plus',16)} Novo combo</button></div>
+ <div class="card"><table class="tbl"><tr><th>Combo</th><th>O que inclui</th><th class="num">Tempo</th><th class="num">Preço cheio</th><th class="num">No combo</th><th>Situação</th><th></th></tr>
+ ${L.map(c=>{const t=comboTotal(c),ch=comboCheio(c);
+  return `<tr><td><b>${esc(c.nome)}</b></td>
+   <td>${(c.itens||[]).map(it=>{const sv=S.servicos.find(x=>x.id===it.servicoId);return esc(sv?sv.nome:'serviço removido')}).join(', ')||'-'}</td>
+   <td class="num">${comboDuracao(c)} min</td>
+   <td class="num">${ch>t?`<s style="color:var(--mut)">${money(ch)}</s>`:money(ch)}</td>
+   <td class="num"><b>${money(t)}</b>${ch>t?`<br><small style="color:var(--ok,#16a34a)">economia de ${money(ch-t)}</small>`:''}</td>
+   <td>${badgeFor(c.ativo===false?'Inativo':'Ativo')}</td>
+   <td><button class="lnk" onclick="comboForm('${c.id}')">Editar</button></td></tr>`}).join('')||'<tr><td colspan="7" class="mini-empty">Nenhum combo ainda. Um combo de corte e barba costuma ser o mais pedido.</td></tr>'}
+ </table></div></div>`}
+function comboForm(id){const c=id?combo(id):null;
+ UI.comboItens=c?JSON.parse(JSON.stringify(c.itens||[])):[];
+ UI.comboNome=c?c.nome:'';UI.comboAtivo=c?c.ativo!==false:true;
+ comboDesenha(id)}
+function comboDesenha(id){const SV=az(S.servicos.filter(x=>x.ativo!==false));
+ const itens=UI.comboItens||[];
+ const linhas=itens.map((it,i)=>{const sv=S.servicos.find(x=>x.id===it.servicoId);
+  const cheio=sv?precoTabela(sv.nome):0,cd=sv?(+sv.duracao||30):30;
+  return `<tr><td><b>${esc(sv?sv.nome:'serviço removido')}</b><br><small style="color:var(--mut)">avulso ${money(cheio)} em ${cd} min</small></td>
+   <td><input id="ci_${i}_v" inputmode="decimal" value="${it.valor!==''&&it.valor!=null?it.valor:''}" placeholder="${cheio}" style="width:100px" oninput="comboLer()"></td>
+   <td><input id="ci_${i}_d" type="number" min="5" step="5" value="${it.duracao!==''&&it.duracao!=null?it.duracao:''}" placeholder="${cd}" style="width:85px" oninput="comboLer()"></td>
+   <td><button class="lnk" onclick="comboLer();UI.comboItens.splice(${i},1);comboDesenha(${id?"'"+id+"'":'null'})">Tirar</button></td></tr>`}).join('');
+ const prov={itens,nome:UI.comboNome};
+ const tot=comboTotal(prov),ch=comboCheio(prov),dur=comboDuracao(prov);
+ openModal(`<h3>${id?'Editar combo':'Novo combo'}</h3>
+  <label>Nome do combo</label><input id="cbNome" value="${esc(UI.comboNome||'')}" placeholder="Corte e barba" oninput="UI.comboNome=this.value">
+  <h3 style="margin-top:16px;font-size:15px">Serviços deste combo</h3>
+  ${itens.length?`<div style="overflow:auto"><table class="tbl"><tr><th>Serviço</th><th>Preço no combo</th><th>Minutos</th><th></th></tr>${linhas}</table></div>
+   <div class="note" style="margin-top:10px">Tempo total: <b>${dur} minutos</b>. Preço cheio ${money(ch)}, no combo <b>${money(tot)}</b>${ch>tot?`, economia de ${money(ch-tot)} para o cliente`:''}.</div>`
+   :'<p class="note">Escolha abaixo os serviços que formam o combo. Deixe o preço em branco para usar o valor cheio.</p>'}
+  <label style="margin-top:14px">Adicionar serviço</label>
+  <select id="cbAdd" onchange="comboAdicionar(${id?"'"+id+"'":'null'})"><option value="">Escolha um serviço</option>${SV.map(x=>`<option value="${x.id}">${esc(x.nome)}</option>`).join('')}</select>
+  <label style="margin-top:14px">Situação</label>
+  <select id="cbAtivo"><option value="1" ${UI.comboAtivo?'selected':''}>Ativo</option><option value="0" ${UI.comboAtivo?'':'selected'}>Inativo</option></select>
+  <div class="mact">${id?`<button class="btn danger" style="margin-right:auto" onclick="comboExcluir('${id}')">Excluir</button>`:''}<button class="btn ghost" onclick="closeModal()">Cancelar</button><button class="btn" onclick="comboSalvar(${id?"'"+id+"'":'null'})">Salvar</button></div>`)}
+function comboLer(){(UI.comboItens||[]).forEach((it,i)=>{const v=$('#ci_'+i+'_v'),d=$('#ci_'+i+'_d');
+ if(v)it.valor=v.value.trim()===''?'':parseNum(v.value);
+ if(d)it.duracao=d.value.trim()===''?'':+d.value});
+ const n=$('#cbNome');if(n)UI.comboNome=n.value}
+function comboAdicionar(id){comboLer();const sel=$('#cbAdd');if(!sel||!sel.value)return;
+ UI.comboItens=UI.comboItens||[];UI.comboItens.push({servicoId:sel.value,valor:'',duracao:''});
+ comboDesenha(id)}
+function comboSalvar(id){comboLer();
+ const nome=str(UI.comboNome).trim();
+ if(!nome){toast('Dê um nome ao combo.');return}
+ if(!(UI.comboItens||[]).length){toast('Um combo precisa de pelo menos um serviço.');return}
+ const ativo=$('#cbAtivo')?$('#cbAtivo').value==='1':true;
+ S.combos=S.combos||[];
+ const c=id?combo(id):null;
+ if(c)Object.assign(c,{nome,itens:UI.comboItens,ativo});
+ else S.combos.push({id:uid(),nome,itens:UI.comboItens,ativo});
+ save();closeModal();render();toast('Combo salvo.')}
+function comboExcluir(id){if(!confirm('Excluir este combo? Os agendamentos já feitos continuam como estão.'))return;
+ S.combos=(S.combos||[]).filter(c=>c.id!==id);save();closeModal();render();toast('Combo excluído.')}
 function servIrLetra(L){UI.servLetra=L||'';render();if(!L)return;
  const arr=az(S.servicos);const i=arr.findIndex(x=>azLetra(x.nome)===L);
  if(i>=0)setTimeout(()=>azPiscar('servR_'+arr[i].id),60)}
@@ -3248,6 +3373,7 @@ function abasCliente(){const filtra=L=>pode('fichaFin')?L:L.filter(([k])=>k!=='f
  return filtra(abasClienteTodas())}
 function abasClienteTodas(){
  if(ehSeg('estetica'))return [['geral','Visão Geral'],['prontuario','Prontuário'],['sessoes','Pacotes de sessões'],['avaliacao','Avaliação'],['fotos','Antes e depois'],['exames','Exames'],['documentos','Documentos'],['termos','Termos'],['contratos','Contratos'],['aplicacoes','Produtos aplicados'],['comandasC','Comandas'],['financeiro','Financeiro'],['evolucao','Evolução'],['anamnese','Anamnese'],['agendamentos','Agendamentos']];
+ if(ehSeg('barbearia'))return [['geral','Visão Geral'],['prontuario','Prontuário'],['comandasC','Comandas'],['sessoes','Pacotes e planos'],['fotos','Fotos'],['documentos','Documentos'],['agendamentos','Agendamentos']];
  if(ehSeg('beleza'))return [['geral','Visão Geral'],['prontuario','Prontuário'],['comandasC','Comandas'],['sessoes','Pacotes e assinaturas'],['ficha','Ficha técnica'],['fotos','Fotos'],['documentos','Documentos'],['termos','Termos'],['contratos','Contratos'],['financeiro','Financeiro'],['agendamentos','Agendamentos']];
  return [['geral','Visão Geral'],['prontuario','Prontuário'],['orcamentos','Orçamentos'],['financeiro','Financeiro'],['sessoes','Controle de Sessões'],['evolucao','Evolução'],['anamnese','Anamnese'],['fotos','Fotos'],['exames','Exames'],['documentos','Documentos'],['termos','Termos'],['contratos','Contratos'],['agendamentos','Agendamentos']]}
 /* ============ Prontuário: tudo do paciente em uma linha do tempo ============ */
@@ -4437,7 +4563,7 @@ function agNovo(a,s){if(s==='Desmarcado'||s==='Faltou')return false;const k=a.da
  const hist=c=>S[c].some(x=>x.pacienteId===a.pacienteId&&((x.data||x.vencimento||x.pagamento||'')<a.data)&&(x.data||x.vencimento||x.pagamento));
  return !hist('evolucoes')&&!hist('tratamentos')&&!S.lancamentos.some(l=>l.pacienteId===a.pacienteId&&l.pagamento&&l.pagamento<a.data)}
 /* ============ Atualização: aviso com botão Atualizar agora ============ */
-const VERSAO_APP='1.9.58';const URL_VERSAO_JSON='https://raw.githubusercontent.com/TheIgor12/blacksolutions/main/versao.json';
+const VERSAO_APP='1.10.0';const URL_VERSAO_JSON='https://raw.githubusercontent.com/TheIgor12/blacksolutions/main/versao.json';
 const numV=v=>String(v||'0').split(/\D+/).filter(Boolean).map(Number);
 function versaoMaior(a,b){const x=numV(a),y=numV(b);for(let i=0;i<Math.max(x.length,y.length);i++){const d=(x[i]||0)-(y[i]||0);if(d)return d>0}return false}
 const ATU={nova:null,timer:null};
@@ -4460,6 +4586,31 @@ function atuIniciar(){if(ATU.timer)return;setTimeout(()=>atuChecar(false),6000);
 /* ============ Valor do procedimento lançado pela agenda (podologia) ============ */
 const lancAgAtivo=()=>!soAgenda()&&ehSeg('podologia')&&S.config.lancarAgenda!==false;
 const semCobranca=nome=>S.config.retornoGratis!==false&&/^\s*(retorno|avalia[cç][aã]o)\b/i.test(String(nome||''));
+/* ============ Barbearia: preço e tempo por profissional ============
+   Em barbearia o mesmo serviço custa e demora diferente conforme quem atende.
+   O preço cheio fica no serviço; a sobrescrita de cada profissional fica em
+   servico.porProf, numa chave por profissional. Vazio significa usar o padrão. */
+function profPorNome(n){n=norm(n);return S.profissionais.find(p=>norm(p.nome)===n)||null}
+function servAjuste(sv,profNome){
+ if(!sv)return {preco:0,duracao:30};
+ const base={preco:precoTabela(sv.nome),duracao:+sv.duracao||30};
+ const p=profPorNome(profNome);if(!p)return base;
+ const a=(sv.porProf||{})[p.id];if(!a)return base;
+ return {preco:(a.preco===''||a.preco==null)?base.preco:+a.preco,
+         duracao:(a.duracao===''||a.duracao==null)?base.duracao:+a.duracao}}
+function precoDoServico(nome,profNome){const sv=servPorNome(nome);if(!sv)return precoProc(nome);
+ if(semCobranca(nome)||sv.ativo===false)return 0;
+ return descontoDoDia(sv,servAjuste(sv,profNome).preco)}
+function duracaoDoServico(nome,profNome){const sv=servPorNome(nome);return sv?servAjuste(sv,profNome).duracao:30}
+/* Desconto por dia da semana e turno, para encher o dia fraco */
+function descontoDoDia(sv,valor,data,hora){
+ const L=sv&&sv.descontos;if(!Array.isArray(L)||!L.length)return valor;
+ const d=data||todayISO();const dow=new Date(d+'T12:00').getDay();
+ const h=parseInt(String(hora||'12:00').slice(0,2),10);
+ const turno=h<12?'manha':h<18?'tarde':'noite';
+ const r=L.find(x=>+x.dia===dow&&(x.turno==='dia'||x.turno===turno));
+ if(!r)return valor;
+ const v=+r.valor||0;return r.tipo==='porcento'?r2(valor*(1-v/100)):r2(Math.max(0,v))}
 function precoProc(nome){if(semCobranca(nome))return 0;const sv=servPorNome(nome);if(!sv||sv.ativo===false)return 0;if(Number(sv.preco)>0)return Number(sv.preco);const pp=Number(sv.precoPacote),n=Number(sv.sessoesPacote);return pp>0&&n>0?r2(pp/n):0}
 function precoTabela(nome){const sv=servPorNome(nome);if(!sv)return 0;if(Number(sv.preco)>0)return Number(sv.preco);const pp=Number(sv.precoPacote),n=Number(sv.sessoesPacote);return pp>0&&n>0?r2(pp/n):0}
 /* Pacotes: o pacote é lançado no financeiro uma única vez; cada sessão feita é só contada, sem nova cobrança */
@@ -4725,7 +4876,7 @@ function exportAll(){if(!pode('exportar')){toast('O seu perfil de acesso não pe
 // Preencha com os dados do seu projeto Supabase. Em branco, o sistema funciona só neste computador.
 const NUVEM={url:'https://blszdbjpxgtloblxlusr.supabase.co',chave:'sb_publishable_0Tns_mDN2N1iQmw_sEzFXw_SRMy1uXK'};
 const NV={ativa:!!(NUVEM.url&&NUVEM.chave),sb:null,sessao:null,clinicaId:null,papel:'',nomeClinica:'',hashes:{},cursor:0,status:'local',ocupado:false,offline:false,timer:null};
-const COLS=['vouchers','documentos','pacientes','lancamentos','tratamentos','anamneses','agendamentos','contasPagar','evolucoes','profissionais','importacoes','servicos','produtos','movEstoque','comandas','caixas','avaliacoes','fotos','contratos','termos','fichas','protocolos','equipamentos'];
+const COLS=['combos','vouchers','documentos','pacientes','lancamentos','tratamentos','anamneses','agendamentos','contasPagar','evolucoes','profissionais','importacoes','servicos','produtos','movEstoque','comandas','caixas','avaliacoes','fotos','contratos','termos','fichas','protocolos','equipamentos'];
 const URL_ASSINATURA='https://raw.githubusercontent.com/TheIgor12/blacksolutions/main/assinatura.json';
 let ASSINATURA=null;
 /* O prazo da degustação fica em um lugar só, no assinatura.json, para mudar

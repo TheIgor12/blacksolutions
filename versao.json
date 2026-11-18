@@ -1,4 +1,4 @@
 {
-  "versao": "1.9.58",
-  "novidades": "A Tati passa a ser o rosto do atendimento dentro do sistema. A figura antiga da tela de início foi substituída pela foto dela, que também aparece na tela de Ajuda com o botão de WhatsApp. O arquivo do sistema ficou cem kilobytes mais leve com a troca. Continua valendo a atualização anterior: o controle de prazo da promoção de Black Friday, com aviso no alto da tela quando faltam trinta dias ou menos para a mensalidade voltar a R$ 79,90."
+  "versao": "1.10.0",
+  "novidades": "Entrou o módulo de barbearia. Na criação da conta já dá para escolher Barbearia como ramo. O mesmo serviço passa a ter preço e tempo diferentes por profissional, com o botão Por profissional na lista de serviços. Entraram os combos, como corte e barba, que o cliente escolhe em um toque e que na agenda viram atendimentos em sequência, cada um com o seu profissional. A agenda ganhou o encaixe, para quem chega sem hora marcada, e a situação Chegou, para avisar o profissional de que a pessoa está na recepção. Dá para programar desconto automático em dia fraco. E o agendamento pela internet foi refeito: o cliente escolhe vários serviços de uma vez ou um combo, vê o preço e o tempo de cada profissional antes de decidir e recebe o horário de quinze em quinze minutos, sem buraco na agenda."
 }
