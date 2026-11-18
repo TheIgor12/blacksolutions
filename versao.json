@@ -1,4 +1,4 @@
 {
-  "versao": "1.9.57",
-  "novidades": "A promoção de Black Friday agora tem controle de prazo. Quem entra pagando R$ 59,90 fica com a data de entrada e a data de término gravadas, o sistema avisa no alto da tela quando faltam trinta dias ou menos e a tela de assinatura mostra até quando vale o preço promocional e qual será a mensalidade depois. Entrou também a Tati, o atendimento do BlackFlow, com o botão de WhatsApp dentro da tela de Ajuda. Para ligar o controle da promoção, rode o arquivo sql/bs_promocao.sql no Supabase."
+  "versao": "1.9.58",
+  "novidades": "A Tati passa a ser o rosto do atendimento dentro do sistema. A figura antiga da tela de início foi substituída pela foto dela, que também aparece na tela de Ajuda com o botão de WhatsApp. O arquivo do sistema ficou cem kilobytes mais leve com a troca. Continua valendo a atualização anterior: o controle de prazo da promoção de Black Friday, com aviso no alto da tela quando faltam trinta dias ou menos para a mensalidade voltar a R$ 79,90."
 }
