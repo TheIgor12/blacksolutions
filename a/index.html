@@ -177,11 +177,23 @@ async function confirmar(){const nome=(E.nome||'').trim(),tel=(E.tel||'').replac
  if(nome.split(' ').length<2||nome.length<5){E.erro='Informe o seu nome e sobrenome.';render();return}
  if(tel.length<10||tel.length>13){E.erro='Informe o WhatsApp com DDD.';render();return}
  const b=document.getElementById('bOk');b.disabled=true;b.textContent='Agendando...';
- const feitos=[];let t=min(E.hora),primeiro=null,falhou='';
- for(const item of L){
-  const r=await sb.rpc('agendar_online',{p_slug:slug,p_nome:nome,p_telefone:tel,p_servico:item.nome,p_profissional:E.prof||'',p_data:E.dia,p_hora:hm(t)});
-  if(r.error){falhou=(r.error.message||'Não foi possível agendar.').replace(/^.*?:\s(?=[A-ZÁÉÍÓÚ])/,'');break}
-  if(!primeiro)primeiro=r.data;feitos.push({nome:item.nome,hora:hm(t)});t+=(+item.duracao||30)}
+ const limpa=m=>String(m||'Não foi possível agendar.').replace(/^.*?:\s(?=[A-ZÁÉÍÓÚ])/,'');
+ let feitos=[],primeiro=null,falhou='';
+ /* Caminho normal: tudo em uma chamada só, dentro de uma transação. Ou entra
+    tudo, ou nada, e ninguém fica com meio agendamento marcado. */
+ const multi=await sb.rpc('agendar_online_multi',{p_slug:slug,p_nome:nome,p_telefone:tel,
+   p_servicos:L.map(x=>({servico:x.nome,duracao:+x.duracao||30})),
+   p_profissional:E.prof||'',p_data:E.dia,p_hora:E.hora});
+ const semFuncao=multi.error&&/does not exist|42883|not find the function|schema cache/i.test(multi.error.message||'');
+ if(!multi.error){primeiro=multi.data;
+  feitos=(multi.data.itens||L.map(x=>({servico:x.nome,hora:E.hora}))).map(i=>({nome:i.servico,hora:i.hora}))}
+ else if(!semFuncao){falhou=limpa(multi.error.message)}
+ else{/* servidor antigo: marca um a um, em sequência */
+  let t=min(E.hora);
+  for(const item of L){
+   const r=await sb.rpc('agendar_online',{p_slug:slug,p_nome:nome,p_telefone:tel,p_servico:item.nome,p_profissional:E.prof||'',p_data:E.dia,p_hora:hm(t)});
+   if(r.error){falhou=limpa(r.error.message);break}
+   if(!primeiro)primeiro=r.data;feitos.push({nome:item.nome,hora:hm(t)});t+=(+item.duracao||30)}}
  if(!feitos.length){E.erro=falhou||'Não foi possível agendar.';
   const rr=await sb.rpc('agenda_publica',{p_slug:slug});if(rr.data)E.dados=rr.data;
   if(!livres(E.dia).includes(E.hora))E.hora='';b.disabled=false;b.textContent='Confirmar agendamento';render();return}
