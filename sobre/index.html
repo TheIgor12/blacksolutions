@@ -152,6 +152,9 @@ footer .wrap{display:flex;justify-content:space-between;gap:16px;flex-wrap:wrap;
 .tati p{color:var(--mut);margin:10px 0 16px}
 .tati .bts{display:flex;gap:10px;flex-wrap:wrap}
 @media (max-width:700px){.tati{grid-template-columns:1fr;text-align:center;justify-items:center}.tati img{width:150px;height:150px}.tati .bts{justify-content:center}}
+.video{background:linear-gradient(180deg,#0b0b22,#07061a);border:1px solid var(--linha);border-radius:24px;padding:22px;max-width:980px;margin:0 auto}
+.video video{width:100%;display:block;border-radius:16px;background:#000}
+.video .leg{color:var(--mut);font-size:14px;margin:14px 2px 0;text-align:center}
 @media (max-width:1150px){.segs{grid-template-columns:repeat(2,1fr)}}
 @media (max-width:900px){.pers,.planos,.segs{grid-template-columns:1fr}.comp th:nth-child(3),.comp td:nth-child(3){display:none}}
 @media (prefers-reduced-motion:reduce){.mascote{animation:none}.revela{opacity:1;transform:none;transition:none}}
@@ -164,7 +167,7 @@ footer .wrap{display:flex;justify-content:space-between;gap:16px;flex-wrap:wrap;
  <a href="#planos">Ver a promoção</a></div></div>
 <header><div class="wrap nav">
  <a class="marca" href="#"><img src="../img/blackflow-icone.png" alt="" width="36" height="36" style="border-radius:9px;box-shadow:0 0 18px rgba(90,76,251,.55)"><span>Black<b>Flow</b> <small style="font-weight:600;color:var(--mut);font-size:12px">by BlackSolutions</small></span></a>
- <nav class="links"><a href="#segmentos">Segmentos</a><a href="#recursos">Recursos</a><a href="#personalize">Sua marca</a><a href="#diferencas">Por que nós</a><a href="#planos">Planos</a><a href="#duvidas">Dúvidas</a><a href="../download/Manual_BlackFlow.pdf" target="_blank">Manual</a></nav>
+ <nav class="links"><a href="#video">Vídeo</a><a href="#segmentos">Segmentos</a><a href="#recursos">Recursos</a><a href="#personalize">Sua marca</a><a href="#diferencas">Por que nós</a><a href="#planos">Planos</a><a href="#duvidas">Dúvidas</a><a href="../download/Manual_BlackFlow.pdf" target="_blank">Manual</a></nav>
  <a class="btn sm baixar" href="#">Abrir grátis</a>
 </div></header>
 
@@ -206,6 +209,18 @@ footer .wrap{display:flex;justify-content:space-between;gap:16px;flex-wrap:wrap;
  </div>
  <p class="revela" style="text-align:center;color:var(--mut);margin-top:22px">Na primeira vez que abre o BlackFlow, você escolhe o seu segmento e o sistema mostra os módulos certos. Precisa de algo sob medida para o seu negócio? Fazemos a personalização como valor adicional na assinatura.</p>
 </div></section>
+<section id="video"><div class="wrap">
+ <h2 class="tit revela">Veja o sistema funcionando</h2>
+ <p class="sub revela" style="text-align:center;max-width:720px;margin:0 auto 26px">Menos de dois minutos, com as telas reais do BlackFlow. Os nomes e os valores são de uma clínica de demonstração.</p>
+ <div class="video revela">
+  <video controls preload="metadata" poster="../img/video-capa.jpg" playsinline>
+   <source src="../download/BlackFlow_como_funciona.mp4" type="video/mp4">
+   O seu navegador não toca este vídeo. <a href="../download/BlackFlow_como_funciona.mp4">Baixe o arquivo</a> para assistir.
+  </video>
+  <p class="leg">Também dá para <a href="../download/BlackFlow_como_funciona.mp4" download style="color:#8fb8ff;font-weight:700">baixar o vídeo</a> e mandar no WhatsApp.</p>
+ </div>
+</div></section>
+
 <section id="recursos"><div class="wrap">
  <div class="tit revela"><small>RECURSOS</small><h2>Tudo o que o seu negócio usa no dia a dia</h2><p>Desenvolvido junto com uma clínica de verdade, para resolver o que realmente toma tempo.</p></div>
  <div class="recursos">
@@ -323,7 +338,7 @@ footer .wrap{display:flex;justify-content:space-between;gap:16px;flex-wrap:wrap;
  <div class="faq">
   <details><summary>O teste é grátis mesmo?</summary><p>Sim. Você usa todos os recursos por 7 dias, sem informar cartão. Se precisar de mais tempo para decidir, o próprio programa tem um botão que concede mais 7 dias, sem falar com ninguém. Depois desse prazo, o acesso continua com a assinatura mensal, por Pix ou cartão de crédito. Se não assinar, seus dados ficam guardados e voltam a aparecer quando você assinar.</p></details>
   <details><summary>Posso usar a cor e o logotipo da minha clínica?</summary><p>Sim. Em Configurações você escolhe a cor principal, a cor da barra superior e envia o logotipo. A mudança vale para toda a equipe.</p></details>
-  <details><summary>Existe um manual?</summary><p>Sim. O <a href="../download/Manual_BlackFlow.pdf" target="_blank" style="color:#8fb8ff">manual completo em PDF</a> é gratuito e explica, passo a passo, da instalação no Windows e no Mac até o uso de cada módulo: podologia, estética e salão de beleza. Há também o <a href="../download/Manual_BlackFlow_Complemento.pdf" target="_blank" style="color:#8fb8ff">complemento das novidades</a>, com tudo o que entrou no programa depois dele: foto do paciente, anamnese ligada ao agendamento, documentos, exames com reconhecimento automático do paciente, endereço por CEP, estoque e conferência com o Clinicorp.</p></details>
+  <details><summary>Existe um manual?</summary><p>Sim. O <a href="../download/Manual_BlackFlow.pdf" target="_blank" style="color:#8fb8ff">manual completo em PDF</a> é gratuito e explica, passo a passo, da instalação no Windows e no Mac até o uso de cada módulo: podologia, estética e salão de beleza. São vinte e nove páginas, com telas do sistema, cobrindo agenda, ficha, fotos, financeiro, Pix, contrato com assinatura, estoque, comissões, relatórios e importação das suas planilhas.</p></details>
   <details><summary>Preciso instalar mais alguma coisa?</summary><p>Não. O instalador já traz tudo o que o programa precisa. Basta o Windows 10 ou 11 atualizado, ou um Mac com macOS 12 ou mais novo.</p></details>
   <details><summary>No Mac apareceu "não foi possível verificar" ou "desenvolvedor não identificado". E agora?</summary><p>Abra o arquivo baixado e arraste o BlackFlow para a pasta Aplicativos. Na primeira vez, abra o BlackFlow; se o Mac bloquear, vá em Ajustes do Sistema, depois em Privacidade e Segurança, desça até a mensagem sobre o BlackFlow e clique em "Abrir Mesmo Assim". Confirme com a sua senha do Mac. Isso só é pedido uma vez. Em versões mais antigas do macOS, basta clicar no BlackFlow com o botão direito e escolher "Abrir".</p></details>
   <details><summary>Apareceu "O Windows protegeu o computador". E agora?</summary><p>Clique em "Mais informações" e depois em "Executar assim mesmo". O aviso aparece com programas novos que ainda não têm certificado de assinatura digital.</p></details>
@@ -340,7 +355,7 @@ footer .wrap{display:flex;justify-content:space-between;gap:16px;flex-wrap:wrap;
   <h2>Pronto para organizar o seu negócio?</h2>
   <p>Crie a conta do seu negócio e teste tudo por 7 dias, sem instalar nada e sem cartão de crédito.</p>
   <a class="btn" href="https://blackflow.app.br"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg> Abrir o BlackFlow</a> <p style="margin:14px 0 0"><a href="../download/Manual_BlackFlow.pdf" target="_blank" style="color:#8fb8ff;font-weight:700">Baixe grátis o manual completo em PDF</a>: instalação e uso de cada segmento, passo a passo.</p>
-  <p style="margin:6px 0 0"><a href="../download/Manual_BlackFlow_Complemento.pdf" target="_blank" style="color:#8fb8ff;font-weight:700">Complemento das novidades (PDF)</a>: o que entrou no programa depois do manual.</p>
+  <p style="margin:6px 0 0"><a href="../download/Manual_BlackFlow.pdf" target="_blank" style="color:#8fb8ff;font-weight:700">Manual completo em PDF</a>: vinte e nove páginas com telas do sistema, da criação da conta aos relatórios.</p>
   <div class="req"><span>Windows 10 e 11</span><span>macOS 12 ou mais novo</span><span>Cerca de 15 MB</span><span>Internet para sincronizar</span></div>
  </div>
 </div></section>
