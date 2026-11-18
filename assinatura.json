@@ -37,7 +37,15 @@
     "vagas": 100,
     "usadas": 0,
     "ate": "2026-11-30",
-    "link": "",
-    "detalhe": "Plano completo por R$ 59,90 por mês nos seis primeiros meses, no lugar de R$ 79,90. A partir do sétimo mês volta ao valor normal. Sem fidelidade: dá para cancelar quando quiser."
+    "link": "https://www.asaas.com/000/c/1ll9ietfosy25sgr",
+    "detalhe": "Plano completo por R$ 59,90 por mês nos seis primeiros meses, no lugar de R$ 79,90. A partir do sétimo mês volta para R$ 79,90 por mês. Sem fidelidade: dá para cancelar quando quiser.",
+    "preco_depois": "R$ 79,90",
+    "valor_depois": 79.9
+  },
+  "atendimento": {
+    "nome": "Tati",
+    "funcao": "atendimento BlackFlow",
+    "foto": "/img/tati-rosto.webp",
+    "whatsapp": "https://wa.me/5547988432859"
   }
 }

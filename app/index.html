@@ -1051,7 +1051,7 @@ function shell(content){const c=S.config;
  <datalist id="dlProdNomes">${az(S.produtos).map(x=>`<option value="${esc(x.nome)}">${Number(x.preco)>0?money(x.preco):''}</option>`).join('')}</datalist>
  <datalist id="dlServNomes">${az(S.servicos).map(x=>`<option value="${esc(x.nome)}">${Number(x.preco)>0?money(x.preco):''}</option>`).join('')}</datalist>
  <datalist id="dlServ">${az(S.servicos.filter(x=>x.ativo!==false)).map(x=>`<option value="${esc(x.nome)}">`).join('')}</datalist><datalist id="dlProf">${az(S.profissionais).map(p=>`<option value="${esc(p.nome)}">`).join('')}</datalist>
- ${(()=>{const d=diasTeste();return d!=null&&!UI.auth?`<div style="background:${d<=3?'var(--warn-soft)':'var(--acc-soft)'};padding:8px 16px;font-size:13px;display:flex;justify-content:center;gap:12px;align-items:center;flex-wrap:wrap"><span>Teste grátis da clínica: <b>${d<=0?'termina hoje':d===1?'falta 1 dia':'faltam '+d+' dias'}</b></span><button class="btn sm" onclick="abrirAssinatura()">Assinar com Pix ou cartão</button></div>`:''})()}<main>${barraAgenda()}${content}</main>`}
+ ${(()=>{const d=diasTeste();return d!=null&&!UI.auth?`<div style="background:${d<=3?'var(--warn-soft)':'var(--acc-soft)'};padding:8px 16px;font-size:13px;display:flex;justify-content:center;gap:12px;align-items:center;flex-wrap:wrap"><span>Teste grátis da clínica: <b>${d<=0?'termina hoje':d===1?'falta 1 dia':'faltam '+d+' dias'}</b></span><button class="btn sm" onclick="abrirAssinatura()">Assinar com Pix ou cartão</button></div>`:''})()}${promoAviso()}<main>${barraAgenda()}${content}</main>`}
 const FUNCS=[['Comandas','comandas'],['Caixa do dia','caixa'],['Serviços e preços','servicos'],['Estoque e produtos','estoque'],['Comissões e salão-parceiro','comissoes'],['Protocolos','protocolos'],['Equipamentos','equipamentos'],['Segmento do negócio','config'],['Agenda','agenda'],['Pacientes','pacientes'],['Novo paciente','novoPaciente'],['Financeiro','financeiro'],['Conta Corrente','fin:conta'],['Fluxo de Caixa','fin:fluxo'],['Contas a Pagar','fin:pagar'],['Contas a Receber','fin:receber'],['Inadimplência e cobrança','fin:inad'],['Imposto de Renda','fin:ir'],['Dashboard Analítico','dashboard'],['Relatórios','relatorios'],['Aniversariantes','rel:pac_aniv'],['Alertas de retorno','rel:pac_ret'],['Profissionais','profissionais'],['Importar dados do Excel','importar'],['Backup dos dados','config'],['Configurações','config']];
 function goFunc(f){if(f==='novoPaciente'){go('pacientes');pacForm();return}if(f.startsWith('fin:')){UI.finTab=f.slice(4);go('financeiro');return}if(f.startsWith('rel:')){UI.rel=f.slice(4);go('relatorios');return}go(f)}
 function globalSearch(q){const r=$('#gsr');const n=norm(q);if(!n){r.classList.remove('on');return}
@@ -2558,6 +2558,16 @@ function vAjuda(){const q=UI.ajQ||'',L=ajudaBusca(q),ab=UI.ajAberto||'';
      ${a.n?`<p class="ajn">${a.n}</p>`:''}</div>`:''}
    </div>`).join('')}</div>`
   :`<div class="note">Nada na ajuda sobre isso.${temIA?' Pergunte à inteligência artificial abaixo.':''}</div>`}
+ </div>
+ <div class="card" style="display:flex;gap:16px;align-items:center;flex-wrap:wrap">
+  <img src="https://blackflow.app.br/img/tati-rosto.webp" alt="Tati, atendimento do BlackFlow" width="420" height="420"
+   style="width:92px;height:92px;border-radius:50%;object-fit:cover;flex:none" onerror="this.style.display='none'">
+  <div style="flex:1;min-width:220px">
+   <h2 style="margin:0 0 2px">Falar com a Tati</h2>
+   <p class="sub" style="margin:0 0 10px">Atendimento do BlackFlow, de segunda a sexta, das 8h às 18h, e no sábado pela manhã. Ela ajuda a trazer as suas planilhas e resolve o que a ajuda escrita não resolveu.</p>
+   <div style="display:flex;gap:8px;flex-wrap:wrap">
+    <a class="btn green sm" href="https://wa.me/5547988432859?text=Ol%C3%A1%20Tati%2C%20preciso%20de%20ajuda%20com%20o%20BlackFlow" target="_blank" rel="noopener">Chamar no WhatsApp</a>
+    <a class="btn ghost sm" href="mailto:suporte@blacksolutions.net.br">Escrever por e-mail</a></div></div>
  </div>
  ${temIA?`<div class="card"><h2>Perguntar à inteligência artificial</h2>
   <p class="sub">Para o que a ajuda acima não cobre. Ela só responde sobre o uso do BlackFlow, e não tem acesso aos dados dos ${esc(SEG().pessoas.toLowerCase())}.</p>
@@ -4426,7 +4436,7 @@ function agNovo(a,s){if(s==='Desmarcado'||s==='Faltou')return false;const k=a.da
  const hist=c=>S[c].some(x=>x.pacienteId===a.pacienteId&&((x.data||x.vencimento||x.pagamento||'')<a.data)&&(x.data||x.vencimento||x.pagamento));
  return !hist('evolucoes')&&!hist('tratamentos')&&!S.lancamentos.some(l=>l.pacienteId===a.pacienteId&&l.pagamento&&l.pagamento<a.data)}
 /* ============ Atualização: aviso com botão Atualizar agora ============ */
-const VERSAO_APP='1.9.56';const URL_VERSAO_JSON='https://raw.githubusercontent.com/TheIgor12/blacksolutions/main/versao.json';
+const VERSAO_APP='1.9.57';const URL_VERSAO_JSON='https://raw.githubusercontent.com/TheIgor12/blacksolutions/main/versao.json';
 const numV=v=>String(v||'0').split(/\D+/).filter(Boolean).map(Number);
 function versaoMaior(a,b){const x=numV(a),y=numV(b);for(let i=0;i<Math.max(x.length,y.length);i++){const d=(x[i]||0)-(y[i]||0);if(d)return d>0}return false}
 const ATU={nova:null,timer:null};
@@ -4754,7 +4764,7 @@ function blocoAssinatura(){const a=ASSINATURA||{};const pa=planoInfo('agenda'),p
   <div style="display:flex;justify-content:space-between;align-items:baseline;gap:10px"><b>${esc(x.nome)}</b><span style="font-size:20px;font-weight:800">${esc(x.preco)}</span></div>
   <p class="sub" style="margin:6px 0 10px">${texto}</p>
   ${link?`<a class="btn ${escolhido===k?'':'ghost'}" style="width:100%" href="${esc(link)}" target="_blank" rel="noopener">Assinar ${esc(x.nome.toLowerCase())}</a>`:''}</div>`;
- return `<div>${promoFaixa()}${cx(pa,pa.link,'agenda','Agenda, clientes, profissionais, serviços e preços, confirmação por WhatsApp e agendamento online.')}
+ return `<div>${promoBloco()}${PROMO?'':promoFaixa()}${cx(pa,pa.link,'agenda','Agenda, clientes, profissionais, serviços e preços, confirmação por WhatsApp e agendamento online.')}
  ${cx(pc,linkC,'completo','Tudo do Só agenda mais financeiro com parcelas e recibo, comanda, caixa do dia, estoque, comissões e relatórios.')}
  ${!pa.link&&!linkC?`<p class="sub" style="margin:0">${esc(a.mensagem||'Para assinar, fale com a Black Solutions pelos canais de atendimento informados no site.')}</p>`:''}
  ${a.contato?`<p class="sub" style="margin:4px 0 0">Dúvidas: <a class="lnk" href="${esc(a.contato)}" target="_blank" rel="noopener">falar com a Black Solutions</a></p>`:''}</div>`}
@@ -4770,6 +4780,35 @@ async function pedirPrazo(b){if(!NV.sb||!NV.sessao){toast('Entre na sua conta pa
   toast((r&&r.aviso)||'Seu pedido foi registrado. Vamos avaliar e avisar por WhatsApp.')}
  catch(e){toast('Não foi possível enviar o pedido agora.');b.disabled=false;b.textContent=t0}}
 function diasTeste(){if(!NV.ativa||NV.plano!=='teste'||!NV.validoAte)return null;return diffDays(todayISO(),NV.validoAte)}
+/* ---- Black Friday: os seis meses de cada cliente ----
+   Quem entrou na promoção paga menos por um tempo determinado. O sistema avisa
+   antes do fim, para o aumento não pegar ninguém de surpresa. O valor cobrado
+   quem muda é a BlackSolutions, no Asaas: aqui só informamos. */
+let PROMO=null;
+async function promoCarregar(){if(!NV.sb||!NV.sessao){PROMO=null;return null}
+ try{const r=await NV.sb.rpc('bs_promocao_minha');
+  PROMO=(!r.error&&r.data&&r.data.tem)?r.data:null}catch(e){PROMO=null}
+ return PROMO}
+function promoDias(){return PROMO?(+PROMO.dias||0):null}
+function promoMoeda(v){const n=+v||0;return 'R$ '+n.toFixed(2).replace('.',',')}
+function promoAviso(){/* barra no alto, só quando falta pouco ou já acabou */
+ if(!PROMO||UI.auth)return '';
+ const d=promoDias();if(d==null||d>30)return '';
+ const fim=br(PROMO.fim),dep=promoMoeda(PROMO.depois),at=promoMoeda(PROMO.valor);
+ const txt=d<0?`O preço promocional de ${at} terminou em <b>${fim}</b>. A mensalidade agora é de <b>${dep}</b>.`
+  :d===0?`Hoje é o último dia do preço promocional de ${at}. A partir de amanhã a mensalidade passa a ser de <b>${dep}</b>.`
+  :`O preço promocional de ${at} vale até <b>${fim}</b>, ${d===1?'falta 1 dia':'faltam '+d+' dias'}. Depois disso a mensalidade passa a ser de <b>${dep}</b>.`;
+ return `<div style="background:${d<=7?'var(--warn-soft)':'var(--acc-soft)'};padding:8px 16px;font-size:13px;display:flex;justify-content:center;gap:12px;align-items:center;flex-wrap:wrap">
+  <span>${txt}</span><button class="btn sm ghost" onclick="abrirAssinatura()">Ver a assinatura</button></div>`}
+function promoBloco(){/* dentro da tela de assinatura */
+ if(!PROMO)return '';
+ const d=promoDias(),fim=br(PROMO.fim),ini=br(PROMO.inicio);
+ return `<div class="card" style="margin:0 0 10px;padding:14px;background:var(--acc-soft)">
+  <div style="display:flex;justify-content:space-between;align-items:baseline;gap:10px">
+   <b>${esc(PROMO.codigo==='BF2026'?'Black Friday':PROMO.codigo)}</b>
+   <span style="font-size:20px;font-weight:800">${promoMoeda(PROMO.valor)}</span></div>
+  <p class="sub" style="margin:6px 0 0">Você entrou em ${ini} e paga ${promoMoeda(PROMO.valor)} por mês até <b>${fim}</b>${d!=null&&d>=0?', '+(d===0?'hoje é o último dia':d===1?'falta 1 dia':'faltam '+d+' dias'):''}.
+   ${d!=null&&d<0?'O período promocional terminou.':'A partir do dia seguinte'} a mensalidade passa a ser de <b>${promoMoeda(PROMO.depois)}</b>. Sem fidelidade: dá para cancelar quando quiser.</p></div>`}
 async function abrirAssinatura(){await carregarAssinatura();const d=diasTeste();openModal(`<h3>Assinatura</h3><p class="sub" style="margin-bottom:14px">${d!=null?`Teste grátis: ${d<=0?'termina hoje':d===1?'falta 1 dia':'faltam '+d+' dias'}. Depois disso, o acesso continua com a assinatura mensal, por Pix ou cartão de crédito.`:NV.validoAte?`Assinatura válida até ${br(NV.validoAte)}.`:'Sua clínica não tem vencimento.'}</p>${blocoAssinatura()}<div class="mact"><button class="btn ghost" onclick="closeModal()">Fechar</button></div>`)}
 function nomeUsuario(){const u=NV.sessao&&NV.sessao.user;return u?((u.user_metadata&&u.user_metadata.nome)||u.email):S.config.usuario}
 function syncTxt(){const m={ok:['#3ad37a','Sincronizado'],env:['#f5c542','Enviando...'],off:['#f08a8a','Sem internet'],err:['#f08a8a','Erro ao sincronizar'],local:['#aab','Somente neste computador']}[NV.status]||['#aab',''];return `<i style="background:${m[0]}"></i>${m[1]}`}
@@ -4877,7 +4916,7 @@ async function entrar(sessao){NV.sessao=sessao;NV.offline=false;UI.auth={modo:'c
  if(!m.length){UI.auth={modo:'clinica'};render();return}
  const ult=await DB.get('ultimo');const esc_=m.find(x=>ult&&x.clinica_id===ult.clinicaId)||m[0];
  NV.clinicaId=esc_.clinica_id;NV.papel=esc_.papel;NV.nomeClinica=(esc_.clinicas&&esc_.clinicas.nome)||'';
- const cl=esc_.clinicas||{};NV.plano=cl.plano||'';NV.validoAte=cl.valido_ate||'';if(cl.ativa===false||(cl.valido_ate&&cl.valido_ate<todayISO())){UI.auth={modo:'bloqueado',motivo:cl.ativa===false?'suspenso':(cl.plano==='teste'?'teste':'vencido')};render();carregarAssinatura().then(()=>{if(UI.auth&&UI.auth.modo==='bloqueado')render()});return}
+ const cl=esc_.clinicas||{};NV.plano=cl.plano||'';NV.validoAte=cl.valido_ate||'';promoCarregar().then(()=>{if(PROMO)render()});if(cl.ativa===false||(cl.valido_ate&&cl.valido_ate<todayISO())){UI.auth={modo:'bloqueado',motivo:cl.ativa===false?'suspenso':(cl.plano==='teste'?'teste':'vencido')};render();carregarAssinatura().then(()=>{if(UI.auth&&UI.auth.modo==='bloqueado')render()});return}
  try{await abrirClinica()}catch(e){console.error(e);UI.auth={modo:'entrar',email:sessao.user.email,msg:traduz(e)};render()}}
 async function carregarCache(){const c=await DB.get('c_'+NV.clinicaId);const d=defaultState();
  if(c&&c.S){S={...d,...c.S,config:{...d.config,...(c.S.config||{})}};NV.hashes=c.hashes||{};NV.cursor=c.cursor||0}else{S=d;NV.hashes={};NV.cursor=0}}

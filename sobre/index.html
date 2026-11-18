@@ -145,6 +145,13 @@ footer .wrap{display:flex;justify-content:space-between;gap:16px;flex-wrap:wrap;
 .plano ul{list-style:none;padding:0;margin:16px 0 24px}.plano li{padding:6px 0 6px 26px;position:relative;color:#d5dbea}
 .plano li::before{content:"✓";position:absolute;left:0;color:#34d399;font-weight:900}
 .pag{display:flex;gap:10px;flex-wrap:wrap;margin-top:6px}.pag span{background:rgba(255,255,255,.06);border:1px solid var(--linha);border-radius:8px;padding:5px 10px;font-size:13px;color:#cfd6e8}
+.tati{display:grid;grid-template-columns:200px 1fr;gap:26px;align-items:center;background:linear-gradient(180deg,#11112a,#0a0820);border:1px solid var(--linha);border-radius:24px;padding:26px 28px}
+.tati img{width:200px;height:200px;border-radius:50%;object-fit:cover;box-shadow:0 18px 40px rgba(0,0,0,.55),0 0 0 3px rgba(27,134,251,.35)}
+.tati h3{margin:0 0 4px;font-size:24px}
+.tati .fn{color:var(--ciano);font-weight:800;font-size:13px;letter-spacing:.08em;text-transform:uppercase}
+.tati p{color:var(--mut);margin:10px 0 16px}
+.tati .bts{display:flex;gap:10px;flex-wrap:wrap}
+@media (max-width:700px){.tati{grid-template-columns:1fr;text-align:center;justify-items:center}.tati img{width:150px;height:150px}.tati .bts{justify-content:center}}
 @media (max-width:1150px){.segs{grid-template-columns:repeat(2,1fr)}}
 @media (max-width:900px){.pers,.planos,.segs{grid-template-columns:1fr}.comp th:nth-child(3),.comp td:nth-child(3){display:none}}
 @media (prefers-reduced-motion:reduce){.mascote{animation:none}.revela{opacity:1;transform:none;transition:none}}
@@ -177,7 +184,7 @@ footer .wrap{display:flex;justify-content:space-between;gap:16px;flex-wrap:wrap;
   </div>
   <div class="palco">
    <div class="tela"><img src="../img/dashboard.webp" alt="Painel com indicadores financeiros e de agenda da clínica" width="2560" height="1536"></div>
-   <img class="mascote" src="../img/mascote.webp" alt="Mascote BlackFlow" width="640" height="640">
+   <img class="mascote" src="../img/tati-rosto.webp" alt="Tati, atendimento do BlackFlow" width="420" height="420">
   </div>
  </div>
  <div class="numeros">
@@ -290,9 +297,24 @@ footer .wrap{display:flex;justify-content:space-between;gap:16px;flex-wrap:wrap;
   <div class="plano pbf revela"><span class="sel">Black Friday</span><h3>Plano completo</h3>
    <div class="pr"><s>R$ 79,90</s>R$ 59,90 <small>por mês, nos 6 primeiros meses</small></div>
    <ul><li>Tudo do plano completo, sem corte de recurso</li><li>A partir do sétimo mês volta a R$ 79,90 por mês</li><li>Sem fidelidade, cancela quando quiser</li><li>Só para as primeiras 100 clínicas, até 30/11</li></ul>
-   <a class="btn" href="https://wa.me/5547988432859?text=Quero%20a%20Black%20Friday%20do%20BlackFlow%2C%20R%24%2059%2C90%20por%20m%C3%AAs" target="_blank" rel="noopener">Garantir a minha vaga</a></div>
+   <a class="btn" href="https://www.asaas.com/000/c/1ll9ietfosy25sgr" target="_blank" rel="noopener">Garantir a minha vaga por R$ 59,90</a><p style="color:var(--mut);font-size:13px;margin:12px 0 0">Crie a sua conta antes e pague com o mesmo e-mail: o sistema libera o plano sozinho. <a href="https://wa.me/5547988432859?text=Quero%20a%20Black%20Friday%20do%20BlackFlow%2C%20R%24%2059%2C90%20por%20m%C3%AAs" target="_blank" rel="noopener" style="color:#8fb8ff;font-weight:700">Prefere falar antes?</a></p></div>
   <div class="plano revela"><h3>Teste grátis</h3><div class="pr">7 dias <small>sem custo</small></div><ul><li>Todos os recursos liberados</li><li>Importação das suas planilhas</li><li>Equipe ilimitada</li><li>Sem cartão de crédito para começar</li></ul><a class="btn" href="https://blackflow.app.br"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg> Abrir o BlackFlow</a></div>
   <div class="plano dest revela"><h3>Assinatura mensal</h3><div class="pr">Mensal <small>por clínica</small></div><ul><li>Tudo do teste grátis</li><li>Dados guardados na nuvem, no Brasil</li><li>Atualizações automáticas</li><li>Sua cor e seu logotipo</li></ul><div class="pag"><span>Pix</span><span>Cartão de crédito</span></div><p style="color:var(--mut);font-size:14px;margin:14px 0 0">O valor e o link de pagamento aparecem dentro do programa, na tela de assinatura.</p></div>
+ </div>
+</div></section>
+
+<section id="atendimento" style="padding-top:0"><div class="wrap">
+ <div class="tati revela">
+  <img src="../img/tati.webp" alt="Tati, atendimento do BlackFlow" width="800" height="800">
+  <div>
+   <span class="fn">Atendimento BlackFlow</span>
+   <h3>Fale com a Tati</h3>
+   <p>Quem responde as suas dúvidas sobre o sistema, ajuda a trazer as suas planilhas e acompanha os primeiros dias. De segunda a sexta, das 8h às 18h, e no sábado pela manhã.</p>
+   <div class="bts">
+    <a class="btn" href="https://wa.me/5547988432859?text=Ol%C3%A1%20Tati%2C%20quero%20conhecer%20o%20BlackFlow" target="_blank" rel="noopener">Chamar a Tati no WhatsApp</a>
+    <a class="btn ghost" href="mailto:suporte@blacksolutions.net.br">Escrever por e-mail</a>
+   </div>
+  </div>
  </div>
 </div></section>
 
@@ -314,7 +336,7 @@ footer .wrap{display:flex;justify-content:space-between;gap:16px;flex-wrap:wrap;
 
 <section style="padding-top:0"><div class="wrap">
  <div class="cta revela">
-  <img src="../img/mascote.webp" alt="" width="640" height="640" style="width:150px">
+  <img src="../img/tati-rosto.webp" alt="" width="420" height="420" style="width:150px;border-radius:50%">
   <h2>Pronto para organizar o seu negócio?</h2>
   <p>Crie a conta do seu negócio e teste tudo por 7 dias, sem instalar nada e sem cartão de crédito.</p>
   <a class="btn" href="https://blackflow.app.br"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg> Abrir o BlackFlow</a> <p style="margin:14px 0 0"><a href="../download/Manual_BlackFlow.pdf" target="_blank" style="color:#8fb8ff;font-weight:700">Baixe grátis o manual completo em PDF</a>: instalação e uso de cada segmento, passo a passo.</p>
