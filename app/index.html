@@ -2944,8 +2944,35 @@ const BPITEM=[['blackpay','BlackPay','card']];
 /* Escolha do segmento */
 function segCards(acao){return `<div class="grid g3">${Object.entries(SEGMENTOS).map(([k,s])=>`<div class="tile" style="${segK()===k&&S.config.segmento?'outline:3px solid var(--acc)':''}" onclick="${acao}('${k}')"><div class="ti">${ico(k==='podologia'?'user':k==='estetica'?'chart':'badge')}</div><b>${esc(s.nome)}</b><p>${esc(s.desc)}</p></div>`).join('')}</div>`}
 function perguntarSegmento(){openModal(`<h3>Qual é o seu tipo de negócio?</h3><p class="sub" style="margin-bottom:14px">O BlackFlow mostra os módulos certos para o seu segmento. Dá para trocar depois em Configurações.</p>${segCards('escolherSegmento')}`,true)}
-function escolherSegmento(k){if(planoContratado()==='agenda'&&S.config.segmento&&k!==S.config.segmento){modalLiberar('segmento');return}
- const antes=S.config.segmento;S.config.segmento=k;closeModal();save();render();toast('Segmento: '+SEGMENTOS[k].nome+(antes&&antes!==k?'. Os dados de antes continuam guardados.':''));
+/* ---- Trava do ramo ----
+   O preço muda conforme o ramo, então trocar de ramo dentro do sistema seria
+   subir de plano sem pagar. Quem decide é o servidor: o ramo é gravado uma vez
+   na nuvem e, a partir daí, o que está no aparelho não manda mais. Trocar de
+   PLANO continua livre, porque completo e só agenda existem em todo ramo. */
+function segmentoTravado(){
+ if(!S.config.segmento)return false;            // ainda não escolheu
+ if(!NV.ativa)return false;                     // sem nuvem, nada a proteger
+ if(NV.segmento)return true;                    // o servidor já gravou
+ return planoContratado()!=='teste'}            // assinatura ativa trava mesmo antes de gravar
+async function segmentoRegistrar(k){
+ if(!NV.ativa||!NV.sb||!NV.sessao||!SEGMENTOS[k])return null;
+ try{const r=await NV.sb.rpc('bs_segmento_definir',{p_segmento:k});
+  if(r.error)return null;
+  if(r.data&&r.data.segmento){NV.segmento=r.data.segmento;
+   if(S.config.segmento!==NV.segmento&&SEGMENTOS[NV.segmento]){S.config.segmento=NV.segmento;save();render()}}
+  return r.data}catch(e){return null}}
+function segmentoBloqueado(){const c=(typeof ASSINATURA!=='undefined'&&ASSINATURA&&ASSINATURA.contato)||'';
+ openModal(`<h3>O ramo do seu sistema não muda por aqui</h3>
+  <p class="sub">O seu sistema está configurado como <b>${esc(SEG().nome)}</b>, que foi o ramo escolhido quando a conta foi criada.</p>
+  <p class="sub">Cada ramo tem módulos próprios e preço próprio, então a troca não é feita dentro do sistema. Se você escolheu errado, ou se o seu negócio mudou, fale com a gente que trocamos para você, sem perder nenhum dado.</p>
+  <div class="card" style="margin:14px 0 0;background:var(--acc-soft)">
+   <b>O que você pode mudar sozinho</b>
+   <p class="sub" style="margin:6px 0 0">O plano. Dá para ir do completo para o só agenda, e voltar, quando quiser, em Configurações, na parte de Minha conta.</p></div>
+  <div class="mact">${c?`<a class="btn green" href="${esc(c)}" target="_blank" rel="noopener" onclick="closeModal()">Falar com o suporte</a>`:''}<button class="btn ghost" onclick="closeModal()">Entendi</button></div>`)}
+function escolherSegmento(k){if(!SEGMENTOS[k])return;
+ if(S.config.segmento&&k!==S.config.segmento&&segmentoTravado()){closeModal();segmentoBloqueado();return}
+ if(planoContratado()==='agenda'&&S.config.segmento&&k!==S.config.segmento){modalLiberar('segmento');return}
+ const antes=S.config.segmento;S.config.segmento=k;closeModal();save();segmentoRegistrar(k);render();toast('Segmento: '+SEGMENTOS[k].nome+(antes&&antes!==k?'. Os dados de antes continuam guardados.':''));
  if(!S.config.plano&&!UI.planoPerguntado){UI.planoPerguntado=true;setTimeout(perguntarPlano,400)}}
 function checarSegmento(){if(UI.auth)return;
  if(CAD){if(!S.config.segmento)S.config.segmento=CAD.segmento;if(!S.config.plano)S.config.plano=CAD.plano;S.config.clinica=S.config.clinica||NV.nomeClinica||S.config.clinica;CAD=null;UI.segPerguntado=true;UI.planoPerguntado=true;save();setTimeout(render,0);return}
@@ -2978,7 +3005,17 @@ function cardPlanoConfig(){const ct=planoContratado();const a=planoInfo('agenda'
   <div style="display:flex;gap:10px;flex-wrap:wrap"><button class="btn" onclick="modalLiberar('plano')">Liberar o plano completo por ${esc(c.preco)}</button></div></div>`;
  return `<div class="card"><h2>Plano de uso</h2>${fx}${ct==='teste'?`<div class="note" style="margin:0 0 12px">Você está no teste grátis e pode experimentar os dois. Depois do teste, Só agenda custa ${esc(a.preco)} e Completo custa ${esc(c.preco)}.</div>`:''}<p class="sub" style="margin-bottom:12px">No plano <b>Só agenda</b> o sistema mostra apenas a agenda, os cadastros de ${esc(SEG().pessoas.toLowerCase())}, os profissionais, os serviços e a confirmação por WhatsApp. O financeiro, o estoque, as comandas e os relatórios ficam fora do menu, e os atendimentos deixam de gerar cobrança. Ao voltar para o completo, tudo reaparece com os dados que já existiam.</p>${planoCards('escolherPlano')}</div>`}
 function cardSegmentoConfig(){const a=S.config.assinatura||{};
- return `<div class="card"><h2>Segmento do negócio</h2><p class="sub" style="margin-bottom:12px">Escolha o tipo de negócio. O menu, a ficha do ${esc(SEG().pessoa.toLowerCase())} e os módulos mudam conforme o segmento. Nenhum dado é apagado ao trocar.</p>${segCards('escolherSegmento')}
+ const trav=segmentoTravado();const contatoSeg=(typeof ASSINATURA!=='undefined'&&ASSINATURA&&ASSINATURA.contato)||'';
+ return `<div class="card"><h2>${trav?'Ramo do seu sistema':'Segmento do negócio'}</h2>
+ ${trav?`<p class="sub" style="margin-bottom:12px">O seu sistema está configurado como <b>${esc(SEG().nome)}</b>. Cada ramo tem módulos próprios e preço próprio, então a troca de ramo não é feita por aqui. Se escolheu errado, ou se o negócio mudou, a gente troca para você sem perder nenhum dado.</p>
+  <div class="card" style="margin:0;background:var(--acc-soft)">
+   <div style="display:flex;gap:14px;align-items:flex-start">
+    <div class="ti" style="flex:none">${ico(segK()==='podologia'?'user':segK()==='estetica'?'chart':'badge')}</div>
+    <div><b style="font-size:16px">${esc(SEG().nome)}</b><p class="sub" style="margin:4px 0 0">${esc(SEG().desc)}</p></div></div>
+   <div style="margin-top:12px;display:flex;gap:8px;flex-wrap:wrap">${contatoSeg?`<a class="btn green sm" href="${esc(contatoSeg)}" target="_blank" rel="noopener">Pedir a troca de ramo</a>`:''}
+    <button class="btn ghost sm" onclick="abrirAssinatura()">Ver ou trocar o meu plano</button></div></div>
+  <div class="note" style="margin-top:12px">O que você muda sozinho é o <b>plano</b>: dá para ir do completo para o só agenda, e voltar, quando quiser.</div>`
+  :`<p class="sub" style="margin-bottom:12px">Escolha o tipo de negócio. O menu, a ficha do ${esc(SEG().pessoa.toLowerCase())} e os módulos mudam conforme o segmento. Depois que o ramo for gravado, a troca passa a ser feita pelo suporte, porque o preço muda conforme o ramo.</p>${segCards('escolherSegmento')}`}
  <div class="note" style="margin-top:14px">Precisa de algo a mais, feito sob medida para o seu negócio? Pedimos a personalização e ela entra como valor adicional na assinatura.${typeof ASSINATURA!=='undefined'&&ASSINATURA&&ASSINATURA.contato?` Fale com a gente: <b>${esc(ASSINATURA.contato)}</b>.`:''}</div>
  ${ehSeg('podologia')?'':`<h2 style="margin-top:18px">Taxas e fidelidade</h2><div class="fgrid" id="cfgT">
   ${['Cartão de crédito','Cartão de débito','Pix'].map(f=>`<label>Taxa da maquininha: ${esc(f)} (%)<input type="number" step="0.01" name="${esc(f)}" value="${esc((S.config.taxas||{})[f]??'')}"></label>`).join('')}
@@ -4563,7 +4600,7 @@ function agNovo(a,s){if(s==='Desmarcado'||s==='Faltou')return false;const k=a.da
  const hist=c=>S[c].some(x=>x.pacienteId===a.pacienteId&&((x.data||x.vencimento||x.pagamento||'')<a.data)&&(x.data||x.vencimento||x.pagamento));
  return !hist('evolucoes')&&!hist('tratamentos')&&!S.lancamentos.some(l=>l.pacienteId===a.pacienteId&&l.pagamento&&l.pagamento<a.data)}
 /* ============ Atualização: aviso com botão Atualizar agora ============ */
-const VERSAO_APP='1.10.0';const URL_VERSAO_JSON='https://raw.githubusercontent.com/TheIgor12/blacksolutions/main/versao.json';
+const VERSAO_APP='1.10.1';const URL_VERSAO_JSON='https://raw.githubusercontent.com/TheIgor12/blacksolutions/main/versao.json';
 const numV=v=>String(v||'0').split(/\D+/).filter(Boolean).map(Number);
 function versaoMaior(a,b){const x=numV(a),y=numV(b);for(let i=0;i<Math.max(x.length,y.length);i++){const d=(x[i]||0)-(y[i]||0);if(d)return d>0}return false}
 const ATU={nova:null,timer:null};
@@ -5063,12 +5100,12 @@ async function authClinica(){authGuardar();const nome=val('#au_clin')||UI.auth.c
  window.BSC&&BSC.evento('clique','clinica_criada');await entrar(NV.sessao)}
 async function entrar(sessao){NV.sessao=sessao;NV.offline=false;UI.auth={modo:'carregando'};render();
  try{await NV.sb.rpc('aceitar_convites')}catch(e){}
- const {data:m,error}=await NV.sb.from('membros').select('clinica_id,papel,clinicas(nome,ativa,valido_ate,plano)').eq('user_id',sessao.user.id);
+ const {data:m,error}=await NV.sb.from('membros').select('clinica_id,papel,clinicas(nome,ativa,valido_ate,plano,segmento)').eq('user_id',sessao.user.id);
  if(error){UI.auth={modo:'entrar',email:sessao.user.email,msg:traduz(error)};render();return}
  if(!m.length){UI.auth={modo:'clinica'};render();return}
  const ult=await DB.get('ultimo');const esc_=m.find(x=>ult&&x.clinica_id===ult.clinicaId)||m[0];
  NV.clinicaId=esc_.clinica_id;NV.papel=esc_.papel;NV.nomeClinica=(esc_.clinicas&&esc_.clinicas.nome)||'';
- const cl=esc_.clinicas||{};NV.plano=cl.plano||'';NV.validoAte=cl.valido_ate||'';promoCarregar().then(()=>{if(PROMO)render()});if(cl.ativa===false||(cl.valido_ate&&cl.valido_ate<todayISO())){UI.auth={modo:'bloqueado',motivo:cl.ativa===false?'suspenso':(cl.plano==='teste'?'teste':'vencido')};render();carregarAssinatura().then(()=>{if(UI.auth&&UI.auth.modo==='bloqueado')render()});return}
+ const cl=esc_.clinicas||{};NV.plano=cl.plano||'';NV.validoAte=cl.valido_ate||'';NV.segmento=cl.segmento||'';if(NV.segmento&&SEGMENTOS[NV.segmento]&&S.config.segmento!==NV.segmento){S.config.segmento=NV.segmento;save()}else if(!NV.segmento&&S.config.segmento)segmentoRegistrar(S.config.segmento);promoCarregar().then(()=>{if(PROMO)render()});if(cl.ativa===false||(cl.valido_ate&&cl.valido_ate<todayISO())){UI.auth={modo:'bloqueado',motivo:cl.ativa===false?'suspenso':(cl.plano==='teste'?'teste':'vencido')};render();carregarAssinatura().then(()=>{if(UI.auth&&UI.auth.modo==='bloqueado')render()});return}
  try{await abrirClinica()}catch(e){console.error(e);UI.auth={modo:'entrar',email:sessao.user.email,msg:traduz(e)};render()}}
 async function carregarCache(){const c=await DB.get('c_'+NV.clinicaId);const d=defaultState();
  if(c&&c.S){S={...d,...c.S,config:{...d.config,...(c.S.config||{})}};NV.hashes=c.hashes||{};NV.cursor=c.cursor||0}else{S=d;NV.hashes={};NV.cursor=0}}

@@ -1,4 +1,4 @@
 {
-  "versao": "1.10.0",
-  "novidades": "Entrou o módulo de barbearia. Na criação da conta já dá para escolher Barbearia como ramo. O mesmo serviço passa a ter preço e tempo diferentes por profissional, com o botão Por profissional na lista de serviços. Entraram os combos, como corte e barba, que o cliente escolhe em um toque e que na agenda viram atendimentos em sequência, cada um com o seu profissional. A agenda ganhou o encaixe, para quem chega sem hora marcada, e a situação Chegou, para avisar o profissional de que a pessoa está na recepção. Dá para programar desconto automático em dia fraco. E o agendamento pela internet foi refeito: o cliente escolhe vários serviços de uma vez ou um combo, vê o preço e o tempo de cada profissional antes de decidir e recebe o horário de quinze em quinze minutos, sem buraco na agenda."
+  "versao": "1.10.1",
+  "novidades": "O ramo do sistema passa a ficar travado depois de escolhido. Como cada ramo tem módulos próprios e preço próprio, a troca de ramo não é mais feita dentro do sistema: quem precisar trocar fala com o suporte e a troca é feita sem perder nenhum dado. O plano continua livre: dá para ir do completo para o só agenda, e voltar, quando quiser. Continua valendo a atualização anterior, com o módulo de barbearia e o agendamento pela internet refeito."
 }
