@@ -124,3 +124,45 @@ select
   has_function_privilege('authenticated','public.bs_segmento_definir(text)','execute')  as cliente_define,
   has_function_privilege('anon','public.bs_segmento_definir(text)','execute')           as anonimo_define,
   (select count(*) from public.clinicas where coalesce(segmento,'') <> '')              as clinicas_com_ramo;
+
+-- ---------------------------------------------------------------------------
+-- O painel precisa enxergar o ramo de cada conta para poder trocar.
+-- A funcao ganha a coluna segmento no fim, para nao quebrar o que ja le as
+-- outras colunas pela ordem.
+-- ---------------------------------------------------------------------------
+drop function if exists public.bs_painel_contas();
+create or replace function public.bs_painel_contas()
+returns table (
+  sistema text, nome text, email text, papel text,
+  plano text, valido_ate date, dias_restantes int, criado_em timestamptz,
+  pedido_prazo timestamptz, id uuid, segmento text
+)
+language sql
+stable
+security definer
+set search_path = public
+as $$
+  select 'BlackFlow'::text, c.nome, coalesce(m.email,u.email,''), coalesce(m.papel,''),
+         coalesce(nullif(c.plano,''),'teste'), c.valido_ate,
+         (c.valido_ate - current_date)::int, u.created_at,
+         (select max(p.pedido_em) from public.bs_prorrogacoes p where p.clinica_id = c.id and p.concedido_em is null),
+         c.id, coalesce(c.segmento,'')
+    from public.clinicas c
+    left join public.membros m on m.clinica_id = c.id and m.papel = 'admin'
+    left join auth.users u on u.id = m.user_id
+   where public.lm_e_mestre()
+  union all
+  select 'Lex Calc'::text, e.nome, coalesce(m.email,u.email,''), coalesce(m.papel,''),
+         ''::text, null::date, null::int, u.created_at, null::timestamptz, e.id, ''::text
+    from public.lm_escritorios e
+    left join public.lm_membros m on m.escritorio_id = e.id and m.papel = 'dono'
+    left join auth.users u on u.id = m.user_id
+   where public.lm_e_mestre()
+   order by 8 desc nulls last
+$$;
+
+grant execute on function public.bs_painel_contas() to authenticated;
+
+select 'painel atualizado' as etapa,
+  (select count(*) from information_schema.columns
+    where table_schema='public' and table_name='clinicas' and column_name='segmento') as coluna_segmento;
