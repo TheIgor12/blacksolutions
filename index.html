@@ -2560,8 +2560,9 @@ function vAjuda(){const q=UI.ajQ||'',L=ajudaBusca(q),ab=UI.ajAberto||'';
   :`<div class="note">Nada na ajuda sobre isso.${temIA?' Pergunte à inteligência artificial abaixo.':''}</div>`}
  </div>
  <div class="card" style="display:flex;gap:16px;align-items:center;flex-wrap:wrap">
-  <img src="https://blackflow.app.br/img/tati-rosto.webp" alt="Tati, atendimento do BlackFlow" width="420" height="420"
-   style="width:92px;height:92px;border-radius:50%;object-fit:cover;flex:none" onerror="this.style.display='none'">
+  <img src="/img/tati-rosto.webp" alt="Tati, atendimento do BlackFlow" width="420" height="420"
+   style="width:92px;height:92px;border-radius:50%;object-fit:cover;flex:none"
+   onerror="if(this.dataset.t){this.style.display='none'}else{this.dataset.t=1;this.src='https://blackflow.app.br/img/tati-rosto.webp'}">
   <div style="flex:1;min-width:220px">
    <h2 style="margin:0 0 2px">Falar com a Tati</h2>
    <p class="sub" style="margin:0 0 10px">Atendimento do BlackFlow, de segunda a sexta, das 8h às 18h, e no sábado pela manhã. Ela ajuda a trazer as suas planilhas e resolve o que a ajuda escrita não resolveu.</p>
@@ -4808,7 +4809,7 @@ function promoBloco(){/* dentro da tela de assinatura */
    <b>${esc(PROMO.codigo==='BF2026'?'Black Friday':PROMO.codigo)}</b>
    <span style="font-size:20px;font-weight:800">${promoMoeda(PROMO.valor)}</span></div>
   <p class="sub" style="margin:6px 0 0">Você entrou em ${ini} e paga ${promoMoeda(PROMO.valor)} por mês até <b>${fim}</b>${d!=null&&d>=0?', '+(d===0?'hoje é o último dia':d===1?'falta 1 dia':'faltam '+d+' dias'):''}.
-   ${d!=null&&d<0?'O período promocional terminou.':'A partir do dia seguinte'} a mensalidade passa a ser de <b>${promoMoeda(PROMO.depois)}</b>. Sem fidelidade: dá para cancelar quando quiser.</p></div>`}
+   ${d!=null&&d<0?'O período promocional terminou e a mensalidade':'A partir de <b>'+br(somaDias(PROMO.fim,1))+'</b> a mensalidade'} passa a ser de <b>${promoMoeda(PROMO.depois)}</b>. Sem fidelidade: dá para cancelar quando quiser.</p></div>`}
 async function abrirAssinatura(){await carregarAssinatura();const d=diasTeste();openModal(`<h3>Assinatura</h3><p class="sub" style="margin-bottom:14px">${d!=null?`Teste grátis: ${d<=0?'termina hoje':d===1?'falta 1 dia':'faltam '+d+' dias'}. Depois disso, o acesso continua com a assinatura mensal, por Pix ou cartão de crédito.`:NV.validoAte?`Assinatura válida até ${br(NV.validoAte)}.`:'Sua clínica não tem vencimento.'}</p>${blocoAssinatura()}<div class="mact"><button class="btn ghost" onclick="closeModal()">Fechar</button></div>`)}
 function nomeUsuario(){const u=NV.sessao&&NV.sessao.user;return u?((u.user_metadata&&u.user_metadata.nome)||u.email):S.config.usuario}
 function syncTxt(){const m={ok:['#3ad37a','Sincronizado'],env:['#f5c542','Enviando...'],off:['#f08a8a','Sem internet'],err:['#f08a8a','Erro ao sincronizar'],local:['#aab','Somente neste computador']}[NV.status]||['#aab',''];return `<i style="background:${m[0]}"></i>${m[1]}`}
