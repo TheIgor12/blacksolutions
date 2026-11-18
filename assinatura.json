@@ -19,6 +19,12 @@
       "valor": 79.9,
       "link": "https://www.asaas.com/000/c/99r1jm3tyroucxqv"
     },
+    "barbearia": {
+      "nome": "Barbearia",
+      "preco": "R$ 34,90 por mês",
+      "valor": 34.9,
+      "link": "https://www.asaas.com/000/c/qfvnztz9zhhwl000"
+    },
     "upgrade": {
       "nome": "Complemento para o plano completo",
       "preco": "R$ 50,09",

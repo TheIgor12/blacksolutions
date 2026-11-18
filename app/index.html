@@ -2031,10 +2031,10 @@ function pAg(p){const L=S.agendamentos.filter(a=>a.pacienteId===p.id).sort((a,b)
 /* ============ Financeiro ============ */
 function rangeFilters(after){return `<div class="filters"><label>De<input type="date" value="${UI.de}" onchange="UI.de=this.value;render()"></label><label>Até<input type="date" value="${UI.ate}" onchange="UI.ate=this.value;render()"></label>${after||''}</div>`}
 const inRange=d=>d&&d>=UI.de&&d<=UI.ate;
-function vFinanceiro(){const tabs=[['geral','Geral'],['conta','Conta Corrente'],['fluxo','Fluxo de Caixa'],['pagar','Contas a Pagar'],['receber','Contas a Receber'],['inad','Inadimplência'],['conferir','Conferência'],['ir','Imposto de Renda']];
- const body={geral:fGeral,conta:fConta,fluxo:fFluxo,pagar:fPagar,receber:fReceber,inad:fInad,conferir:fConferir,ir:fIR}[UI.finTab]();
+function vFinanceiro(){const tabs=[['geral','Geral'],['conta','Conta Corrente'],['fluxo','Fluxo de Caixa'],['pagar','Contas a Pagar'],['receber','Contas a Receber'],['inad','Inadimplência'],['ticket','Ticket Médio'],['conferir','Conferência'],['ir','Imposto de Renda']];
+ const body=({geral:fGeral,conta:fConta,fluxo:fFluxo,pagar:fPagar,receber:fReceber,inad:fInad,ticket:fTicket,conferir:fConferir,ir:fIR}[UI.finTab]||fGeral)();
  return `<div class="tabs">${tabs.map(([k,t])=>`<button class="${UI.finTab===k?'on':''}" onclick="UI.finTab='${k}';render()">${t}</button>`).join('')}</div><div class="page">${UI.finTab==='conferir'?'':confAviso()}${body}</div>`}
-function fGeral(){const T=[['conta','Conta Corrente','Recebimentos e pagamentos por dia','money'],['fluxo','Fluxo de Caixa','Saldo realizado e previsto','chart'],['pagar','Contas a Pagar','Despesas, fornecedores e baixa','up'],['receber','Contas a Receber','Parcelas em aberto e baixa','down'],['inad','Inadimplência','Parcelas vencidas e cobrança por WhatsApp','alert'],['ir','Imposto de Renda','Rendimentos e despesas do ano e declaração de pagamentos','report']];
+function fGeral(){const T=[['conta','Conta Corrente','Recebimentos e pagamentos por dia','money'],['fluxo','Fluxo de Caixa','Saldo realizado e previsto','chart'],['pagar','Contas a Pagar','Despesas, fornecedores e baixa','up'],['receber','Contas a Receber','Parcelas em aberto e baixa','down'],['inad','Inadimplência','Parcelas vencidas e cobrança por WhatsApp','alert'],['ticket','Ticket Médio','Por período e por paciente: quanto ganhou, deixou de ganhar e perdeu','chart'],['ir','Imposto de Renda','Rendimentos e despesas do ano e declaração de pagamentos','report']];
  return `<h1>Financeiro</h1><p class="sub" style="margin-bottom:20px">Faça a gestão financeira da sua clínica, acompanhe entradas e saídas diárias.</p><div class="grid g4">${T.map(([k,t,d,i])=>`<div class="tile" onclick="UI.finTab='${k}';render()"><div class="ti">${ico(i)}</div><b>${t}</b><p>${d}</p></div>`).join('')}</div>`}
 function fConta(){const E=entradasList().filter(x=>inRange(x.data)),Sa=saidasList().filter(x=>inRange(x.data));const te=E.reduce((a,x)=>a+x.valor,0),ts=Sa.reduce((a,x)=>a+x.valor,0);
  const vendas=S.tratamentos.filter(t=>inRange(t.data)&&!['Reprovado','Em aberto','Em follow up'].includes(stTrat(t))).reduce((a,t)=>a+(t.valor||0),0);
@@ -2046,6 +2046,153 @@ function fConta(){const E=entradasList().filter(x=>inRange(x.data)),Sa=saidasLis
  ${ts===0&&te>0?'<div class="note warn">Nenhuma saída no período. Se a clínica teve despesas, lance e baixe em Contas a Pagar; sem isso o resultado mostra o faturamento, e não o lucro.</div>':''}
  ${keys.map(k=>{const d=days[k],dt=new Date(k+'T00:00');const e=d.e.reduce((a,x)=>a+x.valor,0),s=d.s.reduce((a,x)=>a+x.valor,0);return `<details class="dayrow"><summary><div class="dn"><b>${dt.getDate()}</b><small>${DIAS[dt.getDay()]} . ${MESES[dt.getMonth()].slice(0,3)}</small></div><div class="kv"><small>Entradas</small><b style="color:var(--ok)">${money(e)}</b></div><div class="kv"><small>Saídas</small><b style="color:var(--bad)">${money(s)}</b></div><div class="kv"><small>Transações</small><b>${d.e.length+d.s.length}</b></div><span>▾</span></summary>
   <div class="tw" style="padding:0 12px 12px"><table class="tbl mini"><tbody>${d.e.map(x=>{const p=pac(x.l.pacienteId);return `<tr><td>${badgeFor('Pago')}</td><td>${esc(p?p.nome:'')}</td><td>${esc(x.l.descricao)}</td><td>${esc(formaTxt(x.l))}</td><td class="num" style="color:var(--ok)">${money(x.valor)}</td></tr>`}).join('')}${d.s.map(x=>`<tr><td><span class="badge b-bad">Saída</span></td><td>${esc(x.c.fornecedor||'')}</td><td>${esc(x.c.descricao)}</td><td>${esc(x.c.categoria||'')}</td><td class="num" style="color:var(--bad)">${money(x.valor)}</td></tr>`).join('')}</tbody></table></div></details>`}).join('')||'<div class="card empty">Nenhuma movimentação no período.</div>'}`}
+/* ============ Ticket médio ============
+   Quanto o negócio ganhou, quanto ganhou em média por atendimento e por
+   pessoa atendida, quanto deixou de ganhar e quanto perdeu, num período.
+   Tudo é calculado na hora a partir dos lançamentos, dos agendamentos e dos
+   orçamentos, sem gravar nada. Os nomes dos campos seguem o restante do
+   financeiro: recebido é dinheiro que entrou de fato. */
+const TK_RECUPERA=30;
+function tkDentro(de,ate){return d=>!!d&&d>=de&&d<=ate}
+function tkRecuperado(a){const lim=somaDias(a.data,TK_RECUPERA);
+ return S.agendamentos.some(b=>b.id!==a.id&&b.pacienteId&&b.pacienteId===a.pacienteId&&b.data>a.data&&b.data<=lim&&!['Faltou','Desmarcado'].includes(stAg(b)))}
+function tkValorAg(a){if(a.sessaoPacote||pacoteAtivo(a))return {v:0,pacote:true};const v=valorAg(a);return {v:v>0?v:0,pacote:false,semPreco:!(v>0)}}
+function tkCalc(de,ate){const dentro=tkDentro(de,ate);
+ const E=entradasList().filter(x=>dentro(x.data));
+ const recebido=r2(E.reduce((a,x)=>a+x.valor,0));
+ const taxas=r2(E.reduce((a,x)=>a+(Number(String((x.pg&&x.pg.taxaValor)||'').replace(',','.'))||0),0));
+ const Eid=E.filter(x=>x.l.pacienteId&&pac(x.l.pacienteId));
+ const recebidoId=r2(Eid.reduce((a,x)=>a+x.valor,0));
+ const pagantes=new Set(Eid.map(x=>x.l.pacienteId));
+ const AG=S.agendamentos.filter(a=>dentro(a.data));
+ const atend=AG.filter(a=>stAg(a)==='Atendido');
+ const atendidos=new Set(atend.map(a=>a.pacienteId).filter(Boolean));
+ const lanc=S.lancamentos.filter(l=>dentro(l.vencimento));
+ const faturado=r2(lanc.filter(l=>stLanc(l)!=='Cancelado').reduce((a,l)=>a+(Number(l.valor)||0),0));
+ const nVendas=lanc.filter(l=>stLanc(l)!=='Cancelado'&&(Number(l.valor)||0)>0).length;
+ /* Deixou de ganhar: horário que ficou vazio e não foi remarcado, e orçamento recusado */
+ const perdaAg=st=>{const L=AG.filter(a=>stAg(a)===st&&a.data<=todayISO());const o={qtd:L.length,recuperados:0,pacote:0,semPreco:0,valor:0,itens:[]};
+  L.forEach(a=>{if(tkRecuperado(a)){o.recuperados++;return}const r=tkValorAg(a);if(r.pacote){o.pacote++;return}if(r.semPreco)o.semPreco++;o.valor+=r.v;o.itens.push({a,v:r.v})});o.valor=r2(o.valor);return o};
+ const faltas=perdaAg('Faltou'),desm=perdaAg('Desmarcado');
+ const TR=S.tratamentos.filter(t=>dentro(t.data));
+ const recus=TR.filter(t=>stTrat(t)==='Reprovado');
+ const recusados={qtd:recus.length,valor:r2(recus.reduce((a,t)=>a+(Number(t.valor)||0),0)),itens:recus};
+ const negoc=TR.filter(t=>['Em aberto','Em follow up'].includes(stTrat(t)));
+ const negociando={qtd:negoc.length,valor:r2(negoc.reduce((a,t)=>a+(Number(t.valor)||0),0))};
+ const deixou=r2(faltas.valor+desm.valor+recusados.valor);
+ /* Perdeu: era devido e não entrou, foi cancelado depois de lançado, ou ficou com a maquininha */
+ const atr=lanc.filter(l=>stLanc(l)==='Em atraso'&&saldoL(l)>0);
+ const atraso={qtd:atr.length,valor:r2(atr.reduce((a,l)=>a+saldoL(l),0)),itens:atr};
+ const canc=lanc.filter(l=>stLanc(l)==='Cancelado'&&(Number(l.valor)||0)>0);
+ const cancelados={qtd:canc.length,valor:r2(canc.reduce((a,l)=>a+(Number(l.valor)||0),0)),itens:canc};
+ const perdeu=r2(atraso.valor+cancelados.valor+taxas);
+ const div=(a,b)=>b>0?r2(a/b):null;
+ return {de,ate,recebido,taxas,liquido:r2(recebido-taxas),recebidoId,nReceb:E.length,faturado,nVendas,
+  atendimentos:atend.length,agendados:AG.length,pacAtendidos:atendidos.size,pagantes:pagantes.size,
+  tkAtend:div(recebido,atend.length),tkPac:div(recebidoId,pagantes.size),tkVenda:div(faturado,nVendas),
+  frequencia:atendidos.size?Math.round(atend.length/atendidos.size*10)/10:null,
+  faltas,desm,recusados,negociando,deixou,atraso,cancelados,perdeu}}
+/* Período anterior: se o filtro pega meses inteiros, compara com os meses inteiros
+   anteriores (novembro com outubro); senão, com o mesmo número de dias logo antes. */
+function tkAnterior(de,ate){const ult=x=>{const [y,m]=x.split('-').map(Number);return `${y}-${pad(m)}-${pad(new Date(y,m,0).getDate())}`};
+ if(de.slice(8)==='01'&&ate===ult(ate)){const [y1,m1]=de.split('-').map(Number),[y2,m2]=ate.split('-').map(Number);const n=(y2-y1)*12+(m2-m1)+1;
+  const ini=new Date(y1,m1-1-n,1);const a=`${ini.getFullYear()}-${pad(ini.getMonth()+1)}-01`;return [a,ult(somaDias(de,-1))]}
+ const n=diffDays(de,ate)+1;const fim=somaDias(de,-1);return [somaDias(fim,-(n-1)),fim]}
+function tkVar(at,ant){if(at==null||ant==null||!(ant>0))return '';const p=(at-ant)/ant*100;const c=p>=0?'var(--ok)':'var(--bad)';
+ return `<span style="color:${c};font-weight:700">${p>=0?'+':''}${p.toFixed(1).replace('.',',')}%</span> em relação ao período anterior`}
+function tkMoeda(v){return v==null?'-':money(v)}
+function tkPeriodo(k){const t=todayISO(),[y,m]=t.split('-').map(Number);
+ const ini=(yy,mm)=>`${yy}-${pad(mm)}-01`,fim=(yy,mm)=>{const d=new Date(yy,mm,0);return `${yy}-${pad(mm)}-${pad(d.getDate())}`};
+ if(k==='mes'){UI.de=ini(y,m);UI.ate=fim(y,m)}
+ else if(k==='ant'){const d=new Date(y,m-2,1);UI.de=ini(d.getFullYear(),d.getMonth()+1);UI.ate=fim(d.getFullYear(),d.getMonth()+1)}
+ else if(k==='3m'){const d=new Date(y,m-3,1);UI.de=ini(d.getFullYear(),d.getMonth()+1);UI.ate=fim(y,m)}
+ else if(k==='ano'){UI.de=`${y}-01-01`;UI.ate=`${y}-12-31`}
+ else if(k==='12m'){const d=new Date(y,m-12,1);UI.de=ini(d.getFullYear(),d.getMonth()+1);UI.ate=fim(y,m)}
+ render()}
+function tkAtalhos(){return `<div style="display:flex;gap:6px;flex-wrap:wrap;align-self:flex-end">${[['mes','Este mês'],['ant','Mês passado'],['3m','Últimos 3 meses'],['12m','Últimos 12 meses'],['ano','Este ano']].map(([k,t])=>`<button class="btn ghost sm" onclick="tkPeriodo('${k}')">${t}</button>`).join('')}</div>`}
+/* Meses cobertos pelo período, no máximo 24 */
+function tkMeses(de,ate){const out=[];let [y,m]=de.split('-').map(Number);const [y2,m2]=ate.split('-').map(Number);
+ while((y<y2||(y===y2&&m<=m2))&&out.length<24){const a=`${y}-${pad(m)}-01`,u=new Date(y,m,0);const b=`${y}-${pad(m)}-${pad(u.getDate())}`;
+  out.push({k:`${y}-${pad(m)}`,de:a<de?de:a,ate:b>ate?ate:b});m++;if(m>12){m=1;y++}}return out}
+function tkMesRows(de,ate){return tkMeses(de,ate).map(x=>{const c=tkCalc(x.de,x.ate);
+ return [monthLabel(x.k),c.recebido,c.atendimentos,c.pagantes,c.tkAtend||0,c.tkPac||0,c.deixou,c.perdeu]})}
+function tkPacRows(de,ate){const dentro=tkDentro(de,ate);const g={};const o=id=>g[id]||(g[id]={rec:0,at:0,falt:0,desm:0,deixou:0,atraso:0,ult:''});
+ entradasList().forEach(x=>{if(!dentro(x.data)||!x.l.pacienteId)return;o(x.l.pacienteId).rec+=x.valor});
+ S.agendamentos.forEach(a=>{if(!dentro(a.data)||!a.pacienteId)return;const st=stAg(a);
+  if(st==='Atendido'){const r=o(a.pacienteId);r.at++;if(a.data>r.ult)r.ult=a.data}
+  else if((st==='Faltou'||st==='Desmarcado')&&a.data<=todayISO()){const r=o(a.pacienteId);if(st==='Faltou')r.falt++;else r.desm++;if(!tkRecuperado(a))r.deixou+=tkValorAg(a).v}});
+ S.lancamentos.forEach(l=>{if(!dentro(l.vencimento)||!l.pacienteId||stLanc(l)!=='Em atraso')return;const s=saldoL(l);if(s>0)o(l.pacienteId).atraso+=s});
+ return Object.entries(g).map(([id,r])=>{const p=pac(id);return p?[p.nome,r.at,r2(r.rec),r.at?r2(r.rec/r.at):0,br(r.ult),r.falt,r.desm,r2(r.deixou),r2(r.atraso)]:null}).filter(Boolean).sort((a,b)=>b[2]-a[2]||b[1]-a[1])}
+function tkPerdasRows(de,ate){const c=tkCalc(de,ate);const nm=id=>(pac(id)||{}).nome||'';const rows=[];
+ c.faltas.itens.forEach(x=>rows.push([br(x.a.data),'Deixou de ganhar','Falta sem remarcação',nm(x.a.pacienteId),x.a.procedimento||'',x.a.profissional||'',x.v]));
+ c.desm.itens.forEach(x=>rows.push([br(x.a.data),'Deixou de ganhar','Desmarcação sem remarcação',nm(x.a.pacienteId),x.a.procedimento||'',x.a.profissional||'',x.v]));
+ c.recusados.itens.forEach(t=>rows.push([br(t.data),'Deixou de ganhar','Orçamento recusado',nm(t.pacienteId),t.procedimento||'',t.profissional||'',Number(t.valor)||0]));
+ c.atraso.itens.forEach(l=>rows.push([br(l.vencimento),'Perdeu','Parcela vencida e não paga',nm(l.pacienteId),l.descricao||'',l.parcela||'',saldoL(l)]));
+ c.cancelados.itens.forEach(l=>rows.push([br(l.vencimento),'Perdeu','Lançamento cancelado ou estornado',nm(l.pacienteId),l.descricao||'',l.parcela||'',Number(l.valor)||0]));
+ if(c.taxas>0)rows.push(['','Perdeu','Taxas da maquininha no período','','Soma das taxas informadas nos recebimentos','',c.taxas]);
+ return rows}
+/* Painel completo: usado na aba Ticket Médio do Financeiro e no relatório */
+function tkPainel(de,ate,curto){const c=tkCalc(de,ate);const [pd,pa]=tkAnterior(de,ate);const p=tkCalc(pd,pa);
+ const P=SEG().pessoa.toLowerCase(),Ps=SEG().pessoas.toLowerCase();
+ const linha=(t,v,cor,d)=>`<tr><td>${t}${d?`<br><small style="color:var(--mut)">${d}</small>`:''}</td><td class="num" style="${cor?'color:'+cor+';':''}font-weight:700;white-space:nowrap">${v}</td></tr>`;
+ const semAtend=c.atendimentos===0&&c.recebido>0;
+ return `<p class="sub" style="margin:0 0 14px">Período de <b>${br(de)}</b> a <b>${br(ate)}</b>. A comparação usa o período anterior de mesmo tamanho, de ${br(pd)} a ${br(pa)}.</p>
+ <div class="grid" style="margin-bottom:16px;grid-template-columns:repeat(auto-fit,minmax(190px,1fr))">
+  <div class="kpi g"><small>Quanto ganhou</small><b>${money(c.recebido)}</b><span>${tkVar(c.recebido,p.recebido)||c.nReceb+' recebimentos'}</span></div>
+  <div class="kpi"><small>Ticket médio por atendimento</small><b>${tkMoeda(c.tkAtend)}</b><span>${tkVar(c.tkAtend,p.tkAtend)||(c.atendimentos+' atendimentos realizados')}</span></div>
+  <div class="kpi"><small>Ticket médio por ${esc(P)}</small><b>${tkMoeda(c.tkPac)}</b><span>${tkVar(c.tkPac,p.tkPac)||(c.pagantes+' '+esc(Ps)+' pagaram')}</span></div>
+  <div class="kpi"><small>Valor médio de cada venda</small><b>${tkMoeda(c.tkVenda)}</b><span>${c.nVendas} lançamentos no período</span></div>
+  <div class="kpi r"><small>Quanto deixou de ganhar</small><b>${money(c.deixou)}</b><span>faltas, desmarcações e orçamentos recusados</span></div>
+  <div class="kpi r"><small>Quanto perdeu</small><b>${money(c.perdeu)}</b><span>atraso, cancelamentos e taxas</span></div>
+ </div>
+ ${semAtend?`<div class="note warn">Há recebimentos no período, mas nenhum agendamento marcado como Atendido. O ticket médio por atendimento depende dessa marcação na agenda; sem ela, o número fica vazio.</div>`:''}
+ <div class="grid" style="margin-bottom:16px;align-items:start;grid-template-columns:repeat(auto-fit,minmax(300px,1fr))">
+  <div class="card" style="margin:0"><h3 style="margin-top:0">Quanto ganhou</h3><table class="tbl mini"><tbody>
+   ${linha('Recebido',money(c.recebido),'var(--ok)','Dinheiro que entrou de fato no período, pela data do pagamento.')}
+   ${linha('Taxas da maquininha',money(c.taxas),c.taxas?'var(--bad)':'','Soma das taxas informadas ao registrar os pagamentos.')}
+   ${linha('Recebido líquido',money(c.liquido),'','Recebido menos as taxas.')}
+   ${linha('Faturado no período',money(c.faturado),'','Valor lançado para receber com vencimento no período, pago ou não.')}
+   ${linha('Atendimentos realizados',String(c.atendimentos),'',`Agendamentos marcados como Atendido. ${c.pacAtendidos} ${esc(Ps)} diferentes.`)}
+   ${linha('Frequência média',c.frequencia==null?'-':String(c.frequencia).replace('.',',')+' por '+esc(P),'','Quantas vezes, em média, cada '+esc(P)+' foi atendido no período.')}
+  </tbody></table></div>
+  <div class="card" style="margin:0"><h3 style="margin-top:0">Quanto deixou de ganhar</h3><table class="tbl mini"><tbody>
+   ${linha(`Faltas sem remarcação (${c.faltas.qtd-c.faltas.recuperados-c.faltas.pacote} de ${c.faltas.qtd})`,money(c.faltas.valor),'var(--bad)',`Valor do atendimento que estava na agenda. Não entram ${c.faltas.recuperados} faltas remarcadas em até ${TK_RECUPERA} dias${c.faltas.pacote?` nem ${c.faltas.pacote} sessões de pacote já pago`:''}.`)}
+   ${linha(`Desmarcações sem remarcação (${c.desm.qtd-c.desm.recuperados-c.desm.pacote} de ${c.desm.qtd})`,money(c.desm.valor),'var(--bad)',`Mesmo critério das faltas. Não entram ${c.desm.recuperados} desmarcações remarcadas em até ${TK_RECUPERA} dias${c.desm.pacote?` nem ${c.desm.pacote} sessões de pacote já pago`:''}.`)}
+   ${linha(`Orçamentos recusados (${c.recusados.qtd})`,money(c.recusados.valor),'var(--bad)','Orçamentos com data no período marcados como reprovados ou recusados.')}
+   ${linha('Total que deixou de ganhar',money(c.deixou),'var(--bad)','')}
+   ${linha(`Ainda em negociação (${c.negociando.qtd})`,money(c.negociando.valor),'','Orçamentos em aberto ou em follow up. Não é perda: ainda pode virar venda.')}
+   ${c.faltas.semPreco+c.desm.semPreco?linha('Sem preço cadastrado',String(c.faltas.semPreco+c.desm.semPreco),'','Faltas ou desmarcações cujo serviço não tem preço na tabela. Entram com valor zero.'):''}
+  </tbody></table></div>
+  <div class="card" style="margin:0"><h3 style="margin-top:0">Quanto perdeu</h3><table class="tbl mini"><tbody>
+   ${linha(`Vencido e não pago (${c.atraso.qtd})`,money(c.atraso.valor),'var(--bad)','Parcelas com vencimento no período que continuam em aberto. Ainda pode ser cobrado em Inadimplência.')}
+   ${linha(`Cancelado ou estornado (${c.cancelados.qtd})`,money(c.cancelados.valor),'var(--bad)','Lançamentos com vencimento no período que foram cancelados. Confira se não são lançamentos duplicados corrigidos.')}
+   ${linha('Taxas da maquininha',money(c.taxas),'var(--bad)','O que ficou com a operadora do cartão.')}
+   ${linha('Total que perdeu',money(c.perdeu),'var(--bad)','')}
+  </tbody></table></div>
+ </div>
+ ${curto?'':`<div class="card" style="margin-bottom:16px"><h3 style="margin-top:0">Como cada número é calculado</h3>
+  <ul style="margin:6px 0 0;padding-left:20px;line-height:1.8">
+   <li><b>Ticket médio por atendimento</b>: recebido no período dividido pelo número de atendimentos realizados.</li>
+   <li><b>Ticket médio por ${esc(P)}</b>: recebido de ${esc(Ps)} identificados dividido pelo número de ${esc(Ps)} diferentes que pagaram no período. Recebimentos sem ${esc(P)} vinculado, como um Pix avulso, ficam fora desta conta${c.recebido-c.recebidoId>0.004?` (${money(r2(c.recebido-c.recebidoId))} neste período)`:''}.</li>
+   <li><b>Valor médio de cada venda</b>: valor lançado no período dividido pelo número de lançamentos. Um pacote parcelado conta como um lançamento por parcela.</li>
+   <li><b>Deixou de ganhar</b> é dinheiro que nunca chegou a ser cobrado: horário vago e orçamento recusado. <b>Perdeu</b> é dinheiro que era devido ou entrou e não ficou: atraso, cancelamento e taxa.</li>
+  </ul></div>`}`}
+function fTicket(){const de=UI.de,ate=UI.ate;
+ const rM=tkMesRows(de,ate),rP=tkPacRows(de,ate);window._tkMes=rM;window._tkPac=rP;const P=SEG().pessoa,Ps=SEG().pessoas;
+ const cM=['Mês','Recebido','Atendimentos',Ps+' que pagaram','Ticket por atendimento','Ticket por '+P.toLowerCase(),'Deixou de ganhar','Perdeu'];
+ const cP=[P,'Atendimentos','Recebido','Ticket por atendimento','Último atendimento','Faltas','Desmarcações','Deixou de ganhar','Em atraso'];
+ window._tkCols=[cM,cP];
+ return `<div class="phead"><div><h1>Ticket Médio</h1><p class="sub">Quanto a clínica ganhou, quanto ganhou em média por atendimento e por ${esc(P.toLowerCase())}, quanto deixou de ganhar e quanto perdeu.</p></div><button class="btn ghost" onclick="window.print()">${ico('print',16)} Imprimir</button></div>
+ <div class="card" style="margin-bottom:16px">${rangeFilters(tkAtalhos())}</div>
+ ${tkPainel(de,ate)}
+ <div class="card" style="margin-bottom:16px"><div class="phead"><h3 style="margin:0">Ticket médio mês a mês</h3><button class="btn ghost sm" onclick="exportRows('ticket_medio_por_mes',window._tkCols[0],window._tkMes)">${ico('down',15)} Exportar Excel</button></div>
+  <div class="tw"><table class="tbl"><thead><tr>${cM.map((c,i)=>`<th class="${i?'num':''}">${esc(c)}</th>`).join('')}</tr></thead><tbody>
+  ${rM.map(r=>`<tr><td>${esc(r[0])}</td><td class="num">${money(r[1])}</td><td class="num">${r[2]}</td><td class="num">${r[3]}</td><td class="num">${r[2]?money(r[4]):'-'}</td><td class="num">${r[3]?money(r[5]):'-'}</td><td class="num" style="color:var(--bad)">${money(r[6])}</td><td class="num" style="color:var(--bad)">${money(r[7])}</td></tr>`).join('')||`<tr><td colspan="8" class="empty">Sem dados.</td></tr>`}</tbody></table></div></div>
+ <div class="card"><div class="phead"><h3 style="margin:0">Ticket médio por ${esc(P.toLowerCase())}</h3><button class="btn ghost sm" onclick="exportRows('ticket_medio_por_${esc(P.toLowerCase())}',window._tkCols[1],window._tkPac)">${ico('down',15)} Exportar Excel</button></div>
+  <p class="sub" style="margin:0 0 10px">${rP.length} ${esc(Ps.toLowerCase())} com atendimento, pagamento, falta ou atraso no período, do que mais pagou para o que menos pagou.${rP.length>50?' A tela mostra os 50 primeiros; o Excel traz todos.':''}</p>
+  <div class="tw"><table class="tbl"><thead><tr>${cP.map((c,i)=>`<th class="${i&&i!==4?'num':''}">${esc(c)}</th>`).join('')}</tr></thead><tbody>
+  ${rP.slice(0,50).map(r=>`<tr><td>${esc(r[0])}</td><td class="num">${r[1]}</td><td class="num">${money(r[2])}</td><td class="num">${r[1]?money(r[3]):'-'}</td><td>${esc(r[4]||'-')}</td><td class="num">${r[5]||'-'}</td><td class="num">${r[6]||'-'}</td><td class="num" style="color:var(--bad)">${r[7]?money(r[7]):'-'}</td><td class="num" style="color:var(--bad)">${r[8]?money(r[8]):'-'}</td></tr>`).join('')||`<tr><td colspan="9" class="empty">Sem dados.</td></tr>`}</tbody></table></div></div>`}
+
 /* ============ Conferência com o sistema anterior ============
    A clínica exporta o financeiro do Clinicorp em Excel e joga aqui. O sistema
    compara paciente por paciente, mostra onde os valores divergem e deixa a
@@ -2218,6 +2365,7 @@ function vDashboard(){const [ry,rm]=UI.dashRef.split('-').map(Number);const n=UI
 const REPORTS={
  'Pacientes':[['pac_aniv','Aniversariantes'],['pac_origem','Como conheceu (origem)'],['pac_ret','Alertas de retorno'],['pac_ult','Último agendamento'],['pac_loc','Localização'],['pac_recup','Recuperação de pacientes'],['pac_incomp','Cadastros incompletos']],
  'Financeiro':[['fin_formas','Recebimentos por forma de pagamento'],['fin_inad','Parcelas em atraso'],['fin_lanc','Todos os lançamentos'],['fin_desp','Despesas por categoria']],
+ 'Ticket médio':[['tk_resumo','Ticket médio: ganhou, deixou de ganhar e perdeu'],['tk_mes','Ticket médio por mês'],['tk_pac','Ticket médio por paciente'],['tk_perdas','O que deixou de ganhar e o que perdeu']],
  'Tratamentos':[['tr_aberto','Tratamentos em aberto'],['tr_proc','Procedimentos mais vendidos']],
  'Agendamentos':[['ag_mes','Faltas e desmarcações por mês'],['ag_prof','Atendimentos por profissional']]};
 function repData(id){const t=todayISO();
@@ -2237,6 +2385,10 @@ function repData(id){const t=todayISO();
  case 'tr_proc':{const g={};S.tratamentos.filter(x=>inRange(x.data)&&!['Reprovado'].includes(stTrat(x))).forEach(x=>{const k=x.procedimento;g[k]=g[k]||[0,0];g[k][0]++;g[k][1]+=x.valor||0});return {range:true,cols:['Procedimento','Quantidade','Valor total','Ticket médio'],money:[2,3],rows:Object.entries(g).sort((a,b)=>b[1][1]-a[1][1]).map(([k,v])=>[k,v[0],v[1],v[0]?v[1]/v[0]:0])}}
  case 'ag_mes':{const g={};S.agendamentos.forEach(a=>{const k=a.data.slice(0,7);g[k]=g[k]||[0,0,0];g[k][0]++;const s=stAg(a);if(s==='Faltou')g[k][1]++;if(s==='Desmarcado')g[k][2]++});return {cols:['Mês','Agendamentos','Faltas','Desmarcações','% faltas'],rows:Object.entries(g).sort((a,b)=>b[0].localeCompare(a[0])).map(([k,v])=>[monthLabel(k),v[0],v[1],v[2],v[0]?(v[1]/v[0]*100).toFixed(1)+'%':'0%'])}}
  case 'ag_prof':{const g={};S.agendamentos.filter(a=>inRange(a.data)).forEach(a=>{const k=a.profissional||'Não informado';g[k]=g[k]||[0,0,0];g[k][0]++;const s=stAg(a);if(s==='Faltou')g[k][1]++;if(s==='Atendido')g[k][2]++});return {range:true,cols:['Profissional','Agendamentos','Faltas','Marcados como atendidos'],rows:Object.entries(g).sort((a,b)=>b[1][0]-a[1][0]).map(([k,v])=>[k,...v])}}
+ case 'tk_resumo':return {range:true,filtro:tkAtalhos(),html:tkPainel(UI.de,UI.ate),cols:[],rows:[]};
+ case 'tk_mes':{const P=SEG().pessoas;return {range:true,filtro:tkAtalhos(),nota:'Cada linha é um mês dentro do período escolhido. Ticket por atendimento é o recebido dividido pelos atendimentos realizados; ticket por pessoa é o recebido de quem está cadastrado dividido pelo número de pessoas diferentes que pagaram. Deixou de ganhar soma faltas e desmarcações sem remarcação e orçamentos recusados. Perdeu soma parcelas vencidas e não pagas, lançamentos cancelados e taxas da maquininha.',cols:['Mês','Recebido','Atendimentos',P+' que pagaram','Ticket por atendimento','Ticket por '+SEG().pessoa.toLowerCase(),'Deixou de ganhar','Perdeu'],money:[1,4,5,6,7],rows:tkMesRows(UI.de,UI.ate)}}
+ case 'tk_pac':{const P=SEG().pessoa;return {range:true,filtro:tkAtalhos(),nota:'Quanto cada '+P.toLowerCase()+' pagou no período, quantas vezes foi atendido e o valor médio de cada atendimento. Deixou de ganhar é o valor das faltas e desmarcações dele que não foram remarcadas em até '+TK_RECUPERA+' dias. Em atraso é o saldo das parcelas dele que venceram no período e não foram pagas.',cols:[P,'Atendimentos','Recebido','Ticket por atendimento','Último atendimento','Faltas','Desmarcações','Deixou de ganhar','Em atraso'],money:[2,3,7,8],rows:tkPacRows(UI.de,UI.ate)}}
+ case 'tk_perdas':return {range:true,filtro:tkAtalhos(),nota:'Cada linha é um valor que deixou de entrar. Deixou de ganhar: falta ou desmarcação que não foi remarcada em até '+TK_RECUPERA+' dias, e orçamento recusado. Perdeu: parcela vencida e não paga, lançamento cancelado ou estornado e taxa da maquininha. Sessões de pacote já pago não entram, porque o valor foi recebido no pacote.',cols:['Data','Tipo','Motivo',SEG().pessoa,'Serviço ou descrição','Profissional ou parcela','Valor'],money:[6],rows:tkPerdasRows(UI.de,UI.ate)};
  }return {cols:[],rows:[]}}
 /* ============ Recuperação de pacientes ============
    Para cada serviço cadastrado, separa a base da clínica em quatro situações
@@ -2913,7 +3065,15 @@ const PLANOS={
 /* O plano contratado vem da nuvem, não da configuração local: é ele que trava os módulos */
 function planoContratado(){const p=String((typeof NV!=='undefined'&&NV.plano)||'').toLowerCase();
  if(p==='agenda')return 'agenda';if(!p||p==='teste')return 'teste';return 'completo'}
-function planoInfo(k){const a=(typeof ASSINATURA!=='undefined'&&ASSINATURA&&ASSINATURA.planos)||{};const d={agenda:{nome:'Só agenda',preco:'R$ 29,90 por mês',valor:29.90},completo:{nome:'Completo',preco:'R$ 79,90 por mês',valor:79.90},upgrade:{nome:'Complemento para o plano completo',preco:'R$ 50,09',valor:50.09}};
+/* A barbearia tem preço próprio: para quem é do ramo barbearia, o plano completo
+   é o plano Barbearia. semRamo ignora o ramo gravado no aparelho, para a tela de
+   cadastro, onde a pessoa ainda está escolhendo. */
+const ramoBarbearia=()=>typeof S!=='undefined'&&S&&S.config&&S.config.segmento==='barbearia';
+function planoInfo(k,semRamo){const a=(typeof ASSINATURA!=='undefined'&&ASSINATURA&&ASSINATURA.planos)||{};const d={agenda:{nome:'Só agenda',preco:'R$ 29,90 por mês',valor:29.90},completo:{nome:'Completo',preco:'R$ 79,90 por mês',valor:79.90},barbearia:{nome:'Barbearia',preco:'R$ 34,90 por mês',valor:34.90,link:'https://www.asaas.com/000/c/qfvnztz9zhhwl000'},upgrade:{nome:'Complemento para o plano completo',preco:'R$ 50,09',valor:50.09}};
+ if(!semRamo&&ramoBarbearia()){
+  if(k==='completo')k='barbearia';
+  else if(k==='upgrade'){const b=planoInfo('barbearia',true),g=planoInfo('agenda',true);const dif=Math.max(0,Math.round(((+b.valor||0)-(+g.valor||0))*100)/100);
+   return Object.assign({nome:'Complemento para o plano Barbearia',preco:'R$ '+dif.toFixed(2).replace('.',','),valor:dif,link:''},a.upgrade_barbearia||{})}}
  return Object.assign({},d[k]||{},a[k]||{})}
 const planoK=()=>planoContratado()==='agenda'?'agenda':(S.config.plano==='agenda'?'agenda':'completo');
 const soAgenda=()=>planoK()==='agenda';
@@ -4600,7 +4760,7 @@ function agNovo(a,s){if(s==='Desmarcado'||s==='Faltou')return false;const k=a.da
  const hist=c=>S[c].some(x=>x.pacienteId===a.pacienteId&&((x.data||x.vencimento||x.pagamento||'')<a.data)&&(x.data||x.vencimento||x.pagamento));
  return !hist('evolucoes')&&!hist('tratamentos')&&!S.lancamentos.some(l=>l.pacienteId===a.pacienteId&&l.pagamento&&l.pagamento<a.data)}
 /* ============ Atualização: aviso com botão Atualizar agora ============ */
-const VERSAO_APP='1.10.1';const URL_VERSAO_JSON='https://raw.githubusercontent.com/TheIgor12/blacksolutions/main/versao.json';
+const VERSAO_APP='1.10.2';const URL_VERSAO_JSON='https://raw.githubusercontent.com/TheIgor12/blacksolutions/main/versao.json';
 const numV=v=>String(v||'0').split(/\D+/).filter(Boolean).map(Number);
 function versaoMaior(a,b){const x=numV(a),y=numV(b);for(let i=0;i<Math.max(x.length,y.length);i++){const d=(x[i]||0)-(y[i]||0);if(d)return d>0}return false}
 const ATU={nova:null,timer:null};
@@ -4924,7 +5084,7 @@ function testeDiasTxt(){const n=testeDias();return n===1?'1 dia':n+' dias'}
 async function carregarAssinatura(){if(ASSINATURA)return ASSINATURA;try{ASSINATURA=await (await fetch(URL_ASSINATURA+'?t='+Date.now(),{cache:'no-store'})).json()}catch(e){ASSINATURA={}}return ASSINATURA}
 /* Promocao por tempo e por numero de vagas. Tudo vem do assinatura.json,
    para mudar preco, prazo e vagas sem publicar o sistema de novo. */
-function promoAtiva(){const p=(ASSINATURA||{}).promocao;
+function promoAtiva(){if(ramoBarbearia())return null;const p=(ASSINATURA||{}).promocao;
  if(!p||!p.ativa)return null;
  if(p.ate){const h=new Date();h.setHours(0,0,0,0);
   const d=new Date(p.ate+'T23:59:59');if(isNaN(d)||d<h)return null}
@@ -5019,8 +5179,8 @@ function vAuth(){const A=UI.auth;const box=c=>`<div class="auth"><div class="aut
  case 'nova_senha':return box(`<h2>Nova senha</h2><p class="sub" style="margin-bottom:14px">Digite o código enviado para <b>${esc(A.email)}</b> e escolha a nova senha.</p><form onsubmit="authNovaSenha();return false"><label>Código<input id="au_cod" inputmode="numeric" maxlength="10" autocomplete="one-time-code"></label><label>Nova senha<input id="au_senha" type="password" autocomplete="new-password"></label><label>Repita a nova senha<input id="au_senha2" type="password" autocomplete="new-password"></label>${msg}<button class="btn">Salvar nova senha</button></form><div class="authlinks"><button class="lnk" onclick="UI.auth={modo:'entrar'};render()">Voltar</button></div>`);
  case 'clinica':{const seg=A.seg||'',pl=A.plano||'';const esc2=x=>esc(x);
   const op=(n,k,p2,t,d,pr)=>`<button type="button" class="aopt ${A.op===n?'on':''}" onclick="authEsc(${n},'${k}','${p2}')"><span><b>${t}</b><small>${d}</small></span><span class="pr">${pr}</span></button>`;
-  const pa=planoInfo('agenda'),pc=planoInfo('completo');const vA=pa.preco.replace(' por mês',''),vC=pc.preco.replace(' por mês','');
-  const escolhido=seg?(pl==='agenda'?pa:pc):null;
+  const pa=planoInfo('agenda',true),pc=planoInfo('completo',true),pb=planoInfo('barbearia',true);const vA=pa.preco.replace(' por mês',''),vC=pc.preco.replace(' por mês',''),vB=pb.preco.replace(' por mês','');
+  const escolhido=seg?(pl==='agenda'?pa:seg==='barbearia'?pb:pc):null;const vCx=seg==='barbearia'?vB:vC;
   return box(`<h2>Cadastre o seu negócio</h2><p class="sub" style="margin-bottom:6px">Você será o administrador. Depois poderá convidar a sua equipe.</p>
   <form onsubmit="authClinica();return false"><label>Nome do negócio<input id="au_clin" value="${esc2(A.clin||'')}" oninput="UI.auth.clin=this.value"></label>
   <label>CPF do responsável<input id="au_cpf" data-mask="cpf" inputmode="numeric" value="${esc2(A.cpf||'')}" oninput="UI.auth.cpf=this.value" placeholder="000.000.000-00"></label>
@@ -5028,12 +5188,13 @@ function vAuth(){const A=UI.auth;const box=c=>`<div class="auth"><div class="aut
   <div style="display:flex;gap:8px;flex-wrap:wrap"><button type="button" class="btn ${A.temCnpj===1?'':'ghost'} sm" onclick="authCnpjTem(1)">Sim, tenho CNPJ ou MEI</button><button type="button" class="btn ${A.temCnpj===0?'':'ghost'} sm" onclick="authCnpjTem(0)">Não, sou autônomo</button></div>
   ${A.temCnpj===1?`<label style="margin-top:10px">CNPJ<input id="au_cnpj" data-mask="cnpj" value="${esc2(A.cnpj||'')}" oninput="UI.auth.cnpj=this.value" onblur="authCnpjBuscar()" placeholder="00.000.000/0000-00"></label>${A.cnpjMsg?`<div class="aresumo" style="${A.cnpjOk?'':'background:var(--warn-soft)'}">${esc2(A.cnpjMsg)}</div>`:'<div class="sub" style="margin:-6px 0 10px">Saia do campo e o sistema consulta a Receita Federal sozinho.</div>'}`:''}
   <div class="ast">O que você faz?</div>
-  ${op(1,'beleza','agenda','Atendo com hora marcada','Manicure, pedicure, barbearia, cílios, sobrancelha, massagem, depilação e afins.',pl==='completo'&&A.op===1?vC:vA)}
+  ${op(1,'beleza','agenda','Atendo com hora marcada','Manicure, pedicure, cílios, sobrancelha, massagem, depilação e afins.',pl==='completo'&&A.op===1?vC:vA)}
+  ${op(5,'barbearia','completo','Barbearia','Preço e tempo por barbeiro, combos de corte e barba, encaixe, comanda, caixa e financeiro.',pl==='agenda'&&A.op===5?vA:vB)}
   ${op(2,'beleza','completo','Salão de beleza','Vários profissionais, comanda, caixa do dia, comissões e estoque.',pl==='agenda'&&A.op===2?vA:vC)}
   ${op(3,'podologia','completo','Clínica de podologia','Prontuário, anamnese, controle de sessões, evolução e financeiro.',pl==='agenda'&&A.op===3?vA:vC)}
   ${op(4,'estetica','completo','Clínica de estética','Pacotes de sessões, avaliação, fotos de antes e depois, protocolos e financeiro.',pl==='agenda'&&A.op===4?vA:vC)}
   <div class="ast">Quer só a agenda, mesmo sendo clínica ou salão?</div>
-  <div style="display:flex;gap:8px;flex-wrap:wrap"><button type="button" class="btn ${pl==='agenda'?'':'ghost'} sm" onclick="authPlano('agenda')">Só agenda ${vA}</button><button type="button" class="btn ${pl==='completo'?'':'ghost'} sm" onclick="authPlano('completo')">Completo ${vC}</button></div>
+  <div style="display:flex;gap:8px;flex-wrap:wrap"><button type="button" class="btn ${pl==='agenda'?'':'ghost'} sm" onclick="authPlano('agenda')">Só agenda ${vA}</button><button type="button" class="btn ${pl==='completo'?'':'ghost'} sm" onclick="authPlano('completo')">Completo ${vCx}</button></div>
   <div class="aresumo">${escolhido?`Depois dos ${testeDiasTxt()} de teste grátis, a assinatura fica em <b>${esc2(escolhido.preco)}</b>. Dá para trocar de plano depois, pagando a diferença.`:'Escolha acima o que você faz. O valor da assinatura aparece aqui.'}</div>
   ${msg}<button class="btn">Criar conta do negócio</button></form>
   <div class="authlinks"><button class="lnk" onclick="entrar(NV.sessao)">Verificar convites</button><button class="lnk" onclick="sair()">Sair</button></div>`)}

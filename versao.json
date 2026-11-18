@@ -1,4 +1,4 @@
 {
-  "versao": "1.10.1",
-  "novidades": "O ramo do sistema passa a ficar travado depois de escolhido. Como cada ramo tem módulos próprios e preço próprio, a troca de ramo não é mais feita dentro do sistema: quem precisar trocar fala com o suporte e a troca é feita sem perder nenhum dado. O plano continua livre: dá para ir do completo para o só agenda, e voltar, quando quiser. Continua valendo a atualização anterior, com o módulo de barbearia e o agendamento pela internet refeito."
+  "versao": "1.10.2",
+  "novidades": "Novo Ticket Médio no Financeiro e nos Relatórios: quanto ganhou, ticket médio por atendimento e por paciente, quanto deixou de ganhar (faltas e desmarcações sem remarcação e orçamentos recusados) e quanto perdeu (parcelas vencidas, cancelamentos e taxas da maquininha), por período, mês a mês e por paciente, com comparação com o período anterior. A barbearia passa a ter plano próprio de R$ 34,90 por mês."
 }
