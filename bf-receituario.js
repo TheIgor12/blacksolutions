@@ -18,6 +18,21 @@ const person=id=>(S.pacientes||[]).find(p=>String(p.id)===String(id));
 const fail=e=>toast('Não foi possível concluir: '+String(e&&e.message||e).slice(0,190));
 const zone=html=>{const x=document.getElementById('bfrec-zone');if(x)x.innerHTML=html;};
 const BUCKET='bf-receituarios';
+/* O QR consulta um registro; não valida assinatura digital ou receituário controlado. */
+const BF_VERIFY_URL='https://blackflow.app.br/validar/receita/';
+const toHex=bytes=>Array.from(bytes,b=>b.toString(16).padStart(2,'0')).join('');
+async function hash256(bytes){return toHex(new Uint8Array(await crypto.subtle.digest('SHA-256',bytes)));}
+function newVerificationToken(){return toHex(crypto.getRandomValues(new Uint8Array(32)));}
+function qrAsPng(url){
+ if(typeof qrcode!=='function')throw Error('Biblioteca QR indisponível. Documento não gerado.');
+ const qr=qrcode(0,'M');qr.addData(url);qr.make();
+ const step=5,quiet=4,count=qr.getModuleCount(),size=(count+quiet*2)*step;
+ const canvas=document.createElement('canvas');canvas.width=size;canvas.height=size;
+ const ctx=canvas.getContext('2d');if(!ctx)throw Error('Falha ao montar QR Code.');
+ ctx.fillStyle='#fff';ctx.fillRect(0,0,size,size);ctx.fillStyle='#000';
+ for(let y=0;y<count;y++)for(let x=0;x<count;x++)if(qr.isDark(y,x))ctx.fillRect((x+quiet)*step,(y+quiet)*step,step,step);
+ return canvas.toDataURL('image/png');
+}
 let model=null,docs=[],authorized=false;
 async function list(table,cols,filters={},sort=''){
  let q=NV.sb.from(table).select(cols);Object.entries(filters).forEach(([k,v])=>q=q.eq(k,v));
@@ -32,7 +47,7 @@ async function refresh(){
  authorized=await allowed();if(!authorized){model=null;docs=[];return;}
  const x=await Promise.all([
   list('bf_receituario_modelos','*',{clinica_id:cid(),user_id:uid(),segmento:seg()}),
-  list('bf_receituario_documentos','id,paciente_ref,paciente_nome,tipo,status,pdf_rascunho_path,pdf_assinado_path,criado_em',{clinica_id:cid(),user_id:uid(),segmento:seg()},'criado_em')
+  list('bf_receituario_documentos','id,paciente_ref,paciente_nome,tipo,status,pdf_rascunho_path,pdf_assinado_path,verificacao_token_hash,criado_em',{clinica_id:cid(),user_id:uid(),segmento:seg()},'criado_em')
  ]);model=x[0][0]||null;docs=x[1];
 }
 async function pdfLibrary(){
@@ -155,9 +170,10 @@ function wrapText(text,font,size,width){
   }if(line)lines.push(line);
  }return lines;
 }
-async function generate(template,patient,text,kind){
+async function generate(template,patient,text,kind,verificationUrl){
  const lib=await pdfLibrary(),base=await lib.PDFDocument.load(await template.arrayBuffer());
  const out=await lib.PDFDocument.create(),font=await out.embedFont(lib.StandardFonts.Helvetica),bold=await out.embedFont(lib.StandardFonts.HelveticaBold);
+ const qrImage=await out.embedPng(await (await fetch(qrAsPng(verificationUrl))).arrayBuffer());
  let page,y;
  async function newPage(){const [copy]=await out.copyPages(base,[0]);page=out.addPage(copy);y=page.getHeight()-Number(model.margem_superior||140);
   page.drawText('RASCUNHO - NAO ASSINADO',{x:Math.max(26,page.getWidth()-220),y:page.getHeight()-40,font:bold,size:9,color:lib.rgb(.72,.14,.14)});
@@ -169,6 +185,12 @@ async function generate(template,patient,text,kind){
  for(const l of lines){if(y<Number(model.margem_inferior||65)+20)await newPage();if(l)page.drawText(l,{x:margin,y,font,size:11,color:lib.rgb(.12,.13,.17)});y-=15;}
  if(y<Number(model.margem_inferior||65)+30)await newPage();
  y-=20;page.drawText('Documento para revisao e assinatura profissional.',{x:margin,y,font,size:9,color:lib.rgb(.56,.2,.2)});
+ if(y<Number(model.margem_inferior||65)+130)await newPage();
+ y-=115;
+ page.drawImage(qrImage,{x:margin,y,width:98,height:98});
+ page.drawText('Consulta do registro via QR Code',{x:margin+108,y:y+72,font:bold,size:9,color:lib.rgb(.12,.13,.17)});
+ page.drawText('Nao comprova assinatura digital.',{x:margin+108,y:y+54,font,size:8,color:lib.rgb(.5,.18,.18)});
+ page.drawText('Receitas controladas: sistema oficial.',{x:margin+108,y:y+40,font,size:8,color:lib.rgb(.5,.18,.18)});
  return new Blob([await out.save()],{type:'application/pdf'});
 }
 async function home(){
@@ -183,7 +205,7 @@ async function home(){
     '<p><label><input type="checkbox" id="bfrec-responsavel"> Declaro que o conteúdo foi revisado por mim e está dentro da minha competência profissional.</label></p>'+
     btn('Gerar rascunho PDF','bfRecGenerate()'));
   }
-  const listHtml=docs.map(d=>'<div class="row" style="flex-wrap:wrap"><span><b>'+escH(d.paciente_nome)+'</b><br><small>'+escH(d.tipo)+' — '+escH(new Date(d.criado_em).toLocaleDateString('pt-BR'))+' — '+escH(d.status)+'</small></span><span>'+btn('Baixar rascunho',"bfRecDownload('"+d.id+"',false)")+' '+(d.pdf_assinado_path?btn('Enviar PDF pelo WhatsApp',"bfRecShare('"+d.id+"')"):btn('Anexar PDF assinado',"bfRecSignPrompt('"+d.id+"')"))+'</span></div>').join('');
+  const listHtml=docs.map(d=>'<div class="row" style="flex-wrap:wrap"><span><b>'+escH(d.paciente_nome)+'</b><br><small>'+escH(d.tipo)+' — '+escH(new Date(d.criado_em).toLocaleDateString('pt-BR'))+' — '+escH(d.status)+(d.verificacao_token_hash?' — QR de consulta no PDF':' — sem QR (documento antigo)')+'</small></span><span>'+btn('Baixar rascunho',"bfRecDownload('"+d.id+"',false)")+' '+(d.pdf_assinado_path?btn('Enviar PDF pelo WhatsApp',"bfRecShare('"+d.id+"')"):btn('Anexar PDF assinado',"bfRecSignPrompt('"+d.id+"')"))+'</span></div>').join('');
   body+=card('Documentos deste profissional',listHtml||note('Nenhum documento criado.'));
   zone(body);
  }catch(e){fail(e);zone(note(escH(e.message||e)));}
@@ -194,9 +216,13 @@ window.bfRecGenerate=async()=>{
   if(!document.getElementById('bfrec-responsavel')?.checked)throw Error('Confirme a responsabilidade profissional.');
   const p=person(read('bfrec-paciente')),tipo=read('bfrec-tipo'),texto=read('bfrec-texto');
   if(!p||texto.length<5||texto.length>8000)throw Error('Informe o paciente e o texto.');
-  const pdf=await generate(await downloadPDF(model.pdf_path),p,texto,tipo);
+  const token=newVerificationToken();
+  const verifyUrl=BF_VERIFY_URL+'?token='+encodeURIComponent(token);
+  const pdf=await generate(await downloadPDF(model.pdf_path),p,texto,tipo,verifyUrl);
+  const pdfHash=await hash256(await pdf.arrayBuffer());
+  const tokenHash=await hash256(new TextEncoder().encode(token));
   const storage=path('documentos');await upload(pdf,storage);
-  const rec={clinica_id:cid(),user_id:uid(),segmento:seg(),modelo_id:model.id,paciente_ref:String(p.id),paciente_nome:p.nome,tipo,texto,pdf_rascunho_path:storage,status:'rascunho'};
+  const rec={clinica_id:cid(),user_id:uid(),segmento:seg(),modelo_id:model.id,paciente_ref:String(p.id),paciente_nome:p.nome,tipo,texto,pdf_rascunho_path:storage,pdf_rascunho_sha256:pdfHash,verificacao_token_hash:tokenHash,status:'rascunho'};
   const r=await NV.sb.from('bf_receituario_documentos').insert(rec);if(r.error)throw r.error;
   download('rascunho_'+safeName(p.nome)+'.pdf',pdf);toast('Rascunho PDF gerado. Assine externamente antes de enviar.');home();
  }catch(e){fail(e)}
@@ -213,8 +239,9 @@ window.bfRecSign=async id=>{
   const d=docs.find(x=>x.id===id);if(!d||d.status!=='rascunho')throw Error('Documento não pode ser atualizado.');
   if(!document.getElementById('bfrec-signed-confirm')?.checked)throw Error('Confirme a assinatura externa.');
   const f=document.getElementById('bfrec-signed-file')?.files?.[0];await validPDF(f);
+  const signedHash=await hash256(await f.arrayBuffer());
   const storage=path('assinados');await upload(f,storage);
-  const r=await NV.sb.from('bf_receituario_documentos').update({pdf_assinado_path:storage,status:'assinado_externo_nao_validado',assinatura_declarada_em:new Date().toISOString()}).eq('id',id).eq('clinica_id',cid()).eq('user_id',uid()).select();
+  const r=await NV.sb.from('bf_receituario_documentos').update({pdf_assinado_path:storage,pdf_assinado_sha256:signedHash,status:'assinado_externo_nao_validado',assinatura_declarada_em:new Date().toISOString()}).eq('id',id).eq('clinica_id',cid()).eq('user_id',uid()).select();
   if(r.error)throw r.error;if(!r.data?.length)throw Error('O banco não confirmou a atualização.');
   closeModal();toast('Arquivo anexado. Assinatura não validada pelo BlackFlow.');home();
  }catch(e){fail(e)}
