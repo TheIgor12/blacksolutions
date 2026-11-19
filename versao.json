@@ -1,5 +1,5 @@
 {
-  "versao": "1.20.0",
+  "versao": "1.21.0",
   "data": "2026-11-19",
-  "novidades": "Nova página BlackPay integrada diretamente ao BlackFlow, sem iframe, sem nova aba e com botão azul Voltar para Agenda. Navegação completa, cobranças Pix fictícias, transferências, retirada, maquininha, extrato, conciliação e auditoria funcionando no simulador. Nenhuma operação financeira real é autorizada."
+  "novidades": "Tati: 51 novas perguntas e respostas, mais base de ajuda anterior, pesquisa contextual e navegação; base no Supabase sem API externa ou dados clínicos; câmera no celular com escolha retornar ou continuar; responsividade e modais compactos para celular. Finanças reais do BlackPay continuam bloqueadas."
 }
