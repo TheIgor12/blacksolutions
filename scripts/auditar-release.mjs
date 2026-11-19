@@ -28,11 +28,15 @@ assert.ok(read('bf-receituario.js').includes("conselho:seg()==='odontologia'?'CR
 assert.ok(read('bf-receituario.js').includes('RASCUNHO - NAO ASSINADO'),'Missing watermark');
 for(const file of ['sw.js','app/sw.js']){
  const sw=read(file);new vm.Script(sw,{filename:file});
- assert.ok(sw.includes('blackflow-v18'),'PWA cache not bumped');
+ assert.ok(sw.includes('blackflow-v19'),'PWA cache not bumped');
  assert.ok(sw.includes("url.searchParams.has('token')"),'Sensitive query tokens may be cached');
 }
 assert.ok(read('bf-context-actions.js').includes('attachModalButtons(k,true)'),'Pix must display only fiscal action');
 assert.ok(read('bf-integrity-audit.js').includes('bfAuditarVinculos'),'Missing cross-link audit');
+assert.ok(html.includes('src="/blackpay/?embedded=1&v=0.1.1"'),'BlackPay preview missing');
+assert.ok(html.includes('bpPreferenciaFutura'),'BlackPay future preference missing');
+assert.ok(read('blackpay/app.js').includes('embeddedReadOnly'),'BlackPay client preview must be read only');
+new vm.Script(read('blackpay/app.js'),{filename:'blackpay/app.js'});
 assert.equal(read('sw.js'),read('app/sw.js'),'PWA scripts not synchronized');
 for(const name of ['manifest.webmanifest','app/manifest.webmanifest']){
  const m=JSON.parse(read(name));assert.equal(m.name,'BlackFlow');
