@@ -1,0 +1,58 @@
+name: BlackFlow — gerar vídeo e manual 2026
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - scripts/gerar_materiais_2026.py
+      - .github/workflows/blackflow-materiais.yml
+
+permissions:
+  contents: write
+
+concurrency:
+  group: blackflow-materials-2026
+  cancel-in-progress: false
+
+jobs:
+  render-materials:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout BlackSolutions aplicativo
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: true
+      - name: Checkout site e manual online
+        uses: actions/checkout@v4
+        with:
+          repository: TheIgor12/blacksolutions-site
+          ref: main
+          path: _site
+          persist-credentials: false
+      - name: Preparar Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Dependências do gerador
+        run: |
+          python -m pip install --disable-pip-version-check pillow==11.3.0 reportlab==4.4.4 beautifulsoup4==4.13.5
+          command -v ffmpeg || (sudo apt-get update && sudo apt-get install -y ffmpeg)
+      - name: Gerar PDF e vídeo atualizados
+        run: |
+          python scripts/gerar_materiais_2026.py
+          test -s download/Manual_BlackFlow.pdf
+          test -s download/BlackFlow_ecossistema_2026.mp4
+          test -s img/blackflow-ecossistema-capa.jpg
+          ffprobe -v error -show_entries format=duration -of default=noprint_wrappers=1 download/BlackFlow_ecossistema_2026.mp4
+      - name: Publicar mídias no repositório
+        run: |
+          git config user.name "blackflow-ci"
+          git config user.email "blackflow-ci@users.noreply.github.com"
+          git add download/Manual_BlackFlow.pdf download/BlackFlow_ecossistema_2026.mp4 img/blackflow-ecossistema-capa.jpg
+          if git diff --cached --quiet; then
+            echo "Sem mudanças em vídeo/PDF"
+          else
+            git commit -m "docs(blackflow): publicar manual e vídeo atualizados — novembro de 2026"
+            git push origin HEAD:main
+          fi
