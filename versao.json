@@ -1,5 +1,5 @@
 {
-  "versao": "1.17.0",
+  "versao": "1.18.0",
   "data": "2026-11-19",
-  "novidades": "Botões contextuais Emitir NFE e Receituário no Pix, agendamento, ficha do paciente, comandas e financeiro; preenchimento automático de dados existentes e abertura dos módulos para conferência. NFS-e permanece em rascunho até habilitação e autorização fiscal oficial; receituário exige credenciais e assinatura adequada."
+  "novidades": "Pix inicial somente com cobrança e botão Emitir NFE; dados de paciente sincronizados no formulário fiscal a partir de lançamentos; auditoria de vínculos cadastrais em Configurações > Sistema; bloqueio de exclusão destrutiva de paciente com registros associados, oferecendo arquivamento. Verificações e correções não substituem testes com usuários reais, nem habilitam transmissão de NFS-e sem homologação."
 }
