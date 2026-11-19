@@ -1,4 +1,4 @@
-/* BlackFlow 1.17.0 — Ações contextuais para fiscal e receituário.
+/* BlackFlow 1.18.0 — Ações contextuais para fiscal e receituário.
    Prefill em memória; não gera notas ou prescrições sem revisão profissional. */
 (function(){
 'use strict';
@@ -8,9 +8,9 @@ const safe=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'
 const patient=id=>(S.pacientes||[]).find(p=>String(p.id)===String(id));
 const permissionFiscal=()=>typeof NV!=='undefined'&&(NV.papel==='admin'||!!NV.mestre);
 const permissionRec=()=>['podologia','medicina','odontologia','biomedicina'].includes(S.config.segmento);
-const btns=(ctx)=>'<div class="bf-quick-actions" style="display:flex;gap:8px;flex-wrap:wrap;margin:12px 0">'+
+const btns=(ctx,fiscalOnly=false)=>'<div class="bf-quick-actions" style="display:flex;gap:8px;flex-wrap:wrap;margin:12px 0">'+
  (permissionFiscal()?'<button type="button" class="btn sm" onclick="bfAbrirNfe('+ctx+')">Emitir NFE</button>':'')+
- (permissionRec()?'<button type="button" class="btn ghost sm" onclick="bfAbrirReceituario('+ctx+')">Receituário</button>':'')+'</div>';
+ (!fiscalOnly&&permissionRec()?'<button type="button" class="btn ghost sm" onclick="bfAbrirReceituario('+ctx+')">Receituário</button>':'')+'</div>';
 const contexts=new Map();
 function register(value){
  const k=++sequence;contexts.set(k,value||{});
@@ -53,17 +53,17 @@ function open(view,key){
 }
 window.bfAbrirNfe=key=>open('bffiscal',key);
 window.bfAbrirReceituario=key=>open('receituario',key);
-function attachModalButtons(info){
+function attachModalButtons(info,fiscalOnly=false){
  const root=document.querySelector('#modalRoot .modal');
  if(!root||root.querySelector('.bf-quick-actions'))return;
- root.insertAdjacentHTML('beforeend',btns(info));
+ root.insertAdjacentHTML('beforeend',btns(info,fiscalOnly));
 }
 if(typeof pixAgora==='function'){
  const original=pixAgora;
  pixAgora=function(valor,descricao,pacienteId,lancamentoId){
   const k=record(pacienteId,valor,descricao,lancamentoId);
   const result=original.apply(this,arguments);
-  attachModalButtons(k);
+  attachModalButtons(k,true);
   return result;
  };
 }
@@ -107,7 +107,7 @@ if(typeof vPaciente==='function'){
   const page=old.apply(this,arguments),p=patient(UI.param);
   if(!p)return page;
   const k=record(p.id,0,'','');
-  return page.replace(/(<div class="phead"[^>]*>)/,'$1'+btns(k));
+  return page.replace(/(<div class="phd"[^>]*>)/,'$1'+btns(k));
  };
 }
 // Acesso também no financeiro, nos lançamentos e na ficha, mesmo sem Pix.
