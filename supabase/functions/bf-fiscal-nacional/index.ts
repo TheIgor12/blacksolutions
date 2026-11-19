@@ -132,6 +132,21 @@ Deno.serve(async req=>{
   const list=await response.json();
   if(!Array.isArray(list)||!list.length)return reply({erro:"Cadastro fiscal indisponível para esta clínica."},403);
   const cfg=list[0];
+  if(body.acao==="municipios"){
+   const uf=String(body.uf||"").trim().toUpperCase();
+   if(!Object.values(ufPorPrefixo).includes(uf))return reply({erro:"UF inválida."},400);
+   const target="https://servicodados.ibge.gov.br/api/v1/localidades/estados/"+uf+"/municipios?orderBy=nome";
+   try{
+    const ibge=await fetch(target,{method:"GET",headers:{Accept:"application/json"},signal:AbortSignal.timeout(10000)});
+    if(!ibge.ok)return reply({erro:"Catálogo IBGE indisponível neste momento.",fonte:"IBGE",codigo_http:ibge.status},503);
+    const data=await ibge.json();
+    if(!Array.isArray(data)||data.length<1||data.length>1500)return reply({erro:"Retorno de municípios inválido."},503);
+    const municipios=data.filter(x=>Number.isInteger(x?.id)&&typeof x?.nome==="string")
+       .map(x=>({codigo:String(x.id),nome:x.nome})).filter(x=>/^\d{7}$/.test(x.codigo));
+    return reply({uf,municipios,quantidade:municipios.length,fonte:"IBGE API de Localidades",
+      usado_para:"preenchimento_de_cadastro",autoriza_emissao:false});
+   }catch(_){return reply({erro:"Não foi possível consultar a lista oficial do IBGE agora."},503)}
+  }
   const rota=selecionarRota(cfg);
   const cobertura=simularCobertura();
   return reply({
