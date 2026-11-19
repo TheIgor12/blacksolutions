@@ -5499,7 +5499,7 @@ function menuProfs(){const L=az(S.profissionais.filter(p=>p.ativo!==false));if(!
  return `<div class="msec">AGENDA POR PROFISSIONAL</div><button class="${sel===''&&UI.view==='agenda'?'on':''}" onclick="agProf('')">${ico('cal',18)} Todos os profissionais</button>${L.map(p=>`<button class="${sel!=null&&norm(sel)===norm(p.nome)?'on':''}" onclick="agProf(${esc(JSON.stringify(p.nome))})"><span style="display:inline-block;width:12px;height:12px;border-radius:50%;background:${esc(p.cor||'#0a4bde')};margin:0 3px;flex:none"></span> ${esc(p.nome)}</button>`).join('')}`}
 </script>
 <script src="./bf-clinical.js?v=1.14.0"></script>
-<script src="./bf-fiscal-advanced.js?v=1.15.2"></script>
+<script src="./bf-fiscal-advanced.js?v=1.15.3"></script>
 <script src="./bf-receituario.js?v=1.15.1"></script>
 <script src="./bf-cadastro-fiscal.js?v=1.14.0"></script>
 </body>
