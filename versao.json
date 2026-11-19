@@ -1,4 +1,4 @@
 {
-  "versao": "1.10.3",
-  "novidades": "Login mestre: troca o ramo livremente para ver os módulos de cada segmento, e quem participa de mais de uma clínica pode alternar entre elas em Minha conta, Trocar de clínica."
+  "versao": "1.10.4",
+  "novidades": "A agenda passa a avisar quando o horário já tem paciente. Ao escolher a hora, o sistema confere na hora se aquele profissional já está ocupado e mostra o aviso embaixo do campo, com o nome de quem já está marcado e até que horas vai o atendimento. Se mesmo assim a pessoa tentar salvar, o agendamento não é gravado: abre uma janela com o atendimento que já existe, a lista de horários livres daquele dia para aquele profissional e dois caminhos, escolher um horário livre com um toque ou confirmar a sobreposição marcando como encaixe. A conferência considera a duração inteira do atendimento, então também pega sobreposição parcial, e não atrapalha quem está apenas editando um agendamento que já existe nem horários desmarcados ou com falta. Continua valendo a atualização anterior: login mestre com todos os ramos, troca de clínica em Minha conta e ticket médio no financeiro e nos relatórios."
 }

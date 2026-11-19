@@ -1492,6 +1492,7 @@ function dataRepete(base,modo,i){
  if(modo==='Uma vez por mês')return addMeses(base,i);
  return base}
 function minDaHora(h){const m=/^(\d{1,2}):(\d{2})$/.exec(str(h));return m?(+m[1])*60+(+m[2]):0}
+function hm(m){const t=Math.max(0,Math.round(+m||0));return String(Math.floor(t/60)).padStart(2,'0')+':'+String(t%60).padStart(2,'0')}
 /* Devolve o agendamento que ocupa o mesmo horário, ou nada.
    Desmarcado e Faltou não ocupam. Profissional vazio conta como qualquer um. */
 function agChoque(data,hora,dur,prof,ignorar){
@@ -1501,6 +1502,55 @@ function agChoque(data,hora,dur,prof,ignorar){
   &&(!str(prof)||!str(x.profissional)||norm(x.profissional)===norm(prof))
   &&minDaHora(x.hora)<fim&&ini<minDaHora(x.hora)+(Number(x.duracao)||30))||null}
 function nomeDoPac(id){const p=pac(id);return p?p.nome:'alguém'}
+/* ---- Trava de horário ocupado ----
+   Ninguém atende duas pessoas ao mesmo tempo. O sistema avisa assim que a hora
+   é escolhida e, na hora de salvar, segura o agendamento. Quem precisar mesmo
+   sobrepor, por exemplo quando a pessoa chega sem marcar, confirma na janela e
+   o atendimento fica registrado como encaixe, para não parecer engano depois. */
+function choqueTexto(c){const p=pac(c.pacienteId);
+ const fim=hm(minDaHora(c.hora)+(Number(c.duracao)||30));
+ return {nome:p?p.nome:'alguém', hora:c.hora, fim,
+  prof:str(c.profissional)||'', proc:str(c.procedimento)||'',
+  tel:p?str(p.celular):'' , pid:p?p.id:''}}
+function avisoChoque(o){
+ if(!o.data||!o.hora)return '';
+ if(String(o.encaixe)==='Sim')return '';
+ const c=agChoque(o.data,o.hora,o.duracao||30,o.profissional,UI.agEditando||null);
+ if(!c)return '';
+ const t=choqueTexto(c);
+ return `<b style="color:var(--warn-txt,#92400e)">Este horário já está ocupado.</b> ${esc(t.nome)} está marcado das ${esc(t.hora)} às ${esc(t.fim)}${t.prof?' com '+esc(t.prof):''}${t.proc?', '+esc(t.proc):''}. Escolha outro horário.`}
+function janelaChoque(c,o){const t=choqueTexto(c);
+ const livres=horariosLivres(o.data,o.duracao||30,o.profissional,UI.agEditando||null).slice(0,8);
+ abre2(`<h3>Esse horário já tem ${esc(SEG().pessoa.toLowerCase())}</h3>
+  <div class="card" style="margin:0 0 14px;background:var(--warn-soft)">
+   <div style="font-size:15px"><b>${esc(t.nome)}</b></div>
+   <div class="sub" style="margin-top:4px">${br(o.data)}, das <b>${esc(t.hora)}</b> às <b>${esc(t.fim)}</b>${t.prof?' · '+esc(t.prof):''}</div>
+   ${t.proc?`<div class="sub">${esc(t.proc)}</div>`:''}</div>
+  <p class="sub">Ninguém atende duas pessoas ao mesmo tempo, então o agendamento não foi salvo. Escolha um horário livre abaixo, ou confirme a sobreposição se for um encaixe de verdade.</p>
+  ${livres.length?`<label style="margin-top:12px">Horários livres neste dia${str(o.profissional)?' para '+esc(o.profissional):''}</label>
+   <div style="display:flex;flex-wrap:wrap;gap:8px;margin-top:6px">${livres.map(h=>`<button class="btn ghost sm" onclick="usarHorario('${h}')">${h}</button>`).join('')}</div>`
+   :'<p class="note" style="margin-top:12px">Não encontrei horário livre neste dia. Tente outro dia.</p>'}
+  <div class="mact" style="margin-top:16px">
+   <button class="btn ghost" style="margin-right:auto" onclick="marcarMesmoAssim()">Marcar mesmo assim, como encaixe</button>
+   <button class="btn" onclick="fecha2()">Escolher outro horário</button></div>`)}
+function usarHorario(h){const i=$('[name=hora]');if(i){i.value=h;i.dispatchEvent(new Event('input',{bubbles:true}))}fecha2()}
+function marcarMesmoAssim(){const e=$('[name=encaixe]');
+ if(e){e.value='Sim';e.dispatchEvent(new Event('change',{bubbles:true}))}
+ UI.agForcar=true;fecha2();
+ const b=$('#modalRoot .mact .btn:not(.ghost):not(.danger)');
+ if(b)b.click();else toast('Confirme o agendamento de novo para salvar.')}
+/* Horários livres do dia, no passo de quinze minutos, respeitando a jornada
+   configurada no agendamento pela internet quando ela existir. */
+function horariosLivres(data,dur,prof,ignorar){
+ if(!data)return [];
+ const dow=new Date(data+'T12:00').getDay();
+ let periodos=[];
+ try{periodos=((agOnCfg().horarios||{})[dow]||[]).map(x=>[x[0],x[1]])}catch(e){periodos=[]}
+ if(!periodos.length)periodos=[['08:00','12:00'],['13:30','18:00']];
+ const passo=15,d=Math.max(5,Number(dur)||30),out=[];
+ periodos.forEach(([a,b])=>{for(let t=minDaHora(a);t+d<=minDaHora(b);t+=passo){
+  const h=hm(t);if(!agChoque(data,h,d,prof,ignorar))out.push(h)}});
+ return out}
 function criarSerie(base,modo,vezes){
  const serie='se_'+uid(),feitos=[],pulados=[];
  base.serieId=serie;base.seriePos=1;base.serieTotal=vezes;base.serieModo=modo;
@@ -1540,10 +1590,10 @@ function serieHTML(a){if(!a.serieId)return '';
  const futuros=(S.agendamentos||[]).filter(x=>x.serieId===a.serieId&&x.data>=a.data&&!['Atendido','Desmarcado'].includes(stAg(x))).length;
  return `<div class="row"><span>Série</span><span>${a.seriePos||'?'} de ${a.serieTotal||tot}${a.serieModo?' · '+esc(String(a.serieModo).toLowerCase()):''}
   ${futuros>1?`<br><button class="btn ghost sm" style="margin-top:6px" onclick="closeModal();serieDesmarcar('${a.id}')">Desmarcar daqui em diante</button>`:''}</span></div>`}
-function agForm(id,pacienteId,pre){pre=pre||{};const a=id?S.agendamentos.find(x=>x.id===id):null;const p=a?pac(a.pacienteId):(pacienteId?pac(pacienteId):null);
+function agForm(id,pacienteId,pre){pre=pre||{};const a=id?S.agendamentos.find(x=>x.id===id):null;UI.agEditando=id||null;UI.agForcar=false;const p=a?pac(a.pacienteId):(pacienteId?pac(pacienteId):null);
  formModal(a?'Editar agendamento':'Novo agendamento',[{k:'paciente',l:SEG().pessoa,req:true,list:'dlPac',full:true,aviso:o=>avisoPaciente(o.paciente)},{k:'celular',l:'Celular / WhatsApp',full:true,req:true,mostrarSe:o=>pacPedeCelular(o.paciente)},
    {k:'cpf',l:'CPF',mostrarSe:o=>pacPedeCPF(o.paciente)},
-   {k:'nascimento',l:'Data de nascimento',type:'date',mostrarSe:o=>pacPedeCPF(o.paciente)},{k:'data',l:'Data',type:'date',req:true},{k:'hora',l:'Hora',type:'hora15',req:true},{k:'duracao',l:'Duração (minutos)',type:'select',opts:[15,30,45,60,75,90,120,150,180]},{k:'profissional',l:'Profissional',list:'dlProf'},{k:'encaixe',l:'Encaixe, sem hora marcada',type:'select',opts:['Não','Sim'],mostrarSe:o=>temPorProf()},{k:'procedimento',l:ehSeg('podologia')?'Procedimento':'Serviço',full:true,list:'dlServ',auto:o=>{const sv=servPorNome(o.procedimento);if(!sv)return {};return {duracao:servAjuste(sv,o.profissional).duracao}},aviso:o=>{if(!temPorProf())return '';const sv=servPorNome(o.procedimento);if(!sv)return '';const aj=servAjuste(sv,o.profissional);const pr=descontoDoDia(sv,aj.preco,o.data,o.hora);const base=precoTabela(sv.nome);return o.profissional?`${esc(o.profissional)} cobra ${money(pr)} e leva ${aj.duracao} minutos neste serviço${pr<base?', já com o desconto do dia':''}.`:`Valor de tabela ${money(base)} em ${+sv.duracao||30} minutos. Escolha o profissional para ver o preço dele.`}},{k:'status',l:'Status',type:'select',opts:['Agendado','Confirmado','Chegou','Atendido','Faltou','Desmarcado']},
+   {k:'nascimento',l:'Data de nascimento',type:'date',mostrarSe:o=>pacPedeCPF(o.paciente)},{k:'data',l:'Data',type:'date',req:true},{k:'hora',l:'Hora',type:'hora15',req:true,aviso:o=>avisoChoque(o)},{k:'duracao',l:'Duração (minutos)',type:'select',opts:[15,30,45,60,75,90,120,150,180]},{k:'profissional',l:'Profissional',list:'dlProf'},{k:'encaixe',l:'Encaixe, sem hora marcada',type:'select',opts:['Não','Sim'],mostrarSe:o=>temPorProf()},{k:'procedimento',l:ehSeg('podologia')?'Procedimento':'Serviço',full:true,list:'dlServ',auto:o=>{const sv=servPorNome(o.procedimento);if(!sv)return {};return {duracao:servAjuste(sv,o.profissional).duracao}},aviso:o=>{if(!temPorProf())return '';const sv=servPorNome(o.procedimento);if(!sv)return '';const aj=servAjuste(sv,o.profissional);const pr=descontoDoDia(sv,aj.preco,o.data,o.hora);const base=precoTabela(sv.nome);return o.profissional?`${esc(o.profissional)} cobra ${money(pr)} e leva ${aj.duracao} minutos neste serviço${pr<base?', já com o desconto do dia':''}.`:`Valor de tabela ${money(base)} em ${+sv.duracao||30} minutos. Escolha o profissional para ver o preço dele.`}},{k:'status',l:'Status',type:'select',opts:['Agendado','Confirmado','Chegou','Atendido','Faltou','Desmarcado']},
    ...(a?[]:[{k:'repetir',l:'Repetir este atendimento',type:'select',opts:REPETE,full:true},
     {k:'vezes',l:'Quantos atendimentos no total, contando este',type:'select',opts:[2,3,4,5,6,8,10,12,16,20,24],mostrarSe:o=>str(o.repetir)&&str(o.repetir)!=='Não repete'}]),
    {k:'obs',l:'Observação',type:'textarea',rows:2,full:true},
@@ -1563,7 +1613,14 @@ function agForm(id,pacienteId,pre){pre=pre||{};const a=id?S.agendamentos.find(x=
    if(o.nascimento&&str(o.nascimento)!==str(pp.nascimento))pp.nascimento=str(o.nascimento);
    ['cep','endereco','numero','bairro','cidade','uf','profissao','empresa'].forEach(k=>{const v=k==='cep'?fmtCEP(o[k]):str(o[k]);if(v&&v!==str(pp[k]))pp[k]=v});
    if(!jaExistia)setTimeout(()=>{toast(SEG().pessoa+' novo cadastrado: '+pp.nome);convidarAnamnese(pp.id)},120);
-   const rec={pacienteId:pp.id,data:o.data,hora:o.hora,duracao:o.duracao||30,profissional:ensureProf(o.profissional),procedimento:o.procedimento,status:o.status,obs:o.obs,encaixe:String(o.encaixe)==='Sim'};
+   /* Trava de horário ocupado. Só passa quando a pessoa confirma na janela,
+      e aí o atendimento fica registrado como encaixe. */
+   const forcado=UI.agForcar||String(o.encaixe)==='Sim';
+   if(!forcado&&!['Desmarcado','Faltou'].includes(str(o.status))){
+    const ch=agChoque(o.data,o.hora,o.duracao||30,o.profissional,a?a.id:null);
+    if(ch){janelaChoque(ch,o);return false}}
+   const rec={pacienteId:pp.id,data:o.data,hora:o.hora,duracao:o.duracao||30,profissional:ensureProf(o.profissional),procedimento:o.procedimento,status:o.status,obs:o.obs,encaixe:forcado};
+   UI.agForcar=false;UI.agEditando=null;
    delete o.encaixe;
    const ant=a?stAg(a):'';let ag=a;if(a)Object.assign(a,rec);else{ag={id:uid(),origem:'manual',...rec};S.agendamentos.push(ag)}UI.agDate=o.data;
    const modoRep=str(o.repetir);
@@ -4773,7 +4830,7 @@ function agNovo(a,s){if(s==='Desmarcado'||s==='Faltou')return false;const k=a.da
  const hist=c=>S[c].some(x=>x.pacienteId===a.pacienteId&&((x.data||x.vencimento||x.pagamento||'')<a.data)&&(x.data||x.vencimento||x.pagamento));
  return !hist('evolucoes')&&!hist('tratamentos')&&!S.lancamentos.some(l=>l.pacienteId===a.pacienteId&&l.pagamento&&l.pagamento<a.data)}
 /* ============ Atualização: aviso com botão Atualizar agora ============ */
-const VERSAO_APP='1.10.3';const URL_VERSAO_JSON='https://raw.githubusercontent.com/TheIgor12/blacksolutions/main/versao.json';
+const VERSAO_APP='1.10.4';const URL_VERSAO_JSON='https://raw.githubusercontent.com/TheIgor12/blacksolutions/main/versao.json';
 const numV=v=>String(v||'0').split(/\D+/).filter(Boolean).map(Number);
 function versaoMaior(a,b){const x=numV(a),y=numV(b);for(let i=0;i<Math.max(x.length,y.length);i++){const d=(x[i]||0)-(y[i]||0);if(d)return d>0}return false}
 const ATU={nova:null,timer:null};
