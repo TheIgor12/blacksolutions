@@ -1072,43 +1072,43 @@ function render(){if(NV.ativa&&UI.auth){$('#app').innerHTML=vAuth();setTimeout((
 /* ============ BlackPay ============ */
 function bpInteresse(){const c=S.config;c.bpInteresse=c.bpInteresse?'':new Date().toISOString();save();render();
  toast(c.bpInteresse?'Anotado. Avisamos você quando o BlackPay abrir.':'Tudo bem, retiramos o seu aviso.')}
-function vBlackPay(){const marcado=!!(S.config||{}).bpInteresse;
- return `<div class="page" style="max-width:860px">
- <div class="phead"><div><h1>BlackPay <span class="badge b-warn" style="vertical-align:middle;margin-left:6px">Em desenvolvimento</span></h1>
- <p class="sub">O meio de pagamento da BlackSolutions, feito para funcionar dentro do BlackFlow.</p></div></div>
-
- <div class="card">
-  <h2 style="margin-top:0;font-size:17px">Ainda não está disponível</h2>
-  <p>Esta tela existe para você saber o que vem pela frente. Nada aqui está ativo e nenhuma cobrança passa por este módulo hoje.</p>
-  <p>Quando abrir, o BlackPay vai resolver um incômodo específico do dia a dia: o pagamento acontece numa maquininha que não conversa com o sistema, e depois alguém precisa digitar o recebimento no financeiro e conferir no extrato no fim do mês.</p>
+function bpPreferenciaFutura(valor){
+ if(!['conta_atual','blackpay_futuro'].includes(valor))return;
+ S.config.bpPreferenciaFutura=valor;
+ save();render();
+ toast(valor==='blackpay_futuro'?'Preferência futura registrada. Nenhum pagamento foi redirecionado.':'Preferência futura definida para conta atual. Nenhum pagamento foi alterado.');
+}
+function vBlackPay(){
+ const interesse=!!S.config.bpInteresse;
+ const escolha=S.config.bpPreferenciaFutura||'conta_atual';
+ return `<div class="page" style="max-width:1200px">
+ <div class="phead"><div><h1>BlackPay <span class="badge b-warn" style="vertical-align:middle;margin-left:6px">Pré-lançamento · simulação</span></h1>
+ <p class="sub">Ambiente de demonstração do futuro serviço financeiro BlackSolutions, dentro do BlackFlow.</p></div>
+ <a class="btn ghost sm" href="/blackpay/" target="_blank" rel="noopener noreferrer">Abrir painel em tela inteira</a></div>
+ <div class="note warn" role="status" style="margin:12px 0"><b>Não é conta bancária.</b> Os saldos e as operações exibidos no painel são fictícios. Pix, depósitos, retiradas e cartão com dinheiro real estão desabilitados. A chave Pix cadastrada em Configurações → Financeiro continua sendo usada nas cobranças atuais.</div>
+ <div class="grid g3" style="margin:12px 0">
+  <div class="card"><h3>Pix BlackPay</h3><b>R$ 0,00</b><p class="sub">Tarifa própria planejada para enviar e receber. Custos e condições do parceiro serão divulgados antes de contratar.</p></div>
+  <div class="card"><h3>Maquininha</h3><b>Taxa a definir</b><p class="sub">Débito e crédito dependem do contrato com adquirente/credenciadora. Nenhuma taxa foi inventada.</p></div>
+  <div class="card"><h3>Conta digital futura</h3><b>Indisponível</b><p class="sub">Número de agência, conta e ISPB apenas após a definição e validação do prestador autorizado.</p></div>
  </div>
-
- <div class="card">
-  <h2 style="margin-top:0;font-size:17px">O que vai fazer</h2>
-  <table class="tbl mini">
-   <tr><td style="width:34%;color:var(--mut)">Maquininha</td><td>Terminal de cartão em parceria, com a taxa negociada em conjunto para todas as clínicas que usam o BlackFlow. Quanto mais clínicas, menor a taxa para cada uma.</td></tr>
-   <tr><td style="color:var(--mut)">Pagamento na comanda</td><td>O valor da comanda vai direto para a maquininha, sem ninguém digitar. Acabam os erros de valor trocado.</td></tr>
-   <tr><td style="color:var(--mut)">Baixa automática</td><td>Pagou, o recebimento aparece no financeiro na hora, já com a forma de pagamento e a taxa certas.</td></tr>
-   <tr><td style="color:var(--mut)">Conciliação</td><td>O que caiu na conta conferido com o que foi lançado, sem planilha paralela.</td></tr>
-  </table>
+ <div class="card" style="margin-bottom:14px">
+ <h2 style="margin:0 0 8px">Onde deseja receber pagamentos quando o BlackPay for habilitado?</h2>
+ <p class="sub">Esta escolha registra somente sua preferência. Não abre conta, não captura dados bancários, não altera o Pix atual e não movimenta recursos.</p>
+ <div style="display:flex;flex-wrap:wrap;gap:8px;margin:12px 0">
+  <button class="btn ${escolha==='conta_atual'?'':'ghost'} sm" onclick="bpPreferenciaFutura('conta_atual')">Minha conta atual</button>
+  <button class="btn ${escolha==='blackpay_futuro'?'':'ghost'} sm" onclick="bpPreferenciaFutura('blackpay_futuro')">Conta BlackPay futura</button>
  </div>
-
- <div class="card">
-  <h2 style="margin-top:0;font-size:17px">Como vai funcionar por dentro</h2>
-  <p>A BlackSolutions não é banco e não pretende ser. O BlackPay opera em parceria com instituição autorizada pelo Banco Central, que é quem detém a licença e por onde o dinheiro passa.</p>
-  <p><b>O dinheiro da clínica vai direto para a conta da clínica.</b> A BlackSolutions não recebe, não retém e não repassa valores de terceiros em nenhum momento.</p>
-  <p class="sub" style="margin-bottom:0">Essa escolha é deliberada. É ela que permite oferecer o recurso sem embutir no preço o custo de uma estrutura regulatória que a sua clínica acabaria pagando.</p>
+ <p class="sub" style="margin-bottom:0">Escolha registrada: <b>${escolha==='blackpay_futuro'?'BlackPay — aguardando disponibilidade':'Conta atual da clínica'}</b>.</p>
  </div>
-
- <div class="card">
-  <h2 style="margin-top:0;font-size:17px">Quer ser avisada quando abrir?</h2>
-  <p class="sub">Marcar aqui não gera compromisso, não contrata nada e não compartilha dado nenhum. Serve só para sabermos quantas clínicas têm interesse, o que ajuda a negociar uma taxa melhor.</p>
-  <div class="mact" style="justify-content:flex-start;border:0;padding:0;margin-top:12px">
-   <button class="btn ${marcado?'ghost':''}" onclick="bpInteresse()">${marcado?'Retirar o meu interesse':'Tenho interesse'}</button>
-   ${marcado?`<span class="sub" style="align-self:center">Registrado em ${br(String(S.config.bpInteresse).slice(0,10))}.</span>`:''}
-  </div>
+ <div class="card" style="padding:12px;margin-bottom:14px">
+  <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;margin:0 4px 10px"><h2 style="margin:0">Painel BlackPay · operação demonstrativa</h2><span class="badge b-warn">Sem dinheiro real</span></div>
+  <iframe title="BlackPay demonstrativo: contas, Pix, maquininha e extrato" loading="lazy" src="/blackpay/?embedded=1&v=0.1.0" sandbox="allow-scripts allow-same-origin" style="width:100%;height:min(960px,85vh);min-height:570px;border:1px solid var(--bor,#d5d8e0);border-radius:12px;background:#090c1b" referrerpolicy="same-origin"></iframe>
  </div>
- </div>`}
+ <div class="card"><h2 style="margin-top:0">Acompanhar o lançamento</h2>
+ <p class="sub">Indique seu interesse, sem contratação ou abertura de conta.</p>
+ <button class="btn ${interesse?'ghost':''} sm" onclick="bpInteresse()">${interesse?'Retirar meu interesse':'Tenho interesse'}</button>
+ </div></div>`;
+}
 
 /* ============ Início ============ */
 function vInicio(){const vazio=!S.pacientes.length;const inad=inadList().reduce((a,o)=>a+o.valor,0);
@@ -4848,7 +4848,7 @@ function agNovo(a,s){if(s==='Desmarcado'||s==='Faltou')return false;const k=a.da
  const hist=c=>S[c].some(x=>x.pacienteId===a.pacienteId&&((x.data||x.vencimento||x.pagamento||'')<a.data)&&(x.data||x.vencimento||x.pagamento));
  return !hist('evolucoes')&&!hist('tratamentos')&&!S.lancamentos.some(l=>l.pacienteId===a.pacienteId&&l.pagamento&&l.pagamento<a.data)}
 /* ============ Atualização: aviso com botão Atualizar agora ============ */
-const VERSAO_APP='1.18.0';const URL_VERSAO_JSON='https://raw.githubusercontent.com/TheIgor12/blacksolutions/main/versao.json';
+const VERSAO_APP='1.19.0';const URL_VERSAO_JSON='https://raw.githubusercontent.com/TheIgor12/blacksolutions/main/versao.json';
 const numV=v=>String(v||'0').split(/\D+/).filter(Boolean).map(Number);
 function versaoMaior(a,b){const x=numV(a),y=numV(b);for(let i=0;i<Math.max(x.length,y.length);i++){const d=(x[i]||0)-(y[i]||0);if(d)return d>0}return false}
 const ATU={nova:null,timer:null};
@@ -5447,7 +5447,7 @@ function telaCopiaNaoAutorizada(){
   if(!origemAutorizada()){telaCopiaNaoAutorizada();return}}
  try{navigator.storage&&navigator.storage.persist&&navigator.storage.persist()}catch(e){}
  try{fonteAplicar()}catch(e){}
- try{if(/^https?:/.test(location.protocol)&&'serviceWorker' in navigator&&!window.pywebview)navigator.serviceWorker.register('./sw.js?v=1.18.0',{updateViaCache:'none'}).then(r=>r.update()).catch(()=>{})}catch(e){}
+ try{if(/^https?:/.test(location.protocol)&&'serviceWorker' in navigator&&!window.pywebview)navigator.serviceWorker.register('./sw.js?v=1.19.0',{updateViaCache:'none'}).then(r=>r.update()).catch(()=>{})}catch(e){}
  if(NV.ativa){
   if(!window.supabase||!window.supabase.createClient){UI.auth={modo:'offline',temCache:!!(await DB.get('ultimo'))};render();return}
   NV.sb=window.supabase.createClient(NUVEM.url,NUVEM.chave,{auth:{persistSession:true,autoRefreshToken:true}});
@@ -5498,11 +5498,11 @@ function agProf(nome){UI.profOff={};if(nome){S.profissionais.forEach(p=>{if(norm
 function menuProfs(){const L=az(S.profissionais.filter(p=>p.ativo!==false));if(!L.length)return '';const sel=UI.view==='agenda'?(UI.agProf||''):null;
  return `<div class="msec">AGENDA POR PROFISSIONAL</div><button class="${sel===''&&UI.view==='agenda'?'on':''}" onclick="agProf('')">${ico('cal',18)} Todos os profissionais</button>${L.map(p=>`<button class="${sel!=null&&norm(sel)===norm(p.nome)?'on':''}" onclick="agProf(${esc(JSON.stringify(p.nome))})"><span style="display:inline-block;width:12px;height:12px;border-radius:50%;background:${esc(p.cor||'#0a4bde')};margin:0 3px;flex:none"></span> ${esc(p.nome)}</button>`).join('')}`}
 </script>
-<script src="./bf-clinical.js?v=1.18.0"></script>
-<script src="./bf-fiscal-advanced.js?v=1.18.0"></script>
-<script src="./bf-receituario.js?v=1.18.0"></script>
-<script src="./bf-cadastro-fiscal.js?v=1.18.0"></script>
-<script src="./bf-context-actions.js?v=1.18.0"></script>
-<script src="./bf-integrity-audit.js?v=1.18.0"></script>
+<script src="./bf-clinical.js?v=1.19.0"></script>
+<script src="./bf-fiscal-advanced.js?v=1.19.0"></script>
+<script src="./bf-receituario.js?v=1.19.0"></script>
+<script src="./bf-cadastro-fiscal.js?v=1.19.0"></script>
+<script src="./bf-context-actions.js?v=1.19.0"></script>
+<script src="./bf-integrity-audit.js?v=1.19.0"></script>
 </body>
 </html>
