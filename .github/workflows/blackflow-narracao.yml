@@ -23,7 +23,7 @@ jobs:
           python-version: '3.11'
       - run: |
           python -m pip install --disable-pip-version-check edge-tts==7.2.7
-          command -v ffmpeg
+          if ! command -v ffmpeg; then sudo apt-get update -qq && sudo apt-get install -y ffmpeg; fi
       - name: Gerar narração e incorporar no MP4
         run: |
           python scripts/narrar_blackflow.py
