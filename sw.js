@@ -1,5 +1,5 @@
-/* BlackFlow 1.18.0: network-first, no patient/token caching, safe offline handling */
-const CACHE='blackflow-v18-20261119';
+/* BlackFlow 1.19.0: network-first, no patient/token caching, safe offline handling */
+const CACHE='blackflow-v19-20261119';
 const BASE=['./','index.html','manifest.webmanifest','icone-192.png','icone-512.png'];
 self.addEventListener('install',event=>{
  event.waitUntil(caches.open(CACHE)
