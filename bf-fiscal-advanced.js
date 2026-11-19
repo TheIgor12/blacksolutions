@@ -29,6 +29,7 @@ function bfFiscalDocumentoValido(documento){
  }
  return false;
 }
+const UFS_FISCAIS=[['','Selecione a UF'],['RO','RO'],['AC','AC'],['AM','AM'],['RR','RR'],['PA','PA'],['AP','AP'],['TO','TO'],['MA','MA'],['PI','PI'],['CE','CE'],['RN','RN'],['PB','PB'],['PE','PE'],['AL','AL'],['SE','SE'],['BA','BA'],['MG','MG'],['ES','ES'],['RJ','RJ'],['SP','SP'],['PR','PR'],['SC','SC'],['RS','RS'],['MS','MS'],['MT','MT'],['GO','GO'],['DF','DF']];
 const clinic=()=>NV.clinicaId;
 const CODIGOS_SERVICOS=[
  ['','Selecione o serviço para a simulação/rascunho'],
@@ -89,6 +90,9 @@ async function fiscalView(){
         field('bfxIM','Inscrição municipal',cfg.inscricao_municipal||''))+
     '<div id="bfxCnpjStatus" class="sub" role="status">'+(cfg.cnpj?'CNPJ recuperado da clínica e vinculado ao cadastro fiscal.':'Informe o CNPJ e clique em Consultar; para concluir, salve os dados fiscais.')+'</div>'+
     row(bt('Consultar CNPJ','bfxBuscarCnpj()','btn ghost sm')+' '+bt('Cadastro fiscal nas Configurações','bfcadAbrir()','btn ghost sm'))+
+    row('<label style="flex:1"><small>Buscar município do emitente no IBGE</small><br>'+opt('bfxUFEmitente',UFS_FISCAIS,'')+'</label>'+
+        bt('Listar municípios da UF','bfxListarMunicipios()','btn ghost sm'))+
+    '<div id="bfx-municipios-emissor" class="sub" role="status" style="margin-bottom:12px"></div>'+
     row(field('bfxIBGE','Município IBGE (7 dígitos)',cfg.municipio_ibge||'')+
         field('bfxCNAE','CNAE',cfg.cnae||'')+field('bfxRegime','Regime tributário',cfg.regime||''))+
     row(field('bfxTrib','Código tributação nacional',cfg.ctrib_nacional||cfg.codigo_servico||'')+
@@ -218,6 +222,32 @@ window.bfxDiagnostico=async function(){
    (rt.portal_municipal?' · <a target="_blank" rel="noopener noreferrer" href="https://nfe.etransparencia.com.br/sp.taboaodaserra/nfe/principal.aspx">Portal municipal de Taboão da Serra</a>':'')+
    '</p></div>';
  }catch(e){if(place)place.textContent='Consulta indisponível: '+String(e?.message||e).slice(0,140);}
+};
+window.bfxListarMunicipios=async function(){
+ const lugar=document.getElementById('bfx-municipios-emissor');
+ try{
+  await ensureAuthorized();
+  const uf=val('bfxUFEmitente');
+  if(!UFS_FISCAIS.some(x=>x[0]===uf&&uf))throw Error('Selecione uma UF.');
+  if(lugar)lugar.textContent='Consultando lista oficial de municípios ('+uf+')...';
+  const {data,error}=await NV.sb.functions.invoke('bf-fiscal-nacional',{body:{clinica_id:clinic(),acao:'municipios',uf}});
+  if(error)throw error;
+  if(!Array.isArray(data?.municipios)||data.uf!==uf)throw Error(data?.erro||'Resposta inválida do IBGE.');
+  const options=data.municipios.map(x=>[String(x.codigo),String(x.nome)+' — '+String(x.codigo)]);
+  if(lugar)lugar.innerHTML='<p>Catálogo IBGE: '+options.length+' municípios de '+html(uf)+'. Selecione a cidade e aplique ao cadastro:</p>'+
+    row('<label style="flex:1"><small>Município</small><br>'+opt('bfxMunicipioEmitente',options,cfg.municipio_ibge||'')+'</label>'+
+        bt('Aplicar ao cadastro','bfxAplicarMunicipio()','btn ghost sm'))+
+    '<small>A alteração será gravada somente quando você salvar a configuração fiscal. Cada clínica possui cadastro independente.</small>';
+ }catch(e){if(lugar)lugar.textContent='Consulta de municípios indisponível: '+String(e?.message||e).slice(0,150);}
+};
+window.bfxAplicarMunicipio=function(){
+ const ibge=val('bfxMunicipioEmitente');
+ if(!/^\d{7}$/.test(ibge))return toast('Escolha um município da lista IBGE.');
+ const emissor=document.getElementById('bfxIBGE');
+ if(emissor)emissor.value=ibge;
+ const prestacao=document.getElementById('bfxLocal');
+ if(prestacao)prestacao.value=ibge;
+ toast('Município aplicado ao formulário. Salve o cadastro fiscal para persistir.');
 };
 window.bfxCoberturaNacional=async function(){
  const place=document.getElementById('bfx-cobertura-nacional');
