@@ -27,6 +27,61 @@ function cnpjValid(v:string){
   const rem=total%11;return rem<2?0:11-rem};
  return calc(12)===Number(v[12])&&calc(13)===Number(v[13]);
 }
+
+// Candidates from gov.br/NFS-e national service list (LC 116), not a CNPJ tax classification.
+const CATALOG=[
+ {codigo:"040102",servico:"Biomedicina",segmento:"biomedicina"},
+ {codigo:"040303",servico:"Clínicas e ambulatórios",segmento:"clinicas"},
+ {codigo:"040901",servico:"Terapias de tratamento físico ou orgânico",segmento:"terapias"},
+ {codigo:"041201",servico:"Odontologia",segmento:"odontologia"},
+ {codigo:"060101",servico:"Pedicuros e congêneres — não confundir com podologia clínica",segmento:"cuidados_pessoais"},
+ {codigo:"060201",servico:"Esteticistas e tratamento de pele",segmento:"estetica"}
+];
+const CODE_SET=new Set(CATALOG.map(x=>x.codigo));
+function checkScenario(s){
+ const reasons=[];
+ if(!cnpjValid(s.cnpj))reasons.push("CNPJ inválido");
+ if(!cpfValid(s.cpf))reasons.push("CPF do tomador inválido");
+ if(s.municipio!=="3552809")reasons.push("Município divergente");
+ if(!CODE_SET.has(s.codigo))reasons.push("cTribNac não conhecido nesta suíte");
+ if(typeof s.descricao!=="string"||s.descricao.trim().length<5)reasons.push("Descrição incompleta");
+ if(typeof s.valor!=="number"||!Number.isFinite(s.valor)||s.valor<=0||s.valor>10000000)reasons.push("Valor inválido");
+ if(!/^\d{4}-\d{2}-\d{2}$/.test(s.competencia||"")||Number.isNaN(Date.parse(s.competencia)))reasons.push("Competência inválida");
+ return {aprovado:reasons.length===0,motivos:reasons};
+}
+function scenarioSuite(cnpj,cpf){
+ const hoje=new Date().toISOString().slice(0,10);
+ const base={cnpj,cpf,municipio:"3552809",codigo:"040102",descricao:"Atendimento simulado de teste",valor:100,competencia:hoje};
+ const casos=[
+  ...CATALOG.map(item=>({nome:"Código "+item.codigo+" — "+item.servico,altera:{codigo:item.codigo},deve_aprovar:true})),
+  {nome:"CPF com dígito incorreto",altera:{cpf:"12345678900"},deve_aprovar:false},
+  {nome:"CPF com sequência inválida",altera:{cpf:"00000000000"},deve_aprovar:false},
+  {nome:"CNPJ adulterado",altera:{cnpj:cnpj.slice(0,-1)+(cnpj.endsWith("0")?"1":"0")},deve_aprovar:false},
+  {nome:"Município incorreto",altera:{municipio:"4208906"},deve_aprovar:false},
+  {nome:"Código desconhecido",altera:{codigo:"999999"},deve_aprovar:false},
+  {nome:"Código ausente",altera:{codigo:""},deve_aprovar:false},
+  {nome:"Valor zero",altera:{valor:0},deve_aprovar:false},
+  {nome:"Valor negativo",altera:{valor:-1},deve_aprovar:false},
+  {nome:"Valor não numérico",altera:{valor:NaN},deve_aprovar:false},
+  {nome:"Descrição ausente",altera:{descricao:""},deve_aprovar:false},
+  {nome:"Competência com formato incorreto",altera:{competencia:"26/11/2026"},deve_aprovar:false}
+ ];
+ const used=new Set();
+ const records=casos.map((x,i)=>{
+  const result=checkScenario({...base,...x.altera});
+  const chave="sim-"+String(i),duplicated=used.has(chave);used.add(chave);
+  return {caso:x.nome,esperado:x.deve_aprovar?"ACEITO_LOCAL":"REJEITADO_LOCAL",
+   resultado:result.aprovado?"ACEITO_LOCAL":"REJEITADO_LOCAL",
+   ok:result.aprovado===x.deve_aprovar&&!duplicated,motivos:result.motivos};
+ });
+ const duplicateKey="sim-repeticao",first=!used.has(duplicateKey);used.add(duplicateKey);
+ const second=used.has(duplicateKey);
+ records.push({caso:"Reenvio do mesmo identificador idempotente",esperado:"BLOQUEIO_DUPLICIDADE",
+   resultado:first&&second?"BLOQUEIO_DUPLICIDADE":"FALHA",
+   ok:first&&second,motivos:["Simulação em memória. Produção exige identificadores persistidos e reconsulta de protocolo."]});
+ return records;
+}
+
 Deno.serve(async(req:Request)=>{
  if(req.method==="OPTIONS")return new Response(null,{status:204,headers:h});
  if(req.method!=="POST")return respond({erro:"Apenas POST autenticado."},405);
@@ -64,15 +119,19 @@ Deno.serve(async(req:Request)=>{
    {caso:"Serviço de teste presente",ok:nonempty("SERVIÇO FICTÍCIO - NÃO EMITIR")},
    {caso:"Descrição de serviço vazia rejeitada",ok:!nonempty("")}
   ];
+  const cenarios=scenarioSuite(cnpj,syntheticCpf);
   const pendencias:string[]=[];
   const avisos:string[]=[];
   if(!cnpjValid(cnpj))pendencias.push("CNPJ do prestador inválido pelo algoritmo.");
   if(!/^\d{7}$/.test(String(cfg.municipio_ibge||"")))pendencias.push("Código IBGE do município não informado ou inválido.");
   if(!nonempty(cfg.regime))pendencias.push("Regime tributário não informado.");
+  else avisos.push("O regime tributário \""+String(cfg.regime).slice(0,45)+"\" está cadastrado, mas não há comprovante oficial de enquadramento vinculado ao autoteste. Consulte Simples Nacional ou Receita Federal.");
   if(!nonempty(cfg.ctrib_nacional)&&!nonempty(cfg.codigo_servico))pendencias.push("Código nacional de tributação do serviço não preenchido.");
   if(!nonempty(cfg.inscricao_municipal))avisos.push("Inscrição municipal não cadastrada; conferir obrigação e número com o município.");
+  if(!nonempty(cfg.cnae))avisos.push("CNAE principal não informado. Confira o cadastro oficial da empresa.");
+  if(!nonempty(cfg.codigo_servico)&&!nonempty(cfg.ctrib_nacional))avisos.push("O código de serviço deve variar conforme o serviço efetivamente prestado. Não o infira exclusivamente pelo CNAE.");
   if(cfg.simples_nacional===null)avisos.push("Enquadramento no Simples Nacional não confirmado pelo cadastro.");
-  if(cfg.municipio_ibge==="3552809")avisos.push("Código IBGE 3552809 corresponde a Taboão da Serra/SP. Confira se este é o município do prestador. Jaraguá do Sul/SC é 4208906.");
+  if(cfg.municipio_ibge==="3552809")avisos.push("Município cadastrado: Taboão da Serra/SP (3552809). Referências públicas também associam este CNPJ a Taboão da Serra. Valide o comprovante cadastral atual antes de emitir; não altere para outra cidade apenas pela localização física do atendimento.");
   if(String(cfg.integrador||"")==="nao_configurado"||!nonempty(cfg.integrador))pendencias.push("Não há prestador de integração fiscal configurado.");
   if(cfg.habilitado!==true||cfg.situacao_integracao!=="pronta")pendencias.push("Integração fiscal não habilitada e confirmada como pronta.");
   // Even a locally 'ready' flag is never proof of government homologation.
@@ -84,14 +143,20 @@ Deno.serve(async(req:Request)=>{
    tomador_de_teste:"PACIENTE TESTE BLACKFLOW",
    documento_teste:"CPF sintético de exemplo: 12345678909 — jamais usar em nota real",
    valor_teste:100,
-   testes:tests,
-   total_testes:tests.length,
-   testes_aprovados:tests.filter(t=>t.ok).length,
+   testes:[...tests,...cenarios.map(x=>({caso:x.caso,ok:x.ok}))],
+   total_testes:tests.length+cenarios.length,
+   testes_aprovados:tests.filter(t=>t.ok).length+cenarios.filter(x=>x.ok).length,
+   cenarios,
+   catalogo:CATALOG,
+   simulacao_documento:{prestador_cnpj:cnpj,municipio_ibge:"3552809",tomador_nome:"PACIENTE TESTE BLACKFLOW",tomador_cpf:syntheticCpf,descricao:"Serviço fictício — não emitir",valor:100,competencia:new Date().toISOString().slice(0,10),serie_exemplo:1,codigo_nacional_exemplo:"040102",iss_referencia_2_porcento:2.00,observacao:"Estrutura ilustrativa; não é DPS XML nem passou pelo XSD oficial.",ibscbs:"CST e cClassTrib dependem do leiaute e regime efetivos; não foram inventados."},
+   fonte_catalogo:"https://www.gov.br/nfse/pt-br/mei-e-demais-empresas/codigos-de-tributacao-nacional-nbs",
+   abrangencia:"Validação local sintética; não substitui XSD, SEFIN, regra municipal ou autorização oficial.",
    bloqueios:pendencias,avisos,
    pronto_para_emissao:false,
    nota_fiscal_emitida:false,
    homologacao_governamental:false,
    gravacoes_realizadas:0,
+   links_oficiais:{situacao_cnpj:"https://solucoes.receita.fazenda.gov.br/Servicos/cnpjreva/Cnpjreva_S.aspx",consulta_simples:"https://www8.receita.fazenda.gov.br/SimplesNacional/",documentacao_nfse:"https://www.gov.br/nfse/pt-br/biblioteca/documentacao-tecnica/documentacao-atual"},
    mensagem:"Nenhum documento fiscal foi criado, transmitido, autorizado, cancelado ou consultado no governo."
   });
  }catch(_){return respond({erro:"O autoteste não pôde ser concluído."},500)}
