@@ -69,10 +69,13 @@ Deno.serve(async(req:Request)=>{
   if(!cnpjValid(cnpj))pendencias.push("CNPJ do prestador inválido pelo algoritmo.");
   if(!/^\d{7}$/.test(String(cfg.municipio_ibge||"")))pendencias.push("Código IBGE do município não informado ou inválido.");
   if(!nonempty(cfg.regime))pendencias.push("Regime tributário não informado.");
+  else avisos.push("O regime tributário \""+String(cfg.regime).slice(0,45)+"\" está cadastrado, mas não há comprovante oficial de enquadramento vinculado ao autoteste. Consulte Simples Nacional ou Receita Federal.");
   if(!nonempty(cfg.ctrib_nacional)&&!nonempty(cfg.codigo_servico))pendencias.push("Código nacional de tributação do serviço não preenchido.");
   if(!nonempty(cfg.inscricao_municipal))avisos.push("Inscrição municipal não cadastrada; conferir obrigação e número com o município.");
+  if(!nonempty(cfg.cnae))avisos.push("CNAE principal não informado. Confira o cadastro oficial da empresa.");
+  if(!nonempty(cfg.codigo_servico)&&!nonempty(cfg.ctrib_nacional))avisos.push("O código de serviço deve variar conforme o serviço efetivamente prestado. Não o infira exclusivamente pelo CNAE.");
   if(cfg.simples_nacional===null)avisos.push("Enquadramento no Simples Nacional não confirmado pelo cadastro.");
-  if(cfg.municipio_ibge==="3552809")avisos.push("Código IBGE 3552809 corresponde a Taboão da Serra/SP. Confira se este é o município do prestador. Jaraguá do Sul/SC é 4208906.");
+  if(cfg.municipio_ibge==="3552809")avisos.push("Município cadastrado: Taboão da Serra/SP (3552809). Referências públicas também associam este CNPJ a Taboão da Serra. Valide o comprovante cadastral atual antes de emitir; não altere para outra cidade apenas pela localização física do atendimento.");
   if(String(cfg.integrador||"")==="nao_configurado"||!nonempty(cfg.integrador))pendencias.push("Não há prestador de integração fiscal configurado.");
   if(cfg.habilitado!==true||cfg.situacao_integracao!=="pronta")pendencias.push("Integração fiscal não habilitada e confirmada como pronta.");
   // Even a locally 'ready' flag is never proof of government homologation.
@@ -92,6 +95,7 @@ Deno.serve(async(req:Request)=>{
    nota_fiscal_emitida:false,
    homologacao_governamental:false,
    gravacoes_realizadas:0,
+   links_oficiais:{situacao_cnpj:"https://solucoes.receita.fazenda.gov.br/Servicos/cnpjreva/Cnpjreva_S.aspx",consulta_simples:"https://www8.receita.fazenda.gov.br/SimplesNacional/",documentacao_nfse:"https://www.gov.br/nfse/pt-br/biblioteca/documentacao-tecnica/documentacao-atual"},
    mensagem:"Nenhum documento fiscal foi criado, transmitido, autorizado, cancelado ou consultado no governo."
   });
  }catch(_){return respond({erro:"O autoteste não pôde ser concluído."},500)}
