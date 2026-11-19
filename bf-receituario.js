@@ -195,7 +195,9 @@ async function generate(template,patient,text,kind,verificationUrl){
 }
 async function home(){
  try{await refresh();if(!authorized){zone(note('Este perfil não está autorizado a produzir receituários. Solicite cadastro ou autorização profissional.'));return;}
-  let body=note('Documentos de saúde são confidenciais. '+escH(warnings())+' O PDF gerado será um rascunho sem assinatura; receitas controladas exigem fluxo oficial.');
+  let body=note('Documentos de saúde são confidenciais. '+escH(warnings())+' O PDF gerado será um rascunho sem assinatura; receitas controladas exigem fluxo oficial.')+
+   '<p class="sub"><a href="https://validar.iti.gov.br/" target="_blank" rel="noopener noreferrer">Conferir assinatura eletrônica no VALIDAR (ITI)</a> · '+
+   '<a href="https://www.gov.br/anvisa/pt-br/assuntos/medicamentos/controlados/sncr/receituario-eletronico" target="_blank" rel="noopener noreferrer">Regras e QR oficiais de receituários controlados (Anvisa)</a></p>';
   body+=card('Modelo individual',model?'<b>'+escH(model.profissional_nome)+'</b> — '+escH(model.identificacao_profissional||'')+'<p>'+configLink()+'</p>':note('Ainda não há PDF de receituário cadastrado.')+configLink());
   if(model){
    body+=card('Novo documento',
@@ -205,7 +207,7 @@ async function home(){
     '<p><label><input type="checkbox" id="bfrec-responsavel"> Declaro que o conteúdo foi revisado por mim e está dentro da minha competência profissional.</label></p>'+
     btn('Gerar rascunho PDF','bfRecGenerate()'));
   }
-  const listHtml=docs.map(d=>'<div class="row" style="flex-wrap:wrap"><span><b>'+escH(d.paciente_nome)+'</b><br><small>'+escH(d.tipo)+' — '+escH(new Date(d.criado_em).toLocaleDateString('pt-BR'))+' — '+escH(d.status)+(d.verificacao_token_hash?' — QR de consulta no PDF':' — sem QR (documento antigo)')+'</small></span><span>'+btn('Baixar rascunho',"bfRecDownload('"+d.id+"',false)")+' '+(d.pdf_assinado_path?btn('Enviar PDF pelo WhatsApp',"bfRecShare('"+d.id+"')"):btn('Anexar PDF assinado',"bfRecSignPrompt('"+d.id+"')"))+'</span></div>').join('');
+  const listHtml=docs.map(d=>'<div class="row" style="flex-wrap:wrap"><span><b>'+escH(d.paciente_nome)+'</b><br><small>'+escH(d.tipo)+' — '+escH(new Date(d.criado_em).toLocaleDateString('pt-BR'))+' — '+escH(d.status==='assinado_externo_nao_validado'?'PDF recebido — assinatura não verificada':d.status==='rascunho'?'Rascunho sem assinatura':d.status)+(d.verificacao_token_hash?' — QR de consulta no PDF':' — sem QR (documento antigo)')+'</small></span><span>'+btn('Baixar rascunho',"bfRecDownload('"+d.id+"',false)")+' '+(d.pdf_assinado_path?btn('Enviar PDF pelo WhatsApp',"bfRecShare('"+d.id+"')"):btn('Anexar PDF assinado',"bfRecSignPrompt('"+d.id+"')"))+'</span></div>').join('');
   body+=card('Documentos deste profissional',listHtml||note('Nenhum documento criado.'));
   zone(body);
  }catch(e){fail(e);zone(note(escH(e.message||e)));}
@@ -230,6 +232,7 @@ window.bfRecGenerate=async()=>{
 window.bfRecSignPrompt=id=>{
  if(!docs.some(x=>x.id===id))return;
  openModal('<h3>Documento assinado externamente</h3>'+note('Anexe somente um PDF assinado fora do BlackFlow. O sistema não valida a assinatura, o certificado ou o registro profissional.')+
+  '<p class="sub">Antes de utilizar o documento como receita, consulte <a href="https://validar.iti.gov.br/" rel="noopener noreferrer" target="_blank">o validador de assinatura do ITI</a>. O QR BlackFlow confirma somente o registro.</p>'+
   '<input type="file" id="bfrec-signed-file" accept=".pdf,application/pdf" class="inp" style="width:100%">'+
   '<p><label><input type="checkbox" id="bfrec-signed-confirm"> Confirmo que o arquivo foi assinado externamente pelo profissional responsável.</label></p>'+
   '<div class="mact"><button class="btn ghost" onclick="closeModal()">Cancelar</button>'+btn('Salvar arquivo assinado',"bfRecSign('"+id+"')")+'</div>');
@@ -252,7 +255,7 @@ window.bfRecShare=async id=>{
   const d=docs.find(x=>x.id===id);if(!d?.pdf_assinado_path)throw Error('Anexe primeiro a versão assinada externamente.');
   const p=person(d.paciente_ref);if(!p?.celular)throw Error('Cadastre o WhatsApp do paciente.');
   const blob=await downloadPDF(d.pdf_assinado_path),file=new File([blob],'receituario_'+safeName(d.paciente_nome)+'.pdf',{type:'application/pdf'});
-  const msg='Olá, '+d.paciente_nome+'. Segue o documento da clínica '+(S.config.clinica||'')+'. Confira o arquivo recebido.';
+  const msg='Olá, '+d.paciente_nome+'. Segue o documento da clínica '+(S.config.clinica||'')+'. Assinatura digital não verificada pelo BlackFlow; confira em https://validar.iti.gov.br/ caso o documento exija assinatura eletrônica.';
   if(navigator.share&&(!navigator.canShare||navigator.canShare({files:[file]}))){await navigator.share({files:[file],title:'Documento profissional',text:msg});return;}
   download(file.name,blob);window.open(waLink(p.celular,msg+'\nAnexe o PDF baixado nesta conversa.'),'_blank','noopener,noreferrer');
   toast('PDF baixado. Anexe-o manualmente na conversa do WhatsApp.');
