@@ -14,13 +14,13 @@ assert.match(version,/^\d+\.\d+\.\d+$/);
 assert.equal(html,app,'Root and /app entrypoints must match');
 for(const body of [html,app]){
  assert.ok(body.includes("const VERSAO_APP='"+version+"'"),'Wrong displayed release version');
- for(const asset of ['bf-clinical','bf-fiscal-advanced','bf-receituario','bf-cadastro-fiscal','bf-context-actions','bf-integrity-audit','bf-blackpay-integrated']){
+ for(const asset of ['bf-clinical','bf-fiscal-advanced','bf-receituario','bf-cadastro-fiscal','bf-context-actions','bf-integrity-audit','bf-blackpay-integrated','bf-tati-help','bf-mobile-photos']){
   assert.ok(body.includes('./'+asset+'.js?v='+version),'Outdated asset version: '+asset);
  }
  const blocks=[...body.matchAll(/<script\b[^>]*>([\s\S]*?)<\/script>/gi)];
  for(const [i,m]of blocks.entries())new vm.Script(m[1],{filename:'index.html:inline-'+i});
 }
-for(const name of ['bf-clinical.js','bf-fiscal-advanced.js','bf-receituario.js','bf-cadastro-fiscal.js','bf-context-actions.js','bf-integrity-audit.js','bf-blackpay-integrated.js']){
+for(const name of ['bf-clinical.js','bf-fiscal-advanced.js','bf-receituario.js','bf-cadastro-fiscal.js','bf-context-actions.js','bf-integrity-audit.js','bf-blackpay-integrated.js','bf-tati-help.js','bf-mobile-photos.js']){
  const a=read(name),b=read('app/'+name);
  assert.equal(a,b,'Different root and /app copies: '+name);
  new vm.Script(a,{filename:name});
@@ -30,7 +30,7 @@ assert.ok(read('bf-receituario.js').includes("conselho:seg()==='odontologia'?'CR
 assert.ok(read('bf-receituario.js').includes('RASCUNHO - NAO ASSINADO'),'Missing watermark');
 for(const file of ['sw.js','app/sw.js']){
  const sw=read(file);new vm.Script(sw,{filename:file});
- assert.ok(sw.includes('blackflow-v20'),'PWA cache not bumped');
+ assert.ok(sw.includes('blackflow-v21'),'PWA cache not bumped');
  assert.ok(sw.includes("url.searchParams.has('token')"),'Sensitive query tokens may be cached');
 }
 assert.ok(read('bf-context-actions.js').includes('attachModalButtons(k,true)'),'Pix must display only fiscal action');
@@ -47,4 +47,7 @@ for(const name of ['manifest.webmanifest','app/manifest.webmanifest']){
 }
 assert.equal(read('CNAME').trim(),'blackflow.app.br');
 execFileSync(process.execPath,[fileURLToPath(new URL('../blackpay/smoke.test.mjs',import.meta.url))],{stdio:'inherit'});
+assert.ok(html.includes('bf-tati-help.js?v='+version),'Tati script missing');
+assert.ok(html.includes('bf-mobile-photos.js?v='+version),'Camera workflow script missing');
+assert.ok(html.includes('bfPhotoChoice(pid)'),'Camera continuation callback missing');
 console.log('BlackFlow '+version+': release smoke checks PASS');
