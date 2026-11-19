@@ -109,6 +109,7 @@ Deno.serve(async(req:Request)=>{
   if(!Array.isArray(rows)||!rows.length)return respond({erro:"Administrador sem acesso ao cadastro fiscal desta clínica."},403);
   const cfg=rows[0] as Record<string,unknown>;
   const cnpj=digits(cfg.cnpj),syntheticCpf="12345678909";
+  const cnaePrincipal=digits(cfg.cnae),codigoReferenciaCnae=cnaePrincipal==="9602501"?"060101":null;
   const tests=[
    {caso:"CPF de exemplo matematicamente válido (sem consulta a cadastro)",ok:cpfValid(syntheticCpf)},
    {caso:"CPF repetido inválido rejeitado",ok:!cpfValid("00000000000")},
@@ -129,6 +130,7 @@ Deno.serve(async(req:Request)=>{
   if(!nonempty(cfg.ctrib_nacional)&&!nonempty(cfg.codigo_servico))pendencias.push("Código nacional de tributação do serviço não preenchido.");
   if(!nonempty(cfg.inscricao_municipal))avisos.push("Inscrição municipal não cadastrada; conferir obrigação e número com o município.");
   if(!nonempty(cfg.cnae))avisos.push("CNAE principal não informado. Confira o cadastro oficial da empresa.");
+  if(codigoReferenciaCnae)avisos.push("O CNAE 9602501 corresponde a cabeleireiros/manicure/pedicure. Para SIMULAÇÃO de serviços dessa natureza, o cTribNac 060101 é referência pública. Não usar essa equiparação para procedimentos clínicos de podologia.");
   if(!nonempty(cfg.codigo_servico)&&!nonempty(cfg.ctrib_nacional))avisos.push("O código de serviço deve variar conforme o serviço efetivamente prestado. Não o infira exclusivamente pelo CNAE.");
   if(cfg.simples_nacional===null)avisos.push("Enquadramento no Simples Nacional não confirmado pelo cadastro.");
   if(cfg.municipio_ibge==="3552809")avisos.push("Município cadastrado: Taboão da Serra/SP (3552809). Referências públicas também associam este CNPJ a Taboão da Serra. Valide o comprovante cadastral atual antes de emitir; não altere para outra cidade apenas pela localização física do atendimento.");
@@ -148,7 +150,8 @@ Deno.serve(async(req:Request)=>{
    testes_aprovados:tests.filter(t=>t.ok).length+cenarios.filter(x=>x.ok).length,
    cenarios,
    catalogo:CATALOG,
-   simulacao_documento:{prestador_cnpj:cnpj,municipio_ibge:"3552809",tomador_nome:"PACIENTE TESTE BLACKFLOW",tomador_cpf:syntheticCpf,descricao:"Serviço fictício — não emitir",valor:100,competencia:new Date().toISOString().slice(0,10),serie_exemplo:1,codigo_nacional_exemplo:"040102",iss_referencia_2_porcento:2.00,observacao:"Estrutura ilustrativa; não é DPS XML nem passou pelo XSD oficial.",ibscbs:"CST e cClassTrib dependem do leiaute e regime efetivos; não foram inventados."},
+   cnae_principal:cnaePrincipal,codigo_referencia_cnae:codigoReferenciaCnae,
+   simulacao_documento:{prestador_cnpj:cnpj,municipio_ibge:"3552809",tomador_nome:"PACIENTE TESTE BLACKFLOW",tomador_cpf:syntheticCpf,descricao:"Serviço fictício de manicure/pedicure — NÃO EMITIR",valor:100,competencia:new Date().toISOString().slice(0,10),serie_exemplo:1,codigo_nacional_exemplo:codigoReferenciaCnae||"040102",iss_referencia_2_porcento:2.00,observacao:"Estrutura ilustrativa; não é DPS XML nem passou pelo XSD oficial.",ibscbs:"CST e cClassTrib dependem do leiaute e regime efetivos; não foram inventados."},
    fonte_catalogo:"https://www.gov.br/nfse/pt-br/mei-e-demais-empresas/codigos-de-tributacao-nacional-nbs",
    abrangencia:"Validação local sintética; não substitui XSD, SEFIN, regra municipal ou autorização oficial.",
    bloqueios:pendencias,avisos,
