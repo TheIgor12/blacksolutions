@@ -49,8 +49,8 @@ async function fiscalView(){
   const summary='<div class="grid g3">'+[['Rascunhos',totals.draft],['Notas autorizadas importadas',totals.authorized],['Rejeições registradas',totals.rejected]].map(([name,n])=>'<div class="card"><small>'+name+'</small><h2 style="font-size:25px;margin:4px 0">'+n+'</h2></div>').join('')+'</div>';
   const configured=cfg.situacao_integracao||'nao_configurada';
   const settings=card('Configuração fiscal do estabelecimento',
-    '<p class="sub">Preencha com a contabilidade. A classificação fiscal varia conforme a operação, o serviço e o regime tributário. Alterar estes campos não habilita emissão.</p>'+
-    row(field('bfxCnpj','CNPJ',cfg.cnpj||'')+field('bfxCpf','CPF do prestador (se aplicável)',cfg.cpf_prestador||'')+
+    '<p class="sub">O CNPJ é recuperado automaticamente do cadastro do negócio. Os demais campos são definidos uma vez, com auxílio do contador. Lucro Presumido e Lucro Real não podem ser presumidos apenas pelo CNPJ. Alterar campos não habilita emissão.</p>'+
+    row(field('bfxCnpj','CNPJ vinculado ao cadastro da clínica',cfg.cnpj||'')+field('bfxCpf','CPF do prestador (se aplicável)',cfg.cpf_prestador||'')+
         field('bfxIM','Inscrição municipal',cfg.inscricao_municipal||''))+
     row(field('bfxIBGE','Município IBGE (7 dígitos)',cfg.municipio_ibge||'')+
         field('bfxCNAE','CNAE',cfg.cnae||'')+field('bfxRegime','Regime tributário',cfg.regime||''))+
@@ -73,6 +73,7 @@ async function fiscalView(){
     row('<label style="flex:1"><small>Origem do serviço</small><br>'+opt('bfxOrigem',[['atendimento','Atendimento'],['servico','Serviço avulso'],['pacote','Pacote de sessões'],['outro','Outro']],'atendimento')+'</label>'+
         field('bfxDesc','Descrição fiscal do serviço')+
         field('bfxValor','Valor (R$)','','number'))+
+    row('<label style="min-width:180px;flex:1"><small>Cliente já cadastrado</small><br>'+opt('bfxPaciente',[['','Selecionar cliente']].concat((S.pacientes||[]).filter(p=>p.nome).map(p=>[String(p.id),p.nome])),'')+'</label>'+bt('Usar dados do cliente','bfxPickPatient()','btn ghost sm'))+
     row(field('bfxTomador','Nome do tomador')+field('bfxDoc','CPF/CNPJ do tomador')+
         field('bfxEmail','E-mail para envio da nota'))+
     row(field('bfxComp','Competência','','date')+
@@ -81,6 +82,7 @@ async function fiscalView(){
     row(field('bfxCodTrib','Código tributação nacional',cfg.ctrib_nacional||cfg.codigo_servico||'')+
         field('bfxCodMun','Código tributação municipal',cfg.ctrib_municipal||'')+
         field('bfxCodeNbs','NBS',cfg.codigo_nbs||''))+
+    '<details style="margin:8px 0"><summary>Endereço do tomador (quando exigido)</summary>'+row(field('bfxCEP','CEP')+field('bfxRua','Logradouro')+field('bfxNumero','Número'))+row(field('bfxBairro','Bairro')+field('bfxMun','Município IBGE')+field('bfxUF','UF'))+'</details>'+ 
     txt('bfxExtra','Informações adicionais fiscais, sem informações clínicas sensíveis')+
     '<p class="sub">A nota só será transmitida após certificação da integração. O registro abaixo é um rascunho.</p>'+
     bt('Salvar rascunho','bfxCreateDraft()'));
@@ -117,12 +119,17 @@ async function fiscalView(){
   el.innerHTML=badge+summary+settings+draft+imported+history;
  }catch(e){el.innerHTML='<div class="note">Não foi possível carregar o módulo fiscal: '+html(e.message||e)+'</div>'}
 }
+window.bfxPickPatient=function(){
+ const p=(S.pacientes||[]).find(x=>String(x.id)===val('bfxPaciente'));if(!p)return toast('Selecione um cliente.');
+ const pairs={bfxTomador:p.nome||'',bfxDoc:p.cpf||p.cnpj||'',bfxEmail:p.email||'',bfxCEP:p.cep||'',bfxRua:p.endereco||p.logradouro||'',bfxNumero:p.numero||'',bfxBairro:p.bairro||'',bfxMun:p.municipio_ibge||'',bfxUF:p.uf||''};
+ Object.entries(pairs).forEach(([id,v])=>{const el=document.getElementById(id);if(el&&v)el.value=v});toast('Dados já cadastrados preenchidos. Confira antes de emitir.');
+};
 const prevRender=render;
 render=function(){
  if(UI.view!=='bffiscal')return prevRender();
  if(NV.ativa&&UI.auth)return prevRender();
  if(!admin()){UI.view='agenda';return prevRender();}
- UI.drawer=false;
+ // Keep UI.drawer as set by toggleDrawer(): otherwise hamburger never opens on fiscal page.
  document.getElementById('app').innerHTML=shell('<div class="page" style="max-width:1240px"><div class="phead"><div><h1>Nota Fiscal de Serviços — NFS-e</h1><p class="sub">Configurações, rascunhos, conferência e conciliação fiscal por estabelecimento</p></div></div><div id="bf-fiscal-content"><div class="card">Carregando informações fiscais...</div></div></div>');
  fiscalView();
 };
@@ -162,11 +169,14 @@ window.bfxCreateDraft=async function(){
   if(doc&&![11,14].includes(doc.length))throw Error('CPF/CNPJ do tomador está incompleto.');
   const r=await NV.sb.from('bf_fiscal_notas').insert({
     clinica_id:clinic(),origem:val('bfxOrigem'),origem_ref:val('bfxLanc')||null,
-    paciente_ref:S.lancamentos.find(l=>String(l.id)===val('bfxLanc'))?.pacienteId||null,
+    paciente_ref:S.lancamentos.find(l=>String(l.id)===val('bfxLanc'))?.pacienteId||val('bfxPaciente')||null,
     descricao_servico:description,valor:amount,meio_pagamento:val('bfxForma')||null,
     tomador_nome:val('bfxTomador')||null,tomador_documento:doc||null,tomador_email:val('bfxEmail')||null,
     competencia:val('bfxComp')||null,data_prestacao:val('bfxComp')||null,
     municipio_prestacao_ibge:val('bfxLocal')||null,
+    tomador_cep:val('bfxCEP')||null,tomador_logradouro:val('bfxRua')||null,
+    tomador_numero:val('bfxNumero')||null,tomador_bairro:val('bfxBairro')||null,
+    tomador_municipio_ibge:val('bfxMun')||null,tomador_uf:val('bfxUF')||null,
     codigo_tributacao_nacional:val('bfxCodTrib')||null,
     codigo_tributacao_municipal:val('bfxCodMun')||null,codigo_nbs:val('bfxCodeNbs')||null,
     informacoes_adicionais:val('bfxExtra')||null,status:'rascunho'
