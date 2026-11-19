@@ -82,6 +82,25 @@ function scenarioSuite(cnpj,cpf){
  return records;
 }
 
+
+/* Deterministic SEFIN response simulation: no network, token or official document. */
+function mockTransportPolicy(status){
+ const policies={
+  201:{acao:"Registrar autorização SOMENTE se retorno oficial contiver XML/chave válidos",tentar_novamente:false,consultar_antes:false},
+  400:{acao:"Corrigir a estrutura dos dados",tentar_novamente:false,consultar_antes:false},
+  401:{acao:"Renovar autenticação ou certificado autorizado",tentar_novamente:false,consultar_antes:false},
+  403:{acao:"Conferir credenciamento e permissão",tentar_novamente:false,consultar_antes:false},
+  408:{acao:"Consultar protocolo antes de tentar novamente",tentar_novamente:false,consultar_antes:true},
+  409:{acao:"Consultar DPS existente; impedir emissão duplicada",tentar_novamente:false,consultar_antes:true},
+  422:{acao:"Corrigir regras de negócio ou leiaute XSD",tentar_novamente:false,consultar_antes:false},
+  429:{acao:"Aplicar fila e espera exponencial, com limite",tentar_novamente:true,consultar_antes:false},
+  500:{acao:"Consultar antes de reenviar; aguardar indisponibilidade",tentar_novamente:false,consultar_antes:true},
+  503:{acao:"Consultar antes de reenviar; aguardar serviço",tentar_novamente:false,consultar_antes:true}
+ };
+ return policies[status]||null;
+}
+const MOCK_STATUS=[201,400,401,403,408,409,422,429,500,503];
+
 Deno.serve(async(req:Request)=>{
  if(req.method==="OPTIONS")return new Response(null,{status:204,headers:h});
  if(req.method!=="POST")return respond({erro:"Apenas POST autenticado."},405);
@@ -149,6 +168,7 @@ Deno.serve(async(req:Request)=>{
    total_testes:tests.length+cenarios.length,
    testes_aprovados:tests.filter(t=>t.ok).length+cenarios.filter(x=>x.ok).length,
    cenarios,
+   transporte_simulado:MOCK_STATUS.map(codigo_http=>({codigo_http,resposta:"MOCK_SEFIN_"+codigo_http,...mockTransportPolicy(codigo_http),oficial:false})),
    catalogo:CATALOG,
    cnae_principal:cnaePrincipal,codigo_referencia_cnae:codigoReferenciaCnae,
    simulacao_documento:{prestador_cnpj:cnpj,municipio_ibge:"3552809",tomador_nome:"PACIENTE TESTE BLACKFLOW",tomador_cpf:syntheticCpf,descricao:"Serviço fictício de manicure/pedicure — NÃO EMITIR",valor:100,competencia:new Date().toISOString().slice(0,10),serie_exemplo:1,codigo_nacional_exemplo:codigoReferenciaCnae||"040102",iss_referencia_2_porcento:2.00,observacao:"Estrutura ilustrativa; não é DPS XML nem passou pelo XSD oficial.",ibscbs:"CST e cClassTrib dependem do leiaute e regime efetivos; não foram inventados."},
