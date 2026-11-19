@@ -1,5 +1,5 @@
 {
-  "versao": "1.16.0",
+  "versao": "1.17.0",
   "data": "2026-11-19",
-  "novidades": "Atualização nacional 1.16.0: correção do indicador de versão e cache PWA; módulo Medicina com CRM/UF, prontuários, receitas simples estruturadas em PDF para revisão e assinatura; módulos fiscal multiempresa com roteamento para 27 UFs, consulta IBGE e simulações; QR de consulta e acesso ITI/SNCR. A emissão real de NFS-e e de receitas controladas permanece condicionada às credenciais e integrações oficiais."
+  "novidades": "Botões contextuais Emitir NFE e Receituário no Pix, agendamento, ficha do paciente, comandas e financeiro; preenchimento automático de dados existentes e abertura dos módulos para conferência. NFS-e permanece em rascunho até habilitação e autorização fiscal oficial; receituário exige credenciais e assinatura adequada."
 }
