@@ -57,8 +57,8 @@ async function fiscalView(){
       ' · <b>Código serviço:</b> '+(cfg.ctrib_nacional||cfg.codigo_servico?'informado':'pendente')+'</p>'+
     '<p class="sub">Pendente para emissão automática: certificado ICP-Brasil do emitente ou de procurador autorizado, assinatura XML DPS, mTLS, credenciamento na API, testes oficiais e XML autorizado arquivado.</p>'+
     '<p class="sub">Nunca envie certificado ou senha pelo navegador do BlackFlow ou para um repositório.</p>'+
-    bt('Verificar integração no servidor','bfxDiagnostico()','btn ghost sm')+
-    '<div id="bfxdiag-status" class="sub" role="status" style="margin-top:10px"></div>');
+    bt('Verificar integração no servidor','bfxDiagnostico()','btn ghost sm')+' '+bt('Executar autoteste fiscal (sem emissão)','bfxAutoteste()','btn ghost sm')+
+    '<div id="bfxdiag-status" class="sub" role="status" style="margin-top:10px"></div>'+ '<div id="bfx-autoteste-status" role="status" style="margin-top:10px"></div>');
   const settings=card('Configuração fiscal do estabelecimento',
     '<p class="sub">O CNPJ é recuperado automaticamente do cadastro do negócio. Os demais campos são definidos uma vez, com auxílio do contador. Lucro Presumido e Lucro Real não podem ser presumidos apenas pelo CNPJ. Alterar campos não habilita emissão.</p>'+
     row(field('bfxCnpj','CNPJ vinculado ao cadastro da clínica',cfg.cnpj||'').replace('id="bfxCnpj"','id="bfxCnpj" onblur="bfxBuscarCnpj()"')+
@@ -181,6 +181,27 @@ window.bfxDiagnostico=async function(){
   if(place)place.textContent=(data?.emissao_automatica_disponivel?'Integração declarada disponível; confirme autorização fiscal real.':'Emissão automática NÃO disponível no servidor.')+
    ' Ambiente: '+(data?.ambiente||'indefinido')+'. '+(data?.criterio||'Pendências técnicas e fiscais.');
  }catch(e){if(place)place.textContent='Consulta indisponível: '+String(e?.message||e).slice(0,140);}
+};
+window.bfxAutoteste=async function(){
+ const place=document.getElementById('bfx-autoteste-status');
+ try{
+  await ensureAuthorized();
+  if(place)place.textContent='Executando conferência sintética (sem gerar ou transmitir nota)...';
+  const {data,error}=await NV.sb.functions.invoke('bf-fiscal-autoteste',{body:{clinica_id:clinic()}});
+  if(error)throw error;
+  if(!data||!Array.isArray(data.testes))throw Error('Resposta inesperada do autoteste.');
+  const cases=data.testes.map(t=>'<li>'+(t.ok?'✓ ':'✗ ')+html(t.caso)+'</li>').join('');
+  const issues=(data.bloqueios||[]).map(t=>'<li>'+html(t)+'</li>').join('');
+  const warns=(data.avisos||[]).map(t=>'<li>'+html(t)+'</li>').join('');
+  if(place)place.innerHTML='<div class="note"><b>Resultado: NÃO HOMOLOGADO — nenhum documento fiscal transmitido.</b>'+
+    '<p><b>Simulação:</b> '+html(data.tomador_de_teste)+'; '+html(data.documento_teste)+
+    '; valor R$ '+Number(data.valor_teste||0).toFixed(2).replace('.',',')+'.</p>'+
+    '<p>Testes técnicos locais: '+Number(data.testes_aprovados||0)+'/'+Number(data.total_testes||0)+' aprovados.</p>'+
+    '<details><summary>Casos validados</summary><ul>'+cases+'</ul></details>'+
+    '<p><b>Pendências de emissão:</b></p><ul>'+issues+'</ul>'+
+    (warns?'<p><b>Conferências fiscais:</b></p><ul>'+warns+'</ul>':'')+
+    '<small>Nenhum CPF fictício, pagamento, rascunho ou nota foi gravado. Esta simulação não equivale à homologação no Governo.</small></div>';
+ }catch(e){if(place)place.textContent='Autoteste não concluído: '+String(e?.message||e).slice(0,150);}
 };
 window.bfxSaveSettings=async function(){
  try{
