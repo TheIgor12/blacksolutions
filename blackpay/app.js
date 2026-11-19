@@ -7,6 +7,8 @@ const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&
 const number=s=>{const raw=String(s??'').trim().replace(/\s/g,'');if(!/^\d{1,9}(?:[,.]\d{1,2})?$/.test(raw))return NaN;return Math.round(Number(raw.replace(',','.'))*100)};
 const uid=()=>crypto.randomUUID();
 const time=()=>new Date().toLocaleString('pt-BR');
+const embeddedReadOnly=new URLSearchParams(location.search).get('embedded')==='1';
+if(embeddedReadOnly)document.body.classList.add('embedded');
 let nav='visao',mode='demo',accounts=[],entries=[],transactions=[],charges=[],terminals=[],reconciliations=[],riskEvents=[],audit=[],keys=new Set();
 let auditPrev='GENESIS',auditBusy=Promise.resolve();
 const bank={settlement:'DEMO_SETTLEMENT',fees:'DEMO_FEES'};
@@ -60,17 +62,17 @@ function reconcileView(){const unmatched=transactions.filter(t=>!reconciliations
 function riskView(){return '<div class="two"><section class="card"><h2>Controles de titulares</h2>'+table(['Conta','KYC','Bloqueio'],accounts.map(a=>'<tr>'+cell(a.name)+cell(a.kyc)+'<td><button class="btn secondary" data-toggle="'+esc(a.id)+'">'+(a.status==='active'?'Bloquear (teste)':'Reativar (teste)')+'</button></td></tr>'))+'</section><section class="card"><h2>Controles exigidos para operação real</h2><p>Verificação de identidade e beneficiário final, listas restritivas, análise de fraude, autenticação forte, políticas PLD/FTP, gestão de incidentes, LGPD, controles de privilégios, limites dinâmicos, monitoramento e relatórios.</p><p class="warn">Os botões de bloqueio afetam só as operações simuladas nesta aba.</p></section></div><section class="card block"><h2>Eventos de risco</h2>'+table(['Data','Evento','Conta'],riskEvents.slice().reverse().map(e=>'<tr>'+cell(e.time)+cell(e.type)+cell(accountName(e.account))+'</tr>'))+'</section>'}
 function auditView(){return '<section class="card"><h2>Integridade dos eventos</h2><p class="mut">Hash SHA-256 encadeado para demonstração de trilha de auditoria. Isto não é blockchain distribuída, não é prova regulatória e não impede alterações por quem controla o navegador.</p><div class="actions"><button class="btn secondary" data-action="verify">Verificar cadeia local</button></div>'+table(['Data','Evento','Hash SHA-256','Hash anterior'],audit.slice().reverse().map(e=>'<tr>'+cell(new Date(e.time).toLocaleString('pt-BR'))+cell(e.type)+'<td class="mono">'+esc(e.hash.slice(0,20))+'…</td><td class="mono">'+esc(e.prev.slice(0,16))+'…</td></tr>'))+'</section>'}
 const views={visao:overview,contas:accountView,pix:pixView,transferencias:transferView,maquininhas:terminalView,extrato:statementView,conciliacao:reconcileView,seguranca:riskView,auditoria:auditView};
-function render(){document.querySelectorAll('.nav').forEach(b=>b.classList.toggle('active',b.dataset.view===nav));$('heading').textContent=v[nav][0];$('subtitle').textContent=v[nav][1];$('content').innerHTML=views[nav]();}
+function render(){document.querySelectorAll('.nav').forEach(b=>b.classList.toggle('active',b.dataset.view===nav));$('heading').textContent=v[nav][0];$('subtitle').textContent=v[nav][1];$('content').innerHTML=views[nav]();if(embeddedReadOnly){document.querySelectorAll('#content button:not([data-go]), #content input, #content select').forEach(el=>{el.disabled=true;el.title='Disponível apenas em ambiente demonstrativo interno; nenhum recurso real foi habilitado';});}}
 document.addEventListener('click',async e=>{
  const navBtn=e.target.closest('[data-view],[data-go]');if(navBtn){nav=navBtn.dataset.view||navBtn.dataset.go;render();return}
- const b=e.target.closest('[data-action],[data-match],[data-toggle]');if(!b)return;
+ const b=e.target.closest('[data-action],[data-match],[data-toggle]');if(!b||embeddedReadOnly)return;
  if(b.dataset.action==='reset'){if(confirm('Reiniciar todos os dados fictícios desta sessão?'))sample()}
  if(b.dataset.action==='verify'){await auditBusy;let prev='GENESIS',good=true;for(const item of audit){const {hash,...rest}=item;const expected=await digest(JSON.stringify(rest));if(expected!==hash||item.prev!==prev){good=false;break}prev=hash}toast(good?'Cadeia local íntegra, apenas nesta sessão.':'Divergência na cadeia de auditoria.')}
  if(b.dataset.match){run(()=>{const tx=transactions.find(x=>x.id===b.dataset.match);if(!tx||reconciliations.some(x=>x.transactionId===tx.id))throw Error('Já conciliada');reconciliations.push({id:uid(),transactionId:tx.id,time:time(),source:'simulação'});auditEvent('reconciliation.demo',{transactionId:tx.id})})}
  if(b.dataset.toggle){run(()=>{const a=account(b.dataset.toggle);a.status=a.status==='active'?'blocked':'active';riskEvents.push({time:time(),account:a.id,type:'Estado alterado para '+a.status});auditEvent('account.status',{account:a.id,status:a.status})})}
 });
 document.addEventListener('submit',e=>{
- const form=e.target.closest('[data-form]');if(!form)return;e.preventDefault();
+ const form=e.target.closest('[data-form]');if(!form)return;e.preventDefault();if(embeddedReadOnly)return;
  run(()=>{
  const data=new FormData(form),kind=form.dataset.form;
  if(kind==='newAccount'){const name=String(data.get('name')||'').trim();if(name.length<3)throw Error('Nome de teste insuficiente');const a={id:'ACC-'+uid().slice(0,8),name,alias:'Conta fictícia',kyc:'pending',status:'active',dailyLimit:100000};accounts.push(a);auditEvent('account.demo.created',{id:a.id});toast('Conta fictícia criada com KYC pendente: não movimenta recursos.')}
