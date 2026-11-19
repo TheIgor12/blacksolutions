@@ -1,8 +1,8 @@
 /* BlackFlow web: busca sempre a versão mais nova e usa a cópia guardada só quando estiver sem internet */
-const CACHE = 'blackflow-v10';
+const CACHE = 'blackflow-v11';
 const BASE = ['./', 'index.html', 'manifest.webmanifest', 'icone-192.png', 'icone-512.png'];
 self.addEventListener('install', e => { e.waitUntil(caches.open(CACHE).then(c => c.addAll(BASE)).then(() => self.skipWaiting())); });
-self.addEventListener('activate', e => { e.waitUntil(self.clients.claim()); });
+self.addEventListener('activate', e => { e.waitUntil(caches.keys().then(keys=>Promise.all(keys.filter(k=>k.startsWith('blackflow-v')&&k!==CACHE).map(k=>caches.delete(k)))).then(()=>self.clients.claim())); });
 self.addEventListener('fetch', e => {
   const req = e.request;
   if (req.method !== 'GET') return;
