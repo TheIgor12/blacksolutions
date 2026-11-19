@@ -212,6 +212,9 @@ window.bfxAutoteste=async function(){
     ' · IBGE '+html(data.municipio_ibge||'')+' · ambiente cadastrado '+html(data.ambiente_configurado||'')+'.</p>'+
     '<p>Simulação local: sem XML DPS assinado, sem validação XSD oficial, sem transmissão nem autorização. IBS/CBS seguem o regime e leiaute aplicáveis.</p>'+
     '<details><summary>Casos validados</summary><ul>'+cases+'</ul></details>'+
+    '<details><summary>10 cenários simulados de resposta da SEFIN (sem contato com o governo)</summary><ul>'+
+    (data.transporte_simulado||[]).map(t=>'<li>HTTP '+Number(t.codigo_http)+': '+html(t.acao)+'</li>').join('')+
+    '</ul></details>'+
     '<p><b>Pendências de emissão:</b></p><ul>'+issues+'</ul>'+
     (warns?'<p><b>Conferências fiscais:</b></p><ul>'+warns+'</ul>':'')+
     '<small>Nenhum CPF fictício, pagamento, rascunho ou nota foi gravado. Esta simulação não equivale à homologação no Governo.</small></div>';
