@@ -36,8 +36,8 @@ function cardAnswer(entry){
 }
 function paint(){
  const root=$root();if(!root)return;
- root.innerHTML='<button type="button" class="tati-fab" id="tati-trigger" aria-label="Tati: ajuda e dúvidas" aria-expanded="'+opened+'" title="Dúvida? Pergunte à Tati"><img src="./img/mascote.webp" alt=""><span>?</span></button>'+
- (opened?'<section class="tati-dialog" role="dialog" aria-label="Tati — assistente de utilização" aria-modal="false"><header class="tati-head"><img src="./img/mascote.webp" alt=""><div><b>Pergunte à Tati</b><small>Ajuda BlackFlow · respostas verificadas</small></div><button type="button" class="tati-close" id="tati-close" aria-label="Fechar">×</button></header>'+
+ root.innerHTML='<button type="button" class="tati-fab" id="tati-trigger" aria-label="Tati: ajuda e dúvidas" aria-expanded="'+opened+'" title="Dúvida? Pergunte à Tati"><img src="/img/mascote.webp" alt=""><span>?</span></button>'+
+ (opened?'<section class="tati-dialog" role="dialog" aria-label="Tati — assistente de utilização" aria-modal="false"><header class="tati-head"><img src="/img/mascote.webp" alt=""><div><b>Pergunte à Tati</b><small>Ajuda BlackFlow · respostas verificadas</small></div><button type="button" class="tati-close" id="tati-close" aria-label="Fechar">×</button></header>'+
  '<div class="tati-search"><label for="tati-query">Em que posso ajudar?</label><input id="tati-query" type="search" autocomplete="off" maxlength="180" placeholder="Ex.: como calcular ticket médio?" value="'+escape(search)+'"><small>Respostas locais, sem expor dados de pacientes e sem custo de IA.</small></div>'+
  '<div class="tati-result">'+(selected?cardAnswer(selected):'<p class="tati-subhead">'+(search?'Respostas encontradas':'Dúvidas frequentes')+'</p><div class="tati-list">'+
  matches().map(x=>'<button type="button" data-answer="'+x.index+'">'+escape(x.a[0])+'<span>›</span></button>').join('')+
