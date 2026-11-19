@@ -4848,7 +4848,7 @@ function agNovo(a,s){if(s==='Desmarcado'||s==='Faltou')return false;const k=a.da
  const hist=c=>S[c].some(x=>x.pacienteId===a.pacienteId&&((x.data||x.vencimento||x.pagamento||'')<a.data)&&(x.data||x.vencimento||x.pagamento));
  return !hist('evolucoes')&&!hist('tratamentos')&&!S.lancamentos.some(l=>l.pacienteId===a.pacienteId&&l.pagamento&&l.pagamento<a.data)}
 /* ============ Atualização: aviso com botão Atualizar agora ============ */
-const VERSAO_APP='1.13.0';const URL_VERSAO_JSON='https://raw.githubusercontent.com/TheIgor12/blacksolutions/main/versao.json';
+const VERSAO_APP='1.14.0';const URL_VERSAO_JSON='https://raw.githubusercontent.com/TheIgor12/blacksolutions/main/versao.json';
 const numV=v=>String(v||'0').split(/\D+/).filter(Boolean).map(Number);
 function versaoMaior(a,b){const x=numV(a),y=numV(b);for(let i=0;i<Math.max(x.length,y.length);i++){const d=(x[i]||0)-(y[i]||0);if(d)return d>0}return false}
 const ATU={nova:null,timer:null};
@@ -5077,7 +5077,7 @@ function cardAcessoConfig(){const A=acessos();const L=perfis();const emails=Obje
  <div class="note warn" style="margin-top:16px"><b>Importante:</b> o perfil organiza o que aparece na tela para cada pessoa. Ele não substitui senha individual: todo mundo que entra na clínica usa a mesma base de dados, e alguém com conhecimento técnico consegue ver o que está guardado no navegador. Para trabalhar com dados sensíveis, cada pessoa deve ter o próprio login e você deve dar acesso apenas a quem precisa.</div></div>`}
 /* ---- Configurações, organizadas por assunto ---- */
 function cfgCardClinica(){const c=S.config;return `<div class="card"><h2>Clínica</h2><div class="fgrid" id="cfgF"><label>Nome da clínica<input name="clinica" value="${esc(c.clinica)}"></label><label>Nome do usuário<input name="usuario" value="${esc(c.usuario)}"></label><label>Cor principal (botões e destaques)<input name="cor" type="color" value="${esc(c.cor)}"></label><label>Cor da barra superior<input name="corTopo" type="color" value="${esc(c.corTopo||'#14306b')}"></label><label>Prazo do alerta de retorno (dias)<input name="diasRetorno" type="number" value="${esc(c.diasRetorno)}"></label>
- <label>CNPJ ou CPF da clínica (sai no recibo)<input name="cnpj" value="${esc(c.cnpj||'')}"></label><label>Telefone da clínica<input name="telefone" value="${esc(c.telefone||'')}"></label><label class="full">Endereço da clínica<input name="endereco" value="${esc(c.endereco||'')}"></label><label>CPF do profissional que assina o recibo<input name="profCpf" value="${esc(c.profCpf||'')}"></label><label>Aviso na tela 15 e 5 minutos antes do atendimento<select name="avisoAgenda"><option value="sim" ${c.avisoAgenda!==false?'selected':''}>Ligado</option><option value="nao" ${c.avisoAgenda===false?'selected':''}>Desligado</option></select></label>
+ <label>CNPJ do estabelecimento (controlado no Cadastro fiscal)<input name="cnpj" value="${esc(c.cnpj||'')}" readonly title="Para incluir ou atualizar, abra Cadastro fiscal (CNPJ) nas Configurações."></label><label>Telefone da clínica<input name="telefone" value="${esc(c.telefone||'')}"></label><label class="full">Endereço da clínica<input name="endereco" value="${esc(c.endereco||'')}"></label><label>CPF do profissional que assina o recibo<input name="profCpf" value="${esc(c.profCpf||'')}"></label><label>Aviso na tela 15 e 5 minutos antes do atendimento<select name="avisoAgenda"><option value="sim" ${c.avisoAgenda!==false?'selected':''}>Ligado</option><option value="nao" ${c.avisoAgenda===false?'selected':''}>Desligado</option></select></label>
  <label class="full">Mensagem de cobrança (variáveis: {nome}, {clinica}, {valor}, {vencimento})<textarea name="msgCobranca" rows="3">${esc(c.msgCobranca)}</textarea></label>
  <label class="full">Mensagem de retorno (variáveis: {nome}, {clinica})<textarea name="msgRetorno" rows="3">${esc(c.msgRetorno)}</textarea></label></div>
  <div class="mact"><button class="btn" onclick="saveCfg()">Salvar configurações</button></div></div>`}
@@ -5130,7 +5130,7 @@ function cfgAnamMover(i,d){const M=anamModelo();const j=i+d;if(j<0||j>=M.length)
  const t=M[i];M[i]=M[j];M[j]=t;cfgAnamGravar(M)}
 function cfgAnamPadrao(){confirmModal('Voltar ao modelo pronto de podologia, com '+ANAM_PADRAO.length+' perguntas? O questionário que você montou será perdido.',()=>{S.config.anamPerguntas=[];cfgAnamGravar(ANAM_PADRAO)},'Voltar ao modelo pronto')}
 function vConfig(){const t=CFG_ABAS.some(a=>a[0]===UI.cfgTab)?UI.cfgTab:'clinica';
- const ajuda={clinica:'Nome, contato, endereço, cores, logotipo e tipo de negócio. Esses dados saem nos recibos e nas mensagens.',atendimento:'Agendamento online, lembretes por WhatsApp, aviso na tela e textos dos termos.',financeiro:'Chave Pix da clínica, taxas e fidelidade. Usado nas cobranças e no recebimento.',equipe:'Quem usa o sistema e o que cada pessoa pode ver.',plano:'Plano contratado e troca de plano.',sistema:'Backup, exportação para Excel e apagar dados.'}[t];
+ const ajuda={clinica:'Nome, contato, endereço, cores, logotipo e tipo de negócio. Esses dados saem nos recibos e nas mensagens.',atendimento:'Agendamento online, lembretes por WhatsApp, aviso na tela e textos dos termos.',financeiro:'Chave Pix da clínica, taxas e fidelidade. Usado nas cobranças e no recebimento.',equipe:'Quem usa o sistema e o que cada pessoa pode ver.',plano:'Plano contratado e troca de plano.',cadfiscal:'CNPJ do estabelecimento, consulta cadastral e informações fiscais usadas nas notas.',sistema:'Backup, exportação para Excel e apagar dados.'}[t];
  return `<div class="page" style="max-width:980px"><div class="phead"><div><h1>Configurações</h1><p class="sub">${esc(ajuda)}</p></div></div>
  <div class="filters" style="margin-bottom:14px;flex-wrap:wrap">${CFG_ABAS.map(([k,n])=>`<button class="btn ${t===k?'':'ghost'} sm" onclick="UI.cfgTab='${k}';render()">${esc(n)}</button>`).join(' ')}</div>
  ${t==='clinica'?cfgCardFonte()+cfgCardClinica()+cfgCardLogo()+cfgCardIA()+cardSegmentoConfig():''}
@@ -5498,8 +5498,9 @@ function agProf(nome){UI.profOff={};if(nome){S.profissionais.forEach(p=>{if(norm
 function menuProfs(){const L=az(S.profissionais.filter(p=>p.ativo!==false));if(!L.length)return '';const sel=UI.view==='agenda'?(UI.agProf||''):null;
  return `<div class="msec">AGENDA POR PROFISSIONAL</div><button class="${sel===''&&UI.view==='agenda'?'on':''}" onclick="agProf('')">${ico('cal',18)} Todos os profissionais</button>${L.map(p=>`<button class="${sel!=null&&norm(sel)===norm(p.nome)?'on':''}" onclick="agProf(${esc(JSON.stringify(p.nome))})"><span style="display:inline-block;width:12px;height:12px;border-radius:50%;background:${esc(p.cor||'#0a4bde')};margin:0 3px;flex:none"></span> ${esc(p.nome)}</button>`).join('')}`}
 </script>
-<script src="./bf-clinical.js?v=1.13.0"></script>
-<script src="./bf-fiscal-advanced.js?v=1.13.0"></script>
-<script src="./bf-receituario.js?v=1.13.0"></script>
+<script src="./bf-clinical.js?v=1.14.0"></script>
+<script src="./bf-fiscal-advanced.js?v=1.14.0"></script>
+<script src="./bf-receituario.js?v=1.14.0"></script>
+<script src="./bf-cadastro-fiscal.js?v=1.14.0"></script>
 </body>
 </html>

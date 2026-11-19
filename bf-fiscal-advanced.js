@@ -50,8 +50,11 @@ async function fiscalView(){
   const configured=cfg.situacao_integracao||'nao_configurada';
   const settings=card('Configuração fiscal do estabelecimento',
     '<p class="sub">O CNPJ é recuperado automaticamente do cadastro do negócio. Os demais campos são definidos uma vez, com auxílio do contador. Lucro Presumido e Lucro Real não podem ser presumidos apenas pelo CNPJ. Alterar campos não habilita emissão.</p>'+
-    row(field('bfxCnpj','CNPJ vinculado ao cadastro da clínica',cfg.cnpj||'')+field('bfxCpf','CPF do prestador (se aplicável)',cfg.cpf_prestador||'')+
+    row(field('bfxCnpj','CNPJ vinculado ao cadastro da clínica',cfg.cnpj||'').replace('id="bfxCnpj"','id="bfxCnpj" onblur="bfxBuscarCnpj()"')+
+        field('bfxCpf','CPF do prestador (se aplicável)',cfg.cpf_prestador||'')+
         field('bfxIM','Inscrição municipal',cfg.inscricao_municipal||''))+
+    '<div id="bfxCnpjStatus" class="sub" role="status">'+(cfg.cnpj?'CNPJ recuperado da clínica e vinculado ao cadastro fiscal.':'Informe o CNPJ e clique em Consultar; para concluir, salve os dados fiscais.')+'</div>'+
+    row(bt('Consultar CNPJ','bfxBuscarCnpj()','btn ghost sm')+' '+bt('Cadastro fiscal nas Configurações','bfcadAbrir()','btn ghost sm'))+
     row(field('bfxIBGE','Município IBGE (7 dígitos)',cfg.municipio_ibge||'')+
         field('bfxCNAE','CNAE',cfg.cnae||'')+field('bfxRegime','Regime tributário',cfg.regime||''))+
     row(field('bfxTrib','Código tributação nacional',cfg.ctrib_nacional||cfg.codigo_servico||'')+
@@ -135,21 +138,45 @@ render=function(){
  document.getElementById('app').innerHTML=shell('<div class="page" style="max-width:1240px"><div class="phead"><div><h1>Nota Fiscal de Serviços — NFS-e</h1><p class="sub">Configurações, rascunhos, conferência e conciliação fiscal por estabelecimento</p></div></div><div id="bf-fiscal-content"><div class="card">Carregando informações fiscais...</div></div></div>');
  fiscalView();
 };
+window.bfxBuscarCnpj=async function(){
+ try{
+  await ensureAuthorized();
+  const cnpj=val('bfxCnpj').replace(/\D/g,'');
+  const slot=document.getElementById('bfxCnpjStatus');
+  if(!cnpj){if(slot)slot.textContent='Informe o CNPJ do estabelecimento.';return;}
+  if(!cnpjValido(cnpj)){if(slot)slot.textContent='CNPJ inválido. Confira os dígitos verificadores.';return;}
+  if(slot)slot.textContent='Consultando cadastro público...';
+  const {data,error}=await NV.sb.rpc('bf_cadastro_fiscal_consultar',{p_clinica:clinic(),p_cnpj:cnpj});
+  if(error)throw error;
+  if((document.getElementById('bfxCnpj')?.value||'').replace(/\D/g,'')!==cnpj)return;
+  const x=data?.consulta||{};
+  if(data?.verificado){
+    const fields={bfxIBGE:x.ibge||'',bfxCNAE:x.cnae||''};
+    Object.entries(fields).forEach(([id,value])=>{
+      const el=document.getElementById(id);
+      if(el&&value&&/^\d{7}$/.test(String(value))&&!el.value)el.value=value;
+    });
+    if(slot)slot.textContent='Cadastro localizado: '+(x.razao||'Razão social não informada')+' · '+(x.situacao||'Situação não informada')+'. Clique em Salvar dados fiscais para vincular o CNPJ.';
+  }else if(slot)slot.textContent=data?.aviso||'Não foi possível conferir o cadastro agora. O CNPJ poderá ser salvo mediante validação e revisão.';
+ }catch(e){notify(e)}
+};
 window.bfxSaveSettings=async function(){
  try{
   await ensureAuthorized();
-  const cnpj=val('bfxCnpj').replace(/\D/g,''),cpf=val('bfxCpf').replace(/\D/g,''),municipio=val('bfxIBGE');
-  if(cnpj&&cnpj.length!==14)throw Error('O CNPJ deve conter 14 dígitos.');
-  if(cpf&&cpf.length!==11)throw Error('O CPF deve conter 11 dígitos.');
-  if(municipio&&!/^\d{7}$/.test(municipio))throw Error('Informe o município com 7 dígitos IBGE.');
-  const d={clinica_id:clinic(),cnpj:cnpj||null,cpf_prestador:cpf||null,inscricao_municipal:val('bfxIM')||null,
-    municipio_ibge:municipio||null,cnae:val('bfxCNAE')||null,regime:val('bfxRegime')||null,
-    ctrib_nacional:val('bfxTrib')||null,ctrib_municipal:val('bfxTribMun')||null,codigo_nbs:val('bfxNbs')||null,
-    serie_dps:Number(val('bfxSerie')||1),ambiente:val('bfxAmbiente')||'homologacao',
-    simples_nacional:val('bfxSN')===''?null:val('bfxSN')==='sim'};
-  const result=await NV.sb.from('bf_fiscal_config').upsert(d,{onConflict:'clinica_id'});
-  if(result.error)throw result.error;
-  toast('Cadastro fiscal atualizado. Nenhuma emissão foi habilitada.');render();
+  const cnpj=val('bfxCnpj').replace(/\D/g,'');
+  if(!cnpj)throw Error('Informe o CNPJ ou cadastre-o em Configurações → Cadastro fiscal (CNPJ).');
+  const dados={
+    cpf_prestador:val('bfxCpf'),inscricao_municipal:val('bfxIM'),
+    municipio_ibge:val('bfxIBGE'),cnae:val('bfxCNAE'),
+    regime:val('bfxRegime'),ctrib_nacional:val('bfxTrib'),
+    ctrib_municipal:val('bfxTribMun'),codigo_nbs:val('bfxNbs'),
+    serie_dps:val('bfxSerie'),ambiente:val('bfxAmbiente'),
+    simples_nacional:val('bfxSN')===''?'':val('bfxSN')==='sim'?'true':'false'
+  };
+  const saved=await window.bfcadCadastrarDaNfse(cnpj,dados);
+  if(!saved)return;
+  toast('Cadastro fiscal vinculado e salvo na clínica. A emissão automática da NFS-e ainda depende de credenciamento.');
+  render();
  }catch(e){notify(e)}
 };
 window.bfxUsePayment=function(){
