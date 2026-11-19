@@ -1,4 +1,4 @@
 {
-  "versao": "1.13.0",
-  "novidades": "Cadastro de Odontologia e Biomedicina com links Asaas mensais verificados (R$ 114,90 / R$ 104,90), teste gratuito de 7 dias sem cobrança automática, correção do menu NFS-e, CNPJ preenchido a partir do cadastro da clínica, paciente e endereço opcional reaproveitados na preparação fiscal. A emissão automática da NFS-e continua indisponível até credenciamento e certificado/representação digital válidos."
+  "versao": "1.14.0",
+  "novidades": "Cadastro Fiscal (CNPJ) em Configurações para clínicas novas e antigas. Consulta dos dados públicos do CNPJ, sincronização segura entre estabelecimento e NFS-e, confirmação e histórico de troca, preenchimento de CNAE/IBGE quando disponíveis e correção da gravação na tela de Nota Fiscal. Emissão automática ainda depende de credenciamento, certificado/procuração e homologação."
 }
