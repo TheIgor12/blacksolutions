@@ -1,4 +1,4 @@
 {
-  "versao": "1.12.1",
-  "novidades": "Auditoria e ajustes de segurança do fluxo de assinatura Asaas: idempotência nas confirmações e prevenção de acesso clínico pelo plano antigo. Odontologia e Biomedicina aguardam definição do valor mensal único e dos links Asaas recorrentes. Mantém receituários e NFS-e em preparação, sem emissão automática."
+  "versao": "1.13.0",
+  "novidades": "Cadastro de Odontologia e Biomedicina com links Asaas mensais verificados (R$ 114,90 / R$ 104,90), teste gratuito de 7 dias sem cobrança automática, correção do menu NFS-e, CNPJ preenchido a partir do cadastro da clínica, paciente e endereço opcional reaproveitados na preparação fiscal. A emissão automática da NFS-e continua indisponível até credenciamento e certificado/representação digital válidos."
 }
