@@ -58,7 +58,7 @@ const warnings=()=>seg()==='odontologia'?'Receitas sujeitas a controle especial 
 const configLink=()=>btn('Configurar modelo PDF',"UI.cfgTab='receituario';go('config')");
 async function config(){
  try{
-  await refresh();if(!authorized){zone(note('Este usuário ainda não possui autorização profissional. Em Podologia, o administrador pode autorizar membros da equipe; em Odontologia e Biomedicina, cadastre o profissional habilitado.'));return;}
+  await refresh();if(!authorized){zone(note('Este usuário ainda não possui autorização profissional. Em Podologia, o administrador pode autorizar membros da equipe; em Odontologia e Biomedicina, cadastre o profissional habilitado.'));await renderAdmin();return;}
   const m=model||{};
   zone(note('O PDF é individual do profissional. Não é um certificado digital nem uma assinatura. '+escH(warnings()))+
    card('Identidade visual do receituário',
@@ -69,8 +69,65 @@ async function config(){
     (m.pdf_path?'<p><small>Modelo atualmente salvo.</small></p>':'<p><small>Nenhum modelo salvo.</small></p>')+
     btn('Salvar modelo','bfRecSaveModel()')+' '+(m.pdf_path?btn('Baixar modelo','bfRecPreview()'):'')
    ));
+  await renderAdmin();
  }catch(e){fail(e);zone(note(escH(e.message||e)));}
 }
+
+async function renderAdmin(){
+ if(NV.papel!=='admin')return;
+ try{
+  const members=await list('membros','user_id,nome,papel',{clinica_id:cid()});
+  const authorizations=seg()==='podologia'?
+   await list('bf_receituario_autorizacoes','user_id,ativo',{clinica_id:cid(),segmento:seg()}):
+   await list('bf_profissionais','user_id,ativo,nome,conselho,inscricao',{clinica_id:cid(),segmento:seg()});
+  const options=members.map(m=>[m.user_id,m.nome||'Usuário '+String(m.user_id).slice(0,8)]);
+  const selectId='bfrec-member';
+  let html='';
+  if(seg()==='podologia'){
+   html='<p class="sub">O administrador pode liberar membros cadastrados para criar orientações, sem conceder autorização para prescrever medicamentos.</p>'+
+      '<label><small>Membro da clínica</small>'+choice(selectId,options)+'</label>'+
+      '<p>'+btn('Autorizar membro',"bfRecGrantMember(true)")+' '+btn('Revogar autorização',"bfRecGrantMember(false)")+'</p>';
+  }else{
+   html='<p class="sub">Cadastre o profissional habilitado, vinculado ao login dele. Confirme documentalmente a inscrição e as habilitações no CRO/CRBM antes de autorizar uso.</p>'+
+    '<label><small>Login do profissional</small>'+choice(selectId,options)+'</label>'+
+    row(field('bfrec-pro-name','Nome profissional')+field('bfrec-pro-reg','Número do conselho')+field('bfrec-pro-uf','UF do conselho'))+
+    '<p>'+btn('Cadastrar e ativar',"bfRecRegisterProfessional()")+'</p>';
+  }
+  html+=authorizations.length?authorizations.map(a=>'<div class="row"><span>'+escH(members.find(m=>m.user_id===a.user_id)?.nome||a.nome||'Profissional')+
+    ' — '+(a.ativo?'Ativo':'Inativo')+'</span>'+
+    (seg()==='podologia'?'':btn(a.ativo?'Desativar':'Ativar',"bfRecToggleProfessional('"+a.user_id+"',"+(!a.ativo)+")"))+'</div>').join(''):'<p class="sub">Nenhuma autorização específica cadastrada.</p>';
+  const holder=document.getElementById('bfrec-zone');if(holder)holder.insertAdjacentHTML('beforeend',card('Administração de acessos profissionais',html));
+ }catch(e){fail(e)}
+}
+window.bfRecGrantMember=async function(enabled){
+ try{
+  if(NV.papel!=='admin'||seg()!=='podologia')throw Error('Somente administrador de Podologia.');
+  const user_id=read('bfrec-member');if(!user_id)throw Error('Selecione o usuário.');
+  const r=await NV.sb.from('bf_receituario_autorizacoes').upsert({
+   clinica_id:cid(),user_id,segmento:'podologia',ativo:enabled,criado_por:uid()
+  },{onConflict:'clinica_id,user_id,segmento'});
+  if(r.error)throw r.error;toast('Autorização atualizada.');config();
+ }catch(e){fail(e)}
+};
+window.bfRecRegisterProfessional=async function(){
+ try{
+  if(NV.papel!=='admin'||seg()==='podologia')throw Error('Somente administrador do segmento clínico.');
+  const user_id=read('bfrec-member'),nome=read('bfrec-pro-name'),inscricao=read('bfrec-pro-reg'),uf=read('bfrec-pro-uf').toUpperCase();
+  if(!user_id||nome.length<4||!inscricao||!/^[A-Z]{2}$/.test(uf))throw Error('Confira usuário, nome, registro e UF.');
+  const r=await NV.sb.from('bf_profissionais').upsert({
+   clinica_id:cid(),user_id,segmento:seg(),nome,inscricao,uf,conselho:seg()==='odontologia'?'CRO':'CRBM',habilitacoes:[],ativo:true
+  },{onConflict:'clinica_id,user_id,segmento'});
+  if(r.error)throw r.error;toast('Profissional cadastrado. Verifique documentos de habilitação.');config();
+ }catch(e){fail(e)}
+};
+window.bfRecToggleProfessional=async function(userId,ativo){
+ try{
+  if(NV.papel!=='admin')throw Error('Acesso reservado ao administrador.');
+  const r=await NV.sb.from('bf_profissionais').update({ativo}).eq('clinica_id',cid()).eq('user_id',userId).eq('segmento',seg());
+  if(r.error)throw r.error;toast('Acesso profissional atualizado.');config();
+ }catch(e){fail(e)}
+};
+
 window.bfRecSaveModel=async function(){
  try{
   if(!await allowed())throw Error('Sem autorização profissional.');
