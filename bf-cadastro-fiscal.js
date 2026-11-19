@@ -139,7 +139,12 @@ window.bfcadCadastrarDaNfse=async function(cnpj,campos){
  if(!can())throw Error("Somente administrador pode cadastrar CNPJ.");
  const doc=dig(cnpj);
  if(!cnpjValido(doc))throw Error("CNPJ inválido: confira os dígitos verificadores.");
- const old=dig((cl?.cnpj||fiscal?.cnpj||""));
+ const [cr,fr]=await Promise.all([
+   NV.sb.from("clinicas").select("cnpj").eq("id",NV.clinicaId).single(),
+   NV.sb.from("bf_fiscal_config").select("cnpj").eq("clinica_id",NV.clinicaId).maybeSingle()
+ ]);
+ if(cr.error)throw cr.error;if(fr.error)throw fr.error;
+ const old=dig(cr.data?.cnpj||fr.data?.cnpj||"");
  const mudou=!!old&&old!==doc;
  if(mudou&&!confirm("Substituir o CNPJ do emitente? Isso altera o cadastro fiscal e requer revisão dos códigos tributários."))return null;
  const {data,error:err}=await NV.sb.rpc("bf_cadastro_fiscal_salvar",{
