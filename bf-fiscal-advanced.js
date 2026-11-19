@@ -80,8 +80,8 @@ async function fiscalView(){
       ' · <b>Código serviço:</b> '+(cfg.ctrib_nacional||cfg.codigo_servico?'informado':'pendente')+'</p>'+
     '<p class="sub">Pendente para emissão automática: certificado ICP-Brasil do emitente ou de procurador autorizado, assinatura XML DPS, mTLS, credenciamento na API, testes oficiais e XML autorizado arquivado.</p>'+
     '<p class="sub">Nunca envie certificado ou senha pelo navegador do BlackFlow ou para um repositório.</p>'+
-    bt('Verificar integração no servidor','bfxDiagnostico()','btn ghost sm')+' '+bt('Executar autoteste fiscal (sem emissão)','bfxAutoteste()','btn ghost sm')+
-    '<div id="bfxdiag-status" class="sub" role="status" style="margin-top:10px"></div>'+ '<div id="bfx-autoteste-status" role="status" style="margin-top:10px"></div>');
+    bt('Verificar integração no servidor','bfxDiagnostico()','btn ghost sm')+' '+bt('Executar autoteste fiscal (sem emissão)','bfxAutoteste()','btn ghost sm')+' '+bt('Testar cobertura nacional — 27 UFs','bfxCoberturaNacional()','btn ghost sm')+
+    '<div id="bfxdiag-status" class="sub" role="status" style="margin-top:10px"></div>'+ '<div id="bfx-autoteste-status" role="status" style="margin-top:10px"></div>'+ '<div id="bfx-cobertura-nacional" role="status" style="margin-top:10px"></div>');
   const settings=card('Configuração fiscal do estabelecimento',
     '<p class="sub">O CNPJ é recuperado automaticamente do cadastro do negócio. Os demais campos são definidos uma vez, com auxílio do contador. Lucro Presumido e Lucro Real não podem ser presumidos apenas pelo CNPJ. Alterar campos não habilita emissão.</p>'+
     row(field('bfxCnpj','CNPJ vinculado ao cadastro da clínica',cfg.cnpj||'').replace('id="bfxCnpj"','id="bfxCnpj" onblur="bfxBuscarCnpj()"')+
@@ -218,6 +218,34 @@ window.bfxDiagnostico=async function(){
    (rt.portal_municipal?' · <a target="_blank" rel="noopener noreferrer" href="https://nfe.etransparencia.com.br/sp.taboaodaserra/nfe/principal.aspx">Portal municipal de Taboão da Serra</a>':'')+
    '</p></div>';
  }catch(e){if(place)place.textContent='Consulta indisponível: '+String(e?.message||e).slice(0,140);}
+};
+window.bfxCoberturaNacional=async function(){
+ const place=document.getElementById('bfx-cobertura-nacional');
+ try{
+  await ensureAuthorized();
+  if(place)place.textContent='Verificando o roteamento fiscal independente por clínica e estado...';
+  const {data,error}=await NV.sb.functions.invoke('bf-fiscal-nacional',{body:{clinica_id:clinic()}});
+  if(error)throw error;
+  if(!data||!data.rota_da_clinica||!data.cobertura_simulada)throw Error('Retorno nacional inválido.');
+  const rota=data.rota_da_clinica,cob=data.cobertura_simulada;
+  const estados=Array.isArray(cob.regioes)?cob.regioes:[];
+  if(place)place.innerHTML='<div class="note"><b>Roteamento nacional por empresa (sem emissão)</b>'+
+    '<p><b>Este cliente:</b> UF '+html(rota.uf||'não identificada')+
+    ' · IBGE '+html(rota.municipio_ibge||'pendente')+
+    ' · Regime cadastrado '+html(rota.regime_declarado||'não informado')+
+    ' · Rota '+html(rota.classificacao||'não encontrada')+'.</p>'+
+    '<p><b>Ensaios sintéticos:</b> '+Number(cob.aprovados)+'/'+Number(cob.cenarios_de_roteamento)+
+    ' casos aprovados, abrangendo '+Number(cob.ufs_exercitadas)+' UFs. Nenhuma nota enviada ou autorizada.</p>'+
+    '<p class="sub">Simples/MEI: emissor nacional. Outros regimes: consultar convênio e integrador municipal/nacional para o estabelecimento. Um cliente não bloqueia outro.</p>'+
+    '<details><summary>Ver os 27 estados da simulação</summary>'+table(['UF','Rota Simples Nacional','Rota outros regimes'],estados.map(x=>[
+      html(x.uf),
+      html(x.simples?.canal||'—'),
+      html(x.lucro?.canal||'—')
+    ]))+'</details>'+
+    (rota.itens_verificar?.length?'<p><b>Pendências deste cliente, não dos demais:</b></p><ul>'+rota.itens_verificar.map(x=>'<li>'+html(x)+'</li>').join('')+'</ul>':'')+
+    '<p><small>Simulação de roteamento, não comprovação de cobertura operacional dos emissores municipais nem de homologação governamental.</small></p>'+
+    '<p><a href="https://www.gov.br/nfse/pt-br/biblioteca/documentacao-tecnica/documentacao-atual" rel="noopener" target="_blank">Manuais nacionais oficiais</a></p></div>';
+ }catch(e){if(place)place.textContent='Não foi possível verificar cobertura nacional: '+String(e?.message||e).slice(0,150);}
 };
 window.bfxAutoteste=async function(){
  const place=document.getElementById('bfx-autoteste-status');
