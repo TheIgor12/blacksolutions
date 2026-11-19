@@ -221,3 +221,5 @@ with tempfile.TemporaryDirectory(prefix="bf-vid-") as tmp:
          "-movflags","+faststart",str(OUT_VIDEO)]
     subprocess.run(cmd,check=True)
     print("VIDEO",OUT_VIDEO,OUT_VIDEO.stat().st_size,"bytes",len(scenes),"quadros",len(scenes)*5.5,"segundos")
+
+# Build revision: 2026-11-19 materials refresh; public BlackFlow resources only.
