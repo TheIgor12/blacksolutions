@@ -36,9 +36,10 @@ async function fiscalView(){
   const results=await Promise.all([
    query('bf_fiscal_config','*',{clinica_id:clinic()}),
    query('bf_fiscal_notas','*',{clinica_id:clinic()},'criado_em'),
-   query('bf_fiscal_pagamentos','nota_id,referencia_externa,origem,valor,confirmado,meio',{clinica_id:clinic()})
+   query('bf_fiscal_pagamentos','nota_id,referencia_externa,origem,valor,confirmado,meio',{clinica_id:clinic()}),
+   query('bf_fiscal_documentos_externos','id,paciente_ref,paciente_nome,chave_acesso,numero_nfse,pdf_storage_path,criado_em',{clinica_id:clinic()},'criado_em')
   ]);
-  cfg=results[0][0]||{};notes=results[1];const payments=results[2];
+  cfg=results[0][0]||{};notes=results[1];const payments=results[2];const externals=results[3];
   const totals={draft:notes.filter(n=>n.status==='rascunho').length,
     authorized:notes.filter(n=>n.status==='autorizada').length,
     rejected:notes.filter(n=>n.status==='rejeitada').length};
@@ -97,7 +98,23 @@ async function fiscalView(){
           (n.status==='rascunho'?bt('Vincular pagamento',"bfxLinkPayment('"+n.id+"')",'btn ghost sm'):'')+
           (n.status==='autorizada'&&n.chave_acesso?bt('Enviar NFS-e por WhatsApp',"bfNfseWhatsApp('"+n.id+"')",'btn ghost sm'):'')];
       })));
-  el.innerHTML=badge+summary+settings+draft+history;
+  const imported=card('Compartilhar nota emitida no portal oficial',
+    '<p class="sub">Se você emitiu a NFS-e no Portal Nacional ou no município, anexe o DANFSe original e encaminhe pelo WhatsApp. O BlackFlow não atesta a autenticidade dos documentos importados.</p>'+
+    row('<label style="flex:2"><small>Paciente</small>'+ 
+      '<select id="bfx-ext-patient" class="inp" style="width:100%">'+
+      (S.pacientes||[]).map(p=>'<option value="'+html(p.id)+'">'+html(p.nome)+'</option>').join('')+'</select></label>'+
+      field('bfx-ext-number','Número da NFS-e')+field('bfx-ext-key','Chave de acesso (se disponível)'))+
+    row('<label><small>Origem</small>'+opt('bfx-ext-origin',[['portal_oficial','Emissor Nacional'],['portal_municipal','Emissor municipal']],'portal_oficial')+'</label>'+
+      '<label style="flex:2"><small>DANFSe em PDF</small><input class="inp" type="file" id="bfx-ext-file" accept=".pdf,application/pdf" style="width:100%"></label>')+
+    '<p><label><input type="checkbox" id="bfx-ext-confirm"> Confirmo que obtive este documento do emissor fiscal e que devo conferir seus dados e autenticidade.</label></p>'+
+    bt('Salvar documento fiscal importado','bfxImportarDanfse()')+
+    '<h4>Documentos importados</h4>'+
+    table(['Paciente','Número','Data','Validação','Ação'],externals.map(d=>[
+      html(d.paciente_nome||'—'),html(d.numero_nfse||'—'),
+      html(new Date(d.criado_em).toLocaleDateString('pt-BR')),'Não verificada',
+      bt('Enviar PDF por WhatsApp',"bfxWhatsAppDanfse('"+d.id+"')",'btn ghost sm')
+    ])));
+  el.innerHTML=badge+summary+settings+draft+imported+history;
  }catch(e){el.innerHTML='<div class="note">Não foi possível carregar o módulo fiscal: '+html(e.message||e)+'</div>'}
 }
 const prevRender=render;
@@ -203,4 +220,51 @@ window.bfxExportCsv=function(){
  notes.forEach(n=>lines.push([n.criado_em,n.descricao_servico,n.valor,n.status,n.numero_nfse,n.chave_acesso].map(clean).join(sep)));
  download('blackflow_nfse_'+todayISO()+'.csv',new Blob(['\uFEFF'+lines.join('\r\n')],{type:'text/csv;charset=utf-8'}));
 };
+}
+window.bfxImportarDanfse=async function(){
+ try{
+  await ensureAuthorized();
+  const file=document.getElementById('bfx-ext-file')?.files?.[0],patientRef=val('bfx-ext-patient');
+  if(!document.getElementById('bfx-ext-confirm')?.checked)throw Error('Confirme a procedência do PDF.');
+  if(!file||file.size<100||file.size>15728640||!file.name.toLowerCase().endsWith('.pdf'))throw Error('Envie um PDF válido até 15 MB.');
+  if(new TextDecoder().decode(await file.slice(0,5).arrayBuffer())!=='%PDF-')throw Error('O arquivo não possui cabeçalho PDF.');
+  const key=val('bfx-ext-key').replace(/\s/g,'');
+  if(key&&(!/^[A-Za-z0-9]{40,60}$/.test(key)))throw Error('Confira a chave de acesso informada.');
+  const p=S.pacientes.find(x=>String(x.id)===String(patientRef));
+  if(!p)throw Error('Selecione um cliente cadastrado.');
+  const path=clinic()+'/'+NV.sessao.user.id+'/externo/'+crypto.randomUUID()+'.pdf';
+  const storage=await NV.sb.storage.from('bf-nfse-documentos').upload(path,file,{upsert:false,contentType:'application/pdf'});
+  if(storage.error)throw storage.error;
+  const db=await NV.sb.from('bf_fiscal_documentos_externos').insert({
+   clinica_id:clinic(),criado_por:NV.sessao.user.id,paciente_ref:String(p.id),paciente_nome:p.nome,
+   chave_acesso:key||null,numero_nfse:val('bfx-ext-number')||null,
+   origem:val('bfx-ext-origin')||'portal_oficial',pdf_storage_path:path,situacao_validacao:'nao_verificada'
+  });
+  if(db.error)throw db.error;
+  toast('PDF da nota anexado. A autenticidade não foi validada pelo BlackFlow.');render();
+ }catch(e){notify(e)}
+};
+window.bfxWhatsAppDanfse=async function(docId){
+ try{
+  await ensureAuthorized();
+  const r=await NV.sb.from('bf_fiscal_documentos_externos')
+    .select('id,paciente_ref,paciente_nome,chave_acesso,numero_nfse,pdf_storage_path,situacao_validacao')
+    .eq('id',docId).eq('clinica_id',clinic()).single();
+  if(r.error)throw r.error;const d=r.data;
+  const p=S.pacientes.find(x=>String(x.id)===String(d.paciente_ref));
+  if(!p?.celular)throw Error('Cadastre o WhatsApp do tomador na ficha.');
+  const fileResp=await NV.sb.storage.from('bf-nfse-documentos').download(d.pdf_storage_path);
+  if(fileResp.error)throw fileResp.error;
+  const pdf=new File([fileResp.data],'danfse_'+String(d.numero_nfse||'documento').replace(/[^A-Za-z0-9_-]/g,'')+'.pdf',{type:'application/pdf'});
+  const link=d.chave_acesso?' https://www.nfse.gov.br/consultapublica/?chave='+encodeURIComponent(d.chave_acesso)+'&tpc=1':'';
+  const message='Olá, '+(d.paciente_nome||p.nome)+'. Segue o documento fiscal da clínica, obtido no portal de emissão. Confira a autenticidade no Portal Nacional da NFS-e.'+link;
+  if(navigator.share&&(!navigator.canShare||navigator.canShare({files:[pdf]}))){
+    await navigator.share({files:[pdf],text:message,title:'NFS-e / DANFSe'});return;
+  }
+  download(pdf.name,fileResp.data);
+  window.open(waLink(p.celular,message+' Anexe o PDF baixado nesta conversa.'),'_blank','noopener,noreferrer');
+  toast('Arquivo baixado. Anexe-o manualmente ao WhatsApp.');
+ }catch(e){if(e?.name!=='AbortError')notify(e)}
+};
+
 })();
