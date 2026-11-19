@@ -4,8 +4,9 @@
 if(typeof SEGMENTOS==='undefined')return;
 SEGMENTOS.odontologia={nome:'Odontologia',pessoa:'Paciente',pessoas:'Pacientes',desc:'Prontuários, odontogramas, exames, convênios e rastreabilidade de materiais.'};
 SEGMENTOS.biomedicina={nome:'Biomedicina',pessoa:'Paciente',pessoas:'Pacientes',desc:'Biomedicina Estética: procedimentos, prontuários, imagens e controle de produtos.'};
+SEGMENTOS.medicina={nome:'Medicina',pessoa:'Paciente',pessoas:'Pacientes',desc:'Consultórios médicos, prontuários individuais e receitas simples em PDF para conferência e assinatura pelo médico com CRM.'};
 const views=['bfclinico','bfcatalogo','bfconvenios','bflotes','bffiscal'];
-const clinical=()=>['odontologia','biomedicina'].includes(S.config.segmento);
+const clinical=()=>['odontologia','biomedicina','medicina'].includes(S.config.segmento);
 const admin=()=>NV.papel==='admin'||!!NV.mestre;
 const cn=()=>NV.clinicaId;
 const h=s=>esc(String(s??''));
@@ -44,7 +45,7 @@ window.bfCatalogImport=async function(){
  }catch(e){err(e)}
 };
 async function catalog(){
- if(!clinical())return body(note('Disponível para Odontologia e Biomedicina.'));
+ if(!clinical())return body(note('Disponível para Odontologia, Biomedicina e Medicina.'));
  const l=await sel('bf_catalogo_servicos','codigo,categoria,nome,observacao',{segmento:S.config.segmento});
  const groups=[...new Set(l.map(x=>x.categoria))];
  body(note('Catálogo inicial: cada serviço exige habilitação profissional e conformidade com as normas dos conselhos. Preços e tempos devem ser definidos pela clínica.')+
@@ -53,12 +54,12 @@ async function catalog(){
 }
 async function clinicalHome(){
  if(!clinical())return body(note('Disponível somente para os segmentos clínicos.'));
- const professionals=await sel('bf_profissionais','id,nome,user_id,conselho,inscricao,uf,ativo',{clinica_id:cn()});
+ const professionals=await sel('bf_profissionais','id,nome,user_id,conselho,inscricao,uf,ativo',{clinica_id:cn(),segmento:S.config.segmento});
  const active=professionals.some(p=>p.user_id===who()&&p.ativo);
  let display='';
  if(!active){
   display+=note('<b>Acesso clínico restrito.</b> Cadastre o profissional vinculado à conta antes de visualizar prontuários. O cadastro informado deve ser validado documentalmente pelo responsável da clínica.');
-  if(admin())display+=box('Cadastro de profissional',flex(field('bfnome','Nome completo')+field('bfregistro','Número CRO/CRBM')+field('bfuf','UF do conselho'))+
+  if(admin())display+=box('Cadastro de profissional',flex(field('bfnome','Nome completo')+field('bfregistro','Número '+(S.config.segmento==='medicina'?'CRM':S.config.segmento==='odontologia'?'CRO':'CRBM'))+field('bfuf','UF do conselho'))+
     field('bfhab','Habilitações registradas, separadas por vírgula')+button('Cadastrar','bfSaveProfessional()'));
   return body(display);
  }
@@ -72,9 +73,9 @@ window.bfSaveProfessional=async function(){
  if(!admin())return toast('Apenas administradores.');
  try{
   const nome=get('bfnome'),inscricao=get('bfregistro'),uf=get('bfuf').toUpperCase();
-  if(nome.length<4||!inscricao||!/^[A-Z]{2}$/.test(uf))return toast('Confira nome, registro e UF.');
+  if(nome.length<4||!inscricao||!/^[A-Z]{2}$/.test(uf)||S.config.segmento==='medicina'&&!/^\d{1,10}$/.test(inscricao))return toast('Confira nome, CRM/registro e UF.');
   await add('bf_profissionais',{clinica_id:cn(),user_id:who(),segmento:S.config.segmento,nome,inscricao,uf,
-    conselho:S.config.segmento==='odontologia'?'CRO':'CRBM',habilitacoes:get('bfhab').split(',').map(x=>x.trim()).filter(Boolean)});
+    conselho:S.config.segmento==='odontologia'?'CRO':S.config.segmento==='medicina'?'CRM':'CRBM',habilitacoes:get('bfhab').split(',').map(x=>x.trim()).filter(Boolean)});
   toast('Profissional cadastrado. Documentos de habilitação devem ser conferidos.');render();
  }catch(e){err(e)}
 };
@@ -249,7 +250,7 @@ render=function(){
 const originalSegmento=escolherSegmento;
 escolherSegmento=function(k){
  const anterior=S.config.segmento;originalSegmento(k);
- if(['odontologia','biomedicina'].includes(k)&&S.config.segmento===k&&anterior!==k){
+ if(['odontologia','biomedicina','medicina'].includes(k)&&S.config.segmento===k&&anterior!==k){
   setTimeout(()=>{if(S.config.segmento===k&&NV.ativa&&NV.sessao)window.bfCatalogImport()},2200);
  }
 };

@@ -1,17 +1,41 @@
-/* BlackFlow web: busca sempre a versão mais nova e usa a cópia guardada só quando estiver sem internet */
-const CACHE = 'blackflow-v14';
-const BASE = ['./', 'index.html', 'manifest.webmanifest', 'icone-192.png', 'icone-512.png'];
-self.addEventListener('install', e => { e.waitUntil(caches.open(CACHE).then(c => c.addAll(BASE)).then(() => self.skipWaiting())); });
-self.addEventListener('activate', e => { e.waitUntil(caches.keys().then(keys=>Promise.all(keys.filter(k=>k.startsWith('blackflow-v')&&k!==CACHE).map(k=>caches.delete(k)))).then(()=>self.clients.claim())); });
-self.addEventListener('fetch', e => {
-  const req = e.request;
-  if (req.method !== 'GET') return;
-  const url = new URL(req.url);
-  const proprio = url.origin === location.origin;
-  const biblioteca = /cdnjs\.cloudflare\.com|cdn\.jsdelivr\.net|fonts\.(googleapis|gstatic)\.com/.test(url.host);
-  if (!proprio && !biblioteca) return;
-  e.respondWith(fetch(req).then(r => {
-    if (r && r.ok) { const copia = r.clone(); caches.open(CACHE).then(c => c.put(req, copia)); }
-    return r;
-  }).catch(() => caches.match(req).then(r => r || caches.match('index.html'))));
+/* BlackFlow 1.16.0: network-first, no patient/token caching, safe offline handling */
+const CACHE='blackflow-v16-20261119';
+const BASE=['./','index.html','manifest.webmanifest','icone-192.png','icone-512.png'];
+self.addEventListener('install',event=>{
+ event.waitUntil(caches.open(CACHE)
+  .then(cache=>Promise.allSettled(BASE.map(path=>cache.add(path))))
+  .then(()=>self.skipWaiting()));
+});
+self.addEventListener('activate',event=>{
+ event.waitUntil(caches.keys()
+  .then(keys=>Promise.all(keys.filter(k=>k.startsWith('blackflow-v')&&k!==CACHE).map(k=>caches.delete(k))))
+  .then(()=>self.clients.claim()));
+});
+const STATIC=/\.(?:js|css|html|webmanifest|png|jpg|jpeg|gif|svg|webp|ico|woff2?)$/i;
+self.addEventListener('fetch',event=>{
+ const request=event.request;
+ if(request.method!=='GET')return;
+ const url=new URL(request.url);
+ if(url.origin!==self.location.origin||url.searchParams.has('token')||url.pathname.includes('/validar/'))return;
+ const navigation=request.mode==='navigate';
+ if(!navigation&&!STATIC.test(url.pathname))return;
+ event.respondWith((async()=>{
+  try{
+   const response=await fetch(request,{cache:'no-store'});
+   if(response.ok){
+    const copy=response.clone();
+    event.waitUntil(caches.open(CACHE).then(cache=>cache.put(request,copy)).catch(()=>{}));
+   }
+   return response;
+  }catch(_){
+   const cached=await caches.match(request);
+   if(cached)return cached;
+   if(navigation){
+    const fallback=await caches.match(new URL('index.html',self.registration.scope).href);
+    if(fallback)return fallback;
+    return new Response('BlackFlow temporariamente offline. Reconecte-se para atualizar.',{status:503,headers:{'Content-Type':'text/plain; charset=utf-8'}});
+   }
+   return Response.error(); // Never serve HTML instead of a JavaScript asset
+  }
+ })());
 });

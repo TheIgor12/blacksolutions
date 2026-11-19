@@ -1,4 +1,5 @@
 {
-  "versao": "1.14.0",
-  "novidades": "Cadastro Fiscal (CNPJ) em Configurações para clínicas novas e antigas. Consulta dos dados públicos do CNPJ, sincronização segura entre estabelecimento e NFS-e, confirmação e histórico de troca, preenchimento de CNAE/IBGE quando disponíveis e correção da gravação na tela de Nota Fiscal. Emissão automática ainda depende de credenciamento, certificado/procuração e homologação."
+  "versao": "1.16.0",
+  "data": "2026-11-19",
+  "novidades": "Atualização nacional 1.16.0: correção do indicador de versão e cache PWA; módulo Medicina com CRM/UF, prontuários, receitas simples estruturadas em PDF para revisão e assinatura; módulos fiscal multiempresa com roteamento para 27 UFs, consulta IBGE e simulações; QR de consulta e acesso ITI/SNCR. A emissão real de NFS-e e de receitas controladas permanece condicionada às credenciais e integrações oficiais."
 }

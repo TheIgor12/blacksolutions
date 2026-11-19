@@ -2,7 +2,7 @@
 (function(){
 'use strict';
 if(typeof render!=='function'||typeof vConfig!=='function'||typeof menuItens!=='function')return;
-const segments=['podologia','odontologia','biomedicina'];
+const segments=['podologia','odontologia','biomedicina','medicina'];
 const scope=()=>segments.includes(S.config.segmento);
 const cid=()=>NV.clinicaId,uid=()=>NV.sessao&&NV.sessao.user&&NV.sessao.user.id;
 const seg=()=>S.config.segmento;
@@ -69,7 +69,7 @@ async function upload(file,name){const r=await NV.sb.storage.from(BUCKET).upload
 async function downloadPDF(name){const r=await NV.sb.storage.from(BUCKET).download(name);if(r.error)throw r.error;return r.data;}
 const path=kind=>cid()+'/'+uid()+'/'+kind+'/'+crypto.randomUUID()+'.pdf';
 const safeName=x=>String(x||'documento').normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^A-Za-z0-9_-]+/g,'_').slice(0,50);
-const warnings=()=>seg()==='odontologia'?'Receitas sujeitas a controle especial devem seguir a Anvisa e os serviços oficiais do CFO.':seg()==='biomedicina'?'Prescrição restrita à habilitação profissional e às normas CFBM/Anvisa; não abrange tratamento indiscriminado de doenças ou deficiência vitamínica.':'Em Podologia, utilize orientações e encaminhamentos; o sistema não autoriza prescrição de medicamentos.';
+const warnings=()=>seg()==='medicina'?'Medicina: apenas receitas simples em rascunho. Necessário CRM/UF e assinatura adequada. Controlados e notificações exigem SNCR e não são emitidos neste módulo.':seg()==='odontologia'?'Receitas sujeitas a controle especial devem seguir a Anvisa e os serviços oficiais do CFO.':seg()==='biomedicina'?'Prescrição restrita à habilitação profissional e às normas CFBM/Anvisa; não abrange tratamento indiscriminado de doenças ou deficiência vitamínica.':'Em Podologia, utilize orientações e encaminhamentos; o sistema não autoriza prescrição de medicamentos.';
 const configLink=()=>btn('Configurar modelo PDF',"UI.cfgTab='receituario';go('config')");
 async function config(){
  try{
@@ -103,7 +103,7 @@ async function renderAdmin(){
       '<label><small>Membro da clínica</small>'+choice(selectId,options)+'</label>'+
       '<p>'+btn('Autorizar membro',"bfRecGrantMember(true)")+' '+btn('Revogar autorização',"bfRecGrantMember(false)")+'</p>';
   }else{
-   html='<p class="sub">Cadastre o profissional habilitado, vinculado ao login dele. Confirme documentalmente a inscrição e as habilitações no CRO/CRBM antes de autorizar uso.</p>'+
+   html='<p class="sub">Cadastre o profissional habilitado, vinculado ao login dele. Confirme documentalmente o CRM, CRO ou CRBM e a habilitação antes de autorizar uso.</p>'+
     '<label><small>Login do profissional</small>'+choice(selectId,options)+'</label>'+
     row(field('bfrec-pro-name','Nome profissional')+field('bfrec-pro-reg','Número do conselho')+field('bfrec-pro-uf','UF do conselho'))+
     '<p>'+btn('Cadastrar e ativar',"bfRecRegisterProfessional()")+'</p>';
@@ -128,9 +128,9 @@ window.bfRecRegisterProfessional=async function(){
  try{
   if(NV.papel!=='admin'||seg()==='podologia')throw Error('Somente administrador do segmento clínico.');
   const user_id=read('bfrec-member'),nome=read('bfrec-pro-name'),inscricao=read('bfrec-pro-reg'),uf=read('bfrec-pro-uf').toUpperCase();
-  if(!user_id||nome.length<4||!inscricao||!/^[A-Z]{2}$/.test(uf))throw Error('Confira usuário, nome, registro e UF.');
+  if(!user_id||nome.length<4||!inscricao||!/^[A-Z]{2}$/.test(uf)||(seg()==='medicina'&&!/^\d{1,10}$/.test(inscricao)))throw Error('Confira usuário, nome, CRM/registro e UF.');
   const r=await NV.sb.from('bf_profissionais').upsert({
-   clinica_id:cid(),user_id,segmento:seg(),nome,inscricao,uf,conselho:seg()==='odontologia'?'CRO':'CRBM',habilitacoes:[],ativo:true
+   clinica_id:cid(),user_id,segmento:seg(),nome,inscricao,uf,conselho:seg()==='odontologia'?'CRO':seg()==='medicina'?'CRM':'CRBM',habilitacoes:[],ativo:true
   },{onConflict:'clinica_id,user_id,segmento'});
   if(r.error)throw r.error;toast('Profissional cadastrado. Verifique documentos de habilitação.');config();
  }catch(e){fail(e)}
@@ -147,12 +147,18 @@ window.bfRecSaveModel=async function(){
  try{
   if(!await allowed())throw Error('Sem autorização profissional.');
   const file=document.getElementById('bfrec-model-file')?.files?.[0];
-  const name=read('bfrec-name'),top=Number(read('bfrec-top')||140),bottom=Number(read('bfrec-bottom')||65);
+  let name=read('bfrec-name'),registration=read('bfrec-reg'),top=Number(read('bfrec-top')||140),bottom=Number(read('bfrec-bottom')||65);
+  if(seg()==='medicina'){
+   const profs=await list('bf_profissionais','nome,conselho,inscricao,uf,ativo',{clinica_id:cid(),user_id:uid(),segmento:'medicina'});
+   const prof=profs[0];
+   if(!prof?.ativo||prof.conselho!=='CRM'||!/^\d{1,10}$/.test(prof.inscricao||'')||!/^[A-Z]{2}$/.test(prof.uf||''))throw Error('Médico com CRM/UF é obrigatório no cadastro.');
+   name=prof.nome;registration='CRM/'+prof.uf+' '+prof.inscricao;
+  }
   if(name.length<4||top<60||top>330||bottom<30||bottom>180)throw Error('Confira o nome e margens.');
   if(!file&&!model)throw Error('Selecione o PDF em branco.');
   let filePath=model?.pdf_path;
   if(file){await validPDF(file);filePath=path('modelos');await upload(file,filePath);}
-  const record={clinica_id:cid(),user_id:uid(),segmento:seg(),profissional_nome:name,identificacao_profissional:read('bfrec-reg')||null,pdf_path:filePath,margem_superior:top,margem_inferior:bottom,atualizado_em:new Date().toISOString()};
+  const record={clinica_id:cid(),user_id:uid(),segmento:seg(),profissional_nome:name,identificacao_profissional:registration||null,pdf_path:filePath,margem_superior:top,margem_inferior:bottom,atualizado_em:new Date().toISOString()};
   const r=await NV.sb.from('bf_receituario_modelos').upsert(record,{onConflict:'clinica_id,user_id,segmento'}).select();if(r.error)throw r.error;
   model=r.data[0];toast('Modelo de receituário salvo para este profissional.');config();
  }catch(e){fail(e)}
@@ -202,8 +208,13 @@ async function home(){
   if(model){
    body+=card('Novo documento',
     '<label><small>Paciente</small>'+choice('bfrec-paciente',(S.pacientes||[]).map(p=>[p.id,p.nome]))+'</label>'+
-    '<label style="display:block;margin:12px 0"><small>Tipo de documento</small>'+choice('bfrec-tipo',seg()==='podologia'?[['orientacoes','Orientações'],['encaminhamento','Encaminhamento']]:[['receituario_simples','Receituário comum (rascunho)'],['orientacoes','Orientações'],['encaminhamento','Encaminhamento']])+'</label>'+
-    '<label><small>Texto para inserir no papel timbrado</small><textarea id="bfrec-texto" maxlength="8000" class="inp" style="width:100%;min-height:180px"></textarea></label>'+
+    '<label style="display:block;margin:12px 0"><small>Tipo de documento</small>'+choice('bfrec-tipo',seg()==='podologia'?[['orientacoes','Orientações'],['encaminhamento','Encaminhamento']]:[['receituario_simples',seg()==='medicina'?'Receita médica simples (rascunho)':'Receituário comum (rascunho)'],['orientacoes','Orientações'],['encaminhamento','Encaminhamento']])+'</label>'+
+    (seg()==='medicina'?
+     '<p class="sub">Este formulário gera apenas rascunho de receita simples. Não emita antimicrobianos sujeitos a retenção, notificações ou controlados por este módulo.</p>'+
+     row(field('bfrec-med','Medicamento (denominação)')+field('bfrec-apresentacao','Concentração e forma farmacêutica'))+
+     row(field('bfrec-via','Via de administração')+field('bfrec-posologia','Dose, frequência e horários'))+
+     row(field('bfrec-duracao','Duração do tratamento')+field('bfrec-quantidade','Quantidade a dispensar')):'')+
+    '<label><small>Observações, orientações ou texto do documento</small><textarea id="bfrec-texto" maxlength="8000" class="inp" style="width:100%;min-height:180px"></textarea></label>'+
     '<p><label><input type="checkbox" id="bfrec-responsavel"> Declaro que o conteúdo foi revisado por mim e está dentro da minha competência profissional.</label></p>'+
     btn('Gerar rascunho PDF','bfRecGenerate()'));
   }
@@ -230,8 +241,22 @@ window.bfRecGenerate=async()=>{
  try{
   if(!await allowed())throw Error('Sem autorização.');if(!model)throw Error('Cadastre o PDF em Configurações.');
   if(!document.getElementById('bfrec-responsavel')?.checked)throw Error('Confirme a responsabilidade profissional.');
-  const p=person(read('bfrec-paciente')),tipo=read('bfrec-tipo'),texto=read('bfrec-texto');
-  if(!p||texto.length<5||texto.length>8000)throw Error('Informe o paciente e o texto.');
+  const p=person(read('bfrec-paciente')),tipo=read('bfrec-tipo');
+  let texto=read('bfrec-texto');
+  if(seg()==='medicina'){
+   const profs=await list('bf_profissionais','nome,conselho,inscricao,uf,ativo',{clinica_id:cid(),user_id:uid(),segmento:'medicina'});
+   const prof=profs[0];
+   if(!prof?.ativo||prof.conselho!=='CRM'||!/^\d{1,10}$/.test(prof.inscricao||'')||!/^[A-Z]{2}$/.test(prof.uf||''))throw Error('Cadastre um médico com CRM e UF antes de criar a receita.');
+   const crm='CRM/'+prof.uf+' '+prof.inscricao;
+   if(model.profissional_nome!==prof.nome||model.identificacao_profissional!==crm)throw Error('Atualize o papel timbrado para coincidir com o CRM do médico cadastrado.');
+   if(tipo==='receituario_simples'){
+    const med=read('bfrec-med'),apresentacao=read('bfrec-apresentacao'),via=read('bfrec-via'),posologia=read('bfrec-posologia'),duracao=read('bfrec-duracao'),quantidade=read('bfrec-quantidade');
+    if([med,apresentacao,via,posologia,duracao,quantidade].some(x=>x.length<2))throw Error('Preencha medicamento, apresentação, via, posologia, duração e quantidade.');
+    texto=['PRESCRICAO MEDICA SIMPLES (RASCUNHO)','Medicamento: '+med,'Apresentacao/concentracao: '+apresentacao,'Via: '+via,'Posologia: '+posologia,'Duracao: '+duracao,'Quantidade: '+quantidade, texto?'Observacoes: '+texto:''].filter(Boolean).join('\n');
+   }
+   if(tipo!=='receituario_simples'&&!['orientacoes','encaminhamento'].includes(tipo))throw Error('Tipo médico não habilitado.');
+  }
+  if(!p||texto.length<5||texto.length>8000)throw Error('Informe o paciente e o conteúdo do documento.');
   const token=newVerificationToken();
   const verifyUrl=BF_VERIFY_URL+'?token='+encodeURIComponent(token);
   const pdf=await generate(await downloadPDF(model.pdf_path),p,texto,tipo,verifyUrl);
