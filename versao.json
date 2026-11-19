@@ -1,4 +1,4 @@
 {
-  "versao": "1.12.0",
-  "novidades": "Receituário individual para Podologia, Odontologia e Biomedicina, com PDF de identidade visual profissional em Configurações, rascunhos, anexação de PDFs assinados externamente e compartilhamento manual pelo WhatsApp. NFS-e autorizadas podem ser compartilhadas pela consulta pública oficial. Emissão automática de NFS-e e validação de assinaturas profissionais ainda exigem homologação e integração."
+  "versao": "1.12.1",
+  "novidades": "Auditoria e ajustes de segurança do fluxo de assinatura Asaas: idempotência nas confirmações e prevenção de acesso clínico pelo plano antigo. Odontologia e Biomedicina aguardam definição do valor mensal único e dos links Asaas recorrentes. Mantém receituários e NFS-e em preparação, sem emissão automática."
 }
