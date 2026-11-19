@@ -4021,6 +4021,7 @@ async function fotoAdd(pid,input){const fs=[...input.files];input.value='';if(!f
  const tipos=FOTO_TIPOS[fotoSegK()]||FOTO_TIPOS.podologia;
  FA.tipo=tipos[0][0]; FA.area=''; FA.momento='Antes'; FA.proc='';
  const procs=fotoProcs(pid), doDia=procs.filter(x=>x.hoje);
+ window.bfPhotoOrigin={view:UI.view,param:UI.param,pid};
  if(doDia.length){FA.proc=doDia[0].n; FA.tipo='proc'}
  const html=`<h3>Foto de ${esc(nomePessoa(p.nome))}</h3>
  <div class="fapre">${FA.urls.map((u,i)=>u?`<img src="${u}" alt="foto ${i+1}">`:'').join('')}
@@ -4058,7 +4059,8 @@ async function faSalvar(){
   S.fotos.push({id,pacienteId:pid,data,area,momento:FA.momento||'',proc,obs,thumb,arq:1,tipo:FA.tipo});n++}
   catch(e){toast('Não foi possível ler '+f.name)}}
  faLimpa();save();render();
- toast(n+(n===1?' foto guardada em ':' fotos guardadas em ')+area)}
+ toast(n+(n===1?' foto guardada em ':' fotos guardadas em ')+area);
+ if(n>0&&typeof bfPhotoChoice==='function')bfPhotoChoice(pid);}
 /* Atalho que a profissional usa durante o atendimento: abre com a câmera a um
    toque, sem procurar a paciente e sem passar pela galeria do aparelho. */
 function fotoDoAtendimento(pid){const p=pac(pid);if(!p)return;
@@ -4067,7 +4069,7 @@ function fotoDoAtendimento(pid){const p=pac(pid);if(!p)return;
  <p class="sub" style="margin-bottom:14px">No celular, Tirar foto abre a câmera na hora. A imagem vai direto para a ficha, sem passar pela galeria.</p>
  <div class="card" style="margin:0 0 10px"><b>Foto do tratamento</b>
   <p class="sub" style="margin:4px 0 10px">Entra na aba Fotos da paciente, com data, área e momento. É a que serve para comparar antes e depois.</p>
-  ${fotoBotoes(`${emCima?'fecha2()':'closeModal()'};fotoAdd('${pid}',this)`,'Tirar foto agora',1)}</div>
+  ${fotoBotoes(`fotoAdd('${pid}',this)`,'Tirar foto agora',1)}</div>
  <div class="card" style="margin:0"><b>Foto de perfil</b>
   <p class="sub" style="margin:4px 0 10px">É a que aparece no agendamento e na lista de pacientes, para reconhecer quem chegou.</p>
   ${fotoBotoes(`${emCima?'fecha2()':'closeModal()'};fotoPerfilSalvar('${pid}',this,0)`,p.foto?'Trocar a foto de perfil':'Tirar foto de perfil')}</div>
@@ -4827,7 +4829,7 @@ function agNovo(a,s){if(s==='Desmarcado'||s==='Faltou')return false;const k=a.da
  const hist=c=>S[c].some(x=>x.pacienteId===a.pacienteId&&((x.data||x.vencimento||x.pagamento||'')<a.data)&&(x.data||x.vencimento||x.pagamento));
  return !hist('evolucoes')&&!hist('tratamentos')&&!S.lancamentos.some(l=>l.pacienteId===a.pacienteId&&l.pagamento&&l.pagamento<a.data)}
 /* ============ Atualização: aviso com botão Atualizar agora ============ */
-const VERSAO_APP='1.20.0';const URL_VERSAO_JSON='https://raw.githubusercontent.com/TheIgor12/blacksolutions/main/versao.json';
+const VERSAO_APP='1.21.0';const URL_VERSAO_JSON='https://raw.githubusercontent.com/TheIgor12/blacksolutions/main/versao.json';
 const numV=v=>String(v||'0').split(/\D+/).filter(Boolean).map(Number);
 function versaoMaior(a,b){const x=numV(a),y=numV(b);for(let i=0;i<Math.max(x.length,y.length);i++){const d=(x[i]||0)-(y[i]||0);if(d)return d>0}return false}
 const ATU={nova:null,timer:null};
@@ -5426,7 +5428,7 @@ function telaCopiaNaoAutorizada(){
   if(!origemAutorizada()){telaCopiaNaoAutorizada();return}}
  try{navigator.storage&&navigator.storage.persist&&navigator.storage.persist()}catch(e){}
  try{fonteAplicar()}catch(e){}
- try{if(/^https?:/.test(location.protocol)&&'serviceWorker' in navigator&&!window.pywebview)navigator.serviceWorker.register('./sw.js?v=1.20.0',{updateViaCache:'none'}).then(r=>r.update()).catch(()=>{})}catch(e){}
+ try{if(/^https?:/.test(location.protocol)&&'serviceWorker' in navigator&&!window.pywebview)navigator.serviceWorker.register('./sw.js?v=1.21.0',{updateViaCache:'none'}).then(r=>r.update()).catch(()=>{})}catch(e){}
  if(NV.ativa){
   if(!window.supabase||!window.supabase.createClient){UI.auth={modo:'offline',temCache:!!(await DB.get('ultimo'))};render();return}
   NV.sb=window.supabase.createClient(NUVEM.url,NUVEM.chave,{auth:{persistSession:true,autoRefreshToken:true}});
@@ -5477,12 +5479,14 @@ function agProf(nome){UI.profOff={};if(nome){S.profissionais.forEach(p=>{if(norm
 function menuProfs(){const L=az(S.profissionais.filter(p=>p.ativo!==false));if(!L.length)return '';const sel=UI.view==='agenda'?(UI.agProf||''):null;
  return `<div class="msec">AGENDA POR PROFISSIONAL</div><button class="${sel===''&&UI.view==='agenda'?'on':''}" onclick="agProf('')">${ico('cal',18)} Todos os profissionais</button>${L.map(p=>`<button class="${sel!=null&&norm(sel)===norm(p.nome)?'on':''}" onclick="agProf(${esc(JSON.stringify(p.nome))})"><span style="display:inline-block;width:12px;height:12px;border-radius:50%;background:${esc(p.cor||'#0a4bde')};margin:0 3px;flex:none"></span> ${esc(p.nome)}</button>`).join('')}`}
 </script>
-<script src="./bf-clinical.js?v=1.20.0"></script>
-<script src="./bf-fiscal-advanced.js?v=1.20.0"></script>
-<script src="./bf-receituario.js?v=1.20.0"></script>
-<script src="./bf-cadastro-fiscal.js?v=1.20.0"></script>
-<script src="./bf-context-actions.js?v=1.20.0"></script>
-<script src="./bf-integrity-audit.js?v=1.20.0"></script>
-<script src="./bf-blackpay-integrated.js?v=1.20.0"></script>
+<script src="./bf-clinical.js?v=1.21.0"></script>
+<script src="./bf-fiscal-advanced.js?v=1.21.0"></script>
+<script src="./bf-receituario.js?v=1.21.0"></script>
+<script src="./bf-cadastro-fiscal.js?v=1.21.0"></script>
+<script src="./bf-context-actions.js?v=1.21.0"></script>
+<script src="./bf-integrity-audit.js?v=1.21.0"></script>
+<script src="./bf-blackpay-integrated.js?v=1.21.0"></script>
+<script src="./bf-tati-help.js?v=1.21.0"></script>
+<script src="./bf-mobile-photos.js?v=1.21.0"></script>
 </body>
 </html>
