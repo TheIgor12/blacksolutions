@@ -1,4 +1,4 @@
-/* BlackFlow Fiscal 1.11.0: configuração, rascunhos, validação e conciliação.
+/* BlackFlow Fiscal 1.18.0: configuração, rascunhos, validação e conciliação.
    Emissão NFS-e Nacional requer certificado, XML assinado, mTLS, homologação e integração ativa. */
 (function(){
 "use strict";
@@ -335,9 +335,11 @@ window.bfxUsePayment=function(){
  if(!l)return toast('Selecione o lançamento.');
  const linked={bfxDesc:l.descricao||'Serviço prestado',bfxValor:l.valor||'',bfxForma:l.forma||'',bfxComp:l.pagamento||l.vencimento||''};
  Object.entries(linked).forEach(([id,value])=>{const el=document.getElementById(id);if(el)el.value=value;});
- const p=S.pacientes.find(p=>p.id===l.pacienteId);
- if(p){const n=document.getElementById('bfxTomador'),d=document.getElementById('bfxDoc');
-   if(n)n.value=p.nome||'';if(d)d.value=p.cpf||'';}
+ const p=S.pacientes.find(p=>String(p.id)===String(l.pacienteId));
+ if(p){const selector=document.getElementById('bfxPaciente');if(selector)selector.value=String(p.id);
+   if(typeof window.bfxPickPatient==='function')window.bfxPickPatient();
+   const n=document.getElementById('bfxTomador'),d=document.getElementById('bfxDoc'),e=document.getElementById('bfxEmail');
+   if(n)n.value=p.nome||'';if(d)d.value=p.cpf||p.cnpj||'';if(e)e.value=p.email||'';}
  toast('Preenchido com o lançamento. Confirme os valores e a competência.');
 };
 window.bfxCreateDraft=async function(){
