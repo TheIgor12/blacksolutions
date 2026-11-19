@@ -48,6 +48,17 @@ async function fiscalView(){
     '<br><a href="https://www.nfse.gov.br/EmissorNacional" target="_blank" rel="noopener">Abrir o Emissor Nacional de NFS-e</a></div>';
   const summary='<div class="grid g3">'+[['Rascunhos',totals.draft],['Notas autorizadas importadas',totals.authorized],['Rejeições registradas',totals.rejected]].map(([name,n])=>'<div class="card"><small>'+name+'</small><h2 style="font-size:25px;margin:4px 0">'+n+'</h2></div>').join('')+'</div>';
   const configured=cfg.situacao_integracao||'nao_configurada';
+  const diagnostico=card('Homologação e sincronização fiscal — diagnóstico',
+    '<p class="sub">Conferência dos pré-requisitos. Nenhuma nota será transmitida por este diagnóstico.</p>'+
+    '<p><b>Integração:</b> '+html(cfg.situacao_integracao||'nao_configurada')+
+      (cfg.habilitado?' — cadastro técnico habilitado':' — emissão por API bloqueada')+'</p>'+
+    '<p><b>Emitente:</b> '+(cfg.cnpj?'CNPJ associado':'CNPJ pendente')+
+      ' · <b>IBGE:</b> '+(cfg.municipio_ibge?'informado':'pendente')+
+      ' · <b>Código serviço:</b> '+(cfg.ctrib_nacional||cfg.codigo_servico?'informado':'pendente')+'</p>'+
+    '<p class="sub">Pendente para emissão automática: certificado ICP-Brasil individual, assinatura XML DPS, mTLS, ambiente restrito, autorização fiscal e XML oficial arquivado.</p>'+
+    '<p class="sub">Nunca envie certificado ou senha pelo navegador do BlackFlow ou para um repositório.</p>'+
+    bt('Verificar integração no servidor','bfxDiagnostico()','btn ghost sm')+
+    '<div id="bfxdiag-status" class="sub" role="status" style="margin-top:10px"></div>');
   const settings=card('Configuração fiscal do estabelecimento',
     '<p class="sub">O CNPJ é recuperado automaticamente do cadastro do negócio. Os demais campos são definidos uma vez, com auxílio do contador. Lucro Presumido e Lucro Real não podem ser presumidos apenas pelo CNPJ. Alterar campos não habilita emissão.</p>'+
     row(field('bfxCnpj','CNPJ vinculado ao cadastro da clínica',cfg.cnpj||'').replace('id="bfxCnpj"','id="bfxCnpj" onblur="bfxBuscarCnpj()"')+
@@ -119,7 +130,7 @@ async function fiscalView(){
       html(new Date(d.criado_em).toLocaleDateString('pt-BR')),'Não verificada',
       bt('Enviar PDF por WhatsApp',"bfxWhatsAppDanfse('"+d.id+"')",'btn ghost sm')
     ])));
-  el.innerHTML=badge+summary+settings+draft+imported+history;
+  el.innerHTML=badge+summary+diagnostico+settings+draft+imported+history;
   if(cfg.cnpj){const locked=document.getElementById('bfxCnpj');if(locked){locked.readOnly=true;locked.title='CNPJ copiado do cadastro do negócio. Para corrigir o cadastro, contate o suporte autorizado.';locked.style.background='var(--bg2,#f3f4f6)';}}
 
  }catch(e){el.innerHTML='<div class="note">Não foi possível carregar o módulo fiscal: '+html(e.message||e)+'</div>'}
@@ -159,6 +170,17 @@ window.bfxBuscarCnpj=async function(){
     if(slot)slot.textContent='Cadastro localizado: '+(x.razao||'Razão social não informada')+' · '+(x.situacao||'Situação não informada')+'. Clique em Salvar dados fiscais para vincular o CNPJ.';
   }else if(slot)slot.textContent=data?.aviso||'Não foi possível conferir o cadastro agora. O CNPJ poderá ser salvo mediante validação e revisão.';
  }catch(e){notify(e)}
+};
+window.bfxDiagnostico=async function(){
+ const place=document.getElementById('bfxdiag-status');
+ try{
+  await ensureAuthorized();
+  if(place)place.textContent='Consultando situação no servidor...';
+  const {data,error}=await NV.sb.functions.invoke('bf-modulos-fiscal/configuracao?clinica_id='+encodeURIComponent(clinic()),{method:'GET'});
+  if(error)throw error;
+  if(place)place.textContent=(data?.emissao_automatica_disponivel?'Integração declarada disponível; confirme autorização fiscal real.':'Emissão automática NÃO disponível no servidor.')+
+   ' Ambiente: '+(data?.ambiente||'indefinido')+'. '+(data?.criterio||'Pendências técnicas e fiscais.');
+ }catch(e){if(place)place.textContent='Consulta indisponível: '+String(e?.message||e).slice(0,140);}
 };
 window.bfxSaveSettings=async function(){
  try{
