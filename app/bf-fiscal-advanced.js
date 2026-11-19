@@ -220,7 +220,6 @@ window.bfxExportCsv=function(){
  notes.forEach(n=>lines.push([n.criado_em,n.descricao_servico,n.valor,n.status,n.numero_nfse,n.chave_acesso].map(clean).join(sep)));
  download('blackflow_nfse_'+todayISO()+'.csv',new Blob(['\uFEFF'+lines.join('\r\n')],{type:'text/csv;charset=utf-8'}));
 };
-}
 window.bfxImportarDanfse=async function(){
  try{
   await ensureAuthorized();
