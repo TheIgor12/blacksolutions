@@ -18,6 +18,7 @@ O BlackFlow atende qualquer clínica cadastrada, de qualquer estado do Brasil, s
 5. Interface do módulo NFS-e: botão **Testar cobertura nacional — 27 UFs** apresenta o roteamento do estabelecimento, resultados por UF e requisitos exclusivos daquele cliente; seleção de UF e município por catálogo IBGE para completar a configuração fiscal.
 6. `bf-fiscal-autoteste` adaptada a qualquer município, removendo o município fixo, a alíquota fixa de ISS e a descrição genérica que usava pedicure para clientes de outros segmentos.
 7. Módulos raiz e `app/` sincronizados e controle de cache atualizado para `1.15.4`.
+8. Migração PostgreSQL aplicada: o padrão de `bf_fiscal_notas.modelo_integracao` é `a_definir` (antes era `sefin_nacional`) para não presumir que empresas de todos os regimes e municípios usam o mesmo emissor. Verificação em `information_schema` confirmou a alteração.
 
 ## Testes executados
 - `bf-fiscal-nacional`: **60/60 cenários sintéticos aprovados** (27 UFs e seis verificações).
