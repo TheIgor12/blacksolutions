@@ -30,6 +30,19 @@
       "preco": "R$ 50,09",
       "valor": 50.09,
       "link": ""
+    },
+    "clinico": {
+      "nome": "Plano Clínico",
+      "valor": null,
+      "preco": "Valor em definição",
+      "chargeType": "RECURRENT",
+      "subscriptionCycle": "MONTHLY",
+      "ativo": false,
+      "links": {
+        "odontologia": "",
+        "biomedicina": ""
+      },
+      "observacao": "Configuração preparatória. Contratação clínica bloqueada até definição do preço e cadastro de links recorrentes Asaas."
     }
   },
   "promocao": {

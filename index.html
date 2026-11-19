@@ -3126,7 +3126,14 @@ function planoContratado(){const p=String((typeof NV!=='undefined'&&NV.plano)||'
    é o plano Barbearia. semRamo ignora o ramo gravado no aparelho, para a tela de
    cadastro, onde a pessoa ainda está escolhendo. */
 const ramoBarbearia=()=>typeof S!=='undefined'&&S&&S.config&&S.config.segmento==='barbearia';
+const ramoClinico=()=>typeof S!=='undefined'&&S&&S.config&&['odontologia','biomedicina'].includes(S.config.segmento);
 function planoInfo(k,semRamo){const a=(typeof ASSINATURA!=='undefined'&&ASSINATURA&&ASSINATURA.planos)||{};const d={agenda:{nome:'Só agenda',preco:'R$ 29,90 por mês',valor:29.90},completo:{nome:'Completo',preco:'R$ 79,90 por mês',valor:79.90},barbearia:{nome:'Barbearia',preco:'R$ 34,90 por mês',valor:34.90,link:'https://www.asaas.com/000/c/qfvnztz9zhhwl000'},upgrade:{nome:'Complemento para o plano completo',preco:'R$ 50,09',valor:50.09}};
+ if(!semRamo&&k==='completo'&&ramoClinico()){
+  const c=a.clinico||{};const preco=Number(c.valor);const link=String((c.links||{})[S.config.segmento]||'');
+  const mes=c.ativo===true&&c.chargeType==='RECURRENT'&&c.subscriptionCycle==='MONTHLY'&&Number.isFinite(preco)&&preco>0;
+  const linkValid=(()=>{try{const u=new URL(link);return u.protocol==='https:'&&['asaas.com','www.asaas.com'].includes(u.hostname)}catch{return false}})();
+  return {nome:'Plano Clínico',preco:mes?'R$ '+preco.toFixed(2).replace('.',',')+' por mês':'Valor em definição',valor:mes?preco:null,link:mes&&linkValid?link:'',ciclo:'MONTHLY'};
+ }
  if(!semRamo&&ramoBarbearia()){
   if(k==='completo')k='barbearia';
   else if(k==='upgrade'){const b=planoInfo('barbearia',true),g=planoInfo('agenda',true);const dif=Math.max(0,Math.round(((+b.valor||0)-(+g.valor||0))*100)/100);
@@ -3212,13 +3219,15 @@ function checarSegmento(){if(UI.auth)return;
  if(!S.config.plano&&!UI.planoPerguntado){UI.planoPerguntado=true;
   if(S.lancamentos.length||S.comandas.length){S.config.plano='completo';save();return}
   setTimeout(()=>{if(!$('#modalRoot').innerHTML)perguntarPlano()},300)}}
-function planoCards(acao){return `<div class="grid g3">${Object.entries(PLANOS).map(([k,x])=>`<div class="tile" style="${planoK()===k?'outline:3px solid var(--acc)':''}" onclick="${acao}('${k}')"><div class="ti">${ico(k==='agenda'?'cal':'chart')}</div><b>${esc(x.nome)}</b><p>${esc(x.desc)}</p></div>`).join('')}</div>`}
+function planoCards(acao){return `<div class="grid g3">${Object.entries(PLANOS).filter(([k])=>!ramoClinico()||k==='completo').map(([k,x])=>`<div class="tile" style="${planoK()===k?'outline:3px solid var(--acc)':''}" onclick="${acao}('${k}')"><div class="ti">${ico(k==='agenda'?'cal':'chart')}</div><b>${esc(x.nome)}</b><p>${esc(x.desc)}</p></div>`).join('')}</div>`}
 function perguntarPlano(){openModal(`<h3>Como você quer usar o BlackFlow?</h3><p class="sub" style="margin-bottom:14px">Dá para trocar a qualquer momento em Configurações. Nada do que já foi lançado é apagado.</p>${planoCards('escolherPlano')}`,true)}
-function escolherPlano(k){if(k==='completo'&&planoContratado()==='agenda'){modalLiberar('plano');return}
+function escolherPlano(k){if(ramoClinico()&&k==='agenda'){toast('O plano Só agenda não está disponível para este segmento.');return;}if(k==='completo'&&planoContratado()==='agenda'){modalLiberar('plano');return}
  const antes=planoK();S.config.plano=k;if(k==='agenda')UI.view='agenda';closeModal();save();render();
  toast(k==='agenda'?'Plano só agenda. O menu agora mostra apenas a agenda e os cadastros.':antes==='agenda'?'Plano completo. Os módulos voltaram ao menu.':'Plano completo.')}
 /* Trava: no plano Só agenda, passar para o completo ou trocar o segmento exige pagamento */
 async function modalLiberar(motivo){await carregarAssinatura();const c=planoInfo('completo'),u=planoInfo('upgrade'),a=planoInfo('agenda');
+ if(ramoClinico()&&!c.link){const contato=(ASSINATURA||{}).contato||'';openModal('<h3>Plano Clínico — assinatura mensal</h3><p class="sub">O valor mensal e o link recorrente do Asaas estão em definição. Não há cobrança ativa para este segmento.</p>'+(contato?'<a class="btn" href="'+esc(contato)+'" target="_blank" rel="noopener">Consultar a BlackSolutions</a>':'')+'<div class="mact"><button class="btn ghost" onclick="closeModal()">Fechar</button></div>');return;}
+
  const bt=(x,cls)=>x.link?`<a class="btn ${cls||''}" href="${esc(x.link)}" target="_blank" rel="noopener" onclick="closeModal()">${esc(x.rotulo||('Pagar '+x.preco))}</a>`:'';
  const contato=(ASSINATURA||{}).contato||'';
  openModal(`<h3>Liberar o plano completo</h3>${promoFaixa()}
@@ -3230,6 +3239,8 @@ async function modalLiberar(motivo){await carregarAssinatura();const c=planoInfo
  <p class="sub" style="margin-top:12px">Assim que o pagamento for confirmado, o plano é liberado nesta conta e os módulos aparecem sozinhos ao abrir o sistema de novo.</p>
  <div class="mact"><button class="btn ghost" onclick="closeModal()">Agora não</button></div>`)}
 function cardPlanoConfig(){const ct=planoContratado();const a=planoInfo('agenda'),c=planoInfo('completo');const fx=promoFaixa();
+ if(ramoClinico())return '<div class="card"><h2>Plano Clínico — '+esc(SEG().nome)+'</h2><p class="sub">Assinatura mensal, com cobrança recorrente pelo Asaas. Valor: <b>'+esc(c.preco)+'</b>.</p>'+(c.link?'<a class="btn" href="'+esc(c.link)+'" target="_blank" rel="noopener">Assinar no Asaas</a>':'<div class="note">Contratação aguardando definição do valor e do link recorrente.</div>')+'</div>';
+
  if(ct==='agenda')return `<div class="card"><h2>Plano de uso</h2>${fx}
   <div class="note" style="margin:0 0 12px"><b>Plano contratado: ${esc(a.nome)}, ${esc(a.preco)}.</b> O menu mostra a agenda, os ${esc(SEG().pessoas.toLowerCase())}, os profissionais, os serviços e a confirmação por WhatsApp. O financeiro, o estoque, a comanda, o caixa e os relatórios fazem parte do plano completo.</div>
   <div style="display:flex;gap:10px;flex-wrap:wrap"><button class="btn" onclick="modalLiberar('plano')">Liberar o plano completo por ${esc(c.preco)}</button></div></div>`;
@@ -4830,7 +4841,7 @@ function agNovo(a,s){if(s==='Desmarcado'||s==='Faltou')return false;const k=a.da
  const hist=c=>S[c].some(x=>x.pacienteId===a.pacienteId&&((x.data||x.vencimento||x.pagamento||'')<a.data)&&(x.data||x.vencimento||x.pagamento));
  return !hist('evolucoes')&&!hist('tratamentos')&&!S.lancamentos.some(l=>l.pacienteId===a.pacienteId&&l.pagamento&&l.pagamento<a.data)}
 /* ============ Atualização: aviso com botão Atualizar agora ============ */
-const VERSAO_APP='1.12.0';const URL_VERSAO_JSON='https://raw.githubusercontent.com/TheIgor12/blacksolutions/main/versao.json';
+const VERSAO_APP='1.12.1';const URL_VERSAO_JSON='https://raw.githubusercontent.com/TheIgor12/blacksolutions/main/versao.json';
 const numV=v=>String(v||'0').split(/\D+/).filter(Boolean).map(Number);
 function versaoMaior(a,b){const x=numV(a),y=numV(b);for(let i=0;i<Math.max(x.length,y.length);i++){const d=(x[i]||0)-(y[i]||0);if(d)return d>0}return false}
 const ATU={nova:null,timer:null};
@@ -5154,7 +5165,7 @@ function testeDiasTxt(){const n=testeDias();return n===1?'1 dia':n+' dias'}
 async function carregarAssinatura(){if(ASSINATURA)return ASSINATURA;try{ASSINATURA=await (await fetch(URL_ASSINATURA+'?t='+Date.now(),{cache:'no-store'})).json()}catch(e){ASSINATURA={}}return ASSINATURA}
 /* Promocao por tempo e por numero de vagas. Tudo vem do assinatura.json,
    para mudar preco, prazo e vagas sem publicar o sistema de novo. */
-function promoAtiva(){if(ramoBarbearia())return null;const p=(ASSINATURA||{}).promocao;
+function promoAtiva(){if(ramoBarbearia()||ramoClinico())return null;const p=(ASSINATURA||{}).promocao;
  if(!p||!p.ativa)return null;
  if(p.ate){const h=new Date();h.setHours(0,0,0,0);
   const d=new Date(p.ate+'T23:59:59');if(isNaN(d)||d<h)return null}
@@ -5178,12 +5189,12 @@ function promoFaixa(){const p=promoAtiva();if(!p)return '';
         :`<a class="btn promo-bt" href="${esc(((ASSINATURA||{}).contato)||'https://wa.me/5547988432859')}" target="_blank" rel="noopener">Falar com a BlackSolutions e garantir a vaga</a>`}
  </div>`}
 function blocoAssinatura(){const a=ASSINATURA||{};const pa=planoInfo('agenda'),pc=planoInfo('completo');
- const escolhido=planoK();const linkC=pc.link||a.link_pix||a.link_cartao||'';
+ const escolhido=planoK();const linkC=ramoClinico()?pc.link:(pc.link||a.link_pix||a.link_cartao||'');
  const cx=(x,link,k,texto)=>`<div class="card" style="margin:0 0 10px;padding:14px;background:${escolhido===k?'var(--acc-soft)':'var(--bg2,#f8fafc)'};${escolhido===k?'outline:2px solid var(--acc)':''}">
   <div style="display:flex;justify-content:space-between;align-items:baseline;gap:10px"><b>${esc(x.nome)}</b><span style="font-size:20px;font-weight:800">${esc(x.preco)}</span></div>
   <p class="sub" style="margin:6px 0 10px">${texto}</p>
   ${link?`<a class="btn ${escolhido===k?'':'ghost'}" style="width:100%" href="${esc(link)}" target="_blank" rel="noopener">Assinar ${esc(x.nome.toLowerCase())}</a>`:''}</div>`;
- return `<div>${promoBloco()}${PROMO?'':promoFaixa()}${cx(pa,pa.link,'agenda','Agenda, clientes, profissionais, serviços e preços, confirmação por WhatsApp e agendamento online.')}
+ return `<div>${ramoClinico()?'':promoBloco()}${ramoClinico()||PROMO?'':promoFaixa()}${ramoClinico()?'':cx(pa,pa.link,'agenda','Agenda, clientes, profissionais, serviços e preços, confirmação por WhatsApp e agendamento online.')}
  ${cx(pc,linkC,'completo','Tudo do Só agenda mais financeiro com parcelas e recibo, comanda, caixa do dia, estoque, comissões e relatórios.')}
  ${!pa.link&&!linkC?`<p class="sub" style="margin:0">${esc(a.mensagem||'Para assinar, fale com a Black Solutions pelos canais de atendimento informados no site.')}</p>`:''}
  ${a.contato?`<p class="sub" style="margin:4px 0 0">Dúvidas: <a class="lnk" href="${esc(a.contato)}" target="_blank" rel="noopener">falar com a Black Solutions</a></p>`:''}</div>`}
@@ -5220,6 +5231,7 @@ function promoAviso(){/* barra no alto, só quando falta pouco ou já acabou */
  return `<div style="background:${d<=7?'var(--warn-soft)':'var(--acc-soft)'};padding:8px 16px;font-size:13px;display:flex;justify-content:center;gap:12px;align-items:center;flex-wrap:wrap">
   <span>${txt}</span><button class="btn sm ghost" onclick="abrirAssinatura()">Ver a assinatura</button></div>`}
 function promoBloco(){/* dentro da tela de assinatura */
+ if(ramoClinico())return '';
  if(!PROMO)return '';
  const d=promoDias(),fim=br(PROMO.fim),ini=br(PROMO.inicio);
  return `<div class="card" style="margin:0 0 10px;padding:14px;background:var(--acc-soft)">
