@@ -55,7 +55,7 @@ async function fiscalView(){
     '<p><b>Emitente:</b> '+(cfg.cnpj?'CNPJ associado':'CNPJ pendente')+
       ' · <b>IBGE:</b> '+(cfg.municipio_ibge?'informado':'pendente')+
       ' · <b>Código serviço:</b> '+(cfg.ctrib_nacional||cfg.codigo_servico?'informado':'pendente')+'</p>'+
-    '<p class="sub">Pendente para emissão automática: certificado ICP-Brasil individual, assinatura XML DPS, mTLS, ambiente restrito, autorização fiscal e XML oficial arquivado.</p>'+
+    '<p class="sub">Pendente para emissão automática: certificado ICP-Brasil do emitente ou de procurador autorizado, assinatura XML DPS, mTLS, credenciamento na API, testes oficiais e XML autorizado arquivado.</p>'+
     '<p class="sub">Nunca envie certificado ou senha pelo navegador do BlackFlow ou para um repositório.</p>'+
     bt('Verificar integração no servidor','bfxDiagnostico()','btn ghost sm')+
     '<div id="bfxdiag-status" class="sub" role="status" style="margin-top:10px"></div>');
