@@ -68,7 +68,7 @@ async function fiscalView(){
     authorized:notes.filter(n=>n.status==='autorizada').length,
     rejected:notes.filter(n=>n.status==='rejeitada').length};
   const badge='<div class="note" style="margin:0 0 15px">'+
-    '<b>Atenção: este BlackFlow prepara rascunhos fiscais, mas ainda não transmite NFS-e.</b> Para notas válidas, são necessários o certificado digital, o XML DPS assinado, a integração mTLS e a homologação. O documento oficial é o XML autorizado. Não trate o comprovante Pix/cartão como nota fiscal.'+
+    '<b>BlackFlow fiscal: cadastro individual por empresa, com roteamento nacional.</b> Rascunhos disponíveis; transmissão fiscal real ainda não habilitada. A autorização depende do canal aplicável ao prestador (SEFIN Nacional ou integrador municipal) e do retorno oficial. A autenticação e a assinatura dependem da modalidade. Pix/cartão não são nota fiscal.'+
     '<br><a href="https://www.nfse.gov.br/EmissorNacional" target="_blank" rel="noopener">Abrir o Emissor Nacional de NFS-e</a></div>';
   const summary='<div class="grid g3">'+[['Rascunhos',totals.draft],['Notas autorizadas importadas',totals.authorized],['Rejeições registradas',totals.rejected]].map(([name,n])=>'<div class="card"><small>'+name+'</small><h2 style="font-size:25px;margin:4px 0">'+n+'</h2></div>').join('')+'</div>';
   const configured=cfg.situacao_integracao||'nao_configurada';
@@ -79,7 +79,7 @@ async function fiscalView(){
     '<p><b>Emitente:</b> '+(cfg.cnpj?'CNPJ associado':'CNPJ pendente')+
       ' · <b>IBGE:</b> '+(cfg.municipio_ibge?'informado':'pendente')+
       ' · <b>Código serviço:</b> '+(cfg.ctrib_nacional||cfg.codigo_servico?'informado':'pendente')+'</p>'+
-    '<p class="sub">Pendente para emissão automática: certificado ICP-Brasil do emitente ou de procurador autorizado, assinatura XML DPS, mTLS, credenciamento na API, testes oficiais e XML autorizado arquivado.</p>'+
+    '<p class="sub">Cada empresa tem suas próprias credenciais e rota fiscal. SEFIN Nacional: DPS/XML assinado e autenticação conforme API. Emissores municipais: conectores e credenciais específicos quando necessários. Armazenamento do XML autorizado e provas de retorno permanecem necessários.</p>'+
     '<p class="sub">Nunca envie certificado ou senha pelo navegador do BlackFlow ou para um repositório.</p>'+
     bt('Verificar integração no servidor','bfxDiagnostico()','btn ghost sm')+' '+bt('Executar autoteste fiscal (sem emissão)','bfxAutoteste()','btn ghost sm')+' '+bt('Testar cobertura nacional — 27 UFs','bfxCoberturaNacional()','btn ghost sm')+
     '<div id="bfxdiag-status" class="sub" role="status" style="margin-top:10px"></div>'+ '<div id="bfx-autoteste-status" role="status" style="margin-top:10px"></div>'+ '<div id="bfx-cobertura-nacional" role="status" style="margin-top:10px"></div>');
