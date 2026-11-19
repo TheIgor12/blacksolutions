@@ -52,3 +52,11 @@ O código da interface estava atualizado em módulos isolados, mas o elemento de
 - https://supabase.com/docs/guides/database/postgres/row-level-security
 
 **Conclusão:** a inconsistência de versão/cache foi corrigida no código, a opção Medicina e a geração de rascunhos médicos simples foram incorporadas e o banco foi migrado com sucesso. Publicação no domínio e testes reais devem ser verificados após merge. Não há fundamento para declarar emissão fiscal real homologada ou assinatura médica automaticamente válida.
+
+
+## Verificação pós-publicação — ambiente público (19/11/2026)
+A versão **1.16.0** foi confirmada diretamente em `https://blackflow.app.br/`, `https://blackflow.app.br/app/` e no `versao.json` com consulta sem cache. O service worker público usa `blackflow-v16-20261119`. Foram verificados via HTTPS do dispositivo de testes **15 recursos com HTTP 200**: `index.html`, `app/index.html`, os dois módulos clínicos, os dois módulos de receituário, os dois fiscais, o cadastro fiscal, os dois service workers, `versao.json`, os dois manifestos e `validar/receita/index.html`. Os arquivos JavaScript públicos passaram na validação de sintaxe do Node.js, e o teste remoto concluiu com **RESULTADO: PUBLICACAO 1.16.0 OK**.
+
+O Supabase confirma `bf_segmento_disponivel('medicina')=true`, restrições de CRM/medicina aplicadas e funções `bf-fiscal-nacional`, `bf-fiscal-autoteste`, `bf-modulos-fiscal` e `bf-receita-validar` ativas. Ainda não existem profissionais médicos nem receitas médicas cadastradas no banco consultado; por isso um teste E2E com prescritor real não foi efetuado. Também não há NFS-e oficiais emitidas. O fluxo de workflow GitHub Actions foi adicionado, mas a execução do novo job de CI ainda não foi confirmada pelo conector; o teste remoto HTTPS foi realizado separadamente.
+
+**Nota de cache:** uma primeira consulta sem `?v` ao arquivo `versao.json` devolveu cópia antiga (1.14.0), enquanto consultas sem cache e a interface pública passaram a responder 1.16.0. O PWA novo usa cache de versão distinta e atualização pela rede, mas versões instaladas antigas precisam reconectar/reabrir o aplicativo para adquirir os novos recursos.
