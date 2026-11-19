@@ -1,4 +1,4 @@
 {
-  "versao": "1.11.0",
-  "novidades": "Novos segmentos Odontologia e Biomedicina, catálogo inicial de procedimentos, prontuários clínicos, odontograma, anexos privados, convênios e rastreabilidade. Módulo fiscal: dados cadastrais, rascunhos, validação e vínculo a lançamentos. Emissão automática de NFS-e ainda indisponível: exige certificado digital, integração e homologação."
+  "versao": "1.12.0",
+  "novidades": "Receituário individual para Podologia, Odontologia e Biomedicina, com PDF de identidade visual profissional em Configurações, rascunhos, anexação de PDFs assinados externamente e compartilhamento manual pelo WhatsApp. NFS-e autorizadas podem ser compartilhadas pela consulta pública oficial. Emissão automática de NFS-e e validação de assinaturas profissionais ainda exigem homologação e integração."
 }
