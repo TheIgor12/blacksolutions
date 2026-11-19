@@ -15,6 +15,20 @@ const bt=(label,fn,kind="btn sm")=>'<button class="'+kind+'" onclick="'+fn+'">'+
 const table=(headers,rows)=>'<div style="overflow:auto"><table class="tbl"><thead><tr>'+headers.map(x=>'<th>'+html(x)+'</th>').join('')+'</tr></thead><tbody>'+
  rows.map(x=>'<tr>'+x.map(y=>'<td>'+y+'</td>').join('')+'</tr>').join('')+'</tbody></table></div>';
 const notify=e=>toast('Operação não concluída: '+String(e?.message||e).slice(0,150));
+function bfFiscalDocumentoValido(documento){
+ const v=String(documento||'').replace(/\D/g,'');
+ if(v.length===11){
+  if(/^(\d)\1{10}$/.test(v))return false;
+  const dv=n=>{let sum=0;for(let i=0;i<n;i++)sum+=Number(v[i])*(n+1-i);const r=(sum*10)%11;return r===10?0:r};
+  return dv(9)===Number(v[9])&&dv(10)===Number(v[10]);
+ }
+ if(v.length===14){
+  if(/^(\d)\1{13}$/.test(v))return false;
+  const dv=n=>{let sum=0,w=n-7;for(let i=0;i<n;i++){sum+=Number(v[i])*w--;if(w<2)w=9}const r=sum%11;return r<2?0:11-r};
+  return dv(12)===Number(v[12])&&dv(13)===Number(v[13]);
+ }
+ return false;
+}
 const clinic=()=>NV.clinicaId;
 const CODIGOS_SERVICOS=[
  ['','Selecione o serviço para a simulação/rascunho'],
@@ -262,7 +276,8 @@ window.bfxCreateDraft=async function(){
   const description=val('bfxDesc'),amount=Number(val('bfxValor'));
   if(!description||!Number.isFinite(amount)||amount<=0)throw Error('Informe descrição e valor.');
   const doc=val('bfxDoc').replace(/\D/g,'');
-  if(doc&&![11,14].includes(doc.length))throw Error('CPF/CNPJ do tomador está incompleto.');
+  if(doc&&!bfFiscalDocumentoValido(doc))throw Error('CPF/CNPJ do tomador está inválido. Confira os dígitos verificadores.');
+  if(val('bfxCodTrib')&&!/^\d{6}$/.test(val('bfxCodTrib')))throw Error('O código tributário nacional deve possuir seis dígitos.');
   const r=await NV.sb.from('bf_fiscal_notas').insert({
     clinica_id:clinic(),origem:val('bfxOrigem'),origem_ref:val('bfxLanc')||null,
     paciente_ref:S.lancamentos.find(l=>String(l.id)===val('bfxLanc'))?.pacienteId||val('bfxPaciente')||null,
