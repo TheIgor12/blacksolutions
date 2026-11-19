@@ -206,7 +206,11 @@ async function home(){
     btn('Gerar rascunho PDF','bfRecGenerate()'));
   }
   const listHtml=docs.map(d=>'<div class="row" style="flex-wrap:wrap"><span><b>'+escH(d.paciente_nome)+'</b><br><small>'+escH(d.tipo)+' — '+escH(new Date(d.criado_em).toLocaleDateString('pt-BR'))+' — '+escH(d.status)+(d.verificacao_token_hash?' — QR de consulta no PDF':' — sem QR (documento antigo)')+'</small></span><span>'+btn('Baixar rascunho',"bfRecDownload('"+d.id+"',false)")+' '+(d.pdf_assinado_path?btn('Enviar PDF pelo WhatsApp',"bfRecShare('"+d.id+"')"):btn('Anexar PDF assinado',"bfRecSignPrompt('"+d.id+"')"))+'</span></div>').join('');
-  body+=card('Documentos deste profissional',listHtml||note('Nenhum documento criado.'));
+  body+=card('Conformidade de assinaturas e receitas',
+     '<p class="sub">O QR BlackFlow só confere registro e integridade. Não valida assinatura ICP-Brasil, habilitação profissional ou controle oficial de medicamentos.</p>'+
+     '<p><a href="https://validar.iti.gov.br/" target="_blank" rel="noopener noreferrer">Verificador de assinatura do ITI</a> · <a href="https://www.gov.br/anvisa/pt-br/assuntos/medicamentos/controlados/sncr/documentos-do-sncr" target="_blank" rel="noopener noreferrer">Documentação SNCR/Anvisa</a></p>'+
+     '<p class="sub">Receituários controlados não estão habilitados neste módulo. A validação oficial deve ser realizada fora do BlackFlow até haver integração autorizada.</p>');
+   body+=card('Documentos deste profissional',listHtml||note('Nenhum documento criado.'));
   zone(body);
  }catch(e){fail(e);zone(note(escH(e.message||e)));}
 }
@@ -230,7 +234,8 @@ window.bfRecGenerate=async()=>{
 window.bfRecSignPrompt=id=>{
  if(!docs.some(x=>x.id===id))return;
  openModal('<h3>Documento assinado externamente</h3>'+note('Anexe somente um PDF assinado fora do BlackFlow. O sistema não valida a assinatura, o certificado ou o registro profissional.')+
-  '<input type="file" id="bfrec-signed-file" accept=".pdf,application/pdf" class="inp" style="width:100%">'+
+  '<p><a target="_blank" rel="noopener noreferrer" href="https://validar.iti.gov.br/">Conferir assinatura no ITI</a></p>'+
+   '<input type="file" id="bfrec-signed-file" accept=".pdf,application/pdf" class="inp" style="width:100%">'+
   '<p><label><input type="checkbox" id="bfrec-signed-confirm"> Confirmo que o arquivo foi assinado externamente pelo profissional responsável.</label></p>'+
   '<div class="mact"><button class="btn ghost" onclick="closeModal()">Cancelar</button>'+btn('Salvar arquivo assinado',"bfRecSign('"+id+"')")+'</div>');
 };
