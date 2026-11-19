@@ -175,11 +175,23 @@ window.bfxDiagnostico=async function(){
  const place=document.getElementById('bfxdiag-status');
  try{
   await ensureAuthorized();
-  if(place)place.textContent='Consultando situação no servidor...';
+  if(place)place.textContent='Conferindo cadastro fiscal e integração no servidor...';
   const {data,error}=await NV.sb.functions.invoke('bf-modulos-fiscal/configuracao?clinica_id='+encodeURIComponent(clinic()),{method:'GET'});
   if(error)throw error;
-  if(place)place.textContent=(data?.emissao_automatica_disponivel?'Integração declarada disponível; confirme autorização fiscal real.':'Emissão automática NÃO disponível no servidor.')+
-   ' Ambiente: '+(data?.ambiente||'indefinido')+'. '+(data?.criterio||'Pendências técnicas e fiscais.');
+  if(!data||!Array.isArray(data.itens))throw Error('Diagnóstico incompleto.');
+  const item=x=>'<li><b>'+html(x.campo)+':</b> '+html(x.estado.replaceAll('_',' '))+' — '+html(x.detalhe)+'</li>';
+  const rt=data.roteiro||{};
+  if(place)place.innerHTML='<div class="note"><b>Emissão automática NÃO homologada. Não transmitir documentos de teste.</b>'+
+   '<p>Ambiente cadastrado: '+html(data.ambiente||'indefinido')+'. '+html(data.criterio||'')+'</p>'+
+   '<details open><summary>Conferência dos parâmetros do estabelecimento</summary><ul>'+
+   data.itens.map(item).join('')+'</ul></details>'+
+   (rt.cidade?'<p>Município cadastrado: <b>'+html(rt.cidade)+'</b>.</p>':'')+
+   '<p>'+html(rt.orientacao||'')+'</p>'+
+   '<p><a target="_blank" rel="noopener noreferrer" href="https://solucoes.receita.fazenda.gov.br/Servicos/cnpjreva/Cnpjreva_S.aspx">Conferir CNPJ na Receita Federal</a> · '+
+   '<a target="_blank" rel="noopener noreferrer" href="https://www8.receita.fazenda.gov.br/SimplesNacional/">Consultar opção pelo Simples Nacional</a> · '+
+   '<a target="_blank" rel="noopener noreferrer" href="https://www.gov.br/nfse/pt-br/biblioteca/documentacao-tecnica/documentacao-atual">Regras NFS-e oficiais</a>'+
+   (rt.portal_municipal?' · <a target="_blank" rel="noopener noreferrer" href="https://nfe.etransparencia.com.br/sp.taboaodaserra/nfe/principal.aspx">Portal municipal de Taboão da Serra</a>':'')+
+   '</p></div>';
  }catch(e){if(place)place.textContent='Consulta indisponível: '+String(e?.message||e).slice(0,140);}
 };
 window.bfxAutoteste=async function(){
