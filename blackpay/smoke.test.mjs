@@ -7,7 +7,7 @@ const source=fs.readFileSync(new URL('./app.js',import.meta.url),'utf8');
 const elements=new Map();
 const el=id=>{if(!elements.has(id))elements.set(id,{value:'',innerHTML:'',textContent:'',classList:{add(){},remove(){}},addEventListener(){}});return elements.get(id)};
 const document={getElementById:el,querySelectorAll:()=>[],addEventListener(){}};
-const context=vm.createContext({document,crypto:webcrypto,TextEncoder,Date,Number,String,Array,Object,Set,Map,Promise,Math,console,Intl,setTimeout,clearTimeout,confirm:()=>true});
+const context=vm.createContext({document,location:{search:''},crypto:webcrypto,TextEncoder,Date,Number,String,Array,Object,Set,Map,Promise,Math,console,Intl,setTimeout,clearTimeout,confirm:()=>true});
 vm.runInContext(source,context);
 function testExpr(s){return vm.runInContext(s,context)}
 assert.equal(testExpr('accounts.length'),2);
