@@ -117,6 +117,8 @@ async function fiscalView(){
       bt('Enviar PDF por WhatsApp',"bfxWhatsAppDanfse('"+d.id+"')",'btn ghost sm')
     ])));
   el.innerHTML=badge+summary+settings+draft+imported+history;
+  if(cfg.cnpj){const locked=document.getElementById('bfxCnpj');if(locked){locked.readOnly=true;locked.title='CNPJ copiado do cadastro do negócio. Para corrigir o cadastro, contate o suporte autorizado.';locked.style.background='var(--bg2,#f3f4f6)';}}
+
  }catch(e){el.innerHTML='<div class="note">Não foi possível carregar o módulo fiscal: '+html(e.message||e)+'</div>'}
 }
 window.bfxPickPatient=function(){
