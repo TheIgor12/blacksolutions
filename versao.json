@@ -1,5 +1,5 @@
 {
-  "versao": "1.19.0",
+  "versao": "1.20.0",
   "data": "2026-11-19",
-  "novidades": "BlackPay 0.1.1 integrado à aba do BlackFlow em modo somente visualização para clientes; preferência futura de recebimento sem redirecionar Pix real; política planejada de tarifa própria Pix zero, taxas de cartão condicionadas a parceiro; banco Supabase privado preparado e movimentação real bloqueada até conformidade e contratação."
+  "novidades": "Nova página BlackPay integrada diretamente ao BlackFlow, sem iframe, sem nova aba e com botão azul Voltar para Agenda. Navegação completa, cobranças Pix fictícias, transferências, retirada, maquininha, extrato, conciliação e auditoria funcionando no simulador. Nenhuma operação financeira real é autorizada."
 }
