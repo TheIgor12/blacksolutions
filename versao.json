@@ -1,5 +1,5 @@
 {
-  "versao": "1.18.0",
+  "versao": "1.19.0",
   "data": "2026-11-19",
-  "novidades": "Pix inicial somente com cobrança e botão Emitir NFE; dados de paciente sincronizados no formulário fiscal a partir de lançamentos; auditoria de vínculos cadastrais em Configurações > Sistema; bloqueio de exclusão destrutiva de paciente com registros associados, oferecendo arquivamento. Verificações e correções não substituem testes com usuários reais, nem habilitam transmissão de NFS-e sem homologação."
+  "novidades": "BlackPay 0.1.1 integrado à aba do BlackFlow em modo somente visualização para clientes; preferência futura de recebimento sem redirecionar Pix real; política planejada de tarifa própria Pix zero, taxas de cartão condicionadas a parceiro; banco Supabase privado preparado e movimentação real bloqueada até conformidade e contratação."
 }
