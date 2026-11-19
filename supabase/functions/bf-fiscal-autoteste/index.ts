@@ -27,6 +27,80 @@ function cnpjValid(v:string){
   const rem=total%11;return rem<2?0:11-rem};
  return calc(12)===Number(v[12])&&calc(13)===Number(v[13]);
 }
+
+// Candidates from gov.br/NFS-e national service list (LC 116), not a CNPJ tax classification.
+const CATALOG=[
+ {codigo:"040102",servico:"Biomedicina",segmento:"biomedicina"},
+ {codigo:"040303",servico:"Clínicas e ambulatórios",segmento:"clinicas"},
+ {codigo:"040901",servico:"Terapias de tratamento físico ou orgânico",segmento:"terapias"},
+ {codigo:"041201",servico:"Odontologia",segmento:"odontologia"},
+ {codigo:"060101",servico:"Pedicuros e congêneres — não confundir com podologia clínica",segmento:"cuidados_pessoais"},
+ {codigo:"060201",servico:"Esteticistas e tratamento de pele",segmento:"estetica"}
+];
+const CODE_SET=new Set(CATALOG.map(x=>x.codigo));
+function checkScenario(s){
+ const reasons=[];
+ if(!cnpjValid(s.cnpj))reasons.push("CNPJ inválido");
+ if(!cpfValid(s.cpf))reasons.push("CPF do tomador inválido");
+ if(s.municipio!=="3552809")reasons.push("Município divergente");
+ if(!CODE_SET.has(s.codigo))reasons.push("cTribNac não conhecido nesta suíte");
+ if(typeof s.descricao!=="string"||s.descricao.trim().length<5)reasons.push("Descrição incompleta");
+ if(typeof s.valor!=="number"||!Number.isFinite(s.valor)||s.valor<=0||s.valor>10000000)reasons.push("Valor inválido");
+ if(!/^\d{4}-\d{2}-\d{2}$/.test(s.competencia||"")||Number.isNaN(Date.parse(s.competencia)))reasons.push("Competência inválida");
+ return {aprovado:reasons.length===0,motivos:reasons};
+}
+function scenarioSuite(cnpj,cpf){
+ const hoje=new Date().toISOString().slice(0,10);
+ const base={cnpj,cpf,municipio:"3552809",codigo:"040102",descricao:"Atendimento simulado de teste",valor:100,competencia:hoje};
+ const casos=[
+  ...CATALOG.map(item=>({nome:"Código "+item.codigo+" — "+item.servico,altera:{codigo:item.codigo},deve_aprovar:true})),
+  {nome:"CPF com dígito incorreto",altera:{cpf:"12345678900"},deve_aprovar:false},
+  {nome:"CPF com sequência inválida",altera:{cpf:"00000000000"},deve_aprovar:false},
+  {nome:"CNPJ adulterado",altera:{cnpj:cnpj.slice(0,-1)+(cnpj.endsWith("0")?"1":"0")},deve_aprovar:false},
+  {nome:"Município incorreto",altera:{municipio:"4208906"},deve_aprovar:false},
+  {nome:"Código desconhecido",altera:{codigo:"999999"},deve_aprovar:false},
+  {nome:"Código ausente",altera:{codigo:""},deve_aprovar:false},
+  {nome:"Valor zero",altera:{valor:0},deve_aprovar:false},
+  {nome:"Valor negativo",altera:{valor:-1},deve_aprovar:false},
+  {nome:"Valor não numérico",altera:{valor:NaN},deve_aprovar:false},
+  {nome:"Descrição ausente",altera:{descricao:""},deve_aprovar:false},
+  {nome:"Competência com formato incorreto",altera:{competencia:"26/11/2026"},deve_aprovar:false}
+ ];
+ const used=new Set();
+ const records=casos.map((x,i)=>{
+  const result=checkScenario({...base,...x.altera});
+  const chave="sim-"+String(i),duplicated=used.has(chave);used.add(chave);
+  return {caso:x.nome,esperado:x.deve_aprovar?"ACEITO_LOCAL":"REJEITADO_LOCAL",
+   resultado:result.aprovado?"ACEITO_LOCAL":"REJEITADO_LOCAL",
+   ok:result.aprovado===x.deve_aprovar&&!duplicated,motivos:result.motivos};
+ });
+ const duplicateKey="sim-repeticao",first=!used.has(duplicateKey);used.add(duplicateKey);
+ const second=used.has(duplicateKey);
+ records.push({caso:"Reenvio do mesmo identificador idempotente",esperado:"BLOQUEIO_DUPLICIDADE",
+   resultado:first&&second?"BLOQUEIO_DUPLICIDADE":"FALHA",
+   ok:first&&second,motivos:["Simulação em memória. Produção exige identificadores persistidos e reconsulta de protocolo."]});
+ return records;
+}
+
+
+/* Deterministic SEFIN response simulation: no network, token or official document. */
+function mockTransportPolicy(status){
+ const policies={
+  201:{acao:"Registrar autorização SOMENTE se retorno oficial contiver XML/chave válidos",tentar_novamente:false,consultar_antes:false},
+  400:{acao:"Corrigir a estrutura dos dados",tentar_novamente:false,consultar_antes:false},
+  401:{acao:"Renovar autenticação ou certificado autorizado",tentar_novamente:false,consultar_antes:false},
+  403:{acao:"Conferir credenciamento e permissão",tentar_novamente:false,consultar_antes:false},
+  408:{acao:"Consultar protocolo antes de tentar novamente",tentar_novamente:false,consultar_antes:true},
+  409:{acao:"Consultar DPS existente; impedir emissão duplicada",tentar_novamente:false,consultar_antes:true},
+  422:{acao:"Corrigir regras de negócio ou leiaute XSD",tentar_novamente:false,consultar_antes:false},
+  429:{acao:"Aplicar fila e espera exponencial, com limite",tentar_novamente:true,consultar_antes:false},
+  500:{acao:"Consultar antes de reenviar; aguardar indisponibilidade",tentar_novamente:false,consultar_antes:true},
+  503:{acao:"Consultar antes de reenviar; aguardar serviço",tentar_novamente:false,consultar_antes:true}
+ };
+ return policies[status]||null;
+}
+const MOCK_STATUS=[201,400,401,403,408,409,422,429,500,503];
+
 Deno.serve(async(req:Request)=>{
  if(req.method==="OPTIONS")return new Response(null,{status:204,headers:h});
  if(req.method!=="POST")return respond({erro:"Apenas POST autenticado."},405);
@@ -54,6 +128,7 @@ Deno.serve(async(req:Request)=>{
   if(!Array.isArray(rows)||!rows.length)return respond({erro:"Administrador sem acesso ao cadastro fiscal desta clínica."},403);
   const cfg=rows[0] as Record<string,unknown>;
   const cnpj=digits(cfg.cnpj),syntheticCpf="12345678909";
+  const cnaePrincipal=digits(cfg.cnae),codigoReferenciaCnae=cnaePrincipal==="9602501"?"060101":null;
   const tests=[
    {caso:"CPF de exemplo matematicamente válido (sem consulta a cadastro)",ok:cpfValid(syntheticCpf)},
    {caso:"CPF repetido inválido rejeitado",ok:!cpfValid("00000000000")},
@@ -64,6 +139,7 @@ Deno.serve(async(req:Request)=>{
    {caso:"Serviço de teste presente",ok:nonempty("SERVIÇO FICTÍCIO - NÃO EMITIR")},
    {caso:"Descrição de serviço vazia rejeitada",ok:!nonempty("")}
   ];
+  const cenarios=scenarioSuite(cnpj,syntheticCpf);
   const pendencias:string[]=[];
   const avisos:string[]=[];
   if(!cnpjValid(cnpj))pendencias.push("CNPJ do prestador inválido pelo algoritmo.");
@@ -73,6 +149,7 @@ Deno.serve(async(req:Request)=>{
   if(!nonempty(cfg.ctrib_nacional)&&!nonempty(cfg.codigo_servico))pendencias.push("Código nacional de tributação do serviço não preenchido.");
   if(!nonempty(cfg.inscricao_municipal))avisos.push("Inscrição municipal não cadastrada; conferir obrigação e número com o município.");
   if(!nonempty(cfg.cnae))avisos.push("CNAE principal não informado. Confira o cadastro oficial da empresa.");
+  if(codigoReferenciaCnae)avisos.push("O CNAE 9602501 corresponde a cabeleireiros/manicure/pedicure. Para SIMULAÇÃO de serviços dessa natureza, o cTribNac 060101 é referência pública. Não usar essa equiparação para procedimentos clínicos de podologia.");
   if(!nonempty(cfg.codigo_servico)&&!nonempty(cfg.ctrib_nacional))avisos.push("O código de serviço deve variar conforme o serviço efetivamente prestado. Não o infira exclusivamente pelo CNAE.");
   if(cfg.simples_nacional===null)avisos.push("Enquadramento no Simples Nacional não confirmado pelo cadastro.");
   if(cfg.municipio_ibge==="3552809")avisos.push("Município cadastrado: Taboão da Serra/SP (3552809). Referências públicas também associam este CNPJ a Taboão da Serra. Valide o comprovante cadastral atual antes de emitir; não altere para outra cidade apenas pela localização física do atendimento.");
@@ -87,9 +164,16 @@ Deno.serve(async(req:Request)=>{
    tomador_de_teste:"PACIENTE TESTE BLACKFLOW",
    documento_teste:"CPF sintético de exemplo: 12345678909 — jamais usar em nota real",
    valor_teste:100,
-   testes:tests,
-   total_testes:tests.length,
-   testes_aprovados:tests.filter(t=>t.ok).length,
+   testes:[...tests,...cenarios.map(x=>({caso:x.caso,ok:x.ok}))],
+   total_testes:tests.length+cenarios.length,
+   testes_aprovados:tests.filter(t=>t.ok).length+cenarios.filter(x=>x.ok).length,
+   cenarios,
+   transporte_simulado:MOCK_STATUS.map(codigo_http=>({codigo_http,resposta:"MOCK_SEFIN_"+codigo_http,...mockTransportPolicy(codigo_http),oficial:false})),
+   catalogo:CATALOG,
+   cnae_principal:cnaePrincipal,codigo_referencia_cnae:codigoReferenciaCnae,
+   simulacao_documento:{prestador_cnpj:cnpj,municipio_ibge:"3552809",tomador_nome:"PACIENTE TESTE BLACKFLOW",tomador_cpf:syntheticCpf,descricao:"Serviço fictício de manicure/pedicure — NÃO EMITIR",valor:100,competencia:new Date().toISOString().slice(0,10),serie_exemplo:1,codigo_nacional_exemplo:codigoReferenciaCnae||"040102",iss_referencia_2_porcento:2.00,observacao:"Estrutura ilustrativa; não é DPS XML nem passou pelo XSD oficial.",ibscbs:"CST e cClassTrib dependem do leiaute e regime efetivos; não foram inventados."},
+   fonte_catalogo:"https://www.gov.br/nfse/pt-br/mei-e-demais-empresas/codigos-de-tributacao-nacional-nbs",
+   abrangencia:"Validação local sintética; não substitui XSD, SEFIN, regra municipal ou autorização oficial.",
    bloqueios:pendencias,avisos,
    pronto_para_emissao:false,
    nota_fiscal_emitida:false,
