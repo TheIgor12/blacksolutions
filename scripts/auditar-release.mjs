@@ -5,6 +5,8 @@
 import fs from 'node:fs';
 import assert from 'node:assert/strict';
 import vm from 'node:vm';
+import {execFileSync} from 'node:child_process';
+import {fileURLToPath} from 'node:url';
 const read=(p)=>fs.readFileSync(new URL('../'+p,import.meta.url),'utf8');
 const version=JSON.parse(read('versao.json')).versao;
 const html=read('index.html'),app=read('app/index.html');
@@ -43,4 +45,5 @@ for(const name of ['manifest.webmanifest','app/manifest.webmanifest']){
  assert.ok(m.description.includes('médicos'),'Medical segment missing in manifest');
 }
 assert.equal(read('CNAME').trim(),'blackflow.app.br');
+execFileSync(process.execPath,[fileURLToPath(new URL('../blackpay/smoke.test.mjs',import.meta.url))],{stdio:'inherit'});
 console.log('BlackFlow '+version+': release smoke checks PASS');
