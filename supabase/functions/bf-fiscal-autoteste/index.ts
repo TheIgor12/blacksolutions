@@ -42,22 +42,23 @@ function checkScenario(s){
  const reasons=[];
  if(!cnpjValid(s.cnpj))reasons.push("CNPJ inválido");
  if(!cpfValid(s.cpf))reasons.push("CPF do tomador inválido");
- if(s.municipio!=="3552809")reasons.push("Município divergente");
+ if(s.municipio!==s.municipio_esperado)reasons.push("Município divergente");
  if(!CODE_SET.has(s.codigo))reasons.push("cTribNac não conhecido nesta suíte");
  if(typeof s.descricao!=="string"||s.descricao.trim().length<5)reasons.push("Descrição incompleta");
  if(typeof s.valor!=="number"||!Number.isFinite(s.valor)||s.valor<=0||s.valor>10000000)reasons.push("Valor inválido");
  if(!/^\d{4}-\d{2}-\d{2}$/.test(s.competencia||"")||Number.isNaN(Date.parse(s.competencia)))reasons.push("Competência inválida");
  return {aprovado:reasons.length===0,motivos:reasons};
 }
-function scenarioSuite(cnpj,cpf){
+function scenarioSuite(cnpj,cpf,municipio){
  const hoje=new Date().toISOString().slice(0,10);
- const base={cnpj,cpf,municipio:"3552809",codigo:"040102",descricao:"Atendimento simulado de teste",valor:100,competencia:hoje};
+ const codigoIbge=/^\d{7}$/.test(String(municipio||""))?String(municipio):"3552809";
+ const base={cnpj,cpf,municipio:codigoIbge,municipio_esperado:codigoIbge,codigo:"040102",descricao:"Atendimento simulado de teste",valor:100,competencia:hoje};
  const casos=[
   ...CATALOG.map(item=>({nome:"Código "+item.codigo+" — "+item.servico,altera:{codigo:item.codigo},deve_aprovar:true})),
   {nome:"CPF com dígito incorreto",altera:{cpf:"12345678900"},deve_aprovar:false},
   {nome:"CPF com sequência inválida",altera:{cpf:"00000000000"},deve_aprovar:false},
   {nome:"CNPJ adulterado",altera:{cnpj:cnpj.slice(0,-1)+(cnpj.endsWith("0")?"1":"0")},deve_aprovar:false},
-  {nome:"Município incorreto",altera:{municipio:"4208906"},deve_aprovar:false},
+  {nome:"Município incorreto",altera:{municipio:codigoIbge==="4208906"?"3552809":"4208906"},deve_aprovar:false},
   {nome:"Código desconhecido",altera:{codigo:"999999"},deve_aprovar:false},
   {nome:"Código ausente",altera:{codigo:""},deve_aprovar:false},
   {nome:"Valor zero",altera:{valor:0},deve_aprovar:false},
@@ -139,7 +140,7 @@ Deno.serve(async(req:Request)=>{
    {caso:"Serviço de teste presente",ok:nonempty("SERVIÇO FICTÍCIO - NÃO EMITIR")},
    {caso:"Descrição de serviço vazia rejeitada",ok:!nonempty("")}
   ];
-  const cenarios=scenarioSuite(cnpj,syntheticCpf);
+  const cenarios=scenarioSuite(cnpj,syntheticCpf,cfg.municipio_ibge);
   const pendencias:string[]=[];
   const avisos:string[]=[];
   if(!cnpjValid(cnpj))pendencias.push("CNPJ do prestador inválido pelo algoritmo.");
@@ -152,7 +153,7 @@ Deno.serve(async(req:Request)=>{
   if(codigoReferenciaCnae)avisos.push("O CNAE 9602501 corresponde a cabeleireiros/manicure/pedicure. Para SIMULAÇÃO de serviços dessa natureza, o cTribNac 060101 é referência pública. Não usar essa equiparação para procedimentos clínicos de podologia.");
   if(!nonempty(cfg.codigo_servico)&&!nonempty(cfg.ctrib_nacional))avisos.push("O código de serviço deve variar conforme o serviço efetivamente prestado. Não o infira exclusivamente pelo CNAE.");
   if(cfg.simples_nacional===null)avisos.push("Enquadramento no Simples Nacional não confirmado pelo cadastro.");
-  if(cfg.municipio_ibge==="3552809")avisos.push("Município cadastrado: Taboão da Serra/SP (3552809). Referências públicas também associam este CNPJ a Taboão da Serra. Valide o comprovante cadastral atual antes de emitir; não altere para outra cidade apenas pela localização física do atendimento.");
+  if(cfg.municipio_ibge==="3552809")avisos.push("Município cadastrado desta empresa: Taboão da Serra/SP (3552809). Cada nova clínica utiliza seu próprio código IBGE; não há município fixo no roteamento.");
   if(String(cfg.integrador||"")==="nao_configurado"||!nonempty(cfg.integrador))pendencias.push("Não há prestador de integração fiscal configurado.");
   if(cfg.habilitado!==true||cfg.situacao_integracao!=="pronta")pendencias.push("Integração fiscal não habilitada e confirmada como pronta.");
   // Even a locally 'ready' flag is never proof of government homologation.
@@ -171,7 +172,7 @@ Deno.serve(async(req:Request)=>{
    transporte_simulado:MOCK_STATUS.map(codigo_http=>({codigo_http,resposta:"MOCK_SEFIN_"+codigo_http,...mockTransportPolicy(codigo_http),oficial:false})),
    catalogo:CATALOG,
    cnae_principal:cnaePrincipal,codigo_referencia_cnae:codigoReferenciaCnae,
-   simulacao_documento:{prestador_cnpj:cnpj,municipio_ibge:"3552809",tomador_nome:"PACIENTE TESTE BLACKFLOW",tomador_cpf:syntheticCpf,descricao:"Serviço fictício de manicure/pedicure — NÃO EMITIR",valor:100,competencia:new Date().toISOString().slice(0,10),serie_exemplo:1,codigo_nacional_exemplo:codigoReferenciaCnae||"040102",iss_referencia_2_porcento:2.00,observacao:"Estrutura ilustrativa; não é DPS XML nem passou pelo XSD oficial.",ibscbs:"CST e cClassTrib dependem do leiaute e regime efetivos; não foram inventados."},
+   simulacao_documento:{prestador_cnpj:cnpj,municipio_ibge:cfg.municipio_ibge||null,tomador_nome:"PACIENTE TESTE BLACKFLOW",tomador_cpf:syntheticCpf,descricao:codigoReferenciaCnae?"Serviço fictício de manicure/pedicure — NÃO EMITIR":"Serviço fictício genérico — NÃO EMITIR",valor:100,competencia:new Date().toISOString().slice(0,10),serie_exemplo:1,codigo_nacional_exemplo:codigoReferenciaCnae||"040102",iss_aliquota:"nao_calculada_automaticamente",observacao:"Estrutura ilustrativa; não é DPS XML nem passou pelo XSD oficial.",ibscbs:"CST e cClassTrib dependem do leiaute e regime efetivos; não foram inventados."},
    fonte_catalogo:"https://www.gov.br/nfse/pt-br/mei-e-demais-empresas/codigos-de-tributacao-nacional-nbs",
    abrangencia:"Validação local sintética; não substitui XSD, SEFIN, regra municipal ou autorização oficial.",
    bloqueios:pendencias,avisos,

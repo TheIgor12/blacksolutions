@@ -29,6 +29,7 @@ function bfFiscalDocumentoValido(documento){
  }
  return false;
 }
+const UFS_FISCAIS=[['','Selecione a UF'],['RO','RO'],['AC','AC'],['AM','AM'],['RR','RR'],['PA','PA'],['AP','AP'],['TO','TO'],['MA','MA'],['PI','PI'],['CE','CE'],['RN','RN'],['PB','PB'],['PE','PE'],['AL','AL'],['SE','SE'],['BA','BA'],['MG','MG'],['ES','ES'],['RJ','RJ'],['SP','SP'],['PR','PR'],['SC','SC'],['RS','RS'],['MS','MS'],['MT','MT'],['GO','GO'],['DF','DF']];
 const clinic=()=>NV.clinicaId;
 const CODIGOS_SERVICOS=[
  ['','Selecione o serviço para a simulação/rascunho'],
@@ -67,7 +68,7 @@ async function fiscalView(){
     authorized:notes.filter(n=>n.status==='autorizada').length,
     rejected:notes.filter(n=>n.status==='rejeitada').length};
   const badge='<div class="note" style="margin:0 0 15px">'+
-    '<b>Atenção: este BlackFlow prepara rascunhos fiscais, mas ainda não transmite NFS-e.</b> Para notas válidas, são necessários o certificado digital, o XML DPS assinado, a integração mTLS e a homologação. O documento oficial é o XML autorizado. Não trate o comprovante Pix/cartão como nota fiscal.'+
+    '<b>BlackFlow fiscal: cadastro individual por empresa, com roteamento nacional.</b> Rascunhos disponíveis; transmissão fiscal real ainda não habilitada. A autorização depende do canal aplicável ao prestador (SEFIN Nacional ou integrador municipal) e do retorno oficial. A autenticação e a assinatura dependem da modalidade. Pix/cartão não são nota fiscal.'+
     '<br><a href="https://www.nfse.gov.br/EmissorNacional" target="_blank" rel="noopener">Abrir o Emissor Nacional de NFS-e</a></div>';
   const summary='<div class="grid g3">'+[['Rascunhos',totals.draft],['Notas autorizadas importadas',totals.authorized],['Rejeições registradas',totals.rejected]].map(([name,n])=>'<div class="card"><small>'+name+'</small><h2 style="font-size:25px;margin:4px 0">'+n+'</h2></div>').join('')+'</div>';
   const configured=cfg.situacao_integracao||'nao_configurada';
@@ -78,10 +79,10 @@ async function fiscalView(){
     '<p><b>Emitente:</b> '+(cfg.cnpj?'CNPJ associado':'CNPJ pendente')+
       ' · <b>IBGE:</b> '+(cfg.municipio_ibge?'informado':'pendente')+
       ' · <b>Código serviço:</b> '+(cfg.ctrib_nacional||cfg.codigo_servico?'informado':'pendente')+'</p>'+
-    '<p class="sub">Pendente para emissão automática: certificado ICP-Brasil do emitente ou de procurador autorizado, assinatura XML DPS, mTLS, credenciamento na API, testes oficiais e XML autorizado arquivado.</p>'+
+    '<p class="sub">Cada empresa tem suas próprias credenciais e rota fiscal. SEFIN Nacional: DPS/XML assinado e autenticação conforme API. Emissores municipais: conectores e credenciais específicos quando necessários. Armazenamento do XML autorizado e provas de retorno permanecem necessários.</p>'+
     '<p class="sub">Nunca envie certificado ou senha pelo navegador do BlackFlow ou para um repositório.</p>'+
-    bt('Verificar integração no servidor','bfxDiagnostico()','btn ghost sm')+' '+bt('Executar autoteste fiscal (sem emissão)','bfxAutoteste()','btn ghost sm')+
-    '<div id="bfxdiag-status" class="sub" role="status" style="margin-top:10px"></div>'+ '<div id="bfx-autoteste-status" role="status" style="margin-top:10px"></div>');
+    bt('Verificar integração no servidor','bfxDiagnostico()','btn ghost sm')+' '+bt('Executar autoteste fiscal (sem emissão)','bfxAutoteste()','btn ghost sm')+' '+bt('Testar cobertura nacional — 27 UFs','bfxCoberturaNacional()','btn ghost sm')+
+    '<div id="bfxdiag-status" class="sub" role="status" style="margin-top:10px"></div>'+ '<div id="bfx-autoteste-status" role="status" style="margin-top:10px"></div>'+ '<div id="bfx-cobertura-nacional" role="status" style="margin-top:10px"></div>');
   const settings=card('Configuração fiscal do estabelecimento',
     '<p class="sub">O CNPJ é recuperado automaticamente do cadastro do negócio. Os demais campos são definidos uma vez, com auxílio do contador. Lucro Presumido e Lucro Real não podem ser presumidos apenas pelo CNPJ. Alterar campos não habilita emissão.</p>'+
     row(field('bfxCnpj','CNPJ vinculado ao cadastro da clínica',cfg.cnpj||'').replace('id="bfxCnpj"','id="bfxCnpj" onblur="bfxBuscarCnpj()"')+
@@ -89,6 +90,9 @@ async function fiscalView(){
         field('bfxIM','Inscrição municipal',cfg.inscricao_municipal||''))+
     '<div id="bfxCnpjStatus" class="sub" role="status">'+(cfg.cnpj?'CNPJ recuperado da clínica e vinculado ao cadastro fiscal.':'Informe o CNPJ e clique em Consultar; para concluir, salve os dados fiscais.')+'</div>'+
     row(bt('Consultar CNPJ','bfxBuscarCnpj()','btn ghost sm')+' '+bt('Cadastro fiscal nas Configurações','bfcadAbrir()','btn ghost sm'))+
+    row('<label style="flex:1"><small>Buscar município do emitente no IBGE</small><br>'+opt('bfxUFEmitente',UFS_FISCAIS,'')+'</label>'+
+        bt('Listar municípios da UF','bfxListarMunicipios()','btn ghost sm'))+
+    '<div id="bfx-municipios-emissor" class="sub" role="status" style="margin-bottom:12px"></div>'+
     row(field('bfxIBGE','Município IBGE (7 dígitos)',cfg.municipio_ibge||'')+
         field('bfxCNAE','CNAE',cfg.cnae||'')+field('bfxRegime','Regime tributário',cfg.regime||''))+
     row(field('bfxTrib','Código tributação nacional',cfg.ctrib_nacional||cfg.codigo_servico||'')+
@@ -218,6 +222,60 @@ window.bfxDiagnostico=async function(){
    (rt.portal_municipal?' · <a target="_blank" rel="noopener noreferrer" href="https://nfe.etransparencia.com.br/sp.taboaodaserra/nfe/principal.aspx">Portal municipal de Taboão da Serra</a>':'')+
    '</p></div>';
  }catch(e){if(place)place.textContent='Consulta indisponível: '+String(e?.message||e).slice(0,140);}
+};
+window.bfxListarMunicipios=async function(){
+ const lugar=document.getElementById('bfx-municipios-emissor');
+ try{
+  await ensureAuthorized();
+  const uf=val('bfxUFEmitente');
+  if(!UFS_FISCAIS.some(x=>x[0]===uf&&uf))throw Error('Selecione uma UF.');
+  if(lugar)lugar.textContent='Consultando lista oficial de municípios ('+uf+')...';
+  const {data,error}=await NV.sb.functions.invoke('bf-fiscal-nacional',{body:{clinica_id:clinic(),acao:'municipios',uf}});
+  if(error)throw error;
+  if(!Array.isArray(data?.municipios)||data.uf!==uf)throw Error(data?.erro||'Resposta inválida do IBGE.');
+  const options=data.municipios.map(x=>[String(x.codigo),String(x.nome)+' — '+String(x.codigo)]);
+  if(lugar)lugar.innerHTML='<p>Catálogo IBGE: '+options.length+' municípios de '+html(uf)+'. Selecione a cidade e aplique ao cadastro:</p>'+
+    row('<label style="flex:1"><small>Município</small><br>'+opt('bfxMunicipioEmitente',options,cfg.municipio_ibge||'')+'</label>'+
+        bt('Aplicar ao cadastro','bfxAplicarMunicipio()','btn ghost sm'))+
+    '<small>A alteração será gravada somente quando você salvar a configuração fiscal. Cada clínica possui cadastro independente.</small>';
+ }catch(e){if(lugar)lugar.textContent='Consulta de municípios indisponível: '+String(e?.message||e).slice(0,150);}
+};
+window.bfxAplicarMunicipio=function(){
+ const ibge=val('bfxMunicipioEmitente');
+ if(!/^\d{7}$/.test(ibge))return toast('Escolha um município da lista IBGE.');
+ const emissor=document.getElementById('bfxIBGE');
+ if(emissor)emissor.value=ibge;
+ const prestacao=document.getElementById('bfxLocal');
+ if(prestacao)prestacao.value=ibge;
+ toast('Município aplicado ao formulário. Salve o cadastro fiscal para persistir.');
+};
+window.bfxCoberturaNacional=async function(){
+ const place=document.getElementById('bfx-cobertura-nacional');
+ try{
+  await ensureAuthorized();
+  if(place)place.textContent='Verificando o roteamento fiscal independente por clínica e estado...';
+  const {data,error}=await NV.sb.functions.invoke('bf-fiscal-nacional',{body:{clinica_id:clinic()}});
+  if(error)throw error;
+  if(!data||!data.rota_da_clinica||!data.cobertura_simulada)throw Error('Retorno nacional inválido.');
+  const rota=data.rota_da_clinica,cob=data.cobertura_simulada;
+  const estados=Array.isArray(cob.regioes)?cob.regioes:[];
+  if(place)place.innerHTML='<div class="note"><b>Roteamento nacional por empresa (sem emissão)</b>'+
+    '<p><b>Este cliente:</b> UF '+html(rota.uf||'não identificada')+
+    ' · IBGE '+html(rota.municipio_ibge||'pendente')+
+    ' · Regime cadastrado '+html(rota.regime_declarado||'não informado')+
+    ' · Rota '+html(rota.classificacao||'não encontrada')+'.</p>'+
+    '<p><b>Ensaios sintéticos:</b> '+Number(cob.aprovados)+'/'+Number(cob.cenarios_de_roteamento)+
+    ' casos aprovados, abrangendo '+Number(cob.ufs_exercitadas)+' UFs. Nenhuma nota enviada ou autorizada.</p>'+
+    '<p class="sub">Simples/MEI: emissor nacional. Outros regimes: consultar convênio e integrador municipal/nacional para o estabelecimento. Um cliente não bloqueia outro.</p>'+
+    '<details><summary>Ver os 27 estados da simulação</summary>'+table(['UF','Rota Simples Nacional','Rota outros regimes'],estados.map(x=>[
+      html(x.uf),
+      html(x.simples?.canal||'—'),
+      html(x.lucro?.canal||'—')
+    ]))+'</details>'+
+    (rota.itens_verificar?.length?'<p><b>Pendências deste cliente, não dos demais:</b></p><ul>'+rota.itens_verificar.map(x=>'<li>'+html(x)+'</li>').join('')+'</ul>':'')+
+    '<p><small>Simulação de roteamento, não comprovação de cobertura operacional dos emissores municipais nem de homologação governamental.</small></p>'+
+    '<p><a href="https://www.gov.br/nfse/pt-br/biblioteca/documentacao-tecnica/documentacao-atual" rel="noopener" target="_blank">Manuais nacionais oficiais</a></p></div>';
+ }catch(e){if(place)place.textContent='Não foi possível verificar cobertura nacional: '+String(e?.message||e).slice(0,150);}
 };
 window.bfxAutoteste=async function(){
  const place=document.getElementById('bfx-autoteste-status');
