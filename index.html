@@ -3129,10 +3129,11 @@ const ramoBarbearia=()=>typeof S!=='undefined'&&S&&S.config&&S.config.segmento==
 const ramoClinico=()=>typeof S!=='undefined'&&S&&S.config&&['odontologia','biomedicina'].includes(S.config.segmento);
 function planoInfo(k,semRamo){const a=(typeof ASSINATURA!=='undefined'&&ASSINATURA&&ASSINATURA.planos)||{};const d={agenda:{nome:'Só agenda',preco:'R$ 29,90 por mês',valor:29.90},completo:{nome:'Completo',preco:'R$ 79,90 por mês',valor:79.90},barbearia:{nome:'Barbearia',preco:'R$ 34,90 por mês',valor:34.90,link:'https://www.asaas.com/000/c/qfvnztz9zhhwl000'},upgrade:{nome:'Complemento para o plano completo',preco:'R$ 50,09',valor:50.09}};
  if(!semRamo&&k==='completo'&&ramoClinico()){
-  const c=a.clinico||{};const preco=Number(c.valor);const link=String((c.links||{})[S.config.segmento]||'');
-  const mes=c.ativo===true&&c.chargeType==='RECURRENT'&&c.subscriptionCycle==='MONTHLY'&&Number.isFinite(preco)&&preco>0;
-  const linkValid=(()=>{try{const u=new URL(link);return u.protocol==='https:'&&['asaas.com','www.asaas.com'].includes(u.hostname)}catch{return false}})();
-  return {nome:'Plano Clínico',preco:mes?'R$ '+preco.toFixed(2).replace('.',',')+' por mês':'Valor em definição',valor:mes?preco:null,link:mes&&linkValid?link:'',ciclo:'MONTHLY'};
+  const seg=S.config.segmento,c=a[seg]||{},dflt=seg==='odontologia'?{nome:'BlackFlow Odontologia',valor:114.90,preco:'R$ 114,90 por mês',link:'https://www.asaas.com/000/c/n56ojnkjzzeo3fp6'}:{nome:'BlackFlow Biomedicina',valor:104.90,preco:'R$ 104,90 por mês',link:'https://www.asaas.com/000/c/gy2rifc4qff89fcw'};
+  const price=Number(c.valor??dflt.valor),link=String(c.link||dflt.link);
+  const monthly=(!c.chargeType||c.chargeType==='RECURRENT')&&(!c.subscriptionCycle||c.subscriptionCycle==='MONTHLY');
+  const valid=(()=>{try{const u=new URL(link);return u.protocol==='https:'&&['asaas.com','www.asaas.com'].includes(u.hostname)}catch{return false}})();
+  return {nome:c.nome||dflt.nome,preco:price>0?'R$ '+price.toFixed(2).replace('.',',')+' por mês':'Preço em definição',valor:price,link:price>0&&monthly&&valid?link:'',ciclo:'MONTHLY'};
  }
  if(!semRamo&&ramoBarbearia()){
   if(k==='completo')k='barbearia';
@@ -3226,8 +3227,14 @@ function escolherPlano(k){if(ramoClinico()&&k==='agenda'){toast('O plano Só age
  toast(k==='agenda'?'Plano só agenda. O menu agora mostra apenas a agenda e os cadastros.':antes==='agenda'?'Plano completo. Os módulos voltaram ao menu.':'Plano completo.')}
 /* Trava: no plano Só agenda, passar para o completo ou trocar o segmento exige pagamento */
 async function modalLiberar(motivo){await carregarAssinatura();const c=planoInfo('completo'),u=planoInfo('upgrade'),a=planoInfo('agenda');
- if(ramoClinico()&&!c.link){const contato=(ASSINATURA||{}).contato||'';openModal('<h3>Plano Clínico — assinatura mensal</h3><p class="sub">O valor mensal e o link recorrente do Asaas estão em definição. Não há cobrança ativa para este segmento.</p>'+(contato?'<a class="btn" href="'+esc(contato)+'" target="_blank" rel="noopener">Consultar a BlackSolutions</a>':'')+'<div class="mact"><button class="btn ghost" onclick="closeModal()">Fechar</button></div>');return;}
-
+ if(ramoClinico()){
+  const link=c.link,contato=(ASSINATURA||{}).contato||'';
+  openModal('<h3>'+esc(SEG().nome)+' — assinatura mensal</h3>'+
+   '<p class="sub">Plano recorrente de <b>'+esc(c.preco)+'</b>. O cadastro no Asaas é feito de forma segura, fora do BlackFlow.</p>'+
+   '<div class="note">Se você contratar antes de terminar os sete dias gratuitos, o Asaas poderá cobrar imediatamente. Não armazenamos dados de cartões.</div>'+
+   (link?'<a class="btn" href="'+esc(link)+'" target="_blank" rel="noopener">Abrir assinatura mensal no Asaas</a>':'<p>Link de assinatura indisponível.</p>')+
+   '<div class="mact"><button class="btn ghost" onclick="closeModal()">Fechar</button></div>');return;
+ }
  const bt=(x,cls)=>x.link?`<a class="btn ${cls||''}" href="${esc(x.link)}" target="_blank" rel="noopener" onclick="closeModal()">${esc(x.rotulo||('Pagar '+x.preco))}</a>`:'';
  const contato=(ASSINATURA||{}).contato||'';
  openModal(`<h3>Liberar o plano completo</h3>${promoFaixa()}
@@ -3239,7 +3246,7 @@ async function modalLiberar(motivo){await carregarAssinatura();const c=planoInfo
  <p class="sub" style="margin-top:12px">Assim que o pagamento for confirmado, o plano é liberado nesta conta e os módulos aparecem sozinhos ao abrir o sistema de novo.</p>
  <div class="mact"><button class="btn ghost" onclick="closeModal()">Agora não</button></div>`)}
 function cardPlanoConfig(){const ct=planoContratado();const a=planoInfo('agenda'),c=planoInfo('completo');const fx=promoFaixa();
- if(ramoClinico())return '<div class="card"><h2>Plano Clínico — '+esc(SEG().nome)+'</h2><p class="sub">Assinatura mensal, com cobrança recorrente pelo Asaas. Valor: <b>'+esc(c.preco)+'</b>.</p>'+(c.link?'<a class="btn" href="'+esc(c.link)+'" target="_blank" rel="noopener">Assinar no Asaas</a>':'<div class="note">Contratação aguardando definição do valor e do link recorrente.</div>')+'</div>';
+ if(ramoClinico())return '<div class="card"><h2>Plano Clínico — '+esc(SEG().nome)+'</h2><p class="sub">Assinatura mensal, com cobrança recorrente pelo Asaas. Valor: <b>'+esc(c.preco)+'</b>. O cadastro do negócio oferece sete dias gratuitos; o link de pagamento não posterga automaticamente a primeira cobrança.</p>'+(c.link?'<a class="btn" href="'+esc(c.link)+'" target="_blank" rel="noopener">Assinar no Asaas</a>':'<div class="note">Contratação aguardando definição do valor e do link recorrente.</div>')+'</div>';
 
  if(ct==='agenda')return `<div class="card"><h2>Plano de uso</h2>${fx}
   <div class="note" style="margin:0 0 12px"><b>Plano contratado: ${esc(a.nome)}, ${esc(a.preco)}.</b> O menu mostra a agenda, os ${esc(SEG().pessoas.toLowerCase())}, os profissionais, os serviços e a confirmação por WhatsApp. O financeiro, o estoque, a comanda, o caixa e os relatórios fazem parte do plano completo.</div>
@@ -5194,7 +5201,7 @@ function blocoAssinatura(){const a=ASSINATURA||{};const pa=planoInfo('agenda'),p
   <div style="display:flex;justify-content:space-between;align-items:baseline;gap:10px"><b>${esc(x.nome)}</b><span style="font-size:20px;font-weight:800">${esc(x.preco)}</span></div>
   <p class="sub" style="margin:6px 0 10px">${texto}</p>
   ${link?`<a class="btn ${escolhido===k?'':'ghost'}" style="width:100%" href="${esc(link)}" target="_blank" rel="noopener">Assinar ${esc(x.nome.toLowerCase())}</a>`:''}</div>`;
- return `<div>${ramoClinico()?'':promoBloco()}${ramoClinico()||PROMO?'':promoFaixa()}${ramoClinico()?'':cx(pa,pa.link,'agenda','Agenda, clientes, profissionais, serviços e preços, confirmação por WhatsApp e agendamento online.')}
+ return `<div>${ramoClinico()?'<div class="note">O teste de 7 dias não cadastra cartão nem agenda cobrança automática. O checkout do Asaas inicia uma assinatura recorrente quando o cliente confirma a contratação; poderá haver cobrança imediata.</div>':''}${ramoClinico()?'':promoBloco()}${ramoClinico()||PROMO?'':promoFaixa()}${ramoClinico()?'':cx(pa,pa.link,'agenda','Agenda, clientes, profissionais, serviços e preços, confirmação por WhatsApp e agendamento online.')}
  ${cx(pc,linkC,'completo','Tudo do Só agenda mais financeiro com parcelas e recibo, comanda, caixa do dia, estoque, comissões e relatórios.')}
  ${!pa.link&&!linkC?`<p class="sub" style="margin:0">${esc(a.mensagem||'Para assinar, fale com a Black Solutions pelos canais de atendimento informados no site.')}</p>`:''}
  ${a.contato?`<p class="sub" style="margin:4px 0 0">Dúvidas: <a class="lnk" href="${esc(a.contato)}" target="_blank" rel="noopener">falar com a Black Solutions</a></p>`:''}</div>`}
@@ -5261,8 +5268,8 @@ function vAuth(){const A=UI.auth;const box=c=>`<div class="auth"><div class="aut
  case 'nova_senha':return box(`<h2>Nova senha</h2><p class="sub" style="margin-bottom:14px">Digite o código enviado para <b>${esc(A.email)}</b> e escolha a nova senha.</p><form onsubmit="authNovaSenha();return false"><label>Código<input id="au_cod" inputmode="numeric" maxlength="10" autocomplete="one-time-code"></label><label>Nova senha<input id="au_senha" type="password" autocomplete="new-password"></label><label>Repita a nova senha<input id="au_senha2" type="password" autocomplete="new-password"></label>${msg}<button class="btn">Salvar nova senha</button></form><div class="authlinks"><button class="lnk" onclick="UI.auth={modo:'entrar'};render()">Voltar</button></div>`);
  case 'clinica':{const seg=A.seg||'',pl=A.plano||'';const esc2=x=>esc(x);
   const op=(n,k,p2,t,d,pr)=>`<button type="button" class="aopt ${A.op===n?'on':''}" onclick="authEsc(${n},'${k}','${p2}')"><span><b>${t}</b><small>${d}</small></span><span class="pr">${pr}</span></button>`;
-  const pa=planoInfo('agenda',true),pc=planoInfo('completo',true),pb=planoInfo('barbearia',true);const vA=pa.preco.replace(' por mês',''),vC=pc.preco.replace(' por mês',''),vB=pb.preco.replace(' por mês','');
-  const escolhido=seg?(pl==='agenda'?pa:seg==='barbearia'?pb:pc):null;const vCx=seg==='barbearia'?vB:vC;
+  const pa=planoInfo('agenda',true),pc=planoInfo('completo',true),pb=planoInfo('barbearia',true);const bio=(ASSINATURA?.planos?.biomedicina)||{preco:'R$ 104,90 por mês'},dent=(ASSINATURA?.planos?.odontologia)||{preco:'R$ 114,90 por mês'};const vA=pa.preco.replace(' por mês',''),vC=pc.preco.replace(' por mês',''),vB=pb.preco.replace(' por mês','');
+  const escolhido=seg?(seg==='biomedicina'?bio:seg==='odontologia'?dent:pl==='agenda'?pa:seg==='barbearia'?pb:pc):null;const vCx=seg==='barbearia'?vB:seg==='biomedicina'?bio.preco.replace(' por mês',''):seg==='odontologia'?dent.preco.replace(' por mês',''):vC;
   return box(`<h2>Cadastre o seu negócio</h2><p class="sub" style="margin-bottom:6px">Você será o administrador. Depois poderá convidar a sua equipe.</p>
   <form onsubmit="authClinica();return false"><label>Nome do negócio<input id="au_clin" value="${esc2(A.clin||'')}" oninput="UI.auth.clin=this.value"></label>
   <label>CPF do responsável<input id="au_cpf" data-mask="cpf" inputmode="numeric" value="${esc2(A.cpf||'')}" oninput="UI.auth.cpf=this.value" placeholder="000.000.000-00"></label>
@@ -5275,9 +5282,11 @@ function vAuth(){const A=UI.auth;const box=c=>`<div class="auth"><div class="aut
   ${op(2,'beleza','completo','Salão de beleza','Vários profissionais, comanda, caixa do dia, comissões e estoque.',pl==='agenda'&&A.op===2?vA:vC)}
   ${op(3,'podologia','completo','Clínica de podologia','Prontuário, anamnese, controle de sessões, evolução e financeiro.',pl==='agenda'&&A.op===3?vA:vC)}
   ${op(4,'estetica','completo','Clínica de estética','Pacotes de sessões, avaliação, fotos de antes e depois, protocolos e financeiro.',pl==='agenda'&&A.op===4?vA:vC)}
-  <div class="ast">Quer só a agenda, mesmo sendo clínica ou salão?</div>
-  <div style="display:flex;gap:8px;flex-wrap:wrap"><button type="button" class="btn ${pl==='agenda'?'':'ghost'} sm" onclick="authPlano('agenda')">Só agenda ${vA}</button><button type="button" class="btn ${pl==='completo'?'':'ghost'} sm" onclick="authPlano('completo')">Completo ${vCx}</button></div>
-  <div class="aresumo">${escolhido?`Depois dos ${testeDiasTxt()} de teste grátis, a assinatura fica em <b>${esc2(escolhido.preco)}</b>. Dá para trocar de plano depois, pagando a diferença.`:'Escolha acima o que você faz. O valor da assinatura aparece aqui.'}</div>
+  ${op(6,'biomedicina','completo','Biomedicina','Prontuário, protocolos estéticos, documentos, fotos e controle de lotes.',bio.preco.replace(' por mês',''))}
+  ${op(7,'odontologia','completo','Odontologia','Prontuário, odontograma, radiografias, convênios e documentos.',dent.preco.replace(' por mês',''))}
+  ${seg==='biomedicina'||seg==='odontologia'?'':'<div class="ast">Quer só a agenda, mesmo sendo clínica ou salão?</div>'}
+  ${seg==='biomedicina'||seg==='odontologia'?'':`<div style="display:flex;gap:8px;flex-wrap:wrap"><button type="button" class="btn ${pl==='agenda'?'':'ghost'} sm" onclick="authPlano('agenda')">Só agenda ${vA}</button><button type="button" class="btn ${pl==='completo'?'':'ghost'} sm" onclick="authPlano('completo')">Completo ${vCx}</button></div>`}
+  <div class="aresumo">${escolhido?`Teste grátis de ${testeDiasTxt()} sem cobrança automática. Depois, o valor do plano é <b>${esc2(escolhido.preco)}</b>. A contratação recorrente é opcional e realizada no Asaas; se contratar antes do fim do teste, o primeiro pagamento poderá ocorrer imediatamente.`:'Escolha acima o que você faz. O valor da assinatura aparece aqui.'}</div>
   ${msg}<button class="btn">Criar conta do negócio</button></form>
   <div class="authlinks"><button class="lnk" onclick="entrar(NV.sessao)">Verificar convites</button><button class="lnk" onclick="sair()">Sair</button></div>`)}
  case 'bloqueado':return box(`<h2>${A.motivo==='teste'?'Seu teste grátis terminou':A.motivo==='suspenso'?'Acesso suspenso':'Assinatura vencida'}</h2><p class="sub" style="margin-bottom:14px">${A.motivo==='teste'?`Os ${testeDiasTxt()} de teste da clínica <b>${esc(NV.nomeClinica)}</b> acabaram. Seus dados estão guardados e voltam a aparecer assim que a assinatura for ativada.`:A.motivo==='suspenso'?`O acesso da clínica <b>${esc(NV.nomeClinica)}</b> está suspenso. Entre em contato com o suporte.`:`A assinatura da clínica <b>${esc(NV.nomeClinica)}</b> venceu. Seus dados estão guardados e voltam a aparecer assim que o pagamento for confirmado.`}</p>${A.motivo!=='suspenso'?blocoAssinatura():''}<div class="authlinks">${A.motivo==='teste'?`<button class="lnk" id="btPrazo" onclick="pedirPrazo(this)">Preciso de mais alguns dias</button>`:''}<button class="lnk" onclick="entrar(NV.sessao)">Já paguei, verificar de novo</button><button class="lnk" onclick="sair()">Sair</button></div>`);
@@ -5313,7 +5322,7 @@ async function authCnpjBuscar(){authGuardar();const d=soAlnum(UI.auth.cnpj||'');
  let r=null,semCadastro=false;
  try{const x=await fetch('https://brasilapi.com.br/api/cnpj/v1/'+d);
   if(x.ok){const j=await x.json();
-   r={razao:j.razao_social||j.nome_fantasia||'',fantasia:j.nome_fantasia||'',situacao:j.descricao_situacao_cadastral||'',municipio:j.municipio||'',uf:j.uf||'',fonte:'brasilapi'}}
+   r={razao:j.razao_social||j.nome_fantasia||'',fantasia:j.nome_fantasia||'',situacao:j.descricao_situacao_cadastral||'',municipio:j.municipio||'',uf:j.uf||'',ibge:String(j.codigo_municipio_ibge||''),cnae:String(j.cnae_fiscal||''),fonte:'brasilapi'}}
   else if(x.status===404)semCadastro=true}catch(e){}
  if(!r){try{const x=await fetch('https://open.cnpja.com/office/'+d);
   if(x.ok){const j=await x.json();semCadastro=false;
@@ -5323,7 +5332,7 @@ async function authCnpjBuscar(){authGuardar();const d=soAlnum(UI.auth.cnpj||'');
  if(!r){UI.auth.cnpjOk=true;UI.auth.cnpjDados={cnpj:d,consulta:'falhou'};UI.auth.cnpjMsg='Não foi possível consultar a Receita Federal agora. O cadastro segue assim mesmo.';render();return}
  if(!r.razao){UI.auth.cnpjOk=false;UI.auth.cnpjDados=null;UI.auth.cnpjMsg='Este CNPJ não foi encontrado no cadastro da Receita Federal.';render();return}
  const ativa=/ativa/i.test(r.situacao||'');
- UI.auth.cnpjDados={cnpj:d,razao:r.razao,fantasia:r.fantasia,situacao:r.situacao,municipio:r.municipio,uf:r.uf,fonte:r.fonte,em:new Date().toISOString()};
+ UI.auth.cnpjDados={cnpj:d,razao:r.razao,fantasia:r.fantasia,situacao:r.situacao,municipio:r.municipio,uf:r.uf,ibge:r.ibge||'',cnae:r.cnae||'',fonte:r.fonte,em:new Date().toISOString()};
  UI.auth.cnpjOk=ativa;
  UI.auth.cnpjMsg=r.razao+(r.municipio?' · '+r.municipio+(r.uf?'/'+r.uf:''):'')+(r.situacao?' · '+r.situacao:'')+(ativa?'':'. Esta inscrição não está ativa na Receita Federal.');
  if(!val('#au_clin')&&!UI.auth.clin){UI.auth.clin=r.fantasia||r.razao}
@@ -5336,7 +5345,7 @@ async function authClinica(){authGuardar();const nome=val('#au_clin')||UI.auth.c
  if(UI.auth.temCnpj===undefined){authMsg('Diga se o negócio tem CNPJ.');return}
  const cnpj=UI.auth.temCnpj===1?soAlnum(UI.auth.cnpj||''):'';
  if(UI.auth.temCnpj===1){if(!cnpj){authMsg('Informe o CNPJ.');return}if(!cnpjValido(cnpj)){authMsg('O CNPJ informado não é válido. Confira os caracteres.');return}}
- if(!UI.auth.seg){authMsg('Escolha o que você faz.');return}
+ if(!UI.auth.seg){authMsg('Escolha o que você faz.');return}if(['biomedicina','odontologia'].includes(UI.auth.seg))UI.auth.plano='completo';
  authMsg('Criando...',true);CAD={segmento:UI.auth.seg,plano:UI.auth.plano||'completo'};
  const dd=UI.auth.cnpjDados||null;
  const {error}=await NV.sb.rpc('criar_clinica',{p_nome:nome,p_cpf:cpf,p_cnpj:cnpj||null,p_razao:(dd&&dd.razao)||null,p_verif:dd});if(error){CAD=null;authMsg(traduz(error));return}
