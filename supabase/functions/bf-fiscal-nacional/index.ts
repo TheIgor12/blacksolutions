@@ -123,6 +123,15 @@ Deno.serve(async req=>{
   const headers={Authorization:auth,apikey:anon,Accept:"application/json"};
   const session=await fetch(base+"/auth/v1/user",{headers});
   if(!session.ok)return reply({erro:"Sessão inválida."},401);
+  const usuario=await session.json();
+  if(!validUUID(usuario?.id))return reply({erro:"Usuário inválido."},401);
+  const membros=new URLSearchParams({
+   select:"papel",clinica_id:"eq."+body.clinica_id,user_id:"eq."+usuario.id,limit:"1"
+  });
+  const respostaMembros=await fetch(base+"/rest/v1/membros?"+membros,{headers});
+  if(!respostaMembros.ok)return reply({erro:"Não foi possível confirmar seu perfil."},403);
+  const listaMembros=await respostaMembros.json();
+  if(!Array.isArray(listaMembros)||listaMembros[0]?.papel!=="admin")return reply({erro:"Somente administrador desta clínica pode executar o diagnóstico fiscal."},403);
   const params=new URLSearchParams({
    select:"clinica_id,cnpj,municipio_ibge,regime,simples_nacional,integrador,habilitado,situacao_integracao,ctrib_nacional,cnae",
    clinica_id:"eq."+body.clinica_id,limit:"1"
@@ -130,8 +139,8 @@ Deno.serve(async req=>{
   const response=await fetch(base+"/rest/v1/bf_fiscal_config?"+params,{headers});
   if(!response.ok)return reply({erro:"Consulta negada por permissões da clínica."},403);
   const list=await response.json();
-  if(!Array.isArray(list)||!list.length)return reply({erro:"Cadastro fiscal indisponível para esta clínica."},403);
-  const cfg=list[0];
+  if(!Array.isArray(list))return reply({erro:"O cadastro fiscal não pôde ser consultado."},503);
+  const cfg=list[0]||{};
   if(body.acao==="municipios"){
    const uf=String(body.uf||"").trim().toUpperCase();
    if(!Object.values(ufPorPrefixo).includes(uf))return reply({erro:"UF inválida."},400);
