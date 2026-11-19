@@ -94,7 +94,8 @@ async function fiscalView(){
         return [html(new Date(n.criado_em).toLocaleDateString('pt-BR')),
           html(n.descricao_servico),Number(n.valor).toLocaleString('pt-BR',{style:'currency',currency:'BRL'}),
           pay,html(n.status),bt('Validar',"bfxValidate('"+n.id+"')",'btn ghost sm')+
-          (n.status==='rascunho'?bt('Vincular pagamento',"bfxLinkPayment('"+n.id+"')",'btn ghost sm'):'')];
+          (n.status==='rascunho'?bt('Vincular pagamento',"bfxLinkPayment('"+n.id+"')",'btn ghost sm'):'')+
+          (n.status==='autorizada'&&n.chave_acesso?bt('Enviar NFS-e por WhatsApp',"bfNfseWhatsApp('"+n.id+"')",'btn ghost sm'):'')];
       })));
   el.innerHTML=badge+summary+settings+draft+history;
  }catch(e){el.innerHTML='<div class="note">Não foi possível carregar o módulo fiscal: '+html(e.message||e)+'</div>'}
