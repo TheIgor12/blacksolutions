@@ -2,7 +2,7 @@
 **Data:** 19/11/2026 | **Escopo:** GitHub `TheIgor12/blacksolutions` e Supabase `blszdbjpxgtloblxlusr`.
 
 ## Resultado objetivo
-**Não está homologada a emissão automática de NFS-e.** A NFS-e exige prestador habilitado, parâmetros tributários, assinatura de DPS/XML, certificado ICP-Brasil sob guarda segura, comunicação mTLS e confirmação fiscal do órgão emissor, além de testes oficiais. Nunca transformar um rascunho em nota "autorizada" apenas pela interface ou por confirmação de pagamento.
+**Não está homologada a emissão automática de NFS-e.** A NFS-e exige prestador habilitado, parâmetros tributários, assinatura de DPS/XML, certificado ICP-Brasil do emitente ou de procurador eletrônico autorizado, sob guarda segura, comunicação mTLS e confirmação fiscal do órgão emissor, além de testes oficiais. Nunca transformar um rascunho em nota "autorizada" apenas pela interface ou por confirmação de pagamento.
 
 ### Configuração fiscal constatada
 | Item | Estado em 19/11 |
@@ -46,7 +46,7 @@
 
 ## Checklist para homologar NFS-e no futuro
 1. Confirmar CNPJ, município/adesão à NFS-e nacional, regime tributário, inscrição municipal quando aplicável, CNAE, código de tributação nacional/municipal, NBS e retenções com contador.
-2. Autorizar o próprio prestador e configurar certificado ICP-Brasil em cofre de segredos/serviço de assinatura **fora do navegador e fora do GitHub**; aprovar custos de certificadora/integrador.
+2. Credenciar o prestador na API e configurar certificado ICP-Brasil do emitente ou procurador eletrônico autorizado em cofre de segredos/serviço de assinatura **fora do navegador e fora do GitHub**; aprovar custos de certificadora/integrador.
 3. Implementar DPS no leiaute oficial vigente e assinatura XML; comunicação com o endpoint fiscal adequado em mTLS. Anotar versões, horários, erros, protocolos e identificadores idempotentes.
 4. Homologar com documentos de teste no ambiente oficial e reprocessar falhas sem duplicar NFS-e. Validar retorno por consulta oficial.
 5. Liberar produção por estabelecimento **somente após prova de autorização**, armazenar XML autorizado e DANFSe, conectar cancelamento/substituição/sincronização e auditoria.
