@@ -218,7 +218,7 @@ async function home(){
 }
 window.bfRecAbrirSNCR=function(){
  const numero=read('bfrec-sncr-numero');
- if(!/^\\d{4}\\.\\d-\\d{2}\\.\\d{7}$/.test(numero))return toast('Informe um número SNCR no formato 0000.0-00.0000000.');
+ if(!/^\d{4}\.\d-\d{2}\.\d{7}$/.test(numero))return toast('Informe um número SNCR no formato 0000.0-00.0000000.');
  window.open('https://sncr.anvisa.gov.br/receita/consultar?numero='+encodeURIComponent(numero),'_blank','noopener,noreferrer');
 };
 window.bfRecGenerate=async()=>{
