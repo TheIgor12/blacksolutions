@@ -15,7 +15,30 @@ const bt=(label,fn,kind="btn sm")=>'<button class="'+kind+'" onclick="'+fn+'">'+
 const table=(headers,rows)=>'<div style="overflow:auto"><table class="tbl"><thead><tr>'+headers.map(x=>'<th>'+html(x)+'</th>').join('')+'</tr></thead><tbody>'+
  rows.map(x=>'<tr>'+x.map(y=>'<td>'+y+'</td>').join('')+'</tr>').join('')+'</tbody></table></div>';
 const notify=e=>toast('Operação não concluída: '+String(e?.message||e).slice(0,150));
+function bfFiscalDocumentoValido(documento){
+ const v=String(documento||'').replace(/\D/g,'');
+ if(v.length===11){
+  if(/^(\d)\1{10}$/.test(v))return false;
+  const dv=n=>{let sum=0;for(let i=0;i<n;i++)sum+=Number(v[i])*(n+1-i);const r=(sum*10)%11;return r===10?0:r};
+  return dv(9)===Number(v[9])&&dv(10)===Number(v[10]);
+ }
+ if(v.length===14){
+  if(/^(\d)\1{13}$/.test(v))return false;
+  const dv=n=>{let sum=0,w=n-7;for(let i=0;i<n;i++){sum+=Number(v[i])*w--;if(w<2)w=9}const r=sum%11;return r<2?0:11-r};
+  return dv(12)===Number(v[12])&&dv(13)===Number(v[13]);
+ }
+ return false;
+}
 const clinic=()=>NV.clinicaId;
+const CODIGOS_SERVICOS=[
+ ['','Selecione o serviço para a simulação/rascunho'],
+ ['040102','040102 — Biomedicina'],
+ ['040303','040303 — Clínicas e ambulatórios'],
+ ['040901','040901 — Terapias de tratamento físico/orgânico'],
+ ['041201','041201 — Odontologia'],
+ ['060101','060101 — Pedicuros e congêneres (não presumir podologia clínica)'],
+ ['060201','060201 — Estética e tratamento de pele']
+];
 const admin=()=>NV.papel==='admin'||!!NV.mestre;
 const num=v=>Number(v||0);
 async function query(t,cols,where,order){
@@ -93,6 +116,8 @@ async function fiscalView(){
     row(field('bfxComp','Competência','','date')+
         field('bfxLocal','Município IBGE prestação',cfg.municipio_ibge||'')+
         '<label style="flex:1"><small>Pagamento</small><br>'+opt('bfxForma',[['','Não informado'],['Pix','Pix'],['Cartão de crédito','Cartão de crédito'],['Cartão de débito','Cartão de débito'],['Dinheiro','Dinheiro'],['Transferência','Transferência'],['Outro','Outro']],'')+'</label>')+
+    row('<label style="flex:1"><small>Consultar códigos de tributação por serviço (catálogo oficial)</small><br>'+opt('bfxCodigoSugestao',CODIGOS_SERVICOS,'')+'</label>'+bt('Aplicar código ao rascunho','bfxAplicarCodigo()','btn ghost sm'))+
+    '<p class="sub">A escolha depende do serviço prestado, não só do CNAE. Para podologia clínica não presuma equivalência com pedicure. Confira <a href="https://www.gov.br/nfse/pt-br/mei-e-demais-empresas/codigos-de-tributacao-nacional-nbs" target="_blank" rel="noopener">códigos nacionais oficiais</a> e a atividade efetiva antes da emissão.</p>'+
     row(field('bfxCodTrib','Código tributação nacional',cfg.ctrib_nacional||cfg.codigo_servico||'')+
         field('bfxCodMun','Código tributação municipal',cfg.ctrib_municipal||'')+
         field('bfxCodeNbs','NBS',cfg.codigo_nbs||''))+
@@ -209,11 +234,24 @@ window.bfxAutoteste=async function(){
     '<p><b>Simulação:</b> '+html(data.tomador_de_teste)+'; '+html(data.documento_teste)+
     '; valor R$ '+Number(data.valor_teste||0).toFixed(2).replace('.',',')+'.</p>'+
     '<p>Testes técnicos locais: '+Number(data.testes_aprovados||0)+'/'+Number(data.total_testes||0)+' aprovados.</p>'+
+    '<p><b>Emitente:</b> CNPJ final '+html(data.cnpj_terminacao||'')+
+    ' · IBGE '+html(data.municipio_ibge||'')+' · ambiente cadastrado '+html(data.ambiente_configurado||'')+'.</p>'+
+    '<p>Simulação local: sem XML DPS assinado, sem validação XSD oficial, sem transmissão nem autorização. IBS/CBS seguem o regime e leiaute aplicáveis.</p>'+
     '<details><summary>Casos validados</summary><ul>'+cases+'</ul></details>'+
+    '<details><summary>10 cenários simulados de resposta da SEFIN (sem contato com o governo)</summary><ul>'+
+    (data.transporte_simulado||[]).map(t=>'<li>HTTP '+Number(t.codigo_http)+': '+html(t.acao)+'</li>').join('')+
+    '</ul></details>'+
     '<p><b>Pendências de emissão:</b></p><ul>'+issues+'</ul>'+
     (warns?'<p><b>Conferências fiscais:</b></p><ul>'+warns+'</ul>':'')+
     '<small>Nenhum CPF fictício, pagamento, rascunho ou nota foi gravado. Esta simulação não equivale à homologação no Governo.</small></div>';
  }catch(e){if(place)place.textContent='Autoteste não concluído: '+String(e?.message||e).slice(0,150);}
+};
+window.bfxAplicarCodigo=function(){
+ const code=val('bfxCodigoSugestao');
+ if(!CODIGOS_SERVICOS.some(([k])=>k===code&&k))return toast('Escolha um serviço da tabela antes de aplicar.');
+ const draft=document.getElementById('bfxCodTrib');
+ if(draft)draft.value=code;
+ toast('Código colocado no rascunho. Confira o procedimento prestado antes de usar.');
 };
 window.bfxSaveSettings=async function(){
  try{
@@ -250,7 +288,8 @@ window.bfxCreateDraft=async function(){
   const description=val('bfxDesc'),amount=Number(val('bfxValor'));
   if(!description||!Number.isFinite(amount)||amount<=0)throw Error('Informe descrição e valor.');
   const doc=val('bfxDoc').replace(/\D/g,'');
-  if(doc&&![11,14].includes(doc.length))throw Error('CPF/CNPJ do tomador está incompleto.');
+  if(doc&&!bfFiscalDocumentoValido(doc))throw Error('CPF/CNPJ do tomador está inválido. Confira os dígitos verificadores.');
+  if(val('bfxCodTrib')&&!/^\d{6}$/.test(val('bfxCodTrib')))throw Error('O código tributário nacional deve possuir seis dígitos.');
   const r=await NV.sb.from('bf_fiscal_notas').insert({
     clinica_id:clinic(),origem:val('bfxOrigem'),origem_ref:val('bfxLanc')||null,
     paciente_ref:S.lancamentos.find(l=>String(l.id)===val('bfxLanc'))?.pacienteId||val('bfxPaciente')||null,
