@@ -31,18 +31,25 @@
       "valor": 50.09,
       "link": ""
     },
-    "clinico": {
-      "nome": "Plano Clínico",
-      "valor": null,
-      "preco": "Valor em definição",
+    "biomedicina": {
+      "nome": "BlackFlow Biomedicina",
+      "preco": "R$ 104,90 por mês",
+      "valor": 104.9,
+      "link": "https://www.asaas.com/000/c/gy2rifc4qff89fcw",
       "chargeType": "RECURRENT",
       "subscriptionCycle": "MONTHLY",
-      "ativo": false,
-      "links": {
-        "odontologia": "",
-        "biomedicina": ""
-      },
-      "observacao": "Configuração preparatória. Contratação clínica bloqueada até definição do preço e cadastro de links recorrentes Asaas."
+      "teste_dias": 7,
+      "segmento": "biomedicina"
+    },
+    "odontologia": {
+      "nome": "BlackFlow Odontologia",
+      "preco": "R$ 114,90 por mês",
+      "valor": 114.9,
+      "link": "https://www.asaas.com/000/c/n56ojnkjzzeo3fp6",
+      "chargeType": "RECURRENT",
+      "subscriptionCycle": "MONTHLY",
+      "teste_dias": 7,
+      "segmento": "odontologia"
     }
   },
   "promocao": {
