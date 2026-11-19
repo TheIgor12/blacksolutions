@@ -208,10 +208,19 @@ async function home(){
     btn('Gerar rascunho PDF','bfRecGenerate()'));
   }
   const listHtml=docs.map(d=>'<div class="row" style="flex-wrap:wrap"><span><b>'+escH(d.paciente_nome)+'</b><br><small>'+escH(d.tipo)+' — '+escH(new Date(d.criado_em).toLocaleDateString('pt-BR'))+' — '+escH(d.status==='assinado_externo_nao_validado'?'PDF recebido — assinatura não verificada':d.status==='rascunho'?'Rascunho sem assinatura':d.status)+(d.verificacao_token_hash?' — QR de consulta no PDF':' — sem QR (documento antigo)')+'</small></span><span>'+btn('Baixar rascunho',"bfRecDownload('"+d.id+"',false)")+' '+(d.pdf_assinado_path?btn('Enviar PDF pelo WhatsApp',"bfRecShare('"+d.id+"')"):btn('Anexar PDF assinado',"bfRecSignPrompt('"+d.id+"')"))+'</span></div>').join('');
+  body+=card('Consultar numeração oficial de receita controlada (SNCR)',
+   '<p class="sub">Somente números efetivamente atribuídos pela Anvisa. Esta consulta não emite receita nem substitui assinatura digital qualificada.</p>'+
+   '<label><small>Numeração SNCR (0000.0-00.0000000)</small><input type="text" id="bfrec-sncr-numero" class="inp" placeholder="0000.0-00.0000000" maxlength="17"></label>'+
+   '<p>'+btn('Consultar no SNCR da Anvisa','bfRecAbrirSNCR()')+'</p>');
   body+=card('Documentos deste profissional',listHtml||note('Nenhum documento criado.'));
   zone(body);
  }catch(e){fail(e);zone(note(escH(e.message||e)));}
 }
+window.bfRecAbrirSNCR=function(){
+ const numero=read('bfrec-sncr-numero');
+ if(!/^\\d{4}\\.\\d-\\d{2}\\.\\d{7}$/.test(numero))return toast('Informe um número SNCR no formato 0000.0-00.0000000.');
+ window.open('https://sncr.anvisa.gov.br/receita/consultar?numero='+encodeURIComponent(numero),'_blank','noopener,noreferrer');
+};
 window.bfRecGenerate=async()=>{
  try{
   if(!await allowed())throw Error('Sem autorização.');if(!model)throw Error('Cadastre o PDF em Configurações.');
