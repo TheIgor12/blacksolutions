@@ -30,7 +30,7 @@ assert.ok(read('bf-receituario.js').includes("conselho:seg()==='odontologia'?'CR
 assert.ok(read('bf-receituario.js').includes('RASCUNHO - NAO ASSINADO'),'Missing watermark');
 for(const file of ['sw.js','app/sw.js']){
  const sw=read(file);new vm.Script(sw,{filename:file});
- assert.ok(sw.includes('blackflow-v22'),'PWA cache not bumped');
+ assert.ok(sw.includes(file==='sw.js'?'blackflow-v270':'blackflow-app-v270'),'PWA cache not bumped');
  assert.ok(sw.includes("url.searchParams.has('token')"),'Sensitive query tokens may be cached');
 }
 assert.ok(read('bf-context-actions.js').includes('attachModalButtons(k,true)'),'Pix must display only fiscal action');
@@ -40,7 +40,7 @@ assert.ok(html.includes("go('agenda')"),'BlackPay back to agenda missing');
 assert.ok(read('bf-blackpay-integrated.js').includes('bfBlackPayMount'),'BlackPay native mount missing');
 assert.ok(!html.includes('<iframe title="BlackPay'), 'Old nested iframe must be removed');
 new vm.Script(read('blackpay/app.js'),{filename:'blackpay/app.js'});
-assert.equal(read('sw.js'),read('app/sw.js'),'PWA scripts not synchronized');
+assert.ok(read('sw.js').includes('network-first')&&read('app/sw.js').includes('network-first'),'PWA offline policy missing');
 for(const name of ['manifest.webmanifest','app/manifest.webmanifest']){
  const m=JSON.parse(read(name));assert.equal(m.name,'BlackFlow');
  assert.ok(m.description.includes('médicos'),'Medical segment missing in manifest');
