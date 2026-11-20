@@ -1,5 +1,6 @@
 """BlackFlow — narração comercial original em português brasileiro."""
 import asyncio,subprocess
+import imageio_ffmpeg
 from pathlib import Path
 import edge_tts
 ROOT=Path(__file__).resolve().parent.parent
@@ -20,7 +21,7 @@ async def main():
  if not VIDEO.exists():raise RuntimeError("Vídeo original não encontrado")
  await edge_tts.Communicate(TEXT,voice="pt-BR-FranciscaNeural",rate="+11%",volume="+5%").save(str(AUDIO))
  if AUDIO.stat().st_size<10000:raise RuntimeError("Áudio recebido está vazio ou incompleto")
- subprocess.run(["ffmpeg","-hide_banner","-loglevel","error","-y","-i",str(VIDEO),"-i",str(AUDIO),"-map","0:v:0","-map","1:a:0","-c:v","copy","-c:a","aac","-b:a","144k","-af","apad","-shortest","-movflags","+faststart",str(OUTPUT)],check=True)
+ subprocess.run([imageio_ffmpeg.get_ffmpeg_exe(),"-hide_banner","-loglevel","error","-y","-i",str(VIDEO),"-i",str(AUDIO),"-map","0:v:0","-map","1:a:0","-c:v","copy","-c:a","aac","-b:a","144k","-af","apad","-shortest","-movflags","+faststart",str(OUTPUT)],check=True)
  if OUTPUT.stat().st_size<100000:raise RuntimeError("Vídeo narrado inválido")
  print("NARRADO",OUTPUT,OUTPUT.stat().st_size)
  AUDIO.unlink(missing_ok=True)
