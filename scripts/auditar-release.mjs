@@ -30,7 +30,7 @@ assert.ok(read('bf-receituario.js').includes("conselho:seg()==='odontologia'?'CR
 assert.ok(read('bf-receituario.js').includes('RASCUNHO - NAO ASSINADO'),'Missing watermark');
 for(const file of ['sw.js','app/sw.js']){
  const sw=read(file);new vm.Script(sw,{filename:file});
- assert.ok(sw.includes('blackflow-v21'),'PWA cache not bumped');
+ assert.ok(sw.includes('blackflow-v22'),'PWA cache not bumped');
  assert.ok(sw.includes("url.searchParams.has('token')"),'Sensitive query tokens may be cached');
 }
 assert.ok(read('bf-context-actions.js').includes('attachModalButtons(k,true)'),'Pix must display only fiscal action');
@@ -49,5 +49,9 @@ assert.equal(read('CNAME').trim(),'blackflow.app.br');
 execFileSync(process.execPath,[fileURLToPath(new URL('../blackpay/smoke.test.mjs',import.meta.url))],{stdio:'inherit'});
 assert.ok(html.includes('bf-tati-help.js?v='+version),'Tati script missing');
 assert.ok(html.includes('bf-mobile-photos.js?v='+version),'Camera workflow script missing');
+assert.ok(html.includes('bf-documents.js?v='+version),'Orçamentos/Receituário script missing');
+assert.ok(html.includes("orcamentos:()=>bfDocsView('orc')"),'Document navigation missing');
+assert.ok(html.includes("'receitasDocs','combos'"),'Document cloud collection missing');
+new vm.Script(read('bf-documents.js'),{filename:'bf-documents.js'});
 assert.ok(html.includes('bfPhotoChoice(pid)'),'Camera continuation callback missing');
 console.log('BlackFlow '+version+': release smoke checks PASS');
