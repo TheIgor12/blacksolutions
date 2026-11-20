@@ -172,10 +172,11 @@ window.bfxPickPatient=function(){
 const prevRender=render;
 render=function(){
  if(UI.view!=='bffiscal'){document.body.classList.remove('bf-fiscal-active');return prevRender();}
- if(NV.ativa&&UI.auth)return prevRender();
+ if(NV.ativa&&UI.auth){document.body.classList.remove('bf-fiscal-active');return prevRender();}
  if(!admin()){document.body.classList.remove('bf-fiscal-active');UI.view='agenda';return prevRender();}
  // Keep UI.drawer as set by toggleDrawer(): otherwise hamburger never opens on fiscal page.
  document.body.classList.add('bf-fiscal-active');
+ document.documentElement.scrollLeft=0;document.body.scrollLeft=0;
  document.getElementById('app').innerHTML=shell('<div id="bf-fiscal-page" class="page" style="max-width:1240px"><div class="phead"><div><h1>Nota Fiscal de Serviços — NFS-e</h1><p class="sub">Configurações, rascunhos, conferência e conciliação fiscal por estabelecimento</p></div></div><div id="bf-fiscal-content"><div class="card">Carregando informações fiscais...</div></div></div>');
  fiscalView();
 };
