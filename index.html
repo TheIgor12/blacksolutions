@@ -1065,7 +1065,7 @@ function render(){if(NV.ativa&&UI.auth){$('#app').innerHTML=vAuth();setTimeout((
  if(soAgenda()&&!VIEWS_AGENDA.includes(UI.view))UI.view='agenda';
  if(perfilAtual()){const livre=['inicio','paciente','blackpay'];const vk=UI.view==='paciente'?'pacientes':UI.view;
   if(!livre.includes(UI.view)&&!podeTela(vk)||UI.view==='paciente'&&!podeTela('pacientes')){const m=menuItens();UI.view=m.length?m[0][0]:'inicio';UI.param=null}}
- const V={inicio:vInicio,agenda:vAgenda,pacientes:vPacientes,paciente:vPaciente,financeiro:vFinanceiro,dashboard:vDashboard,relatorios:vRelatorios,profissionais:vProfissionais,importar:vImportar,config:vConfig,servicos:vServicos,combos:vCombos,estoque:vEstoque,exames:vExames,comandas:vComandas,caixa:vCaixa,comissoes:vComissoes,protocolos:vProtocolos,equipamentos:vEquipamentos,confirmacao:vConfirmacao,indicacoes:vIndicacoes,vouchers:vVouchers,blackpay:vBlackPay,prontuarios:vProntuarios,fotorapida:vFotoRapida,ajuda:vAjuda};
+ const V={orcamentos:()=>bfDocsView('orc'),receituario:()=>bfDocsView('receita'),inicio:vInicio,agenda:vAgenda,pacientes:vPacientes,paciente:vPaciente,financeiro:vFinanceiro,dashboard:vDashboard,relatorios:vRelatorios,profissionais:vProfissionais,importar:vImportar,config:vConfig,servicos:vServicos,combos:vCombos,estoque:vEstoque,exames:vExames,comandas:vComandas,caixa:vCaixa,comissoes:vComissoes,protocolos:vProtocolos,equipamentos:vEquipamentos,confirmacao:vConfirmacao,indicacoes:vIndicacoes,vouchers:vVouchers,blackpay:vBlackPay,prontuarios:vProntuarios,fotorapida:vFotoRapida,ajuda:vAjuda};
  let c;try{c=(V[UI.view]||vInicio)()}catch(e){console.error(e);c=`<div class="page"><div class="card">Erro ao montar a tela: ${esc(e.message)}</div></div>`}
  $('#app').innerHTML=shell(c);try{fonteAplicar()}catch(e){}checarSegmento();if(!UI.regrasOk&&S.servicos.length&&!UI.auth){UI.regrasOk=1;if(regrasClinica())save()}if(!AVISO.timer)avisoIniciar();atuIniciar();if(!UI.auth){fotoIniciar();confAutoIniciar()}}
 
@@ -3091,7 +3091,7 @@ function planoInfo(k,semRamo){const a=(typeof ASSINATURA!=='undefined'&&ASSINATU
  return Object.assign({},d[k]||{},a[k]||{})}
 const planoK=()=>planoContratado()==='agenda'?'agenda':(S.config.plano==='agenda'?'agenda':'completo');
 const soAgenda=()=>planoK()==='agenda';
-const VIEWS_AGENDA=['inicio','agenda','pacientes','paciente','profissionais','servicos','combos','confirmacao','config','blackpay','prontuarios','fotorapida'];
+const VIEWS_AGENDA=['inicio','agenda','pacientes','paciente','profissionais','servicos','combos','confirmacao','config','blackpay','prontuarios','fotorapida','orcamentos','receituario'];
 const segK=()=>SEGMENTOS[S.config.segmento]?S.config.segmento:'podologia';
 const SEG=()=>SEGMENTOS[segK()];
 const ehSeg=(...k)=>k.includes(segK());
@@ -3113,7 +3113,7 @@ function menuItens(){const P=SEG().pessoas;
 function menuOrdem(L){const ag=L.filter(([k])=>k==='agenda');
  return [...ag,...azPor(L.filter(([k])=>k!=='agenda'),x=>x[1]),...BPITEM]}
 /* BlackPay entra sempre por ultimo e nao depende de perfil, porque por enquanto e so informativo */
-const BPITEM=[['blackpay','BlackPay','card']];
+const BPITEM=[['orcamentos','Orçamentos','file'],['receituario','Receituário','file'],['blackpay','BlackPay','card']];
 
 /* Escolha do segmento */
 function segCards(acao){return `<div class="grid g3">${Object.entries(SEGMENTOS).map(([k,s])=>`<div class="tile" style="${segK()===k&&S.config.segmento?'outline:3px solid var(--acc)':''}" onclick="${acao}('${k}')"><div class="ti">${ico(k==='podologia'?'user':k==='estetica'?'chart':'badge')}</div><b>${esc(s.nome)}</b><p>${esc(s.desc)}</p></div>`).join('')}</div>`}
@@ -4799,7 +4799,7 @@ function agNovo(a,s){if(s==='Desmarcado'||s==='Faltou')return false;const k=a.da
  const hist=c=>S[c].some(x=>x.pacienteId===a.pacienteId&&((x.data||x.vencimento||x.pagamento||'')<a.data)&&(x.data||x.vencimento||x.pagamento));
  return !hist('evolucoes')&&!hist('tratamentos')&&!S.lancamentos.some(l=>l.pacienteId===a.pacienteId&&l.pagamento&&l.pagamento<a.data)}
 /* ============ Atualização: aviso com botão Atualizar agora ============ */
-const VERSAO_APP='1.21.0';const URL_VERSAO_JSON='https://raw.githubusercontent.com/TheIgor12/blacksolutions/main/versao.json';
+const VERSAO_APP='1.22.0';const URL_VERSAO_JSON='https://raw.githubusercontent.com/TheIgor12/blacksolutions/main/versao.json';
 const numV=v=>String(v||'0').split(/\D+/).filter(Boolean).map(Number);
 function versaoMaior(a,b){const x=numV(a),y=numV(b);for(let i=0;i<Math.max(x.length,y.length);i++){const d=(x[i]||0)-(y[i]||0);if(d)return d>0}return false}
 const ATU={nova:null,timer:null};
@@ -4982,7 +4982,7 @@ async function fotoAddRef(pid,tipo,id,input){const fs=[...input.files];input.val
 
 /* ============ Configurações ============ */
 /* ---- Perfis de acesso: cada pessoa vê só o que precisa ---- */
-function telasPerm(){const P=SEG().pessoas;return [['agenda','Agenda'],['pacientes',P],['exames','Exames'],['confirmacao','Confirmação e alertas'],['servicos',ehSeg('podologia')?'Procedimentos e preços':'Serviços e preços'],['estoque','Estoque'],['comandas','Comandas'],['caixa','Caixa do dia'],['financeiro','Financeiro'],['relatorios','Relatórios'],['dashboard','Dashboard'],['comissoes','Comissões'],['indicacoes','Indicações'],['vouchers','Vouchers'],['protocolos','Protocolos'],['equipamentos','Equipamentos'],['importar','Importar dados'],['profissionais','Profissionais'],['config','Configurações']]}
+function telasPerm(){const P=SEG().pessoas;return [['agenda','Agenda'],['pacientes',P],['exames','Exames'],['confirmacao','Confirmação e alertas'],['servicos',ehSeg('podologia')?'Procedimentos e preços':'Serviços e preços'],['estoque','Estoque'],['comandas','Comandas'],['caixa','Caixa do dia'],['financeiro','Financeiro'],['relatorios','Relatórios'],['dashboard','Dashboard'],['comissoes','Comissões'],['indicacoes','Indicações'],['vouchers','Vouchers'],['protocolos','Protocolos'],['equipamentos','Equipamentos'],['importar','Importar dados'],['profissionais','Profissionais'],['orcamentos','Orçamentos'],['receituario','Receituário'],['config','Configurações']]}
 const EXTRAS_PERM=[['fichaFin','Ver o financeiro na ficha do cliente'],['valores','Ver valores e preços nas telas'],['excluir','Excluir registros'],['exportar','Baixar backup e exportar para Excel']];
 function perfisPadrao(){return [
  {id:'recepcao',nome:'Recepção',telas:['agenda','pacientes','confirmacao','comandas','servicos'],extras:{valores:true}},
@@ -4993,7 +4993,7 @@ function acessos(){if(!S.config.acessos||typeof S.config.acessos!=='object')S.co
 function emailAtual(){const u=NV.sessao&&NV.sessao.user;return u?String(u.email||'').toLowerCase():''}
 function perfilAtual(){if(!NV.ativa)return null;if(NV.papel==='admin')return null;
  const id=acessos()[emailAtual()];if(!id)return null;return perfis().find(x=>x.id===id)||null}
-function podeTela(k){const pf=perfilAtual();if(!pf)return true;if(k==='prontuarios'||k==='fotorapida')k='pacientes';return (pf.telas||[]).includes(k)}
+function podeTela(k){const pf=perfilAtual();if(!pf)return true;if(k==='prontuarios'||k==='fotorapida')k='pacientes';if(k==='orcamentos')k='servicos';if(k==='receituario')k='pacientes';return (pf.telas||[]).includes(k)}
 function pode(k){const pf=perfilAtual();if(!pf)return true;return !!(pf.extras||{})[k]}
 function perfilForm(id){const novo=!id;const pf=novo?{id:'p'+uid().slice(0,6),nome:'',telas:['agenda','pacientes'],extras:{}}:perfis().find(x=>x.id===id);if(!pf)return;
  const chk=(k,n,marc,fn)=>`<label class="chk" style="margin:4px 0"><input type="checkbox" ${marc?'checked':''} onchange="${fn}"> ${esc(n)}</label>`;
@@ -5048,7 +5048,7 @@ function cfgCardBackup(){const c=S.config;const tot=S.pacientes.length+S.lancame
  <p class="sub">${tot} registros gravados: ${S.pacientes.length} pacientes, ${S.lancamentos.length} lançamentos, ${S.tratamentos.length} tratamentos, ${S.agendamentos.length} agendamentos, ${S.anamneses.length} anamneses, ${S.evolucoes.length} evoluções, ${S.contasPagar.length} contas a pagar.</p>
  <div class="mact" style="justify-content:flex-start"><button class="btn" onclick="backup()">${ico('down',16)} Baixar backup</button><label class="btn ghost" style="cursor:pointer">${ico('up',16)} Restaurar backup<input type="file" accept=".json" style="display:none" onchange="restore(this)"></label><button class="btn ghost" onclick="exportAll()">${ico('down',16)} Salvar uma cópia dos dados do BlackFlow em Excel</button></div></div>`}
 function cfgCardRisco(){return `${NV.ativa&&NV.sessao&&NV.papel&&NV.papel!=='admin'?'':`<div class="card"><h2>Zona de risco</h2><p class="sub">Apaga todos os dados deste navegador. Faça um backup antes.</p><div class="mact" style="justify-content:flex-start"><button class="btn danger" onclick="wipe()">Apagar todos os dados</button></div></div>`}`}
-const CFG_ABAS=[['clinica','Dados da clínica'],['atendimento','Agenda e mensagens'],['financeiro','Recebimento'],['equipe','Equipe e acesso'],['plano','Plano e assinatura'],['sistema','Backup e dados']];
+const CFG_ABAS=[['documentos','Modelos de documentos'],['clinica','Dados da clínica'],['atendimento','Agenda e mensagens'],['financeiro','Recebimento'],['equipe','Equipe e acesso'],['plano','Plano e assinatura'],['sistema','Backup e dados']];
 /* Editor do modelo de anamnese. Cada clínica monta o questionário dela,
    e marca quais respostas viram alerta vermelho antes do atendimento. */
 function cfgCardAnamnese(){const M=anamModelo();const proprio=!!(S.config&&Array.isArray(S.config.anamPerguntas)&&S.config.anamPerguntas.length);
@@ -5081,9 +5081,10 @@ function cfgAnamMover(i,d){const M=anamModelo();const j=i+d;if(j<0||j>=M.length)
  const t=M[i];M[i]=M[j];M[j]=t;cfgAnamGravar(M)}
 function cfgAnamPadrao(){confirmModal('Voltar ao modelo pronto de podologia, com '+ANAM_PADRAO.length+' perguntas? O questionário que você montou será perdido.',()=>{S.config.anamPerguntas=[];cfgAnamGravar(ANAM_PADRAO)},'Voltar ao modelo pronto')}
 function vConfig(){const t=CFG_ABAS.some(a=>a[0]===UI.cfgTab)?UI.cfgTab:'clinica';
- const ajuda={clinica:'Nome, contato, endereço, cores, logotipo e tipo de negócio. Esses dados saem nos recibos e nas mensagens.',atendimento:'Agendamento online, lembretes por WhatsApp, aviso na tela e textos dos termos.',financeiro:'Chave Pix da clínica, taxas e fidelidade. Usado nas cobranças e no recebimento.',equipe:'Quem usa o sistema e o que cada pessoa pode ver.',plano:'Plano contratado e troca de plano.',cadfiscal:'CNPJ do estabelecimento, consulta cadastral e informações fiscais usadas nas notas.',sistema:'Backup, exportação para Excel e apagar dados.'}[t];
+ const ajuda={documentos:'Envie seu papel timbrado em branco e escolha uma farmácia opcional para documentos.',clinica:'Nome, contato, endereço, cores, logotipo e tipo de negócio. Esses dados saem nos recibos e nas mensagens.',atendimento:'Agendamento online, lembretes por WhatsApp, aviso na tela e textos dos termos.',financeiro:'Chave Pix da clínica, taxas e fidelidade. Usado nas cobranças e no recebimento.',equipe:'Quem usa o sistema e o que cada pessoa pode ver.',plano:'Plano contratado e troca de plano.',cadfiscal:'CNPJ do estabelecimento, consulta cadastral e informações fiscais usadas nas notas.',sistema:'Backup, exportação para Excel e apagar dados.'}[t];
  return `<div class="page" style="max-width:980px"><div class="phead"><div><h1>Configurações</h1><p class="sub">${esc(ajuda)}</p></div></div>
  <div class="filters" style="margin-bottom:14px;flex-wrap:wrap">${CFG_ABAS.map(([k,n])=>`<button class="btn ${t===k?'':'ghost'} sm" onclick="UI.cfgTab='${k}';render()">${esc(n)}</button>`).join(' ')}</div>
+ ${t==='documentos'?bfDocsConfig():''}
  ${t==='clinica'?cfgCardFonte()+cfgCardClinica()+cfgCardLogo()+cfgCardIA()+cardSegmentoConfig():''}
  ${t==='atendimento'?cardAgOnline()+cardMsgsConfig()+cfgCardAnamnese()+cfgCardTermos():''}
  ${t==='financeiro'?cardPixConfig():''}
@@ -5398,7 +5399,7 @@ function telaCopiaNaoAutorizada(){
   if(!origemAutorizada()){telaCopiaNaoAutorizada();return}}
  try{navigator.storage&&navigator.storage.persist&&navigator.storage.persist()}catch(e){}
  try{fonteAplicar()}catch(e){}
- try{if(/^https?:/.test(location.protocol)&&'serviceWorker' in navigator&&!window.pywebview)navigator.serviceWorker.register('./sw.js?v=1.21.0',{updateViaCache:'none'}).then(r=>r.update()).catch(()=>{})}catch(e){}
+ try{if(/^https?:/.test(location.protocol)&&'serviceWorker' in navigator&&!window.pywebview)navigator.serviceWorker.register('./sw.js?v=1.22.0',{updateViaCache:'none'}).then(r=>r.update()).catch(()=>{})}catch(e){}
  if(NV.ativa){
   if(!window.supabase||!window.supabase.createClient){UI.auth={modo:'offline',temCache:!!(await DB.get('ultimo'))};render();return}
   NV.sb=window.supabase.createClient(NUVEM.url,NUVEM.chave,{auth:{persistSession:true,autoRefreshToken:true}});
@@ -5449,14 +5450,15 @@ function agProf(nome){UI.profOff={};if(nome){S.profissionais.forEach(p=>{if(norm
 function menuProfs(){const L=az(S.profissionais.filter(p=>p.ativo!==false));if(!L.length)return '';const sel=UI.view==='agenda'?(UI.agProf||''):null;
  return `<div class="msec">AGENDA POR PROFISSIONAL</div><button class="${sel===''&&UI.view==='agenda'?'on':''}" onclick="agProf('')">${ico('cal',18)} Todos os profissionais</button>${L.map(p=>`<button class="${sel!=null&&norm(sel)===norm(p.nome)?'on':''}" onclick="agProf(${esc(JSON.stringify(p.nome))})"><span style="display:inline-block;width:12px;height:12px;border-radius:50%;background:${esc(p.cor||'#0a4bde')};margin:0 3px;flex:none"></span> ${esc(p.nome)}</button>`).join('')}`}
 </script>
-<script src="./bf-clinical.js?v=1.21.0"></script>
-<script src="./bf-fiscal-advanced.js?v=1.21.0"></script>
-<script src="./bf-receituario.js?v=1.21.0"></script>
-<script src="./bf-cadastro-fiscal.js?v=1.21.0"></script>
-<script src="./bf-context-actions.js?v=1.21.0"></script>
-<script src="./bf-integrity-audit.js?v=1.21.0"></script>
-<script src="./bf-blackpay-integrated.js?v=1.21.0"></script>
-<script src="./bf-tati-help.js?v=1.21.0"></script>
-<script src="./bf-mobile-photos.js?v=1.21.0"></script>
+<script src="./bf-clinical.js?v=1.22.0"></script>
+<script src="./bf-fiscal-advanced.js?v=1.22.0"></script>
+<script src="./bf-receituario.js?v=1.22.0"></script>
+<script src="./bf-cadastro-fiscal.js?v=1.22.0"></script>
+<script src="./bf-context-actions.js?v=1.22.0"></script>
+<script src="./bf-integrity-audit.js?v=1.22.0"></script>
+<script src="./bf-blackpay-integrated.js?v=1.22.0"></script>
+<script src="./bf-tati-help.js?v=1.22.0"></script>
+<script src="./bf-mobile-photos.js?v=1.22.0"></script>
+<script src="./bf-documents.js?v=1.22.0"></script>
 </body>
 </html>
