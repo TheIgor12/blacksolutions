@@ -5048,7 +5048,7 @@ function cfgCardBackup(){const c=S.config;const tot=S.pacientes.length+S.lancame
  <p class="sub">${tot} registros gravados: ${S.pacientes.length} pacientes, ${S.lancamentos.length} lançamentos, ${S.tratamentos.length} tratamentos, ${S.agendamentos.length} agendamentos, ${S.anamneses.length} anamneses, ${S.evolucoes.length} evoluções, ${S.contasPagar.length} contas a pagar.</p>
  <div class="mact" style="justify-content:flex-start"><button class="btn" onclick="backup()">${ico('down',16)} Baixar backup</button><label class="btn ghost" style="cursor:pointer">${ico('up',16)} Restaurar backup<input type="file" accept=".json" style="display:none" onchange="restore(this)"></label><button class="btn ghost" onclick="exportAll()">${ico('down',16)} Salvar uma cópia dos dados do BlackFlow em Excel</button></div></div>`}
 function cfgCardRisco(){return `${NV.ativa&&NV.sessao&&NV.papel&&NV.papel!=='admin'?'':`<div class="card"><h2>Zona de risco</h2><p class="sub">Apaga todos os dados deste navegador. Faça um backup antes.</p><div class="mact" style="justify-content:flex-start"><button class="btn danger" onclick="wipe()">Apagar todos os dados</button></div></div>`}`}
-const CFG_ABAS=[['documentos','Modelos de documentos'],['clinica','Dados da clínica'],['atendimento','Agenda e mensagens'],['financeiro','Recebimento'],['equipe','Equipe e acesso'],['plano','Plano e assinatura'],['sistema','Backup e dados']];
+const CFG_ABAS=[['documentos','Modelos de documentos'],['clinica','Dados da clínica'],['atendimento','Agenda e mensagens'],['financeiro','Recebimento'],['equipe','Equipe e acesso'],['usuarios','Usuários'],['plano','Plano e assinatura'],['sistema','Backup e dados']];
 /* Editor do modelo de anamnese. Cada clínica monta o questionário dela,
    e marca quais respostas viram alerta vermelho antes do atendimento. */
 function cfgCardAnamnese(){const M=anamModelo();const proprio=!!(S.config&&Array.isArray(S.config.anamPerguntas)&&S.config.anamPerguntas.length);
@@ -5081,14 +5081,15 @@ function cfgAnamMover(i,d){const M=anamModelo();const j=i+d;if(j<0||j>=M.length)
  const t=M[i];M[i]=M[j];M[j]=t;cfgAnamGravar(M)}
 function cfgAnamPadrao(){confirmModal('Voltar ao modelo pronto de podologia, com '+ANAM_PADRAO.length+' perguntas? O questionário que você montou será perdido.',()=>{S.config.anamPerguntas=[];cfgAnamGravar(ANAM_PADRAO)},'Voltar ao modelo pronto')}
 function vConfig(){const t=CFG_ABAS.some(a=>a[0]===UI.cfgTab)?UI.cfgTab:'clinica';
- const ajuda={documentos:'Envie seu papel timbrado em branco e escolha uma farmácia opcional para documentos.',clinica:'Nome, contato, endereço, cores, logotipo e tipo de negócio. Esses dados saem nos recibos e nas mensagens.',atendimento:'Agendamento online, lembretes por WhatsApp, aviso na tela e textos dos termos.',financeiro:'Chave Pix da clínica, taxas e fidelidade. Usado nas cobranças e no recebimento.',equipe:'Quem usa o sistema e o que cada pessoa pode ver.',plano:'Plano contratado e troca de plano.',cadfiscal:'CNPJ do estabelecimento, consulta cadastral e informações fiscais usadas nas notas.',sistema:'Backup, exportação para Excel e apagar dados.'}[t];
+ const ajuda={documentos:'Envie seu papel timbrado em branco e escolha uma farmácia opcional para documentos.',clinica:'Nome, contato, endereço, cores, logotipo e tipo de negócio. Esses dados saem nos recibos e nas mensagens.',atendimento:'Agendamento online, lembretes por WhatsApp, aviso na tela e textos dos termos.',financeiro:'Chave Pix da clínica, taxas e fidelidade. Usado nas cobranças e no recebimento.',equipe:'Quem usa o sistema e o que cada pessoa pode ver.',usuarios:'Gerencie usuários cadastrados e remova o acesso de colaboradores desligados.',plano:'Plano contratado e troca de plano.',cadfiscal:'CNPJ do estabelecimento, consulta cadastral e informações fiscais usadas nas notas.',sistema:'Backup, exportação para Excel e apagar dados.'}[t];
  return `<div class="page" style="max-width:980px"><div class="phead"><div><h1>Configurações</h1><p class="sub">${esc(ajuda)}</p></div></div>
  <div class="filters" style="margin-bottom:14px;flex-wrap:wrap">${CFG_ABAS.map(([k,n])=>`<button class="btn ${t===k?'':'ghost'} sm" onclick="UI.cfgTab='${k}';render()">${esc(n)}</button>`).join(' ')}</div>
  ${t==='documentos'?bfDocsConfig():''}
  ${t==='clinica'?cfgCardFonte()+cfgCardClinica()+cfgCardLogo()+cfgCardIA()+cardSegmentoConfig():''}
  ${t==='atendimento'?cardAgOnline()+cardMsgsConfig()+cfgCardAnamnese()+cfgCardTermos():''}
  ${t==='financeiro'?cardPixConfig():''}
- ${t==='equipe'?cardAcessoConfig()+bfUserManagement():''}
+ ${t==='equipe'?cardAcessoConfig():''}
+ ${t==='usuarios'?bfUserManagement():''}
  ${t==='plano'?cardPlanoConfig():''}
  ${t==='sistema'?cfgCardBackup()+cfgCardRisco():''}
  </div>`}
