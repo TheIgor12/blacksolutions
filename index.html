@@ -633,7 +633,7 @@ const waIco=()=>`<span class="wa">${ico('wa',15)}</span>`;
 function defaultState(){return {versao:1,config:{clinica:'Minha clínica',usuario:'Administrador',cor:'#5a4cfb',corTopo:'#0a0820',logo:'',
  msgCobranca:'Olá {nome}, tudo bem? Aqui é da {clinica}. Consta em aberto o valor de {valor}, referente a parcelas vencidas desde {vencimento}. Podemos combinar a forma de pagamento?',
  msgRetorno:'Olá {nome}, tudo bem? Aqui é da {clinica}. Já faz um tempo desde o seu último atendimento. Vamos agendar o seu retorno?',diasRetorno:90,msgRec:{},iaChave:'',contratoModelo:'',responsavel:'',profissaoResp:'',registroResp:'',comarca:'',segmento:'',taxas:{},descontarTaxa:false,cashback:'',cashbackDias:''},
- pacientes:[],lancamentos:[],tratamentos:[],anamneses:[],agendamentos:[],contasPagar:[],evolucoes:[],profissionais:[],importacoes:[],servicos:[],produtos:[],documentos:[],movEstoque:[],comandas:[],caixas:[],avaliacoes:[],fotos:[],termos:[],contratos:[],fichas:[],protocolos:[],equipamentos:[],vouchers:[],combos:[]}}
+ orcamentos:[],receitasDocs:[],pacientes:[],lancamentos:[],tratamentos:[],anamneses:[],agendamentos:[],contasPagar:[],evolucoes:[],profissionais:[],importacoes:[],servicos:[],produtos:[],documentos:[],movEstoque:[],comandas:[],caixas:[],avaliacoes:[],fotos:[],termos:[],contratos:[],fichas:[],protocolos:[],equipamentos:[],vouchers:[],combos:[]}}
 let S=defaultState();
 const DB={
  open(){return new Promise((res,rej)=>{const r=indexedDB.open('happyfeet-gestao',1);r.onupgradeneeded=()=>r.result.createObjectStore('kv');r.onsuccess=()=>res(r.result);r.onerror=()=>rej(r.error)})},
@@ -1052,7 +1052,7 @@ function shell(content){const c=S.config;
  <datalist id="dlServNomes">${az(S.servicos).map(x=>`<option value="${esc(x.nome)}">${Number(x.preco)>0?money(x.preco):''}</option>`).join('')}</datalist>
  <datalist id="dlServ">${az(S.servicos.filter(x=>x.ativo!==false)).map(x=>`<option value="${esc(x.nome)}">`).join('')}</datalist><datalist id="dlProf">${az(S.profissionais).map(p=>`<option value="${esc(p.nome)}">`).join('')}</datalist>
  ${(()=>{const d=diasTeste();return d!=null&&!UI.auth?`<div style="background:${d<=3?'var(--warn-soft)':'var(--acc-soft)'};padding:8px 16px;font-size:13px;display:flex;justify-content:center;gap:12px;align-items:center;flex-wrap:wrap"><span>Teste grátis da clínica: <b>${d<=0?'termina hoje':d===1?'falta 1 dia':'faltam '+d+' dias'}</b></span><button class="btn sm" onclick="abrirAssinatura()">Assinar com Pix ou cartão</button></div>`:''})()}${promoAviso()}<main>${barraAgenda()}${content}</main>`}
-const FUNCS=[['Comandas','comandas'],['Caixa do dia','caixa'],['Serviços e preços','servicos'],['Estoque e produtos','estoque'],['Comissões e salão-parceiro','comissoes'],['Protocolos','protocolos'],['Equipamentos','equipamentos'],['Segmento do negócio','config'],['Agenda','agenda'],['Pacientes','pacientes'],['Novo paciente','novoPaciente'],['Financeiro','financeiro'],['Conta Corrente','fin:conta'],['Fluxo de Caixa','fin:fluxo'],['Contas a Pagar','fin:pagar'],['Contas a Receber','fin:receber'],['Inadimplência e cobrança','fin:inad'],['Imposto de Renda','fin:ir'],['Dashboard Analítico','dashboard'],['Relatórios','relatorios'],['Aniversariantes','rel:pac_aniv'],['Alertas de retorno','rel:pac_ret'],['Profissionais','profissionais'],['Importar dados do Excel','importar'],['Backup dos dados','config'],['Configurações','config']];
+const FUNCS=[['Comandas','comandas'],['Caixa do dia','caixa'],['Serviços e preços','servicos'],['Estoque e produtos','estoque'],['Comissões e salão-parceiro','comissoes'],['Protocolos','protocolos'],['Equipamentos','equipamentos'],['Segmento do negócio','config'],['Agenda','agenda'],['Pacientes','pacientes'],['Novo paciente','novoPaciente'],['Financeiro','financeiro'],['Conta Corrente','fin:conta'],['Fluxo de Caixa','fin:fluxo'],['Contas a Pagar','fin:pagar'],['Contas a Receber','fin:receber'],['Inadimplência e cobrança','fin:inad'],['Imposto de Renda','fin:ir'],['Dashboard Analítico','dashboard'],['Relatórios','relatorios'],['Aniversariantes','rel:pac_aniv'],['Alertas de retorno','rel:pac_ret'],['Profissionais','profissionais'],['Importar dados do Excel','importar'],['Backup dos dados','config'],['Orçamentos','orcamentos'],['Receituário','receituario'],['Configurações','config']];
 function goFunc(f){if(f==='novoPaciente'){go('pacientes');pacForm();return}if(f.startsWith('fin:')){UI.finTab=f.slice(4);go('financeiro');return}if(f.startsWith('rel:')){UI.rel=f.slice(4);go('relatorios');return}go(f)}
 function globalSearch(q){const r=$('#gsr');const n=norm(q);if(!n){r.classList.remove('on');return}
  const ps=S.pacientes.filter(p=>norm(p.nome).includes(n)||(onlyDigits(q).length>=4&&(keyCPF(p.cpf).includes(onlyDigits(q))||onlyDigits(p.celular).includes(onlyDigits(q)))));
@@ -3111,7 +3111,7 @@ function menuItens(){const P=SEG().pessoas;
  return menuOrdem([...base,...extra].filter(([k])=>podeTela(k)))}
 /* Agenda sempre em primeiro, o resto em ordem alfabetica, BlackPay por ultimo */
 function menuOrdem(L){const ag=L.filter(([k])=>k==='agenda');
- return [...ag,...azPor(L.filter(([k])=>k!=='agenda'),x=>x[1]),...BPITEM]}
+ return [...ag,...azPor(L.filter(([k])=>k!=='agenda'),x=>x[1]),...BPITEM.filter(([k])=>k==='blackpay'||podeTela(k))]}
 /* BlackPay entra sempre por ultimo e nao depende de perfil, porque por enquanto e so informativo */
 const BPITEM=[['orcamentos','Orçamentos','file'],['receituario','Receituário','file'],['blackpay','BlackPay','card']];
 
@@ -5113,7 +5113,7 @@ function exportAll(){if(!pode('exportar')){toast('O seu perfil de acesso não pe
 // Preencha com os dados do seu projeto Supabase. Em branco, o sistema funciona só neste computador.
 const NUVEM={url:'https://blszdbjpxgtloblxlusr.supabase.co',chave:'sb_publishable_0Tns_mDN2N1iQmw_sEzFXw_SRMy1uXK'};
 const NV={ativa:!!(NUVEM.url&&NUVEM.chave),sb:null,sessao:null,clinicaId:null,papel:'',nomeClinica:'',hashes:{},cursor:0,status:'local',ocupado:false,offline:false,timer:null};
-const COLS=['combos','vouchers','documentos','pacientes','lancamentos','tratamentos','anamneses','agendamentos','contasPagar','evolucoes','profissionais','importacoes','servicos','produtos','movEstoque','comandas','caixas','avaliacoes','fotos','contratos','termos','fichas','protocolos','equipamentos'];
+const COLS=['orcamentos','receitasDocs','combos','vouchers','documentos','pacientes','lancamentos','tratamentos','anamneses','agendamentos','contasPagar','evolucoes','profissionais','importacoes','servicos','produtos','movEstoque','comandas','caixas','avaliacoes','fotos','contratos','termos','fichas','protocolos','equipamentos'];
 const URL_ASSINATURA='https://raw.githubusercontent.com/TheIgor12/blacksolutions/main/assinatura.json';
 let ASSINATURA=null;
 /* O prazo da degustação fica em um lugar só, no assinatura.json, para mudar
