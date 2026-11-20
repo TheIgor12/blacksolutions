@@ -64,7 +64,7 @@ const oldMenu=R.menuItens;
 R.menuItens=function(){const a=oldMenu();if(!a.some(x=>x[0]==='anamnese')&&podeTela('pacientes'))a.splice(1,0,['anamnese','Anamnese','file']);return a};
 R.vAnamnese=function(){
  const L=az(S.pacientes).filter(p=>p&&p.id);
- return '<div class="page"><div class="phead"><div><h1>Anamnese</h1><p class="sub">Módulo independente. As fichas também permanecem disponíveis nos prontuários.</p></div></div><div class="card"><label>Localizar paciente<input id="bf-ana-find" oninput="bfAnaFiltrar(this.value)" placeholder="Nome do paciente"></label><div id="bf-ana-list" style="margin-top:12px">'+L.map(p=>'<div class="row bf-ana-row" data-name="'+esc(norm(p.nome))+'"><span><b>'+esc(p.nome)+'</b><br><small>'+esc(resumoAnamnese(p))+'</small></span><span><button class="btn ghost sm" onclick="anaRapida('+JSON.stringify(String(p.id))+')">Histórico</button> <button class="btn sm" onclick="anaForm('+JSON.stringify(String(p.id))+')">Nova anamnese</button></span></div>').join('')+'</div></div></div>';
+ return '<div class="page"><div class="phead"><div><h1>Anamnese</h1><p class="sub">Módulo independente. As fichas também permanecem disponíveis nos prontuários.</p></div></div><div class="card"><label>Localizar paciente<input id="bf-ana-find" oninput="bfAnaFiltrar(this.value)" placeholder="Nome do paciente"></label><div id="bf-ana-list" style="margin-top:12px">'+L.map(p=>'<div class="row bf-ana-row" data-name="'+esc(norm(p.nome))+'"><span><b>'+esc(p.nome)+'</b><br><small>'+esc(resumoAnamnese(p))+'</small></span><span><button class="btn ghost sm" onclick="anaRapida('+esc(JSON.stringify(String(p.id)))+')">Histórico</button> <button class="btn sm" onclick="anaForm('+esc(JSON.stringify(String(p.id)))+')">Nova anamnese</button></span></div>').join('')+'</div></div></div>';
 };
 R.bfAnaFiltrar=function(q){const n=norm(q);document.querySelectorAll('.bf-ana-row').forEach(e=>e.style.display=(e.dataset.name||'').includes(n)?'':'none')};
 R.bfUserManagement=function(){
@@ -78,7 +78,7 @@ R.bfUsersLoad=async function(){
  if(!document.getElementById('bf-users'))return;
  if(r.error){el.textContent='Não foi possível consultar os usuários: '+r.error.message;return}
  const own=NV.sessao&&NV.sessao.user&&NV.sessao.user.id;
- el.innerHTML=(r.data||[]).map(m=>'<div class="row"><span><b>'+esc(m.nome||m.email||'Usuário')+'</b><br><small>'+esc(m.email||'')+' · '+esc(m.papel||'usuario')+'</small></span><span>'+(NV.papel==='admin'&&m.user_id!==own?'<button class="btn danger sm" onclick="bfRevogarUsuario('+JSON.stringify(m.user_id)+','+JSON.stringify(m.nome||m.email||'usuário')+')">Remover acesso</button>':m.user_id===own?'Sua conta':'Somente administrador')+'</span></div>').join('')||'<p>Nenhum membro cadastrado.</p>';
+ el.innerHTML=(r.data||[]).map(m=>'<div class="row"><span><b>'+esc(m.nome||m.email||'Usuário')+'</b><br><small>'+esc(m.email||'')+' · '+esc(m.papel||'usuario')+'</small></span><span>'+(NV.papel==='admin'&&m.user_id!==own?'<button class="btn danger sm" onclick="bfRevogarUsuario('+esc(JSON.stringify(m.user_id))+','+esc(JSON.stringify(m.nome||m.email||'usuário'))+')">Remover acesso</button>':m.user_id===own?'Sua conta':'Somente administrador')+'</span></div>').join('')||'<p>Nenhum membro cadastrado.</p>';
 };
 R.bfRevogarUsuario=function(id,nome){
  if(NV.papel!=='admin'||id===(NV.sessao&&NV.sessao.user&&NV.sessao.user.id))return;
