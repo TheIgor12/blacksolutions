@@ -1,5 +1,5 @@
 {
-  "versao": "1.23.0",
+  "versao": "1.24.0",
   "data": "2026-11-19",
-  "novidades": "Anamnese sem retorno automático ao topo, perguntas clínicas separadas, acesso próprio no menu, gestão de usuários em Configurações, chat interno por clínica com mensagens persistidas no Supabase e campo de dúvidas na Ajuda."
+  "novidades": "Pagamento misto (Pix, cartão em parcelas, dinheiro e adicionais), gestão de profissionais da agenda em Configurações > Usuários com desativação/exclusão controlada, separação Chat e Ajuda, consulta de dúvidas por servidor com IA opcional quando configurada, correção do indicador financeiro."
 }
