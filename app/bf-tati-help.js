@@ -50,6 +50,7 @@ function paint(){
  root.querySelectorAll('[data-reset]').forEach(btn=>btn.addEventListener('click',()=>{selected=null;search='';paint();document.getElementById('tati-query')?.focus()}));
  root.querySelectorAll('[data-go]').forEach(btn=>btn.addEventListener('click',()=>{const view=btn.dataset.go;if(!destOK(view))return;opened=false;paint();if(typeof go==='function')go(view)}));
 }
+window.bfTatiOpen=function(){opened=true;selected=null;paint();document.getElementById('tati-query')?.focus()};
 window.bfTatiMount=function(){
  if(!document.getElementById('app'))return;
  let root=$root();if(!root){root=document.createElement('div');root.id='bf-tati-root';document.body.append(root)}
