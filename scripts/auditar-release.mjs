@@ -20,7 +20,7 @@ for(const body of [html,app]){
  const blocks=[...body.matchAll(/<script\b[^>]*>([\s\S]*?)<\/script>/gi)];
  for(const [i,m]of blocks.entries())new vm.Script(m[1],{filename:'index.html:inline-'+i});
 }
-for(const name of ['bf-clinical.js','bf-fiscal-advanced.js','bf-receituario.js','bf-cadastro-fiscal.js','bf-context-actions.js','bf-integrity-audit.js','bf-blackpay-integrated.js','bf-tati-help.js','bf-mobile-photos.js']){
+for(const name of ['bf-clinical.js','bf-fiscal-advanced.js','bf-receituario.js','bf-cadastro-fiscal.js','bf-context-actions.js','bf-integrity-audit.js','bf-blackpay-integrated.js','bf-tati-help.js','bf-mobile-photos.js','bf-documents.js']){
  const a=read(name),b=read('app/'+name);
  assert.equal(a,b,'Different root and /app copies: '+name);
  new vm.Script(a,{filename:name});
@@ -54,4 +54,5 @@ assert.ok(html.includes("orcamentos:()=>bfDocsView('orc')"),'Document navigation
 assert.ok(html.includes("'receitasDocs','combos'"),'Document cloud collection missing');
 new vm.Script(read('bf-documents.js'),{filename:'bf-documents.js'});
 assert.ok(html.includes('bfPhotoChoice(pid)'),'Camera continuation callback missing');
+execFileSync(process.execPath,[fileURLToPath(new URL('./test-documents.mjs',import.meta.url))],{stdio:'inherit'});
 console.log('BlackFlow '+version+': release smoke checks PASS');
