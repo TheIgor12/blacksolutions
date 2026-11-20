@@ -142,3 +142,75 @@
 /* Forms must not compete with floating support buttons for touch targets. */
 body.bf-modal-open #bfchat,
 body.bf-modal-open #bf-tati-root{display:none!important}
+
+/* 1.26.1: NFS-e only — eliminate the unbounded sideways canvas on iOS. */
+@media (max-width:800px) {
+ body.bf-fiscal-active{
+   width:100%;max-width:100%;min-width:0;overflow-x:clip;
+ }
+ body.bf-fiscal-active #app,
+ body.bf-fiscal-active main{
+   width:100%;max-width:100%;min-width:0;
+ }
+ body.bf-fiscal-active #bf-fiscal-page{
+   display:block;width:100%;max-width:100%!important;min-width:0;
+   margin:0 auto;padding:12px 12px calc(105px + env(safe-area-inset-bottom,0px))!important;
+   overflow:visible;
+ }
+ body.bf-fiscal-active #bf-fiscal-content{
+   display:block;width:100%;max-width:100%;min-width:0;
+   overflow:visible;overflow-wrap:anywhere;
+ }
+ #bf-fiscal-content .bf-fiscal-card,
+ #bf-fiscal-content .note,
+ #bf-fiscal-content .bf-fiscal-stats,
+ #bf-fiscal-content .bf-fiscal-tablewrap{
+   min-width:0;max-width:100%;width:100%;box-sizing:border-box;
+ }
+ #bf-fiscal-content .bf-fiscal-card{padding:14px 12px;margin-bottom:12px!important;}
+ #bf-fiscal-content .bf-fiscal-card h2{font-size:16px!important;line-height:1.35;}
+ #bf-fiscal-content .bf-fiscal-stats{
+   display:grid!important;grid-template-columns:minmax(0,1fr)!important;
+   gap:10px!important;margin-bottom:14px;
+ }
+ #bf-fiscal-content .bf-fiscal-stats .card{width:100%;min-width:0;max-width:100%;}
+ #bf-fiscal-content .bf-fiscal-row{
+   display:grid!important;grid-template-columns:minmax(0,1fr)!important;
+   gap:10px!important;align-items:stretch!important;width:100%;
+   min-width:0;max-width:100%;margin-bottom:12px!important;
+ }
+ #bf-fiscal-content .bf-fiscal-row>label,
+ #bf-fiscal-content .bf-fiscal-row>.bf-fiscal-field,
+ #bf-fiscal-content .bf-fiscal-row>div{
+   display:block;min-width:0!important;max-width:100%!important;
+   width:100%!important;flex:none!important;
+ }
+ #bf-fiscal-content .bf-fiscal-row input:not([type=checkbox]):not([type=radio]),
+ #bf-fiscal-content .bf-fiscal-row textarea,
+ #bf-fiscal-content .bf-fiscal-row select,
+ #bf-fiscal-content .bf-fiscal-row .inp{
+   display:block;box-sizing:border-box;width:100%!important;min-width:0!important;
+   max-width:100%!important;font-size:16px!important;
+ }
+ #bf-fiscal-content .bf-fiscal-row .btn{
+   white-space:normal!important;text-align:center;justify-content:center;
+   min-height:44px;max-width:100%;width:fit-content;
+ }
+ #bf-fiscal-content .bf-fiscal-row label>small{display:block;margin-bottom:4px;line-height:1.4;}
+ #bf-fiscal-content .bf-fiscal-card p,
+ #bf-fiscal-content .bf-fiscal-card .sub,
+ #bf-fiscal-content .note{line-height:1.55;overflow-wrap:anywhere;}
+ #bf-fiscal-content .bf-fiscal-card a{overflow-wrap:anywhere;}
+ #bf-fiscal-content .bf-fiscal-tablewrap{
+   overflow-x:auto!important;overflow-y:visible!important;
+   height:auto!important;max-height:none!important;
+   -webkit-overflow-scrolling:touch;
+ }
+ #bf-fiscal-content .bf-fiscal-tablewrap .tbl.bf-mobile-cards{
+   width:100%!important;min-width:0!important;max-width:100%!important;
+ }
+ #bf-fiscal-content details,#bf-fiscal-content details>.bf-fiscal-row{
+   min-width:0;max-width:100%;width:100%;
+ }
+ #bf-fiscal-content button,#bf-fiscal-content select{touch-action:manipulation}
+}
