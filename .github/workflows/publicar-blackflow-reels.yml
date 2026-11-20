@@ -1,0 +1,38 @@
+name: BlackFlow Reels — publicar MP4 já renderizado
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - .github/workflows/publicar-blackflow-reels.yml
+jobs:
+  publicar:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    permissions:
+      actions: read
+      contents: write
+    steps:
+      - name: Recuperar repositório atual
+        uses: actions/checkout@v4
+        with:
+          sparse-checkout: |
+            download
+          sparse-checkout-cone-mode: true
+          persist-credentials: true
+      - name: Baixar arquivo final da renderização validada
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          mkdir -p "$RUNNER_TEMP/reel"
+          gh run download 44668783181 --repo TheIgor12/blacksolutions --name BlackFlow-Reels-Instagram-Voz-Natural --dir "$RUNNER_TEMP/reel"
+          test -s "$RUNNER_TEMP/reel/BlackFlow_Reels_Instagram_voz_natural.mp4"
+          cp "$RUNNER_TEMP/reel/BlackFlow_Reels_Instagram_voz_natural.mp4" download/BlackFlow_Reels_Instagram_voz_natural.mp4
+          ls -lh download/BlackFlow_Reels_Instagram_voz_natural.mp4
+      - name: Publicar vídeo com histórico preservado
+        run: |
+          git config user.name "blackflow-automation"
+          git config user.email "blackflow-automation@users.noreply.github.com"
+          git add --sparse download/BlackFlow_Reels_Instagram_voz_natural.mp4
+          git commit -m "BlackFlow: vídeo Reels Instagram 9:16 com voz natural"
+          git pull --rebase origin main
+          git push origin HEAD:main
