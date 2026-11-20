@@ -139,3 +139,6 @@
 @media print{
  .bf-modal-close,#bfchat,#bf-tati-root{display:none!important}
 }
+/* Forms must not compete with floating support buttons for touch targets. */
+body.bf-modal-open #bfchat,
+body.bf-modal-open #bf-tati-root{display:none!important}
