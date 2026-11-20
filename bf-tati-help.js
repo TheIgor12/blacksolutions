@@ -38,14 +38,15 @@ function paint(){
  const root=$root();if(!root)return;
  root.innerHTML='<button type="button" class="tati-fab" id="tati-trigger" aria-label="Tati: ajuda e dúvidas" aria-expanded="'+opened+'" title="Dúvida? Pergunte à Tati"><img src="/img/mascote.webp" alt=""><span>?</span></button>'+
  (opened?'<section class="tati-dialog" role="dialog" aria-label="Tati — assistente de utilização" aria-modal="false"><header class="tati-head"><img src="/img/mascote.webp" alt=""><div><b>Pergunte à Tati</b><small>Ajuda BlackFlow · respostas verificadas</small></div><button type="button" class="tati-close" id="tati-close" aria-label="Fechar">×</button></header>'+
- '<div class="tati-search"><label for="tati-query">Em que posso ajudar?</label><input id="tati-query" type="search" autocomplete="off" maxlength="180" placeholder="Ex.: como calcular ticket médio?" value="'+escape(search)+'"><small>Respostas locais, sem expor dados de pacientes e sem custo de IA.</small></div>'+
+ '<div class="tati-search"><label for="tati-query">Em que posso ajudar?</label><input id="tati-query" type="search" autocomplete="off" maxlength="180" placeholder="Ex.: como calcular ticket médio?" value="'+escape(search)+'"><small>Respostas verificadas. Sem resposta? A IA pode ajudar, quando ativada.</small></div>'+
  '<div class="tati-result">'+(selected?cardAnswer(selected):'<p class="tati-subhead">'+(search?'Respostas encontradas':'Dúvidas frequentes')+'</p><div class="tati-list">'+
  matches().map(x=>'<button type="button" data-answer="'+x.index+'">'+escape(x.a[0])+'<span>›</span></button>').join('')+
- '</div>'+(search&&!matches().length?'<p class="tati-unmatched">Não encontrei uma resposta segura para essa dúvida. Procure a Ajuda completa ou fale com o suporte.</p>':'') )+'</div>'+
+ '</div>'+(search&&!matches().length?'<p class="tati-unmatched">Não encontrei resposta na base local. <button type="button" data-aiask="1">Perguntar à IA</button><div id="tati-ai-answer" role="status"></div></p>':'') )+'</div>'+
  '<footer class="tati-foot"><button type="button" data-go="ajuda">Abrir Ajuda completa</button><a href="mailto:suporte@blacksolutions.net.br?subject=Duvida%20BlackFlow">Falar com suporte</a></footer></section>':'');
  document.getElementById('tati-trigger')?.addEventListener('click',()=>{opened=!opened;selected=null;paint();if(opened)document.getElementById('tati-query')?.focus()});
  document.getElementById('tati-close')?.addEventListener('click',()=>{opened=false;paint()});
  document.getElementById('tati-query')?.addEventListener('input',e=>{const pos=e.target.selectionStart;search=e.target.value;selected=null;paint();const el=document.getElementById('tati-query');if(el){el.focus();try{el.setSelectionRange(pos,pos)}catch(_){}}});
+ root.querySelectorAll('[data-aiask]').forEach(btn=>btn.addEventListener('click',()=>{const node=document.getElementById('tati-ai-answer');if(window.bfAIAsk&&node)window.bfAIAsk(search,node);else if(node)node.textContent='IA temporariamente indisponível.'}));
  root.querySelectorAll('[data-answer]').forEach(btn=>btn.addEventListener('click',()=>{selected=all().map((a,index)=>({a,index}))[Number(btn.dataset.answer)]||null;paint()}));
  root.querySelectorAll('[data-reset]').forEach(btn=>btn.addEventListener('click',()=>{selected=null;search='';paint();document.getElementById('tati-query')?.focus()}));
  root.querySelectorAll('[data-go]').forEach(btn=>btn.addEventListener('click',()=>{const view=btn.dataset.go;if(!destOK(view))return;opened=false;paint();if(typeof go==='function')go(view)}));
