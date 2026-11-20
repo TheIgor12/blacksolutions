@@ -22,6 +22,7 @@
    });
  }
  function addCloseButtons(){
+   document.body.classList.toggle('bf-modal-open',!!document.querySelector('#modalRoot .modalw, #modalRoot2 .modalw'));
    for(const [rootId,closeName] of [['modalRoot','closeModal'],['modalRoot2','fecha2']]){
      const root=document.getElementById(rootId);
      const pane=root&&root.querySelector('.modalw > .modal');
