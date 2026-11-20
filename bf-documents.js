@@ -128,7 +128,7 @@ window.bfDocPrint=function(kind,id){
 window.bfDocsConfig=function(){return '<div class="card"><h2>Modelo de orçamento e receituário</h2>'+
  '<p class="sub">Envie seu <b>papel timbrado em branco</b> (PNG, JPG ou PDF, primeira página). O sistema converte e guarda uma imagem de fundo para os documentos da clínica. Não envie PDF com nome de paciente, tratamento ou valores. O modelo fica salvo nas configurações da clínica.</p>'+
  '<div class="bf-doc-config-actions"><label class="btn ghost" style="cursor:pointer">Enviar papel timbrado<input type="file" accept="application/pdf,image/png,image/jpeg" style="display:none" onchange="bfDocUpload(this)"></label>'+
- '<button class="btn ghost" onclick="S.config.bfModeloFundo=''\;save();render()">Remover modelo</button></div>'+
+ '<button class="btn ghost" onclick="S.config.bfModeloFundo=null;save();render()">Remover modelo</button></div>'+
  (imageBg()?'<img alt="Prévia do papel timbrado" src="'+imageBg()+'" style="margin:12px 0;max-width:260px;max-height:370px;border:1px solid #ddd">':'<p class="sub">Sem modelo carregado: será utilizada a identidade do logotipo e das cores da clínica.</p>')+
  '<div class="bf-doc-grid"><label>Farmácia de preferência para documentos (opcional)<input id="bf-farmacia-cfg" value="'+E(S.config.bfFarmacia||'')+'" placeholder="Ex.: Farmácia indicada pelo profissional" onchange="S.config.bfFarmacia=this.value;save()"></label></div>'+
  '<p class="sub">Modelo de demonstração baseado na estrutura enviada: <a href="/download/Modelo_Orcamento_HappyFEET_em_branco.html" target="_blank" rel="noopener">baixar modelo em branco HappyFEET</a>.</p></div>'};
