@@ -3117,29 +3117,43 @@ const BPITEM=[['orcamentos','Orçamentos','file'],['receituario','Receituário',
 
 /* Escolha do segmento */
 function segCards(acao){return `<div class="grid g3">${Object.entries(SEGMENTOS).map(([k,s])=>`<div class="tile" style="${segK()===k&&S.config.segmento?'outline:3px solid var(--acc)':''}" onclick="${acao}('${k}')"><div class="ti">${ico(k==='podologia'?'user':k==='estetica'?'chart':'badge')}</div><b>${esc(s.nome)}</b><p>${esc(s.desc)}</p></div>`).join('')}</div>`}
-function perguntarSegmento(){openModal(`<h3>Qual é o seu tipo de negócio?</h3><p class="sub" style="margin-bottom:14px">O BlackFlow mostra os módulos certos para o seu segmento. Dá para trocar depois em Configurações.</p>${segCards('escolherSegmento')}`,true)}
+function perguntarSegmento(){
+ if(UI.auth || (NV.ativa && (!NV.clinicaId || NV.offline)) ||
+    (NV.segmento && SEGMENTOS[NV.segmento]) ||
+    (S.config.segmento && SEGMENTOS[S.config.segmento]))return;
+ openModal(`<h3>Qual é o seu tipo de negócio?</h3>
+ <p class="sub" style="margin-bottom:14px">Escolha o segmento da sua clínica uma única vez. Depois da confirmação, somente o acesso mestre da BlackSolutions poderá alterá-lo. O plano Só agenda continua disponível sem mudar o segmento.</p>
+ ${segCards('escolherSegmento')}`,true)
+}
 /* ---- Trava do ramo ----
    O preço muda conforme o ramo, então trocar de ramo dentro do sistema seria
    subir de plano sem pagar. Quem decide é o servidor: o ramo é gravado uma vez
    na nuvem e, a partir daí, o que está no aparelho não manda mais. Trocar de
    PLANO continua livre, porque completo e só agenda existem em todo ramo. */
 function segmentoTravado(){
- if(NV.mestre)return false;                     // login mestre troca o ramo livremente
- if(!S.config.segmento)return false;            // ainda não escolheu
- if(!NV.ativa)return false;                     // sem nuvem, nada a proteger
- if(NV.segmento)return true;                    // o servidor já gravou
- return planoContratado()!=='teste'}            // assinatura ativa trava mesmo antes de gravar
+ if(NV.mestre)return false;
+ return !!((NV.segmento&&SEGMENTOS[NV.segmento])||
+           (S.config.segmento&&SEGMENTOS[S.config.segmento]));
+}
 async function segmentoRegistrar(k){
- if(!NV.ativa||!NV.sb||!NV.sessao||!SEGMENTOS[k])return null;
- try{const r=await NV.sb.rpc('bs_segmento_definir',{p_segmento:k});
-  if(r.error)return null;
-  if(r.data&&r.data.segmento){NV.segmento=r.data.segmento;
-   if(S.config.segmento!==NV.segmento&&SEGMENTOS[NV.segmento]){S.config.segmento=NV.segmento;save();render()}}
-  return r.data}catch(e){return null}}
+ if(!NV.ativa||!NV.sb||!NV.sessao||!NV.clinicaId||!SEGMENTOS[k]||NV.offline)return null;
+ try{
+  const r=await NV.sb.rpc('bs_segmento_definir_para',{p_clinica:NV.clinicaId,p_segmento:k});
+  if(r.error){console.warn('BlackFlow: segmento inicial não confirmado',r.error);toast('Não foi possível confirmar o segmento desta clínica. Tente novamente conectado à internet.');return null}
+  if(r.data&&SEGMENTOS[r.data.segmento]){NV.segmento=r.data.segmento;return r.data}
+  return null;
+ }catch(e){console.error('BlackFlow: falha no registro do segmento',e);toast('Não foi possível gravar o segmento. Nenhum dado foi modificado.');return null}
+}
 /* Login mestre: troca o ramo na nuvem pela função do suporte, para ver os
    módulos de cada ramo como o cliente vê. */
-async function segmentoMestre(k){if(!NV.ativa||!NV.sb||!NV.clinicaId)return;
- try{const r=await NV.sb.rpc('bs_segmento_trocar',{p_clinica:NV.clinicaId,p_segmento:k});if(!r.error)NV.segmento=k;else toast(traduz(r.error))}catch(e){}}
+async function segmentoMestre(k){
+ if(!NV.ativa||!NV.sb||!NV.clinicaId||!NV.mestre||!SEGMENTOS[k]||NV.offline)return false;
+ try{
+  const r=await NV.sb.rpc('bs_segmento_trocar',{p_clinica:NV.clinicaId,p_segmento:k});
+  if(r.error){toast(traduz(r.error));return false}
+  NV.segmento=k;return true;
+ }catch(e){console.error('BlackFlow: troca mestre não concluída',e);return false}
+}
 /* Quem participa de mais de uma clínica escolhe qual abrir */
 function escolherClinica(){const L=NV.membros||[];
  openModal(`<h3>Trocar de clínica</h3><p class="sub">Escolha qual conta abrir. Os dados de cada uma ficam separados.</p>
@@ -3156,19 +3170,55 @@ function segmentoBloqueado(){const c=(typeof ASSINATURA!=='undefined'&&ASSINATUR
    <b>O que você pode mudar sozinho</b>
    <p class="sub" style="margin:6px 0 0">O plano. Dá para ir do completo para o só agenda, e voltar, quando quiser, em Configurações, na parte de Minha conta.</p></div>
   <div class="mact">${c?`<a class="btn green" href="${esc(c)}" target="_blank" rel="noopener" onclick="closeModal()">Falar com o suporte</a>`:''}<button class="btn ghost" onclick="closeModal()">Entendi</button></div>`)}
-function escolherSegmento(k){if(!SEGMENTOS[k])return;
- if(S.config.segmento&&k!==S.config.segmento&&segmentoTravado()){closeModal();segmentoBloqueado();return}
- if(!NV.mestre&&planoContratado()==='agenda'&&S.config.segmento&&k!==S.config.segmento){modalLiberar('segmento');return}
- const antes=S.config.segmento;S.config.segmento=k;closeModal();save();if(NV.mestre)segmentoMestre(k);else segmentoRegistrar(k);render();toast('Segmento: '+SEGMENTOS[k].nome+(antes&&antes!==k?'. Os dados de antes continuam guardados.':''));
- if(!S.config.plano&&!UI.planoPerguntado){UI.planoPerguntado=true;setTimeout(perguntarPlano,400)}}
-function checarSegmento(){if(UI.auth)return;
- if(CAD){if(!S.config.segmento)S.config.segmento=CAD.segmento;if(!S.config.plano)S.config.plano=CAD.plano;S.config.clinica=S.config.clinica||NV.nomeClinica||S.config.clinica;CAD=null;UI.segPerguntado=true;UI.planoPerguntado=true;save();setTimeout(render,0);return}
- if(!S.config.segmento&&!UI.segPerguntado){UI.segPerguntado=true;
-  if(S.pacientes.length||S.agendamentos.length){S.config.segmento='podologia';save()}
-  else{setTimeout(()=>{if(!$('#modalRoot').innerHTML)perguntarSegmento()},300);return}}
- if(!S.config.plano&&!UI.planoPerguntado){UI.planoPerguntado=true;
+async function escolherSegmento(k){
+ if(!SEGMENTOS[k]||UI.auth)return;
+ const definido=SEGMENTOS[NV.segmento]?NV.segmento:S.config.segmento;
+ if(definido && k===definido){closeModal();return}
+ if(!NV.mestre&&definido){
+  closeModal();segmentoBloqueado();return;
+ }
+ if(NV.ativa){
+  if(!NV.sb||!NV.clinicaId||NV.offline){toast('Conecte-se à sua clínica antes de confirmar o segmento.');return}
+  const resposta=NV.mestre?await segmentoMestre(k):await segmentoRegistrar(k);
+  if(!resposta)return;
+  if(!NV.mestre && resposta.segmento!==k){closeModal();S.config.segmento=resposta.segmento;render();segmentoBloqueado();return}
+ }
+ S.config.segmento=SEGMENTOS[NV.segmento]?NV.segmento:k;
+ UI.segPerguntado=true;
+ const primeiro=!definido;
+ closeModal();save();render();toast('Segmento da clínica: '+SEGMENTOS[S.config.segmento].nome+'.');
+ if(primeiro&&!S.config.plano&&!UI.planoPerguntado){
+  UI.planoPerguntado=true;setTimeout(perguntarPlano,400);
+ }
+}
+function checarSegmento(){
+ if(UI.auth||NV.offline||(NV.ativa&&!NV.clinicaId))return;
+ if(SEGMENTOS[NV.segmento]){
+  if(S.config.segmento!==NV.segmento)S.config.segmento=NV.segmento;
+  UI.segPerguntado=true;
+ }
+ if(CAD){
+  if(!S.config.segmento&&SEGMENTOS[CAD.segmento])S.config.segmento=CAD.segmento;
+  if(!S.config.plano)S.config.plano=CAD.plano||'completo';
+  S.config.clinica=S.config.clinica||NV.nomeClinica||S.config.clinica;
+  CAD=null;UI.segPerguntado=true;UI.planoPerguntado=true;
+  save();setTimeout(render,0);return;
+ }
+ if(!S.config.segmento&&!UI.segPerguntado){
+  UI.segPerguntado=true;
+  setTimeout(()=>{if(!$('#modalRoot').innerHTML)perguntarSegmento()},300);
+  return;
+ }
+ if(!S.config.plano&&NV.ativa&&NV.plano&&NV.plano!=='teste'){
+  S.config.plano=NV.plano==='agenda'?'agenda':'completo';
+  UI.planoPerguntado=true;
+ }
+ if(!S.config.plano&&!UI.planoPerguntado){
+  UI.planoPerguntado=true;
   if(S.lancamentos.length||S.comandas.length){S.config.plano='completo';save();return}
-  setTimeout(()=>{if(!$('#modalRoot').innerHTML)perguntarPlano()},300)}}
+  setTimeout(()=>{if(!$('#modalRoot').innerHTML)perguntarPlano()},300);
+ }
+}
 function planoCards(acao){return `<div class="grid g3">${Object.entries(PLANOS).filter(([k])=>!ramoClinico()||k==='completo').map(([k,x])=>`<div class="tile" style="${planoK()===k?'outline:3px solid var(--acc)':''}" onclick="${acao}('${k}')"><div class="ti">${ico(k==='agenda'?'cal':'chart')}</div><b>${esc(x.nome)}</b><p>${esc(x.desc)}</p></div>`).join('')}</div>`}
 function perguntarPlano(){openModal(`<h3>Como você quer usar o BlackFlow?</h3><p class="sub" style="margin-bottom:14px">Dá para trocar a qualquer momento em Configurações. Nada do que já foi lançado é apagado.</p>${planoCards('escolherPlano')}`,true)}
 function escolherPlano(k){if(ramoClinico()&&k==='agenda'){toast('O plano Só agenda não está disponível para este segmento.');return;}if(k==='completo'&&planoContratado()==='agenda'){modalLiberar('plano');return}
@@ -4799,7 +4849,7 @@ function agNovo(a,s){if(s==='Desmarcado'||s==='Faltou')return false;const k=a.da
  const hist=c=>S[c].some(x=>x.pacienteId===a.pacienteId&&((x.data||x.vencimento||x.pagamento||'')<a.data)&&(x.data||x.vencimento||x.pagamento));
  return !hist('evolucoes')&&!hist('tratamentos')&&!S.lancamentos.some(l=>l.pacienteId===a.pacienteId&&l.pagamento&&l.pagamento<a.data)}
 /* ============ Atualização: aviso com botão Atualizar agora ============ */
-const VERSAO_APP='1.27.0';const URL_VERSAO_JSON='https://raw.githubusercontent.com/TheIgor12/blacksolutions/main/versao.json';
+const VERSAO_APP='1.27.1';const URL_VERSAO_JSON='https://raw.githubusercontent.com/TheIgor12/blacksolutions/main/versao.json';
 const numV=v=>String(v||'0').split(/\D+/).filter(Boolean).map(Number);
 function versaoMaior(a,b){const x=numV(a),y=numV(b);for(let i=0;i<Math.max(x.length,y.length);i++){const d=(x[i]||0)-(y[i]||0);if(d)return d>0}return false}
 const ATU={nova:null,timer:null};
@@ -5323,20 +5373,46 @@ async function entrar(sessao){NV.sessao=sessao;NV.offline=false;UI.auth={modo:'c
  NV.membros=m;try{const r=await NV.sb.rpc('lm_e_mestre');NV.mestre=r.data===true}catch(e){NV.mestre=false}
  const ult=await DB.get('ultimo');const esc_=m.find(x=>ult&&x.clinica_id===ult.clinicaId)||m[0];
  NV.clinicaId=esc_.clinica_id;NV.papel=esc_.papel;NV.nomeClinica=(esc_.clinicas&&esc_.clinicas.nome)||'';
- const cl=esc_.clinicas||{};NV.plano=cl.plano||'';NV.validoAte=cl.valido_ate||'';NV.segmento=cl.segmento||'';if(NV.segmento&&SEGMENTOS[NV.segmento]&&S.config.segmento!==NV.segmento){S.config.segmento=NV.segmento;save()}else if(!NV.segmento&&CAD&&CAD.segmento&&SEGMENTOS[CAD.segmento]){S.config.segmento=CAD.segmento;segmentoRegistrar(CAD.segmento)}else if(!NV.segmento&&S.config.segmento)segmentoRegistrar(S.config.segmento);promoCarregar().then(()=>{if(PROMO)render()});if(cl.ativa===false||(cl.valido_ate&&cl.valido_ate<todayISO())){UI.auth={modo:'bloqueado',motivo:cl.ativa===false?'suspenso':(cl.plano==='teste'?'teste':'vencido')};render();carregarAssinatura().then(()=>{if(UI.auth&&UI.auth.modo==='bloqueado')render()});return}
+ const cl=esc_.clinicas||{};NV.plano=cl.plano||'';NV.validoAte=cl.valido_ate||'';NV.segmento=SEGMENTOS[cl.segmento]?cl.segmento:'';UI.segPerguntado=false;UI.planoPerguntado=false;promoCarregar().then(()=>{if(PROMO)render()});if(cl.ativa===false||(cl.valido_ate&&cl.valido_ate<todayISO())){UI.auth={modo:'bloqueado',motivo:cl.ativa===false?'suspenso':(cl.plano==='teste'?'teste':'vencido')};render();carregarAssinatura().then(()=>{if(UI.auth&&UI.auth.modo==='bloqueado')render()});return}
  try{await abrirClinica()}catch(e){console.error(e);UI.auth={modo:'entrar',email:sessao.user.email,msg:traduz(e)};render()}}
 async function carregarCache(){const c=await DB.get('c_'+NV.clinicaId);const d=defaultState();
  if(c&&c.S){S={...d,...c.S,config:{...d.config,...(c.S.config||{})}};NV.hashes=c.hashes||{};NV.cursor=c.cursor||0;NV.conflitos=c.conflitos||{}}else{S=d;NV.hashes={};NV.cursor=0;NV.conflitos={}}}
-async function abrirClinica(){await carregarCache();if(!S.config.clinica||S.config.clinica===defaultState().config.clinica)S.config.clinica=NV.nomeClinica||S.config.clinica;
- UI.auth={modo:'carregando',msg:'Baixando os dados da clínica...'};render();await puxar();
- await DB.set({clinicaId:NV.clinicaId,email:NV.sessao.user.email,nome:NV.nomeClinica,validoAte:NV.validoAte,plano:NV.plano},'ultimo');
+async function abrirClinica(){
+ await carregarCache();
+ // O registro contratual em clinicas.segmento prevalece sobre qualquer cache antigo.
+ if(SEGMENTOS[NV.segmento])S.config.segmento=NV.segmento;
+ if(!S.config.clinica||S.config.clinica===defaultState().config.clinica)
+  S.config.clinica=NV.nomeClinica||S.config.clinica;
+ UI.auth={modo:'carregando',msg:'Baixando os dados da clínica...'};render();
+ await puxar();
+ if(!NV.segmento&&CAD&&SEGMENTOS[CAD.segmento]){
+  const confirmado=await segmentoRegistrar(CAD.segmento);
+  if(!confirmado)throw new Error('Não foi possível confirmar o segmento da clínica no servidor.');
+ }else if(!NV.segmento&&SEGMENTOS[S.config.segmento]&&NV.papel==='admin'){
+  // Migração de clientes anteriores: grava o ramo preexistente sem permitir trocas.
+  await segmentoRegistrar(S.config.segmento);
+ }
+ if(SEGMENTOS[NV.segmento]){S.config.segmento=NV.segmento;UI.segPerguntado=true}
+ if(!S.config.plano&&NV.plano&&NV.plano!=='teste')
+  S.config.plano=NV.plano==='agenda'?'agenda':'completo';
+ await DB.set({clinicaId:NV.clinicaId,email:NV.sessao.user.email,nome:NV.nomeClinica,
+  validoAte:NV.validoAte,plano:NV.plano,segmento:NV.segmento||S.config.segmento||''},'ultimo');
  UI.auth=null;UI.view='inicio';render();iniciarSync();
  const vazio=!Object.keys(NV.hashes).some(k=>k!=='config:config'&&NV.hashes[k]);
- if(vazio&&NV.papel==='admin'){const old=await DB.get('state');if(old&&Array.isArray(old.pacientes)&&old.pacientes.length){
-  openModal(`<h3>Dados encontrados neste computador</h3><p>Este computador tem ${old.pacientes.length} pacientes gravados antes do login. Deseja enviá-los para a nuvem da clínica <b>${esc(NV.nomeClinica)}</b>?</p><div class="mact"><button class="btn ghost" onclick="closeModal()">Agora não</button><button class="btn" id="migY">Enviar para a nuvem</button></div>`);
-  $('#migY').onclick=()=>{const d=defaultState();const cfg=S.config;S={...d,...old,config:{...d.config,...(old.config||{}),clinica:cfg.clinica}};closeModal();save();render();toast('Enviando os dados para a nuvem...')}}}
- enviar()}
-async function abrirOffline(){const u=await DB.get('ultimo');if(!u){toast('Nenhum dado salvo neste computador.');return}if(!u.plano||(u.plano==='teste'&&!u.validoAte)||(u.validoAte&&u.validoAte<todayISO())){UI.auth={modo:'bloqueado',motivo:'teste'};NV.nomeClinica=u.nome||'';NV.plano=u.plano||'teste';NV.validoAte=u.validoAte;render();return}NV.clinicaId=u.clinicaId;NV.nomeClinica=u.nome;NV.offline=true;NV.sessao={user:{email:u.email,user_metadata:{}}};await carregarCache();UI.auth=null;render();setSync('off')}
+ if(vazio&&NV.papel==='admin'){
+  const old=await DB.get('state');
+  if(old&&Array.isArray(old.pacientes)&&old.pacientes.length){
+   openModal(`<h3>Dados encontrados neste computador</h3><p>Este computador tem ${old.pacientes.length} pacientes gravados antes do login. Deseja enviá-los para a nuvem da clínica <b>${esc(NV.nomeClinica)}</b>?</p><div class="mact"><button class="btn ghost" onclick="closeModal()">Agora não</button><button class="btn" id="migY">Enviar para a nuvem</button></div>`);
+   $('#migY').onclick=()=>{
+    const d=defaultState(),cfg=S.config;
+    S={...d,...old,config:{...d.config,...(old.config||{}),clinica:cfg.clinica,segmento:NV.segmento||cfg.segmento}};
+    closeModal();save();render();toast('Enviando os dados para a nuvem...');
+   };
+  }
+ }
+ enviar();
+}
+async function abrirOffline(){const u=await DB.get('ultimo');if(!u){toast('Nenhum dado salvo neste computador.');return}if(!u.plano||(u.plano==='teste'&&!u.validoAte)||(u.validoAte&&u.validoAte<todayISO())){UI.auth={modo:'bloqueado',motivo:'teste'};NV.nomeClinica=u.nome||'';NV.plano=u.plano||'teste';NV.validoAte=u.validoAte;render();return}NV.clinicaId=u.clinicaId;NV.nomeClinica=u.nome;NV.offline=true;NV.sessao={user:{email:u.email,user_metadata:{}}};await carregarCache();NV.segmento=SEGMENTOS[u.segmento]?u.segmento:S.config.segmento;if(SEGMENTOS[NV.segmento])S.config.segmento=NV.segmento;UI.segPerguntado=true;UI.planoPerguntado=true;UI.auth=null;render();setSync('off')}
 function persistirNuvem(){if(NV.clinicaId)DB.set({S,hashes:NV.hashes,cursor:NV.cursor,conflitos:NV.conflitos||{}},'c_'+NV.clinicaId)}
 /* BlackFlow 1.27.0: sincronização protegida por versão e divergências explícitas. */
 function bfRegCanon(x){
@@ -5368,6 +5444,7 @@ function aplicarRemoto(r){
  const k=r.colecao+':'+r.id;
  if(r.colecao==='config'){
   const remoto=bfRegBase(k,r.dados);
+  if(SEGMENTOS[NV.segmento])remoto.segmento=NV.segmento;
   if(temAlteracaoLocal(k,S.config)&&!bfRegMesmo(S.config,remoto)){
    bfRegistrarConflito(k,'configuracao divergente',r.seq);return;
   }
@@ -5476,7 +5553,10 @@ async function enviar(){
  }finally{NV.ocupado=false}
 }
 function podeRedesenhar(){const a=document.activeElement;return !$('#modalRoot').innerHTML&&!(a&&/INPUT|TEXTAREA|SELECT/.test(a.tagName))}
-async function sincronizar(){if(NV.plano==='teste'&&NV.validoAte&&NV.validoAte<todayISO()){clearInterval(NV.timer);UI.auth={modo:'bloqueado',motivo:'teste'};render();return}if(!NV.sb||!NV.clinicaId||NV.offline||UI.auth)return;try{const n=await puxar();if(n&&podeRedesenhar())render();await enviar()}catch(e){setSync(navigator.onLine===false?'off':'err')}}
+async function sincronizar(){if(NV.plano==='teste'&&NV.validoAte&&NV.validoAte<todayISO()){clearInterval(NV.timer);UI.auth={modo:'bloqueado',motivo:'teste'};render();return}if(!NV.sb||!NV.clinicaId||NV.offline||UI.auth)return;try{const segAnterior=NV.segmento;
+ const c=await NV.sb.from('clinicas').select('segmento,plano').eq('id',NV.clinicaId).single();
+ if(!c.error&&c.data){if(SEGMENTOS[c.data.segmento])NV.segmento=c.data.segmento;NV.plano=c.data.plano||NV.plano;if(SEGMENTOS[NV.segmento])S.config.segmento=NV.segmento}
+ const n=await puxar();if((n||segAnterior!==NV.segmento)&&podeRedesenhar())render();await enviar()}catch(e){setSync(navigator.onLine===false?'off':'err')}}
 function iniciarSync(){clearInterval(NV.timer);NV.timer=setInterval(sincronizar,30000)}
 window.addEventListener('online',()=>{if(NV.offline&&NV.sb)location.reload();else sincronizar()});window.addEventListener('offline',()=>setSync('off'));window.addEventListener('focus',()=>sincronizar());
 async function sair(){try{await enviar()}catch(e){}clearInterval(NV.timer);if(NV.sb)await NV.sb.auth.signOut();NV.sessao=null;NV.clinicaId=null;NV.hashes={};NV.cursor=0;NV.conflitos={};S=defaultState();closeModal();UI.auth={modo:'entrar'};render()}
@@ -5526,7 +5606,7 @@ function telaCopiaNaoAutorizada(){
   if(!origemAutorizada()){telaCopiaNaoAutorizada();return}}
  try{navigator.storage&&navigator.storage.persist&&navigator.storage.persist()}catch(e){}
  try{fonteAplicar()}catch(e){}
- try{if(/^https?:/.test(location.protocol)&&'serviceWorker' in navigator&&!window.pywebview)navigator.serviceWorker.register('./sw.js?v=1.27.0',{updateViaCache:'none'}).then(r=>r.update()).catch(()=>{})}catch(e){}
+ try{if(/^https?:/.test(location.protocol)&&'serviceWorker' in navigator&&!window.pywebview)navigator.serviceWorker.register('./sw.js?v=1.27.1',{updateViaCache:'none'}).then(r=>r.update()).catch(()=>{})}catch(e){}
  if(NV.ativa){
   if(!window.supabase||!window.supabase.createClient){UI.auth={modo:'offline',temCache:!!(await DB.get('ultimo'))};render();return}
   NV.sb=window.supabase.createClient(NUVEM.url,NUVEM.chave,{auth:{persistSession:true,autoRefreshToken:true}});
@@ -5577,19 +5657,19 @@ function agProf(nome){UI.profOff={};if(nome){S.profissionais.forEach(p=>{if(norm
 function menuProfs(){const L=az(S.profissionais.filter(p=>p.ativo!==false));if(!L.length)return '';const sel=UI.view==='agenda'?(UI.agProf||''):null;
  return `<div class="msec">AGENDA POR PROFISSIONAL</div><button class="${sel===''&&UI.view==='agenda'?'on':''}" onclick="agProf('')">${ico('cal',18)} Todos os profissionais</button>${L.map(p=>`<button class="${sel!=null&&norm(sel)===norm(p.nome)?'on':''}" onclick="agProf(${esc(JSON.stringify(p.nome))})"><span style="display:inline-block;width:12px;height:12px;border-radius:50%;background:${esc(p.cor||'#0a4bde')};margin:0 3px;flex:none"></span> ${esc(p.nome)}</button>`).join('')}`}
 </script>
-<script src="./bf-clinical.js?v=1.27.0"></script>
-<script src="./bf-fiscal-advanced.js?v=1.27.0"></script>
-<script src="./bf-receituario.js?v=1.27.0"></script>
-<script src="./bf-cadastro-fiscal.js?v=1.27.0"></script>
-<script src="./bf-context-actions.js?v=1.27.0"></script>
-<script src="./bf-integrity-audit.js?v=1.27.0"></script>
-<script src="./bf-blackpay-integrated.js?v=1.27.0"></script>
-<script src="./bf-tati-help.js?v=1.27.0"></script>
-<script src="./bf-mobile-photos.js?v=1.27.0"></script>
-<script src="./bf-documents.js?v=1.27.0"></script>
-<script src="./bf-workflow-123.js?v=1.27.0"></script>
-<script src="./bf-workflow-124.js?v=1.27.0"></script>
-<script>const bfMobileCss=document.createElement("link");bfMobileCss.rel="stylesheet";bfMobileCss.href="./bf-mobile-126.css?v=1.27.0";document.head.appendChild(bfMobileCss);</script>
-<script src="./bf-mobile-126.js?v=1.27.0"></script>
+<script src="./bf-clinical.js?v=1.27.1"></script>
+<script src="./bf-fiscal-advanced.js?v=1.27.1"></script>
+<script src="./bf-receituario.js?v=1.27.1"></script>
+<script src="./bf-cadastro-fiscal.js?v=1.27.1"></script>
+<script src="./bf-context-actions.js?v=1.27.1"></script>
+<script src="./bf-integrity-audit.js?v=1.27.1"></script>
+<script src="./bf-blackpay-integrated.js?v=1.27.1"></script>
+<script src="./bf-tati-help.js?v=1.27.1"></script>
+<script src="./bf-mobile-photos.js?v=1.27.1"></script>
+<script src="./bf-documents.js?v=1.27.1"></script>
+<script src="./bf-workflow-123.js?v=1.27.1"></script>
+<script src="./bf-workflow-124.js?v=1.27.1"></script>
+<script>const bfMobileCss=document.createElement("link");bfMobileCss.rel="stylesheet";bfMobileCss.href="./bf-mobile-126.css?v=1.27.1";document.head.appendChild(bfMobileCss);</script>
+<script src="./bf-mobile-126.js?v=1.27.1"></script>
 </body>
 </html>

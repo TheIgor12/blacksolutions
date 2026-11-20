@@ -55,4 +55,5 @@ assert.ok(html.includes("'receitasDocs','combos'"),'Document cloud collection mi
 new vm.Script(read('bf-documents.js'),{filename:'bf-documents.js'});
 assert.ok(html.includes('bfPhotoChoice(pid)'),'Camera continuation callback missing');
 execFileSync(process.execPath,[fileURLToPath(new URL('./test-documents.mjs',import.meta.url))],{stdio:'inherit'});
+execFileSync(process.execPath,[fileURLToPath(new URL('./test-segmento-onboarding.mjs',import.meta.url))],{stdio:'inherit'});
 console.log('BlackFlow '+version+': release smoke checks PASS');
