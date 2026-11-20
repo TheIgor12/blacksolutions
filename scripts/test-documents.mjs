@@ -1,0 +1,36 @@
+import assert from 'node:assert/strict';
+import fs from 'node:fs';
+import vm from 'node:vm';
+const code=fs.readFileSync(new URL('../bf-documents.js',import.meta.url),'utf8');
+const source={config:{clinica:'HappyFEET',telefone:'(47) 12345'},pacientes:[{id:'pac1',nome:'Paciente de Teste',cpf:'12345678909',endereco:'Rua de Teste',numero:'10',cidade:'Jaraguá do Sul'}],servicos:[{id:'serv1',nome:'Podoprofilaxia',preco:177,descricao:'Atendimento de teste',ativo:true}]};
+const form={innerHTML:'',elements:{namedItem:()=>null},querySelectorAll:()=>[]};
+let popup='',toastMsg='',saves=0,uid=0;
+const windowObj={confirm:()=>true,open:()=>({document:{open(){},write(){},close(){}}})};
+const documentObj={head:{insertAdjacentHTML(){}},getElementById:(id)=>id==='bf-doc-form'?form:null};
+const ctx=vm.createContext({window:windowObj,document:documentObj,S:source,
+ openModal:html=>{popup=html},closeModal:()=>{},render:()=>{},save:()=>{saves++},
+ toast:msg=>{toastMsg=msg},uid:()=>String(++uid)});
+vm.runInContext(code,ctx);
+assert.match(windowObj.bfDocsView('orc'),/Orçamentos/);
+assert.match(windowObj.bfDocsView('receita'),/Receituário/);
+windowObj.bfDocOpen('orc','pac1');
+assert.match(popup,/bf-doc-form/);
+assert.match(form.innerHTML,/Paciente de Teste/);
+assert.match(form.innerHTML,/12345678909/);
+windowObj.bfDocChooseService(0,'serv1');
+assert.match(form.innerHTML,/177/);
+windowObj.bfDocSubmit(false);
+assert.equal(source.orcamentos.length,1);
+assert.equal(source.orcamentos[0].items[0].nome,'Podoprofilaxia');
+assert.equal(source.orcamentos[0].items[0].valor,177);
+assert.equal(source.orcamentos[0].cpf,'12345678909');
+assert.ok(saves>0);
+windowObj.bfDocOpen('receita','pac1');
+assert.match(form.innerHTML,/Manipulado/);
+assert.match(form.innerHTML,/Industrializado/);
+form.querySelectorAll=(sel)=>sel==='[data-med][data-key]'?[{dataset:{med:'0',key:'nome'},value:'Medicamento de teste'}]:[];
+windowObj.bfDocSubmit(false);
+assert.equal(source.receitasDocs.length,1);
+assert.equal(source.receitasDocs[0].status,'rascunho');
+assert.equal(source.receitasDocs[0].meds[0].nome,'Medicamento de teste');
+console.log('BLACKFLOW DOCUMENTOS OK — orçamento, preços, paciente, receituário e rascunhos');
