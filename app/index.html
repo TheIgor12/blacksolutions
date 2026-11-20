@@ -3111,7 +3111,7 @@ function menuItens(){const P=SEG().pessoas;
  return menuOrdem([...base,...extra].filter(([k])=>podeTela(k)))}
 /* Agenda sempre em primeiro, o resto em ordem alfabetica, BlackPay por ultimo */
 function menuOrdem(L){const ag=L.filter(([k])=>k==='agenda');
- return [...ag,...azPor(L.filter(([k])=>k!=='agenda'&&!BPITEM.some(([b])=>b===k)),x=>x[1]),...BPITEM.filter(([k])=>k==='blackpay'||podeTela(k))]}
+ return [...ag,...azPor(L.filter(([k])=>k!=='agenda'&&!BPITEM.some(([b])=>b===k)),x=>x[1]),...BPITEM.filter(([k])=>(k!=='receituario'||['podologia','medicina','odontologia','biomedicina'].includes(segK()))&&(k==='blackpay'||podeTela(k)))]}
 /* BlackPay entra sempre por ultimo e nao depende de perfil, porque por enquanto e so informativo */
 const BPITEM=[['orcamentos','Orçamentos','file'],['receituario','Receituário','file'],['blackpay','BlackPay','card']];
 
