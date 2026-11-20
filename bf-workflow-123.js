@@ -116,12 +116,21 @@ R.bfChatSend=async function(){
  if(r.error){toast('Mensagem não enviada: '+r.error.message);return}
  inp.value='';await R.bfChatLoad();inp.focus();
 };
-R.bfChatExport=function(){
- if(NV.papel!=='admin'){toast('Somente o administrador pode exportar o histórico.');return}
- download('blackflow-chat-'+todayISO()+'.json',new Blob([JSON.stringify(R.bfChatCache,null,2)],{type:'application/json'}));
- toast('Exportação das últimas 100 mensagens visíveis. O histórico completo permanece no servidor.');
-};
-if(!R.bfChatPoll)R.bfChatPoll=setInterval(()=>{if(R.bfChatAberto&&document.getElementById('bf-chat-lines'))R.bfChatLoad()},10000);
+R.bfChatExport=async function(){
+ if(NV.papel!=='admin'||!NV.clinicaId||!NV.sb){toast('Somente o administrador pode exportar o histórico.');return}
+ const all=[];const limit=500;let start=0;
+ try{
+  for(;;){
+   const r=await NV.sb.from('bf_chat_mensagens').select('id,autor_nome,mensagem,criado_em').eq('clinica_id',NV.clinicaId).order('id',{ascending:true}).range(start,start+limit-1);
+   if(r.error)throw r.error;
+   const rows=r.data||[];all.push(...rows);
+   if(rows.length<limit)break;
+   start+=limit;
+  }
+  download('blackflow-chat-'+todayISO()+'.json',new Blob([JSON.stringify({clinica:NV.nomeClinica,exportadoEm:new Date().toISOString(),mensagens:all},null,2)],{type:'application/json'}));
+  toast('Histórico exportado: '+all.length+' mensagens.');
+ }catch(e){toast('Não foi possível exportar o histórico: '+e.message)}
+}
 R.bfHelpAddon=function(){
  return '<div class="card"><h2>Escreva sua dúvida</h2><p class="sub">Consulte as respostas do BlackFlow. Se não houver correspondência, abra a assistente Tati.</p><form onsubmit="bfHelpAsk();return false"><label>O que você precisa saber?<textarea id="bf-help-question" rows="3" placeholder="Ex.: Como preencher uma anamnese?"></textarea></label><div style="margin-top:10px"><button class="btn" type="submit">Perguntar</button></div></form><div id="bf-help-answer" style="margin-top:10px"></div></div>';
 };
