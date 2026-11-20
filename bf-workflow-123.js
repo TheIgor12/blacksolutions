@@ -131,6 +131,7 @@ R.bfChatExport=async function(){
   toast('Histórico exportado: '+all.length+' mensagens.');
  }catch(e){toast('Não foi possível exportar o histórico: '+e.message)}
 }
+if(!R.bfChatPoll)R.bfChatPoll=setInterval(()=>{if(R.bfChatAberto&&document.getElementById('bf-chat-lines'))R.bfChatLoad()},10000);
 R.bfHelpAddon=function(){
  return '<div class="card"><h2>Escreva sua dúvida</h2><p class="sub">Consulte as respostas do BlackFlow. Se não houver correspondência, abra a assistente Tati.</p><form onsubmit="bfHelpAsk();return false"><label>O que você precisa saber?<textarea id="bf-help-question" rows="3" placeholder="Ex.: Como preencher uma anamnese?"></textarea></label><div style="margin-top:10px"><button class="btn" type="submit">Perguntar</button></div></form><div id="bf-help-answer" style="margin-top:10px"></div></div>';
 };
