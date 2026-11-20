@@ -5,14 +5,14 @@
 if(typeof render!=='function'||typeof NV==='undefined')return;
 const html=s=>esc(String(s??''));
 const val=id=>document.getElementById(id)?.value?.trim()||'';
-const opt=(id,values,selected)=>'<select id="'+id+'" class="inp" style="min-width:170px">'+
+const opt=(id,values,selected)=>'<select id="'+id+'" class="inp" style="min-width:0;max-width:100%;width:100%">'+
  values.map(([v,n])=>'<option value="'+html(v)+'"'+(String(selected??'')===String(v)?' selected':'')+'>'+html(n)+'</option>').join('')+'</select>';
-const field=(id,label,value="",type="text")=>'<label style="display:block;min-width:180px;flex:1"><small>'+html(label)+'</small><input class="inp" style="width:100%" id="'+id+'" value="'+html(value)+'" type="'+type+'"></label>';
+const field=(id,label,value="",type="text")=>'<label class="bf-fiscal-field" style="display:block;min-width:0;flex:1 1 185px"><small>'+html(label)+'</small><input class="inp" style="width:100%" id="'+id+'" value="'+html(value)+'" type="'+type+'"></label>';
 const txt=(id,label,value="")=>'<label style="display:block"><small>'+html(label)+'</small><textarea class="inp" id="'+id+'" style="width:100%;min-height:65px">'+html(value)+'</textarea></label>';
-const row=s=>'<div style="display:flex;flex-wrap:wrap;gap:12px;align-items:end;margin-bottom:10px">'+s+'</div>';
-const card=(title,body)=>'<div class="card" style="margin-bottom:16px"><h2 style="margin:0 0 13px;font-size:17px">'+html(title)+'</h2>'+body+'</div>';
+const row=s=>'<div class="bf-fiscal-row" style="display:flex;flex-wrap:wrap;gap:12px;align-items:end;margin-bottom:10px">'+s+'</div>';
+const card=(title,body)=>'<div class="card bf-fiscal-card" style="margin-bottom:16px"><h2 style="margin:0 0 13px;font-size:17px">'+html(title)+'</h2>'+body+'</div>';
 const bt=(label,fn,kind="btn sm")=>'<button class="'+kind+'" onclick="'+fn+'">'+html(label)+'</button>';
-const table=(headers,rows)=>'<div style="overflow:auto"><table class="tbl"><thead><tr>'+headers.map(x=>'<th>'+html(x)+'</th>').join('')+'</tr></thead><tbody>'+
+const table=(headers,rows)=>'<div class="bf-fiscal-tablewrap" style="max-width:100%;overflow-x:auto"><table class="tbl"><thead><tr>'+headers.map(x=>'<th>'+html(x)+'</th>').join('')+'</tr></thead><tbody>'+
  rows.map(x=>'<tr>'+x.map(y=>'<td>'+y+'</td>').join('')+'</tr>').join('')+'</tbody></table></div>';
 const notify=e=>toast('Operação não concluída: '+String(e?.message||e).slice(0,150));
 function bfFiscalDocumentoValido(documento){
@@ -70,7 +70,7 @@ async function fiscalView(){
   const badge='<div class="note" style="margin:0 0 15px">'+
     '<b>BlackFlow fiscal: cadastro individual por empresa, com roteamento nacional.</b> Rascunhos disponíveis; transmissão fiscal real ainda não habilitada. A autorização depende do canal aplicável ao prestador (SEFIN Nacional ou integrador municipal) e do retorno oficial. A autenticação e a assinatura dependem da modalidade. Pix/cartão não são nota fiscal.'+
     '<br><a href="https://www.nfse.gov.br/EmissorNacional" target="_blank" rel="noopener">Abrir o Emissor Nacional de NFS-e</a></div>';
-  const summary='<div class="grid g3">'+[['Rascunhos',totals.draft],['Notas autorizadas importadas',totals.authorized],['Rejeições registradas',totals.rejected]].map(([name,n])=>'<div class="card"><small>'+name+'</small><h2 style="font-size:25px;margin:4px 0">'+n+'</h2></div>').join('')+'</div>';
+  const summary='<div class="grid g3 bf-fiscal-stats">'+[['Rascunhos',totals.draft],['Notas autorizadas importadas',totals.authorized],['Rejeições registradas',totals.rejected]].map(([name,n])=>'<div class="card"><small>'+name+'</small><h2 style="font-size:25px;margin:4px 0">'+n+'</h2></div>').join('')+'</div>';
   const configured=cfg.situacao_integracao||'nao_configurada';
   const diagnostico=card('Homologação e sincronização fiscal — diagnóstico',
     '<p class="sub">Conferência dos pré-requisitos. Nenhuma nota será transmitida por este diagnóstico.</p>'+
@@ -171,11 +171,12 @@ window.bfxPickPatient=function(){
 };
 const prevRender=render;
 render=function(){
- if(UI.view!=='bffiscal')return prevRender();
+ if(UI.view!=='bffiscal'){document.body.classList.remove('bf-fiscal-active');return prevRender();}
  if(NV.ativa&&UI.auth)return prevRender();
- if(!admin()){UI.view='agenda';return prevRender();}
+ if(!admin()){document.body.classList.remove('bf-fiscal-active');UI.view='agenda';return prevRender();}
  // Keep UI.drawer as set by toggleDrawer(): otherwise hamburger never opens on fiscal page.
- document.getElementById('app').innerHTML=shell('<div class="page" style="max-width:1240px"><div class="phead"><div><h1>Nota Fiscal de Serviços — NFS-e</h1><p class="sub">Configurações, rascunhos, conferência e conciliação fiscal por estabelecimento</p></div></div><div id="bf-fiscal-content"><div class="card">Carregando informações fiscais...</div></div></div>');
+ document.body.classList.add('bf-fiscal-active');
+ document.getElementById('app').innerHTML=shell('<div id="bf-fiscal-page" class="page" style="max-width:1240px"><div class="phead"><div><h1>Nota Fiscal de Serviços — NFS-e</h1><p class="sub">Configurações, rascunhos, conferência e conciliação fiscal por estabelecimento</p></div></div><div id="bf-fiscal-content"><div class="card">Carregando informações fiscais...</div></div></div>');
  fiscalView();
 };
 window.bfxBuscarCnpj=async function(){
