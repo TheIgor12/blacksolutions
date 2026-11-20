@@ -10,6 +10,7 @@ jobs:
     timeout-minutes: 50
     permissions:
       contents: write
+      actions: write
     steps:
       - name: Recuperar vídeo original e roteiro
         uses: actions/checkout@v4
@@ -19,12 +20,17 @@ jobs:
             download/BlackFlow_ecossistema_2026_narrado.mp4
             tools/render_blackflow_reels.py
           sparse-checkout-cone-mode: false
+      - name: Encerrar tentativa anterior e validar FFmpeg
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh run cancel 44667649031 --repo TheIgor12/blacksolutions || true
+          command -v ffmpeg
+          test -f /usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf
       - name: Preparar dependências
         run: |
-          sudo apt-get update -qq
-          sudo apt-get install -y ffmpeg fonts-dejavu-core
-          python -m pip install --upgrade pip
-          python -m pip install "edge-tts>=7,<8" "faster-whisper>=1.1,<2"
+          python -m pip install --disable-pip-version-check "edge-tts>=7,<8"
+          echo "A locução será reescrita para um tom mais natural."
       - name: Renderizar vídeo vertical com voz natural
         run: |
           python tools/render_blackflow_reels.py 2>&1 | tee /tmp/blackflow-render.log
