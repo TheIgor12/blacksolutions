@@ -5336,7 +5336,7 @@ async function abrirClinica(){await carregarCache();if(!S.config.clinica||S.conf
   openModal(`<h3>Dados encontrados neste computador</h3><p>Este computador tem ${old.pacientes.length} pacientes gravados antes do login. Deseja enviá-los para a nuvem da clínica <b>${esc(NV.nomeClinica)}</b>?</p><div class="mact"><button class="btn ghost" onclick="closeModal()">Agora não</button><button class="btn" id="migY">Enviar para a nuvem</button></div>`);
   $('#migY').onclick=()=>{const d=defaultState();const cfg=S.config;S={...d,...old,config:{...d.config,...(old.config||{}),clinica:cfg.clinica}};closeModal();save();render();toast('Enviando os dados para a nuvem...')}}}
  enviar()}
-async function abrirOffline(){const u=await DB.get('ultimo');if(!u){toast('Nenhum dado salvo neste computador.');return}if(u.validoAte&&u.validoAte<todayISO()){UI.auth={modo:'bloqueado',motivo:'teste'};NV.nomeClinica=u.nome||'';NV.plano=u.plano||'teste';NV.validoAte=u.validoAte;render();return}NV.clinicaId=u.clinicaId;NV.nomeClinica=u.nome;NV.offline=true;NV.sessao={user:{email:u.email,user_metadata:{}}};await carregarCache();UI.auth=null;render();setSync('off')}
+async function abrirOffline(){const u=await DB.get('ultimo');if(!u){toast('Nenhum dado salvo neste computador.');return}if((u.plano==='teste'&&!u.validoAte)||(u.validoAte&&u.validoAte<todayISO())){UI.auth={modo:'bloqueado',motivo:'teste'};NV.nomeClinica=u.nome||'';NV.plano=u.plano||'teste';NV.validoAte=u.validoAte;render();return}NV.clinicaId=u.clinicaId;NV.nomeClinica=u.nome;NV.offline=true;NV.sessao={user:{email:u.email,user_metadata:{}}};await carregarCache();UI.auth=null;render();setSync('off')}
 function persistirNuvem(){if(NV.clinicaId)DB.set({S,hashes:NV.hashes,cursor:NV.cursor},'c_'+NV.clinicaId)}
 function temAlteracaoLocal(k,obj){return NV.hashes[k]!==undefined&&NV.hashes[k]!==JSON.stringify(obj)}
 function aplicarRemoto(r){const k=r.colecao+':'+r.id;
@@ -5354,7 +5354,14 @@ async function enviar(){if(!NV.sb||!NV.clinicaId||NV.offline)return;if(NV.ocupad
  try{const ups=[],vistos={};
   COLS.forEach(c=>(S[c]||[]).forEach(x=>{const k=c+':'+x.id;const j=JSON.stringify(x);vistos[k]=1;if(NV.hashes[k]!==j)ups.push({row:{clinica_id:NV.clinicaId,colecao:c,id:String(x.id),dados:x,excluido:false},k,j})}));
   const cj=JSON.stringify(S.config);if(NV.hashes['config:config']!==cj)ups.push({row:{clinica_id:NV.clinicaId,colecao:'config',id:'config',dados:S.config,excluido:false},k:'config:config',j:cj});
-  Object.keys(NV.hashes).forEach(k=>{if(k==='config:config'||vistos[k]||!NV.hashes[k])return;const i=k.indexOf(':');ups.push({row:{clinica_id:NV.clinicaId,colecao:k.slice(0,i),id:k.slice(i+1),dados:{},excluido:true},k,j:null})});
+  const deletions=[];
+  Object.keys(NV.hashes).forEach(k=>{if(k==='config:config'||vistos[k]||!NV.hashes[k])return;const i=k.indexOf(':');deletions.push({row:{clinica_id:NV.clinicaId,colecao:k.slice(0,i),id:k.slice(i+1),dados:{},excluido:true},k,j:null})});
+  // Prevent accidental mass tombstoning after stale/broken cache, imports or browser migrations.
+  if(deletions.length>20 || (deletions.length>5 && deletions.length>Object.keys(NV.hashes).length*0.1)){
+   console.error('BlackFlow: bloqueada exclusão em massa; requer análise manual',deletions.length);
+   setSync('err');toast('Sincronização protegida: exclusão incomum de '+deletions.length+' registros bloqueada. Contate o suporte.');return;
+  }
+  ups.push(...deletions);
   if(!ups.length){setSync('ok');return}setSync('env');
   const lotes=[];let atual=[],tam=0;ups.forEach(u=>{const t=(u.j||'').length;if(atual.length&&(atual.length>=400||tam+t>2500000)){lotes.push(atual);atual=[];tam=0}atual.push(u);tam+=t});if(atual.length)lotes.push(atual);
   for(const lote of lotes){const {error}=await NV.sb.from('registros').upsert(lote.map(u=>u.row),{onConflict:'clinica_id,colecao,id'});if(error)throw error;lote.forEach(u=>{NV.hashes[u.k]=u.j})}
