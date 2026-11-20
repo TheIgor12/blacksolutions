@@ -1,5 +1,5 @@
 {
-  "versao": "1.27.0",
+  "versao": "1.27.1",
   "data": "2026-11-20",
-  "novidades": "Sincronização protegida contra perda de dados: verifica a versão do servidor antes de salvar, preserva conflitos de edição entre aparelhos, bloqueia sobrescritas silenciosas e mantém dados nos registros arquivados. Trilha de auditoria da HappyFEET ativada."
+  "novidades": "Segmento escolhido uma única vez: impede que a seleção reapareça ao reabrir, faz o Supabase prevalecer sobre cache local e vincula a escolha à clínica certa. Mantém o plano Só agenda e os dados históricos preservados."
 }
