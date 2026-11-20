@@ -2,7 +2,7 @@
 import asyncio,subprocess
 import imageio_ffmpeg
 from pathlib import Path
-import edge_tts
+from gtts import gTTS
 ROOT=Path(__file__).resolve().parent.parent
 VIDEO=ROOT/"download/BlackFlow_ecossistema_2026.mp4"
 OUTPUT=ROOT/"download/BlackFlow_ecossistema_2026_narrado.mp4"
@@ -19,7 +19,7 @@ TEXT=("Conheça o BlackFlow. A plataforma de gestão da BlackSolutions, criada p
 "BlackFlow. Um sistema para sua clínica crescer com organização. Conheça em blackflow ponto app ponto br.")
 async def main():
  if not VIDEO.exists():raise RuntimeError("Vídeo original não encontrado")
- await edge_tts.Communicate(TEXT,voice="pt-BR-FranciscaNeural",rate="+11%",volume="+5%").save(str(AUDIO))
+ gTTS(TEXT,lang='pt',tld='com.br',slow=False).save(str(AUDIO))
  if AUDIO.stat().st_size<10000:raise RuntimeError("Áudio recebido está vazio ou incompleto")
  subprocess.run([imageio_ffmpeg.get_ffmpeg_exe(),"-hide_banner","-loglevel","error","-y","-i",str(VIDEO),"-i",str(AUDIO),"-map","0:v:0","-map","1:a:0","-c:v","copy","-c:a","aac","-b:a","144k","-af","apad","-shortest","-movflags","+faststart",str(OUTPUT)],check=True)
  if OUTPUT.stat().st_size<100000:raise RuntimeError("Vídeo narrado inválido")
