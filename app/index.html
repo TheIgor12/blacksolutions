@@ -2753,42 +2753,12 @@ function ajudaBusca(q){const n=norm(q);if(!n)return AJUDA;
   ts.forEach(w=>{if(norm(a.t).includes(w))s+=4; else if(norm(a.tags).includes(w))s+=3; else if(alvo.includes(w))s+=1});
   return {a,s}}).filter(x=>x.s>0).sort((x,y)=>y.s-x.s).map(x=>x.a)}
 function vAjuda(){const q=UI.ajQ||'',L=ajudaBusca(q),ab=UI.ajAberto||'';
- const temIA=!!str(S.config.iaChave);
- return `<div class="page"><div class="phead"><div><h1>Ajuda</h1><p class="sub">Como fazer cada coisa no BlackFlow, passo a passo.</p></div></div>
- <div class="card">
-  <label class="ajbusca">${ico('menu',18)}<input value="${esc(q)}" oninput="UI.ajQ=this.value;UI.ajAberto='';render()" placeholder="Escreva a sua dúvida. Exemplo: como tiro foto do pé"></label>
-  ${L.length?`<div class="ajlista">${L.map(a=>`
-   <div class="ajitem ${ab===a.id?'on':''}">
-    <button class="ajt" onclick="UI.ajAberto=UI.ajAberto==='${a.id}'?'':'${a.id}';render()">
-     <span>${esc(a.t)}</span><i>${ab===a.id?'&minus;':'+'}</i></button>
-    ${ab===a.id?`<div class="ajc"><ol>${a.p.map(x=>`<li>${x}</li>`).join('')}</ol>
-     ${a.n?`<p class="ajn">${a.n}</p>`:''}</div>`:''}
-   </div>`).join('')}</div>`
-  :`<div class="note">Nada na ajuda sobre isso.${temIA?' Pergunte à inteligência artificial abaixo.':''}</div>`}
- </div>
- <div class="card" style="display:flex;gap:16px;align-items:center;flex-wrap:wrap">
-  <img src="/img/tati-rosto.webp" alt="Tati, atendimento do BlackFlow" width="420" height="420"
-   style="width:92px;height:92px;border-radius:50%;object-fit:cover;flex:none"
-   onerror="if(this.dataset.t){this.style.display='none'}else{this.dataset.t=1;this.src='https://blackflow.app.br/img/tati-rosto.webp'}">
-  <div style="flex:1;min-width:220px">
-   <h2 style="margin:0 0 2px">Falar com a Tati</h2>
-   <p class="sub" style="margin:0 0 10px">Atendimento do BlackFlow, de segunda a sexta, das 8h às 18h, e no sábado pela manhã. Ela ajuda a trazer as suas planilhas e resolve o que a ajuda escrita não resolveu.</p>
-   <div style="display:flex;gap:8px;flex-wrap:wrap">
-    <a class="btn green sm" href="https://wa.me/5547988432859?text=Ol%C3%A1%20Tati%2C%20preciso%20de%20ajuda%20com%20o%20BlackFlow" target="_blank" rel="noopener">Chamar no WhatsApp</a>
-    <a class="btn ghost sm" href="mailto:suporte@blacksolutions.net.br">Escrever por e-mail</a></div></div>
- </div>
- ${temIA?`<div class="card"><h2>Perguntar à inteligência artificial</h2>
-  <p class="sub">Para o que a ajuda acima não cobre. Ela só responde sobre o uso do BlackFlow, e não tem acesso aos dados dos ${esc(SEG().pessoas.toLowerCase())}.</p>
-  <div style="display:flex;gap:8px;flex-wrap:wrap">
-   <input id="iaQ" placeholder="Escreva a sua pergunta" style="flex:1;min-width:200px;border:1px solid var(--line);border-radius:8px;padding:10px 12px"
-    onkeydown="if(event.key==='Enter')iaPerguntar()">
-   <button class="btn" onclick="iaPerguntar()">Perguntar</button></div>
-  <div id="iaResp"></div></div>`
- :`<div class="card"><h2>Perguntar à inteligência artificial</h2>
-  <p class="sub">Dá para ligar um assistente que responde o que a ajuda acima não cobre. É gratuito e a chave é da clínica, pega em poucos minutos no Google AI Studio.</p>
-  <div class="note">Enquanto não estiver ligado, a ajuda acima funciona normalmente: ela responde na hora, sem internet e sem custo.
-   <div style="margin-top:10px"><button class="btn sm" onclick="go('config');UI.cfgTab='clinica';render()">Ir para Configurações</button></div></div></div>`}
- </div>`}
+ return `<div class="page" style="max-width:980px"><div class="phead"><div><h1>Ajuda BlackFlow</h1><p class="sub">Respostas verificadas, passo a passo, sem custo de API.</p></div><button class="btn" onclick="bfTatiOpen()">Perguntar à Tati</button></div>
+ <div class="card"><label class="ajbusca">Pesquisar dúvida<input value="${esc(q)}" oninput="UI.ajQ=this.value;UI.ajAberto='';render()" placeholder="Ex.: agendar, fotos, financeiro"></label>
+ ${L.length?`<div class="ajlista">${L.map(a=>`<div class="ajitem ${ab===a.id?'on':''}"><button class="ajt" onclick="UI.ajAberto=UI.ajAberto==='${a.id}'?'':'${a.id}';render()"><span>${esc(a.t)}</span><i>${ab===a.id?'&minus;':'+'}</i></button>${ab===a.id?`<div class="ajc"><ol>${a.p.map(x=>`<li>${x}</li>`).join('')}</ol>${a.n?`<p class="ajn">${a.n}</p>`:''}</div>`:''}</div>`).join('')}</div>`:`<div class="note">Não encontramos essa expressão na ajuda antiga. Use a Tati para pesquisar toda a base.</div>`}
+ </div><div class="card"><h2>Central de dúvidas da Tati</h2><p>O ícone da Tati, no canto da tela, reúne mais de 50 respostas adicionais, incluindo NFS-e, receituário, ticket médio, fotos, BlackPay e sincronização. Toque em uma pergunta e depois em <b>Ir para</b> para abrir a tela correspondente.</p><button class="btn" onclick="bfTatiOpen()">Abrir Tati</button><p class="sub" style="margin-top:12px">A Tati não processa dados de pacientes e não precisa de chave Google Gemini. Dúvidas não documentadas podem ser encaminhadas ao suporte@blacksolutions.net.br.</p></div>
+ </div>`;
+}
 /* A chave é da clínica e fica na configuração dela. Nunca uma chave da BlackSolutions:
    tudo que vai para o navegador pode ser lido por quem abre o sistema. */
 const IA_REGRA=`Você é o assistente de uso do BlackFlow, um sistema de agenda e gestão para clínicas de podologia, estética, salões de beleza e afins.
