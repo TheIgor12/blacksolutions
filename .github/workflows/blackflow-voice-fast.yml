@@ -22,7 +22,7 @@ jobs:
         with:
           python-version: '3.11'
       - name: Instalar TTS e conversor de vídeo
-        run: python -m pip install --disable-pip-version-check edge-tts==7.2.7 imageio-ffmpeg==0.6.0
+        run: python -m pip install --disable-pip-version-check gTTS==2.5.4 imageio-ffmpeg==0.6.0
       - name: Gerar e validar áudio narrado
         run: |
           python scripts/narrar_blackflow.py
