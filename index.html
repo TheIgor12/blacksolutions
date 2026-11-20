@@ -5369,7 +5369,7 @@ async function enviar(){if(!NV.sb||!NV.clinicaId||NV.offline)return;if(NV.ocupad
  catch(e){console.warn(e);setSync(navigator.onLine===false||/fetch|network/i.test(String(e&&e.message))?'off':'err')}
  finally{NV.ocupado=false}}
 function podeRedesenhar(){const a=document.activeElement;return !$('#modalRoot').innerHTML&&!(a&&/INPUT|TEXTAREA|SELECT/.test(a.tagName))}
-async function sincronizar(){if(!NV.sb||!NV.clinicaId||NV.offline||UI.auth)return;try{const n=await puxar();if(n&&podeRedesenhar())render();await enviar()}catch(e){setSync(navigator.onLine===false?'off':'err')}}
+async function sincronizar(){if(NV.plano==='teste'&&NV.validoAte&&NV.validoAte<todayISO()){clearInterval(NV.timer);UI.auth={modo:'bloqueado',motivo:'teste'};render();return}if(!NV.sb||!NV.clinicaId||NV.offline||UI.auth)return;try{const n=await puxar();if(n&&podeRedesenhar())render();await enviar()}catch(e){setSync(navigator.onLine===false?'off':'err')}}
 function iniciarSync(){clearInterval(NV.timer);NV.timer=setInterval(sincronizar,30000)}
 window.addEventListener('online',()=>{if(NV.offline&&NV.sb)location.reload();else sincronizar()});window.addEventListener('offline',()=>setSync('off'));window.addEventListener('focus',()=>sincronizar());
 async function sair(){try{await enviar()}catch(e){}clearInterval(NV.timer);if(NV.sb)await NV.sb.auth.signOut();NV.sessao=null;NV.clinicaId=null;NV.hashes={};NV.cursor=0;S=defaultState();closeModal();UI.auth={modo:'entrar'};render()}
