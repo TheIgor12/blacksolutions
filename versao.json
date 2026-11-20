@@ -1,5 +1,5 @@
 {
-  "versao": "1.26.0",
+  "versao": "1.26.1",
   "data": "2026-11-20",
-  "novidades": "Revisão móvel: pop-ups com botão X visível e acessível, tabelas de estoque/financeiro/pacientes/relatórios em cartões legíveis, formulários responsivos e botões ajustados ao toque, chat separado da ajuda, correção do dimensionamento e unificação de blackflow.app.br e /app/."
+  "novidades": "Corrigida a NFS-e no iPhone: elimina rolagem horizontal e espaço vazio, adapta campos e botões à largura do aparelho, mantém tabelas dentro da tela e atualiza as rotas principal e /app/. Sem alteração dos dados fiscais."
 }
