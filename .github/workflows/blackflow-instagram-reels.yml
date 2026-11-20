@@ -20,17 +20,14 @@ jobs:
             download/BlackFlow_ecossistema_2026_narrado.mp4
             tools/render_blackflow_reels.py
           sparse-checkout-cone-mode: false
-      - name: Encerrar tentativa anterior e validar FFmpeg
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: Instalar FFmpeg portátil e voz brasileira
         run: |
-          gh run cancel 44667649031 --repo TheIgor12/blacksolutions || true
-          command -v ffmpeg
-          test -f /usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf
-      - name: Preparar dependências
-        run: |
-          python -m pip install --disable-pip-version-check "edge-tts>=7,<8"
-          echo "A locução será reescrita para um tom mais natural."
+          python -m pip install --disable-pip-version-check "edge-tts>=7,<8" "imageio-ffmpeg>=0.6,<1" "Pillow>=10,<13"
+          mkdir -p "$RUNNER_TEMP/blackflow-bin"
+          cp "$(python -c 'import imageio_ffmpeg;print(imageio_ffmpeg.get_ffmpeg_exe())')" "$RUNNER_TEMP/blackflow-bin/ffmpeg"
+          chmod +x "$RUNNER_TEMP/blackflow-bin/ffmpeg"
+          echo "$RUNNER_TEMP/blackflow-bin" >> "$GITHUB_PATH"
+          "$RUNNER_TEMP/blackflow-bin/ffmpeg" -version | head -n 1
       - name: Renderizar vídeo vertical com voz natural
         run: |
           python tools/render_blackflow_reels.py 2>&1 | tee /tmp/blackflow-render.log
