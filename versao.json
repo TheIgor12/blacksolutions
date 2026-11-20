@@ -1,5 +1,5 @@
 {
-  "versao": "1.22.0",
+  "versao": "1.23.0",
   "data": "2026-11-19",
-  "novidades": "Orçamentos e Receituário: pop-ups por paciente com CPF/endereço automático, orçamento com serviços e preços vinculados, vários itens e total, receitas em rascunho com medicamentos industrializados/manipulados, farmácia de preferência, papel timbrado em PDF/imagem e impressão/salvar em PDF. Coleções sincronizadas na nuvem."
+  "novidades": "Anamnese sem retorno automático ao topo, perguntas clínicas separadas, acesso próprio no menu, gestão de usuários em Configurações, chat interno por clínica com mensagens persistidas no Supabase e campo de dúvidas na Ajuda."
 }
