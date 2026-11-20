@@ -1,5 +1,5 @@
 {
-  "versao": "1.26.1",
+  "versao": "1.27.0",
   "data": "2026-11-20",
-  "novidades": "Corrigida a NFS-e no iPhone: elimina rolagem horizontal e espaço vazio, adapta campos e botões à largura do aparelho, mantém tabelas dentro da tela e atualiza as rotas principal e /app/. Sem alteração dos dados fiscais."
+  "novidades": "Sincronização protegida contra perda de dados: verifica a versão do servidor antes de salvar, preserva conflitos de edição entre aparelhos, bloqueia sobrescritas silenciosas e mantém dados nos registros arquivados. Trilha de auditoria da HappyFEET ativada."
 }

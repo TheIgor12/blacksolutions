@@ -4799,7 +4799,7 @@ function agNovo(a,s){if(s==='Desmarcado'||s==='Faltou')return false;const k=a.da
  const hist=c=>S[c].some(x=>x.pacienteId===a.pacienteId&&((x.data||x.vencimento||x.pagamento||'')<a.data)&&(x.data||x.vencimento||x.pagamento));
  return !hist('evolucoes')&&!hist('tratamentos')&&!S.lancamentos.some(l=>l.pacienteId===a.pacienteId&&l.pagamento&&l.pagamento<a.data)}
 /* ============ Atualização: aviso com botão Atualizar agora ============ */
-const VERSAO_APP='1.26.1';const URL_VERSAO_JSON='https://raw.githubusercontent.com/TheIgor12/blacksolutions/main/versao.json';
+const VERSAO_APP='1.27.0';const URL_VERSAO_JSON='https://raw.githubusercontent.com/TheIgor12/blacksolutions/main/versao.json';
 const numV=v=>String(v||'0').split(/\D+/).filter(Boolean).map(Number);
 function versaoMaior(a,b){const x=numV(a),y=numV(b);for(let i=0;i<Math.max(x.length,y.length);i++){const d=(x[i]||0)-(y[i]||0);if(d)return d>0}return false}
 const ATU={nova:null,timer:null};
@@ -5113,7 +5113,7 @@ function exportAll(){if(!pode('exportar')){toast('O seu perfil de acesso não pe
 /* ============ Nuvem: login, clínicas e sincronização (Supabase) ============ */
 // Preencha com os dados do seu projeto Supabase. Em branco, o sistema funciona só neste computador.
 const NUVEM={url:'https://blszdbjpxgtloblxlusr.supabase.co',chave:'sb_publishable_0Tns_mDN2N1iQmw_sEzFXw_SRMy1uXK'};
-const NV={ativa:!!(NUVEM.url&&NUVEM.chave),sb:null,sessao:null,clinicaId:null,papel:'',nomeClinica:'',hashes:{},cursor:0,status:'local',ocupado:false,offline:false,timer:null};
+const NV={ativa:!!(NUVEM.url&&NUVEM.chave),sb:null,sessao:null,clinicaId:null,papel:'',nomeClinica:'',hashes:{},cursor:0,status:'local',ocupado:false,offline:false,timer:null,conflitos:{}};
 const COLS=['orcamentos','receitasDocs','combos','vouchers','documentos','pacientes','lancamentos','tratamentos','anamneses','agendamentos','contasPagar','evolucoes','profissionais','importacoes','servicos','produtos','movEstoque','comandas','caixas','avaliacoes','fotos','contratos','termos','fichas','protocolos','equipamentos'];
 const URL_ASSINATURA='https://raw.githubusercontent.com/TheIgor12/blacksolutions/main/assinatura.json';
 let ASSINATURA=null;
@@ -5326,7 +5326,7 @@ async function entrar(sessao){NV.sessao=sessao;NV.offline=false;UI.auth={modo:'c
  const cl=esc_.clinicas||{};NV.plano=cl.plano||'';NV.validoAte=cl.valido_ate||'';NV.segmento=cl.segmento||'';if(NV.segmento&&SEGMENTOS[NV.segmento]&&S.config.segmento!==NV.segmento){S.config.segmento=NV.segmento;save()}else if(!NV.segmento&&CAD&&CAD.segmento&&SEGMENTOS[CAD.segmento]){S.config.segmento=CAD.segmento;segmentoRegistrar(CAD.segmento)}else if(!NV.segmento&&S.config.segmento)segmentoRegistrar(S.config.segmento);promoCarregar().then(()=>{if(PROMO)render()});if(cl.ativa===false||(cl.valido_ate&&cl.valido_ate<todayISO())){UI.auth={modo:'bloqueado',motivo:cl.ativa===false?'suspenso':(cl.plano==='teste'?'teste':'vencido')};render();carregarAssinatura().then(()=>{if(UI.auth&&UI.auth.modo==='bloqueado')render()});return}
  try{await abrirClinica()}catch(e){console.error(e);UI.auth={modo:'entrar',email:sessao.user.email,msg:traduz(e)};render()}}
 async function carregarCache(){const c=await DB.get('c_'+NV.clinicaId);const d=defaultState();
- if(c&&c.S){S={...d,...c.S,config:{...d.config,...(c.S.config||{})}};NV.hashes=c.hashes||{};NV.cursor=c.cursor||0}else{S=d;NV.hashes={};NV.cursor=0}}
+ if(c&&c.S){S={...d,...c.S,config:{...d.config,...(c.S.config||{})}};NV.hashes=c.hashes||{};NV.cursor=c.cursor||0;NV.conflitos=c.conflitos||{}}else{S=d;NV.hashes={};NV.cursor=0;NV.conflitos={}}}
 async function abrirClinica(){await carregarCache();if(!S.config.clinica||S.config.clinica===defaultState().config.clinica)S.config.clinica=NV.nomeClinica||S.config.clinica;
  UI.auth={modo:'carregando',msg:'Baixando os dados da clínica...'};render();await puxar();
  await DB.set({clinicaId:NV.clinicaId,email:NV.sessao.user.email,nome:NV.nomeClinica,validoAte:NV.validoAte,plano:NV.plano},'ultimo');
@@ -5337,42 +5337,149 @@ async function abrirClinica(){await carregarCache();if(!S.config.clinica||S.conf
   $('#migY').onclick=()=>{const d=defaultState();const cfg=S.config;S={...d,...old,config:{...d.config,...(old.config||{}),clinica:cfg.clinica}};closeModal();save();render();toast('Enviando os dados para a nuvem...')}}}
  enviar()}
 async function abrirOffline(){const u=await DB.get('ultimo');if(!u){toast('Nenhum dado salvo neste computador.');return}if(!u.plano||(u.plano==='teste'&&!u.validoAte)||(u.validoAte&&u.validoAte<todayISO())){UI.auth={modo:'bloqueado',motivo:'teste'};NV.nomeClinica=u.nome||'';NV.plano=u.plano||'teste';NV.validoAte=u.validoAte;render();return}NV.clinicaId=u.clinicaId;NV.nomeClinica=u.nome;NV.offline=true;NV.sessao={user:{email:u.email,user_metadata:{}}};await carregarCache();UI.auth=null;render();setSync('off')}
-function persistirNuvem(){if(NV.clinicaId)DB.set({S,hashes:NV.hashes,cursor:NV.cursor},'c_'+NV.clinicaId)}
-function temAlteracaoLocal(k,obj){return NV.hashes[k]!==undefined&&NV.hashes[k]!==JSON.stringify(obj)}
-function aplicarRemoto(r){const k=r.colecao+':'+r.id;
- if(r.colecao==='config'){if(temAlteracaoLocal(k,S.config))return;S.config={...defaultState().config,...r.dados};NV.hashes[k]=JSON.stringify(S.config);return}
- const arr=S[r.colecao];if(!Array.isArray(arr))return;const i=arr.findIndex(x=>x.id===r.id);
- if(i>=0&&temAlteracaoLocal(k,arr[i]))return;
- if(r.excluido){if(i>=0)arr.splice(i,1);NV.hashes[k]=null;return}
- const obj={...r.dados,id:r.id};if(i>=0)arr[i]=obj;else arr.push(obj);NV.hashes[k]=JSON.stringify(obj)}
-async function puxar(){if(!NV.sb||NV.offline)return 0;let n=0;
- for(;;){const {data,error}=await NV.sb.from('registros').select('colecao,id,dados,excluido,seq').eq('clinica_id',NV.clinicaId).gt('seq',NV.cursor).order('seq').limit(1000);
-  if(error)throw error;data.forEach(aplicarRemoto);n+=data.length;if(data.length)NV.cursor=data[data.length-1].seq;if(data.length<1000)break}
- if(n){processarOnline();persistirNuvem()}return n}
-let envioTimer;function agendarEnvio(){if(!NV.ativa||!NV.clinicaId||NV.offline)return;clearTimeout(envioTimer);envioTimer=setTimeout(enviar,1200)}
-async function enviar(){if(!NV.sb||!NV.clinicaId||NV.offline)return;if(NV.ocupado){agendarEnvio();return}NV.ocupado=true;
- try{const ups=[],vistos={};
-  COLS.forEach(c=>(S[c]||[]).forEach(x=>{const k=c+':'+x.id;const j=JSON.stringify(x);vistos[k]=1;if(NV.hashes[k]!==j)ups.push({row:{clinica_id:NV.clinicaId,colecao:c,id:String(x.id),dados:x,excluido:false},k,j})}));
-  const cj=JSON.stringify(S.config);if(NV.hashes['config:config']!==cj)ups.push({row:{clinica_id:NV.clinicaId,colecao:'config',id:'config',dados:S.config,excluido:false},k:'config:config',j:cj});
+function persistirNuvem(){if(NV.clinicaId)DB.set({S,hashes:NV.hashes,cursor:NV.cursor,conflitos:NV.conflitos||{}},'c_'+NV.clinicaId)}
+/* BlackFlow 1.27.0: sincronização protegida por versão e divergências explícitas. */
+function bfRegCanon(x){
+ if(Array.isArray(x))return x.map(bfRegCanon);
+ if(x&&typeof x==='object'){
+  const o={};Object.keys(x).sort().forEach(k=>{if(x[k]!==undefined)o[k]=bfRegCanon(x[k])});return o;
+ }
+ return x;
+}
+function bfRegMesmo(a,b){return JSON.stringify(bfRegCanon(a))===JSON.stringify(bfRegCanon(b))}
+function bfRegBase(k,d){
+ if(k==='config:config')return {...defaultState().config,...(d||{})};
+ return d;
+}
+function temAlteracaoLocal(k,obj){
+ if(NV.hashes[k]===undefined)return false;
+ try{return !bfRegMesmo(obj,JSON.parse(NV.hashes[k]||'null'))}catch(_){return true}
+}
+function bfRegistrarConflito(k,razao,seq){
+ NV.conflitos=NV.conflitos||{};
+ const primeiro=!Object.keys(NV.conflitos).length;
+ if(!NV.conflitos[k])NV.conflitos[k]={motivo:razao,seq:seq??null,detectadoEm:new Date().toISOString()};
+ console.warn('BlackFlow: conflito de sincronização preservado',k,razao);
+ setSync('err');
+ persistirNuvem();
+ if(primeiro)toast('Conflito de sincronização: alterações preservadas neste aparelho. Não serão sobrescritas automaticamente. Contate o suporte antes de alterar este cadastro em outro dispositivo.');
+}
+function aplicarRemoto(r){
+ const k=r.colecao+':'+r.id;
+ if(r.colecao==='config'){
+  const remoto=bfRegBase(k,r.dados);
+  if(temAlteracaoLocal(k,S.config)&&!bfRegMesmo(S.config,remoto)){
+   bfRegistrarConflito(k,'configuracao divergente',r.seq);return;
+  }
+  S.config=remoto;NV.hashes[k]=JSON.stringify(S.config);
+  if(NV.conflitos)delete NV.conflitos[k];
+  return;
+ }
+ const arr=S[r.colecao];if(!Array.isArray(arr))return;
+ const i=arr.findIndex(x=>String(x.id)===String(r.id));
+ const remoto={...(r.dados||{}),id:r.id};
+ if(i>=0&&temAlteracaoLocal(k,arr[i])&&(!bfRegMesmo(arr[i],remoto)||r.excluido)){
+  bfRegistrarConflito(k,'alteracao local e remota simultanea',r.seq);return;
+ }
+ if(r.excluido){if(i>=0)arr.splice(i,1);NV.hashes[k]=null}
+ else{if(i>=0)arr[i]=remoto;else arr.push(remoto);NV.hashes[k]=JSON.stringify(remoto)}
+ if(NV.conflitos)delete NV.conflitos[k];
+}
+async function puxar(){
+ if(!NV.sb||NV.offline)return 0;
+ let n=0;
+ for(;;){
+  const {data,error}=await NV.sb.from('registros').select('colecao,id,dados,excluido,seq').eq('clinica_id',NV.clinicaId).gt('seq',NV.cursor).order('seq').limit(1000);
+  if(error)throw error;
+  (data||[]).forEach(aplicarRemoto);
+  n+=(data||[]).length;
+  if(data&&data.length)NV.cursor=data[data.length-1].seq;
+  if(!data||data.length<1000)break;
+ }
+ if(n){processarOnline();persistirNuvem()}
+ if(NV.conflitos&&Object.keys(NV.conflitos).length)setSync('err');
+ return n;
+}
+let envioTimer;
+function agendarEnvio(){
+ if(!NV.ativa||!NV.clinicaId||NV.offline)return;
+ clearTimeout(envioTimer);envioTimer=setTimeout(enviar,1200);
+}
+async function enviar(){
+ if(!NV.sb||!NV.clinicaId||NV.offline)return;
+ if(NV.ocupado){agendarEnvio();return}
+ NV.ocupado=true;
+ try{
+  const ups=[],vistos={};
+  COLS.forEach(c=>(S[c]||[]).forEach(x=>{
+   if(!x||x.id===undefined)return;
+   const k=c+':'+x.id,j=JSON.stringify(x);vistos[k]=1;
+   if(NV.hashes[k]!==j)ups.push({row:{clinica_id:NV.clinicaId,colecao:c,id:String(x.id),dados:x,excluido:false},k,j});
+  }));
+  const cj=JSON.stringify(S.config);
+  if(NV.hashes['config:config']!==cj)
+   ups.push({row:{clinica_id:NV.clinicaId,colecao:'config',id:'config',dados:S.config,excluido:false},k:'config:config',j:cj});
   const deletions=[];
-  Object.keys(NV.hashes).forEach(k=>{if(k==='config:config'||vistos[k]||!NV.hashes[k])return;const i=k.indexOf(':');deletions.push({row:{clinica_id:NV.clinicaId,colecao:k.slice(0,i),id:k.slice(i+1),dados:{},excluido:true},k,j:null})});
-  // Prevent accidental mass tombstoning after stale/broken cache, imports or browser migrations.
-  if(deletions.length>20 || (deletions.length>5 && deletions.length>Object.keys(NV.hashes).length*0.1)){
-   console.error('BlackFlow: bloqueada exclusão em massa; requer análise manual',deletions.length);
-   setSync('err');toast('Sincronização protegida: exclusão incomum de '+deletions.length+' registros bloqueada. Contate o suporte.');return;
+  Object.keys(NV.hashes).forEach(k=>{
+   if(k==='config:config'||vistos[k]||!NV.hashes[k])return;
+   const i=k.indexOf(':');
+   deletions.push({row:{clinica_id:NV.clinicaId,colecao:k.slice(0,i),id:k.slice(i+1),excluido:true},k,j:null});
+  });
+  if(deletions.length>20||(deletions.length>5&&deletions.length>Object.keys(NV.hashes).length*0.1)){
+   console.error('BlackFlow: exclusão em massa bloqueada',deletions.length);
+   setSync('err');toast('Exclusão em massa bloqueada. Registros preservados. Contate o suporte.');return;
   }
   ups.push(...deletions);
-  if(!ups.length){setSync('ok');return}setSync('env');
-  const lotes=[];let atual=[],tam=0;ups.forEach(u=>{const t=(u.j||'').length;if(atual.length&&(atual.length>=400||tam+t>2500000)){lotes.push(atual);atual=[];tam=0}atual.push(u);tam+=t});if(atual.length)lotes.push(atual);
-  for(const lote of lotes){const {error}=await NV.sb.from('registros').upsert(lote.map(u=>u.row),{onConflict:'clinica_id,colecao,id'});if(error)throw error;lote.forEach(u=>{NV.hashes[u.k]=u.j})}
-  persistirNuvem();setSync('ok')}
- catch(e){console.warn(e);setSync(navigator.onLine===false||/fetch|network/i.test(String(e&&e.message))?'off':'err')}
- finally{NV.ocupado=false}}
+  if(!ups.length){setSync(NV.conflitos&&Object.keys(NV.conflitos).length?'err':'ok');return}
+  setSync('env');
+  for(const u of ups){
+   if(NV.conflitos&&NV.conflitos[u.k])continue;
+   const {data:atual,error:er}=await NV.sb.from('registros')
+    .select('dados,excluido,seq').eq('clinica_id',NV.clinicaId)
+    .eq('colecao',u.row.colecao).eq('id',u.row.id).maybeSingle();
+   if(er)throw er;
+   const base=NV.hashes[u.k];
+   if(base===undefined||base===null){
+    if(atual){bfRegistrarConflito(u.k,'id existente no servidor',atual.seq);continue}
+    const {data:novo,error:ei}=await NV.sb.from('registros').insert({...u.row,dados:u.row.dados||{}}).select('seq');
+    if(ei){
+     if(ei.code==='23505'){bfRegistrarConflito(u.k,'insercao concorrente',null);continue}
+     throw ei;
+    }
+    if(!novo||novo.length!==1){bfRegistrarConflito(u.k,'insercao sem confirmacao',null);continue}
+   }else{
+    let esperado;
+    try{esperado=JSON.parse(base)}catch(_){bfRegistrarConflito(u.k,'cache anterior invalido',atual&&atual.seq);continue}
+    if(!atual){bfRegistrarConflito(u.k,'registro ausente na nuvem',null);continue}
+    if(atual.excluido){
+     if(u.row.excluido){NV.hashes[u.k]=null;continue}
+     bfRegistrarConflito(u.k,'registro excluido em outro aparelho',atual.seq);continue;
+    }
+    const remoto=bfRegBase(u.k,atual.dados);
+    if(!bfRegMesmo(esperado,remoto)){
+     bfRegistrarConflito(u.k,'registro alterado em outro aparelho',atual.seq);continue;
+    }
+    const {data:gravado,error:eu}=await NV.sb.from('registros')
+     .update({dados:u.row.excluido?atual.dados:u.row.dados,excluido:u.row.excluido})
+     .eq('clinica_id',NV.clinicaId).eq('colecao',u.row.colecao).eq('id',u.row.id)
+     .eq('seq',atual.seq).select('seq');
+    if(eu)throw eu;
+    if(!gravado||gravado.length!==1){bfRegistrarConflito(u.k,'versao alterada durante gravacao',atual.seq);continue}
+   }
+   NV.hashes[u.k]=u.j;
+  }
+  persistirNuvem();
+  setSync(NV.conflitos&&Object.keys(NV.conflitos).length?'err':'ok');
+ }catch(e){
+  console.error('BlackFlow: sincronizacao nao confirmada',e);
+  setSync(navigator.onLine===false||/fetch|network/i.test(String(e&&e.message))?'off':'err');
+ }finally{NV.ocupado=false}
+}
 function podeRedesenhar(){const a=document.activeElement;return !$('#modalRoot').innerHTML&&!(a&&/INPUT|TEXTAREA|SELECT/.test(a.tagName))}
 async function sincronizar(){if(NV.plano==='teste'&&NV.validoAte&&NV.validoAte<todayISO()){clearInterval(NV.timer);UI.auth={modo:'bloqueado',motivo:'teste'};render();return}if(!NV.sb||!NV.clinicaId||NV.offline||UI.auth)return;try{const n=await puxar();if(n&&podeRedesenhar())render();await enviar()}catch(e){setSync(navigator.onLine===false?'off':'err')}}
 function iniciarSync(){clearInterval(NV.timer);NV.timer=setInterval(sincronizar,30000)}
 window.addEventListener('online',()=>{if(NV.offline&&NV.sb)location.reload();else sincronizar()});window.addEventListener('offline',()=>setSync('off'));window.addEventListener('focus',()=>sincronizar());
-async function sair(){try{await enviar()}catch(e){}clearInterval(NV.timer);if(NV.sb)await NV.sb.auth.signOut();NV.sessao=null;NV.clinicaId=null;NV.hashes={};NV.cursor=0;S=defaultState();closeModal();UI.auth={modo:'entrar'};render()}
+async function sair(){try{await enviar()}catch(e){}clearInterval(NV.timer);if(NV.sb)await NV.sb.auth.signOut();NV.sessao=null;NV.clinicaId=null;NV.hashes={};NV.cursor=0;NV.conflitos={};S=defaultState();closeModal();UI.auth={modo:'entrar'};render()}
 async function abrirConta(){if(!NV.ativa){go('config');return}const u=NV.sessao.user;
  let membros=[],convites=[];if(!NV.offline){const a=await NV.sb.from('membros').select('user_id,email,nome,papel').eq('clinica_id',NV.clinicaId);membros=a.data||[];if(NV.papel==='admin'){const b=await NV.sb.from('convites').select('email,papel').eq('clinica_id',NV.clinicaId);convites=b.data||[]}}
  openModal(`<h3>Minha conta</h3><div class="row"><span>Nome</span><span>${esc(nomeUsuario())}</span></div><div class="row"><span>E-mail</span><span>${esc(u.email)}</span></div><div class="row"><span>Clínica</span><span>${esc(NV.nomeClinica)}${(NV.membros||[]).length>1?` <button class="lnk" onclick="closeModal();escolherClinica()">Trocar de clínica</button>`:''}</span></div>${NV.mestre?`<div class="row"><span>Acesso</span><span><b>Login mestre</b>: troca o ramo em Configurações sem trava</span></div>`:''}<div class="row"><span>Perfil</span><span>${NV.papel==='admin'?'Administrador':'Usuário'}</span></div><div class="row"><span>Plano</span><span>${NV.plano==='teste'?'Teste grátis até '+br(NV.validoAte):NV.plano==='cortesia'?'Cortesia, sem vencimento':NV.validoAte?'Assinatura válida até '+br(NV.validoAte):esc(NV.plano||'-')} ${NV.plano!=='cortesia'?'<button class="lnk" onclick="closeModal();abrirAssinatura()">Assinar</button>':''}</span></div><div class="row"><span>Versão</span><span id="verApp">${VERSAO_APP}</span></div>
@@ -5419,7 +5526,7 @@ function telaCopiaNaoAutorizada(){
   if(!origemAutorizada()){telaCopiaNaoAutorizada();return}}
  try{navigator.storage&&navigator.storage.persist&&navigator.storage.persist()}catch(e){}
  try{fonteAplicar()}catch(e){}
- try{if(/^https?:/.test(location.protocol)&&'serviceWorker' in navigator&&!window.pywebview)navigator.serviceWorker.register('./sw.js?v=1.22.0',{updateViaCache:'none'}).then(r=>r.update()).catch(()=>{})}catch(e){}
+ try{if(/^https?:/.test(location.protocol)&&'serviceWorker' in navigator&&!window.pywebview)navigator.serviceWorker.register('./sw.js?v=1.27.0',{updateViaCache:'none'}).then(r=>r.update()).catch(()=>{})}catch(e){}
  if(NV.ativa){
   if(!window.supabase||!window.supabase.createClient){UI.auth={modo:'offline',temCache:!!(await DB.get('ultimo'))};render();return}
   NV.sb=window.supabase.createClient(NUVEM.url,NUVEM.chave,{auth:{persistSession:true,autoRefreshToken:true}});
@@ -5470,19 +5577,19 @@ function agProf(nome){UI.profOff={};if(nome){S.profissionais.forEach(p=>{if(norm
 function menuProfs(){const L=az(S.profissionais.filter(p=>p.ativo!==false));if(!L.length)return '';const sel=UI.view==='agenda'?(UI.agProf||''):null;
  return `<div class="msec">AGENDA POR PROFISSIONAL</div><button class="${sel===''&&UI.view==='agenda'?'on':''}" onclick="agProf('')">${ico('cal',18)} Todos os profissionais</button>${L.map(p=>`<button class="${sel!=null&&norm(sel)===norm(p.nome)?'on':''}" onclick="agProf(${esc(JSON.stringify(p.nome))})"><span style="display:inline-block;width:12px;height:12px;border-radius:50%;background:${esc(p.cor||'#0a4bde')};margin:0 3px;flex:none"></span> ${esc(p.nome)}</button>`).join('')}`}
 </script>
-<script src="./bf-clinical.js?v=1.22.0"></script>
-<script src="./bf-fiscal-advanced.js?v=1.26.1"></script>
-<script src="./bf-receituario.js?v=1.22.0"></script>
-<script src="./bf-cadastro-fiscal.js?v=1.22.0"></script>
-<script src="./bf-context-actions.js?v=1.22.0"></script>
-<script src="./bf-integrity-audit.js?v=1.22.0"></script>
-<script src="./bf-blackpay-integrated.js?v=1.22.0"></script>
-<script src="./bf-tati-help.js?v=1.24.0"></script>
-<script src="./bf-mobile-photos.js?v=1.22.0"></script>
-<script src="./bf-documents.js?v=1.22.0"></script>
-<script src="./bf-workflow-123.js?v=1.23.0"></script>
-<script src="./bf-workflow-124.js?v=1.24.0"></script>
-<script>const bfMobileCss=document.createElement("link");bfMobileCss.rel="stylesheet";bfMobileCss.href="./bf-mobile-126.css?v=1.26.1";document.head.appendChild(bfMobileCss);</script>
-<script src="./bf-mobile-126.js?v=1.26.0"></script>
+<script src="./bf-clinical.js?v=1.27.0"></script>
+<script src="./bf-fiscal-advanced.js?v=1.27.0"></script>
+<script src="./bf-receituario.js?v=1.27.0"></script>
+<script src="./bf-cadastro-fiscal.js?v=1.27.0"></script>
+<script src="./bf-context-actions.js?v=1.27.0"></script>
+<script src="./bf-integrity-audit.js?v=1.27.0"></script>
+<script src="./bf-blackpay-integrated.js?v=1.27.0"></script>
+<script src="./bf-tati-help.js?v=1.27.0"></script>
+<script src="./bf-mobile-photos.js?v=1.27.0"></script>
+<script src="./bf-documents.js?v=1.27.0"></script>
+<script src="./bf-workflow-123.js?v=1.27.0"></script>
+<script src="./bf-workflow-124.js?v=1.27.0"></script>
+<script>const bfMobileCss=document.createElement("link");bfMobileCss.rel="stylesheet";bfMobileCss.href="./bf-mobile-126.css?v=1.27.0";document.head.appendChild(bfMobileCss);</script>
+<script src="./bf-mobile-126.js?v=1.27.0"></script>
 </body>
 </html>
