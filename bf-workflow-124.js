@@ -84,4 +84,34 @@ W.bfPayCommit=function(){
   lancRecalc(l);save();
  },'Confirmar recebimentos');
 };
+
+W.bfAIAsk=async function(question,target){
+ const node=typeof target==='string'?document.querySelector(target):target;
+ if(!node)return;
+ const q=String(question||'').trim();
+ if(!q){node.textContent='Escreva sua pergunta.';return}
+ if(!NV.sb||!NV.clinicaId||!NV.sessao){node.textContent='Faça login na clínica para consultar a IA.';return}
+ if(q.length>600){node.textContent='Limite sua pergunta a 600 caracteres.';return}
+ node.textContent='Consultando a ajuda...';
+ try{
+  const answer=await NV.sb.functions.invoke('bf-ajuda-ia',{body:{pergunta:q,clinica_id:NV.clinicaId}});
+  if(answer.error)throw answer.error;
+  node.textContent=(answer.data&&answer.data.resposta)||'Sem resposta no momento.';
+  node.dataset.mode=String((answer.data&&answer.data.modo)||'');
+ }catch(e){node.textContent='Não foi possível consultar a IA. Utilize as respostas verificadas ou contate o suporte.'}
+};
+W.bfHelpAsk=async function(){
+ const input=document.getElementById('bf-help-question');
+ const box=document.getElementById('bf-help-answer');
+ if(!input||!box)return;
+ const question=input.value.trim();
+ if(!question){box.textContent='Digite sua pergunta.';return}
+ const hits=ajudaBusca(question);
+ if(hits.length){
+  const a=hits[0];
+  box.innerHTML='<b>'+esc(a.t)+'</b><ol>'+a.p.map(p=>'<li>'+p+'</li>').join('')+'</ol><p class="sub">Resposta da base de ajuda do BlackFlow.</p>';
+  return;
+ }
+ await W.bfAIAsk(question,box);
+};
 })();
