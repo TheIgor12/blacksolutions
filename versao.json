@@ -1,5 +1,5 @@
 {
-  "versao": "1.21.0",
+  "versao": "1.22.0",
   "data": "2026-11-19",
-  "novidades": "Tati: 51 novas perguntas e respostas, mais base de ajuda anterior, pesquisa contextual e navegação; base no Supabase sem API externa ou dados clínicos; câmera no celular com escolha retornar ou continuar; responsividade e modais compactos para celular. Finanças reais do BlackPay continuam bloqueadas."
+  "novidades": "Orçamentos e Receituário: pop-ups por paciente com CPF/endereço automático, orçamento com serviços e preços vinculados, vários itens e total, receitas em rascunho com medicamentos industrializados/manipulados, farmácia de preferência, papel timbrado em PDF/imagem e impressão/salvar em PDF. Coleções sincronizadas na nuvem."
 }
