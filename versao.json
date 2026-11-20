@@ -1,5 +1,5 @@
 {
-  "versao": "1.24.0",
-  "data": "2026-11-19",
-  "novidades": "Pagamento misto (Pix, cartão em parcelas, dinheiro e adicionais), gestão de profissionais da agenda em Configurações > Usuários com desativação/exclusão controlada, separação Chat e Ajuda, consulta de dúvidas por servidor com IA opcional quando configurada, correção do indicador financeiro."
+  "versao": "1.25.0",
+  "data": "2026-11-20",
+  "novidades": "Auditoria e proteção de dados: teste de sete dias com bloqueio, prorrogação apenas por voucher emitido pelo suporte, bloqueio offline de testes vencidos, prevenção de exclusões em massa e aviso preciso de fotos pendentes. Marketing BlackSolutions informa teste limitado."
 }
