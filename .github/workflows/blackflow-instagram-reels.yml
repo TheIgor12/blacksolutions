@@ -1,0 +1,47 @@
+name: BlackFlow Instagram Reels — voz natural
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - .github/workflows/blackflow-instagram-reels.yml
+jobs:
+  render-reels:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 50
+    permissions:
+      contents: write
+    steps:
+      - name: Recuperar vídeo original e roteiro
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: true
+          sparse-checkout: |
+            download/BlackFlow_ecossistema_2026_narrado.mp4
+            tools/render_blackflow_reels.py
+          sparse-checkout-cone-mode: false
+      - name: Preparar dependências
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y ffmpeg fonts-dejavu-core
+          python -m pip install --upgrade pip
+          python -m pip install "edge-tts>=7,<8" "faster-whisper>=1.1,<2"
+      - name: Renderizar vídeo vertical com voz natural
+        run: |
+          python tools/render_blackflow_reels.py 2>&1 | tee /tmp/blackflow-render.log
+          ls -lh download/BlackFlow_Reels_Instagram_voz_natural.mp4
+      - name: Guardar MP4 para baixar
+        uses: actions/upload-artifact@v4
+        with:
+          name: BlackFlow-Reels-Instagram-Voz-Natural
+          path: download/BlackFlow_Reels_Instagram_voz_natural.mp4
+          if-no-files-found: error
+          retention-days: 90
+      - name: Publicar MP4 no site oficial
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          git config user.name "blackflow-automation"
+          git config user.email "blackflow-automation@users.noreply.github.com"
+          git add --sparse download/BlackFlow_Reels_Instagram_voz_natural.mp4
+          git commit -m "BlackFlow: Reel Instagram 9:16 com narração brasileira natural"
+          git push origin HEAD:main
