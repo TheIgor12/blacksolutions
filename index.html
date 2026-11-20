@@ -681,7 +681,7 @@ async function filaEnviar(){if(FT.enviando||!nuvemFotos())return;FT.enviando=tru
  catch(e){console.warn('fotos',e)}
  finally{FT.enviando=false;fotoStatus()}}
 function fotoStatus(){const e=$('#fotoSt');if(e)e.innerHTML=fotoStatusTxt()}
-function fotoStatusTxt(){if(!NV.ativa)return 'As fotos ficam guardadas neste computador.';if(FT.erroNuvem)return '<span style="color:var(--bad)">As fotos novas estão guardadas neste computador, mas ainda não foram enviadas para a nuvem. Motivo: '+esc(FT.erroNuvem)+'</span>';return FT.enviando||FT.pend>0?'Enviando fotos para a nuvem: faltam '+FT.pend+'. Pode usar o sistema normalmente; não feche o programa até terminar.':'Todas as fotos estão salvas na nuvem.'}
+function fotoStatusTxt(){if(!NV.ativa)return 'As fotos ficam guardadas neste computador.';if(FT.erroNuvem)return '<span style="color:var(--bad)">As fotos novas estão guardadas neste computador, mas ainda não foram enviadas para a nuvem. Motivo: '+esc(FT.erroNuvem)+'</span>';return FT.enviando||FT.pend>0?'Enviando fotos para a nuvem: faltam '+FT.pend+'. Pode usar o sistema normalmente; não feche o programa até terminar.':'Nenhum envio de fotos pendente neste dispositivo. Isso não confirma a integridade de todos os arquivos históricos.'}
 /* Devolve o endereço da imagem inteira: deste computador, ou baixa da nuvem e guarda */
 async function fotoCheia(f){if(!f)return '';if(f.img)return f.img;if(FT.urls[f.id])return FT.urls[f.id];
  let blob=await FT.get(f.id);
@@ -4799,7 +4799,7 @@ function agNovo(a,s){if(s==='Desmarcado'||s==='Faltou')return false;const k=a.da
  const hist=c=>S[c].some(x=>x.pacienteId===a.pacienteId&&((x.data||x.vencimento||x.pagamento||'')<a.data)&&(x.data||x.vencimento||x.pagamento));
  return !hist('evolucoes')&&!hist('tratamentos')&&!S.lancamentos.some(l=>l.pacienteId===a.pacienteId&&l.pagamento&&l.pagamento<a.data)}
 /* ============ Atualização: aviso com botão Atualizar agora ============ */
-const VERSAO_APP='1.24.0';const URL_VERSAO_JSON='https://raw.githubusercontent.com/TheIgor12/blacksolutions/main/versao.json';
+const VERSAO_APP='1.25.0';const URL_VERSAO_JSON='https://raw.githubusercontent.com/TheIgor12/blacksolutions/main/versao.json';
 const numV=v=>String(v||'0').split(/\D+/).filter(Boolean).map(Number);
 function versaoMaior(a,b){const x=numV(a),y=numV(b);for(let i=0;i<Math.max(x.length,y.length);i++){const d=(x[i]||0)-(y[i]||0);if(d)return d>0}return false}
 const ATU={nova:null,timer:null};
