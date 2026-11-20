@@ -1,0 +1,141 @@
+/* BlackFlow 1.26.0 — interface móvel: sem transformar dados nem regras de negócio. */
+.bf-modal-close{
+ position:sticky;top:0;float:right;z-index:15;display:inline-flex;
+ align-items:center;justify-content:center;width:42px;height:42px;
+ margin:-5px -5px 6px 12px;border:1px solid #d4d8e3;border-radius:50%;
+ background:#fff;color:#1f2937;box-shadow:0 2px 10px #0002;
+ font:700 26px/1 system-ui;cursor:pointer;touch-action:manipulation;
+}
+.bf-modal-close:focus-visible{outline:3px solid var(--acc,#5a4cfb);outline-offset:2px}
+.modalw .modal{position:relative;min-width:0}
+@media(max-width:800px){
+ html,body,#app{max-width:100%;min-width:0}
+ main{min-width:0}
+ .modalw{padding:calc(8px + env(safe-area-inset-top,0px)) 8px calc(8px + env(safe-area-inset-bottom,0px))!important}
+ #modalRoot .modalw>.modal,#modalRoot2 .modalw>.modal{
+   width:100%;max-width:calc(100vw - 16px)!important;min-width:0;
+   max-height:calc(100dvh - 20px);overflow-x:hidden;overflow-y:auto;
+   border-radius:14px;padding:15px 13px 18px;
+   overscroll-behavior:contain;-webkit-overflow-scrolling:touch;
+ }
+ .modalw .modal .fgrid{grid-template-columns:minmax(0,1fr)!important}
+ .modalw .modal input:not([type=checkbox]):not([type=radio]),
+ .modalw .modal select,.modalw .modal textarea{max-width:100%;min-width:0}
+ .modalw .modal .mact{position:relative;display:flex;flex-wrap:wrap;gap:8px;justify-content:flex-end}
+ .modalw .modal .mact>*{max-width:100%;min-width:0}
+ .modalw .modal h3{overflow-wrap:anywhere;line-height:1.35}
+ .modalw .modal .tw{max-width:100%;overflow-x:auto}
+ .bf-modal-close{margin:-5px -4px 8px 10px;width:44px;height:44px}
+ .page{width:100%;max-width:100%;min-width:0;padding:14px 12px 105px!important}
+ .page .card,.page .grid,.page .split,.page .pgrid,
+ .page .row,.page .filters{min-width:0;max-width:100%}
+ .page .card{overflow-wrap:anywhere}
+ .grid,.g2,.g3,.g4,.pgrid{grid-template-columns:minmax(0,1fr)!important}
+ .phead{flex-wrap:wrap;gap:12px}
+ .phead>div{min-width:0;max-width:100%}
+ .tabs{max-width:100%;width:100%;overflow-x:auto;-webkit-overflow-scrolling:touch}
+ .tabs button{min-height:43px;flex:0 0 auto}
+ .volta-ag{top:48px;min-width:0;padding:8px 12px}
+ .volta-ag .btn{min-height:41px;white-space:normal;text-align:left}
+ .top{width:100%;max-width:100%;gap:7px;padding:0 8px;overflow:visible}
+ .top>.ico{flex:0 0 auto;padding:5px}
+ .top>.gsearch{flex:1 1 0;min-width:0;max-width:none;margin:0}
+ .top .gsearch input{width:100%;min-width:0;font-size:16px;text-overflow:ellipsis}
+ .top .user{flex:0 0 auto}
+ .top #sync{max-width:17px;min-width:12px;flex:0 0 14px;white-space:nowrap;overflow:hidden;font-size:0}
+ .top #sync *{font-size:0}
+ .top .pixbt{flex:0 0 auto}
+ .top .refr{flex:0 0 auto;margin-right:0}
+ .top .user .av{width:28px;height:28px}
+ .filters{display:flex;flex-wrap:wrap;gap:8px}
+ .filters>label{flex:1 1 130px;min-width:0}
+ .filters input,.filters select,.page input,.page select,.page textarea,
+ .modal input,.modal select,.modal textarea{font-size:16px}
+ .page input:not([type=radio]):not([type=checkbox]),
+ .page select,.page textarea{max-width:100%;min-width:0}
+ .page .inp{max-width:100%;min-width:0!important}
+ .page .tw,.page .tablewrap,.modal .tw{width:100%;max-width:100%;overflow-x:auto}
+ .page .row{gap:10px;align-items:flex-start}
+ .page .row>span{min-width:0;overflow-wrap:anywhere}
+ .page .row>span:last-child{max-width:100%}
+ .bf-ana-row{display:grid!important;grid-template-columns:minmax(0,1fr)!important;gap:9px!important;align-items:start!important}
+ .bf-ana-row>span:last-child{display:flex!important;flex-wrap:wrap!important;gap:8px!important;justify-content:flex-start!important;text-align:left!important}
+ .bf-ana-row button{min-height:42px}
+ .azbar{display:flex;flex-wrap:wrap;gap:5px}
+ .azbar button{min-width:29px;height:31px;font-size:13px}
+ .ag{min-width:0;grid-template-columns:minmax(0,1fr)}
+ .agmain,.agbar,.agscroll{max-width:100%;min-width:0}
+ .agscroll{overflow-x:auto}
+ .drop{padding:16px}
+ .frbox{width:100%;max-width:100%}
+ .frbox input{width:100%!important}
+ .rlist{max-height:220px;overflow-y:auto}
+ .bfpay-row{grid-template-columns:minmax(0,1fr) minmax(0,1fr)!important}
+ .bfpay-row input,.bfpay-row select{font-size:16px}
+ .bfpay-row .bfpay-remove{grid-column:2;justify-self:end}
+ .bfpro-row>div{min-width:0;max-width:100%}
+ #bfchat{right:79px!important;bottom:calc(10px + env(safe-area-inset-bottom,0px))!important;z-index:80}
+ #bfchat .bf-launch{padding:9px 12px!important;font-size:12px;border-radius:15px!important;min-height:44px}
+ #bfchat .bf-panel{width:min(330px,calc(100vw - 24px))!important;
+   max-height:calc(100dvh - 95px);height:min(500px,calc(100dvh - 95px));
+   position:fixed;right:12px;bottom:calc(80px + env(safe-area-inset-bottom,0px))}
+ #bf-tati-root{right:10px!important;bottom:calc(10px + env(safe-area-inset-bottom,0px))!important}
+ #bf-tati-root .tati-fab{width:55px;height:55px}
+ #bf-tati-root .tati-dialog{right:0;bottom:67px;max-width:calc(100vw - 20px)}
+ main{padding-bottom:calc(90px + env(safe-area-inset-bottom,0px))}
+}
+@media(max-width:700px){
+ /* Wide data tables are readable cards rather than desktop tables scaled down. */
+ table.tbl.bf-mobile-cards{display:block!important;width:100%!important;max-width:100%!important;border:0}
+ table.tbl.bf-mobile-cards>thead,
+ table.tbl.bf-mobile-cards>tbody{display:block!important;width:100%!important}
+ table.tbl.bf-mobile-cards .bf-table-head{
+   position:absolute!important;width:1px!important;height:1px!important;
+   overflow:hidden!important;clip-path:inset(50%)!important;white-space:nowrap!important;
+ }
+ table.tbl.bf-mobile-cards tr:not(.bf-table-head){
+   display:block!important;width:100%!important;max-width:100%!important;
+   border:1px solid var(--line,#e5e7eb);border-radius:12px;
+   padding:9px 10px;margin:0 0 11px;background:#fff;
+   box-shadow:0 1px 3px #0000000c;
+ }
+ table.tbl.bf-mobile-cards tr:not(.bf-table-head)>td{
+   display:grid!important;grid-template-columns:minmax(92px,35%) minmax(0,1fr);
+   gap:9px;align-items:start;width:100%!important;max-width:100%!important;
+   border-bottom:1px solid #eef0f4;padding:10px 0!important;min-width:0;
+   text-align:left!important;white-space:normal!important;overflow-wrap:anywhere;
+ }
+ table.tbl.bf-mobile-cards tr:not(.bf-table-head)>td:last-child{border-bottom:0}
+ table.tbl.bf-mobile-cards td[data-bf-label]::before{
+   content:attr(data-bf-label);display:block;color:#596273;
+   font-size:12px;font-weight:700;line-height:1.4;
+ }
+ table.tbl.bf-mobile-cards td[data-bf-label="Produto"]{font-size:15px}
+ table.tbl.bf-mobile-cards td[data-bf-label="Ações"]{
+   display:flex!important;justify-content:flex-start;align-items:center;
+   flex-wrap:wrap;gap:7px;line-height:1.5;
+ }
+ table.tbl.bf-mobile-cards td[data-bf-label="Ações"]::before{
+   flex-basis:100%;margin:0 0 2px;
+ }
+ table.tbl.bf-mobile-cards td[data-bf-label="Ações"] button{min-height:40px;white-space:normal!important}
+ table.tbl.bf-mobile-cards td[colspan]{
+   display:block!important;text-align:center!important;
+ }
+ table.tbl.bf-mobile-cards td[colspan]::before{display:none}
+ .bf-table-scroll{max-width:100%;overflow-x:auto;-webkit-overflow-scrolling:touch}
+ .bf-scroll-hint{font-size:12px;color:#596273;margin:4px 0 8px}
+}
+@media(max-width:359px){
+ .top{gap:4px;padding:0 5px}
+ .top .gsearch input{padding:7px;font-size:16px}
+ .volta-ag{padding:7px}
+ .page{padding:10px 8px 100px!important}
+ table.tbl.bf-mobile-cards tr:not(.bf-table-head)>td{grid-template-columns:minmax(76px,33%) minmax(0,1fr)}
+}
+@media(min-width:801px){
+ .bf-modal-close{margin-top:-10px}
+}
+@media print{
+ .bf-modal-close,#bfchat,#bf-tati-root{display:none!important}
+}
