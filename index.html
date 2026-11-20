@@ -5160,6 +5160,18 @@ function blocoAssinatura(){const a=ASSINATURA||{};const pa=planoInfo('agenda'),p
  ${a.contato?`<p class="sub" style="margin:4px 0 0">Dúvidas: <a class="lnk" href="${esc(a.contato)}" target="_blank" rel="noopener">falar com a Black Solutions</a></p>`:''}</div>`}
 /* Quem está no fim da degustação pede mais alguns dias por aqui. O banco
    concede sozinho na primeira vez e registra o pedido para nós. */
+async function bfUsarVoucher(){
+ if(!NV.sb||!NV.sessao||!NV.clinicaId){toast('Faça login antes de ativar o voucher.');return}
+ const inp=document.getElementById('bfVoucherCodigo');
+ const codigo=String(inp&&inp.value||'').trim().toUpperCase();
+ if(!/^BF-[A-F0-9]{16}$/.test(codigo)){toast('Informe um voucher válido enviado pelo suporte.');return}
+ if(inp)inp.disabled=true;
+ const r=await NV.sb.rpc('bs_resgatar_voucher_blackflow',{p_codigo:codigo,p_clinica:NV.clinicaId});
+ if(inp)inp.disabled=false;
+ if(r.error){toast(traduz(r.error));return}
+ toast('Voucher ativado até '+br(r.data)+'.');
+ await entrar(NV.sessao);
+}
 async function pedirPrazo(b){if(!NV.sb||!NV.sessao){toast('Entre na sua conta para pedir mais prazo.');return}
  const t0=b.textContent;b.disabled=true;b.textContent='Pedindo...';
  try{const {data,error}=await NV.sb.rpc('bs_pedir_prazo');
@@ -5242,7 +5254,7 @@ function vAuth(){const A=UI.auth;const box=c=>`<div class="auth"><div class="aut
   <div class="aresumo">${escolhido?`Teste grátis de ${testeDiasTxt()} sem cobrança automática. Depois, o valor do plano é <b>${esc2(escolhido.preco)}</b>. A contratação recorrente é opcional e realizada no Asaas; se contratar antes do fim do teste, o primeiro pagamento poderá ocorrer imediatamente.`:'Escolha acima o que você faz. O valor da assinatura aparece aqui.'}</div>
   ${msg}<button class="btn">Criar conta do negócio</button></form>
   <div class="authlinks"><button class="lnk" onclick="entrar(NV.sessao)">Verificar convites</button><button class="lnk" onclick="sair()">Sair</button></div>`)}
- case 'bloqueado':return box(`<h2>${A.motivo==='teste'?'Seu teste grátis terminou':A.motivo==='suspenso'?'Acesso suspenso':'Assinatura vencida'}</h2><p class="sub" style="margin-bottom:14px">${A.motivo==='teste'?`Os ${testeDiasTxt()} de teste da clínica <b>${esc(NV.nomeClinica)}</b> acabaram. Seus dados estão guardados e voltam a aparecer assim que a assinatura for ativada.`:A.motivo==='suspenso'?`O acesso da clínica <b>${esc(NV.nomeClinica)}</b> está suspenso. Entre em contato com o suporte.`:`A assinatura da clínica <b>${esc(NV.nomeClinica)}</b> venceu. Seus dados estão guardados e voltam a aparecer assim que o pagamento for confirmado.`}</p>${A.motivo!=='suspenso'?blocoAssinatura():''}<div class="authlinks">${A.motivo==='teste'?`<button class="lnk" id="btPrazo" onclick="pedirPrazo(this)">Preciso de mais alguns dias</button>`:''}<button class="lnk" onclick="entrar(NV.sessao)">Já paguei, verificar de novo</button><button class="lnk" onclick="sair()">Sair</button></div>`);
+ case 'bloqueado':return box(`<h2>${A.motivo==='teste'?'Seu teste grátis terminou':A.motivo==='suspenso'?'Acesso suspenso':'Assinatura vencida'}</h2><p class="sub" style="margin-bottom:14px">${A.motivo==='teste'?`Os ${testeDiasTxt()} de teste da clínica <b>${esc(NV.nomeClinica)}</b> acabaram. Seus dados estão guardados e voltam a aparecer assim que a assinatura for ativada.`:A.motivo==='suspenso'?`O acesso da clínica <b>${esc(NV.nomeClinica)}</b> está suspenso. Entre em contato com o suporte.`:`A assinatura da clínica <b>${esc(NV.nomeClinica)}</b> venceu. Seus dados estão guardados e voltam a aparecer assim que o pagamento for confirmado.`}</p>${A.motivo!=='suspenso'?blocoAssinatura():''}<div class="authlinks">${A.motivo==='teste'?`<button class="lnk" id="btPrazo" onclick="pedirPrazo(this)">Solicitar voucher ao suporte</button><div style="display:flex;align-items:center;justify-content:center;gap:8px;flex-wrap:wrap;margin-top:8px"><input id="bfVoucherCodigo" placeholder="Código enviado pelo suporte" maxlength="40" autocomplete="off" style="max-width:260px"><button class="btn sm" onclick="bfUsarVoucher()">Ativar voucher</button></div>`:''}<button class="lnk" onclick="entrar(NV.sessao)">Já paguei, verificar de novo</button><button class="lnk" onclick="sair()">Sair</button></div>`);
  case 'offline':return box(`<h2>Sem conexão</h2><p class="sub" style="margin-bottom:14px">Não foi possível falar com o servidor. Verifique a internet.</p>${A.temCache?`<p class="sub" style="margin-bottom:14px">Você pode abrir os dados salvos neste computador. O que for alterado será enviado quando a internet voltar.</p><button class="btn" onclick="abrirOffline()">Abrir dados salvos neste computador</button><div style="height:10px"></div>`:''}<button class="btn ghost" onclick="location.reload()">Tentar de novo</button>`);
  default:return box(`<h2>Entrar</h2><form onsubmit="authEntrar();return false"><label>E-mail<input id="au_email" type="email" autocomplete="email" value="${esc(A.email||'')}"></label><label>Senha<input id="au_senha" type="password" autocomplete="current-password"></label>${msg}<button class="btn">Entrar</button></form><div class="authlinks"><button class="lnk" onclick="UI.auth={modo:'esqueci',email:val('#au_email')};render()">Esqueci minha senha</button><button class="lnk" onclick="UI.auth={modo:'criar',email:val('#au_email')};render()">Criar conta</button></div>`)}}
 async function authEntrar(){const email=val('#au_email'),senha=$('#au_senha').value;if(!email||!senha){authMsg('Informe e-mail e senha.');return}authMsg('Entrando...',true);
@@ -5317,14 +5329,14 @@ async function carregarCache(){const c=await DB.get('c_'+NV.clinicaId);const d=d
  if(c&&c.S){S={...d,...c.S,config:{...d.config,...(c.S.config||{})}};NV.hashes=c.hashes||{};NV.cursor=c.cursor||0}else{S=d;NV.hashes={};NV.cursor=0}}
 async function abrirClinica(){await carregarCache();if(!S.config.clinica||S.config.clinica===defaultState().config.clinica)S.config.clinica=NV.nomeClinica||S.config.clinica;
  UI.auth={modo:'carregando',msg:'Baixando os dados da clínica...'};render();await puxar();
- await DB.set({clinicaId:NV.clinicaId,email:NV.sessao.user.email,nome:NV.nomeClinica},'ultimo');
+ await DB.set({clinicaId:NV.clinicaId,email:NV.sessao.user.email,nome:NV.nomeClinica,validoAte:NV.validoAte,plano:NV.plano},'ultimo');
  UI.auth=null;UI.view='inicio';render();iniciarSync();
  const vazio=!Object.keys(NV.hashes).some(k=>k!=='config:config'&&NV.hashes[k]);
  if(vazio&&NV.papel==='admin'){const old=await DB.get('state');if(old&&Array.isArray(old.pacientes)&&old.pacientes.length){
   openModal(`<h3>Dados encontrados neste computador</h3><p>Este computador tem ${old.pacientes.length} pacientes gravados antes do login. Deseja enviá-los para a nuvem da clínica <b>${esc(NV.nomeClinica)}</b>?</p><div class="mact"><button class="btn ghost" onclick="closeModal()">Agora não</button><button class="btn" id="migY">Enviar para a nuvem</button></div>`);
   $('#migY').onclick=()=>{const d=defaultState();const cfg=S.config;S={...d,...old,config:{...d.config,...(old.config||{}),clinica:cfg.clinica}};closeModal();save();render();toast('Enviando os dados para a nuvem...')}}}
  enviar()}
-async function abrirOffline(){const u=await DB.get('ultimo');if(!u){toast('Nenhum dado salvo neste computador.');return}NV.clinicaId=u.clinicaId;NV.nomeClinica=u.nome;NV.offline=true;NV.sessao={user:{email:u.email,user_metadata:{}}};await carregarCache();UI.auth=null;render();setSync('off')}
+async function abrirOffline(){const u=await DB.get('ultimo');if(!u){toast('Nenhum dado salvo neste computador.');return}if(u.validoAte&&u.validoAte<todayISO()){UI.auth={modo:'bloqueado',motivo:'teste'};NV.nomeClinica=u.nome||'';NV.plano=u.plano||'teste';NV.validoAte=u.validoAte;render();return}NV.clinicaId=u.clinicaId;NV.nomeClinica=u.nome;NV.offline=true;NV.sessao={user:{email:u.email,user_metadata:{}}};await carregarCache();UI.auth=null;render();setSync('off')}
 function persistirNuvem(){if(NV.clinicaId)DB.set({S,hashes:NV.hashes,cursor:NV.cursor},'c_'+NV.clinicaId)}
 function temAlteracaoLocal(k,obj){return NV.hashes[k]!==undefined&&NV.hashes[k]!==JSON.stringify(obj)}
 function aplicarRemoto(r){const k=r.colecao+':'+r.id;
