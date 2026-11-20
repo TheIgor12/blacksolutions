@@ -6,7 +6,7 @@
 'use strict';
 const E=s=>String(s??'').replace(/[&<>"']/g,x=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[x]));
 const moneyBR=v=>(Number(v)||0).toLocaleString('pt-BR',{style:'currency',currency:'BRL'});
-const safeList=()=>Array.isArray(S.servicos)?S.servicos.filter(x=>x.ativo!==false):[];
+const safeList=()=>[...(Array.isArray(S.servicos)?S.servicos.filter(x=>x.ativo!==false).map(x=>({...x,origem:'servico'})):[]),...(Array.isArray(S.produtos)?S.produtos.filter(x=>x.ativo!==false).map(x=>({...x,origem:'produto'})):[])];
 const findPatient=id=>(S.pacientes||[]).find(x=>x.id===id);
 const address=p=>[p?.endereco,p?.numero,p?.complemento,p?.bairro,p?.cidade,p?.uf,p?.cep].filter(Boolean).join(', ');
 const clinic=()=>String(S.config.clinica||'Clínica');
@@ -21,7 +21,7 @@ function commonFields(){return '<div class="bf-doc-grid">'+selectPatientHTML()+
  '<label>Nome completo<input name="nome" required maxlength="180" value="'+E(draft.nome)+'"></label>'+
  '<label>CPF (quando houver)<input name="cpf" inputmode="numeric" maxlength="18" value="'+E(draft.cpf)+'"></label>'+
  '<label class="full">Endereço<input name="endereco" maxlength="280" value="'+E(draft.endereco)+'"></label></div>'}
-const svcOptions=sel=>'<option value="">Selecionar serviço cadastrado</option>'+safeList().map(s=>'<option value="'+E(s.id)+'"'+(String(s.id)===String(sel)?' selected':'')+'>'+E(s.nome)+' — '+moneyBR(s.preco)+'</option>').join('');
+const svcOptions=sel=>'<option value="">Selecionar serviço cadastrado</option>'+safeList().map(s=>'<option value="'+E(s.id)+'"'+(String(s.id)===String(sel)?' selected':'')+'>'+E((s.origem==='produto'?'Produto: ':'Serviço: ')+s.nome)+' — '+moneyBR(s.preco)+'</option>').join('');
 function budgetRows(){return draft.items.map((x,i)=>'<div class="bf-doc-row"><div class="bf-doc-grid">'+
  '<label>Serviço<select data-index="'+i+'" onchange="bfDocChooseService('+i+',this.value)">'+svcOptions(x.servicoId)+'</select></label>'+
  '<label>Nome do serviço / produto<input data-index="'+i+'" data-key="nome" value="'+E(x.nome)+'" required></label>'+
