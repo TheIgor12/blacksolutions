@@ -1,5 +1,5 @@
 {
-  "versao": "1.25.0",
+  "versao": "1.26.0",
   "data": "2026-11-20",
-  "novidades": "Auditoria e proteção de dados: teste de sete dias com bloqueio, prorrogação apenas por voucher emitido pelo suporte, bloqueio offline de testes vencidos, prevenção de exclusões em massa e aviso preciso de fotos pendentes. Marketing BlackSolutions informa teste limitado."
+  "novidades": "Revisão móvel: pop-ups com botão X visível e acessível, tabelas de estoque/financeiro/pacientes/relatórios em cartões legíveis, formulários responsivos e botões ajustados ao toque, chat separado da ajuda, correção do dimensionamento e unificação de blackflow.app.br e /app/."
 }
