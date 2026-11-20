@@ -45,7 +45,7 @@ function collectionHTML(){return draft.kind==='orc'?
  '<p class="bf-doc-warning"><b>Atenção:</b> o documento é apenas rascunho. Medicamentos e posologia devem ser definidos e revisados por profissional legalmente habilitado. Receitas controladas exigem procedimentos específicos.</p>'+
  '<div id="bf-doc-rows">'+medRows()+'</div><button class="btn ghost" type="button" onclick="bfDocAdd()">+ Adicionar medicamento ou fórmula</button>'+
  '<div class="bf-doc-grid"><label>Farmácia de preferência (opcional)<input name="farmacia" value="'+E(draft.farmacia)+'" placeholder="Livre escolha do paciente"></label><label>Data de emissão<input type="date" value="'+new Date().toISOString().slice(0,10)+'" disabled></label></div>'+
- '<label class="bf-doc-note">Orientações gerais<textarea name="nota" rows="2">'+E(draft.nota)+'</textarea></label>';
+ '<label class="bf-doc-note">Orientações gerais<textarea name="nota" rows="2">'+E(draft.nota)+'</textarea></label>';}
 function syncRows(){const form=document.getElementById('bf-doc-form');if(!form)return;getFields();
  if(draft.kind==='orc'){form.querySelectorAll('[data-index][data-key]').forEach(e=>{const x=draft.items[Number(e.dataset.index)];if(x)x[e.dataset.key]=e.value})}
  else {form.querySelectorAll('[data-med][data-key]').forEach(e=>{const x=draft.meds[Number(e.dataset.med)];if(x)x[e.dataset.key]=e.value})}
