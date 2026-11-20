@@ -319,7 +319,7 @@ const priorRender=render;
 render=function(){
  if(UI.view==='receituario'){
   if(NV.ativa&&UI.auth)return priorRender();if(!scope()){UI.view='agenda';return priorRender();}
-  document.getElementById('app').innerHTML=shell('<div class="page" style="max-width:1120px"><div class="phead"><div><h1>Receituário</h1><p class="sub">Documento com PDF próprio do profissional, histórico e compartilhamento manual por WhatsApp.</p></div></div><div id="bfrec-zone">'+note('Carregando documentos...')+'</div></div>');
+  document.getElementById('app').innerHTML=shell('<div class="page" style="max-width:1120px"><div class="phead"><div><h1>Receituário</h1><p class="sub">Documentos profissionais e preenchimento rápido de paciente, medicamentos ou fórmulas.</p></div><button type="button" class="btn" onclick="bfDocOpen(\'receita\')">+ Nova receita (pop-up)</button></div><div id="bfrec-zone">'+note('Carregando documentos...')+'</div></div>');
   home().catch(fail);return;
  }
  const r=priorRender();if(UI.view==='config'&&UI.cfgTab==='receituario'&&scope())config().catch(fail);return r;
