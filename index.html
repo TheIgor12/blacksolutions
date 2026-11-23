@@ -1614,7 +1614,7 @@ function agForm(id,pacienteId,pre){pre=pre||{};const a=id?S.agendamentos.find(x=
     const r=criarSerie(ag,modoRep,nv);setTimeout(()=>openModal(serieResumo(r,modoRep,pp.nome)),180)}if(ant==='Atendido'&&stAg(ag)!=='Atendido')estornarSessao(ag);if(stAg(ag)!=='Atendido')delete ag.semPacote;sincLancAg(ag);if(stAg(ag)==='Atendido'&&ant!=='Atendido'&&precisaPerguntar(ag)){UI.sessAnt=UI.sessAnt||{};UI.sessAnt[ag.id]=ant;setTimeout(()=>perguntarSessao(ag.id),150)}if(lancAgAtivo()){const pr=precoProc(ag.procedimento);if(pr&&!pacoteAtivo(ag)&&['Agendado','Confirmado'].includes(stAg(ag)))setTimeout(()=>toast('Valor de '+money(pr)+' lançado como previsto no financeiro'),60)}},
   a?`<button class="btn danger" style="margin-right:auto" onclick="delRec('agendamentos','${a.id}')">Excluir</button>`:'')}
 function agModal(id){const a=S.agendamentos.find(x=>x.id===id);if(!a)return;const p=pac(a.pacienteId);const l=p?waLink(p.celular):'';
- openModal(`<h3 style="display:flex;align-items:center;gap:10px">${p?anivCanto(p,a.data):''}${p?`<span onclick="closeModal();go('paciente','${p.id}')" title="Abrir a ficha de ${esc(p.nome)}" style="cursor:pointer">${avatarPac(p,'lg')}</span>`:''}${p?`<a href="javascript:void(0)" onclick="closeModal();go('paciente','${p.id}')" title="Abrir a ficha completa: anamnese, fotos, documentos, financeiro e agendamentos" style="color:inherit;text-decoration:underline;text-underline-offset:3px;display:inline-flex;align-items:center;gap:6px">${esc(p.nome)}${ico('back',14)?'':''}<span style="font-size:12px;font-weight:600;color:var(--mut);text-decoration:none">abrir ficha</span></a>`:'<span>Paciente</span>'}</h3>${p?anaFaixa(p.id,1):''}${p?`<div class="row"><span>Anamnese</span><span>${esc(resumoAnamnese(p))}</span></div>`:''}${p&&str(p.cpf)?`<div class="row"><span>CPF</span><span>${esc(fmtCPF(p.cpf))}</span></div>`:''}${p&&enderecoDe(p)?`<div class="row"><span>Endereço</span><span>${esc(enderecoDe(p))}</span></div>`:''}${p&&(str(p.profissao)||str(p.empresa))?`<div class="row"><span>Trabalho</span><span>${esc([str(p.profissao),str(p.empresa)].filter(Boolean).join(' · '))}</span></div>`:''}<div class="row"><span>Data</span><span>${br(a.data)} às ${esc(a.hora)} (${a.duracao||30} min)</span></div><div class="row"><span>Profissional</span><span>${esc(a.profissional||'-')}</span></div><div class="row"><span>Procedimento</span><span>${esc(a.procedimento||'-')}</span></div><div class="row" style="align-items:center"><span><b>Situação</b></span><span><select id="agSt" onchange="setAgSt('${a.id}',this.value)" style="font-size:14px;font-weight:700;padding:8px 12px;border-radius:8px;border:2px solid ${({Agendado:'#e0a800',Confirmado:'#16a34a',Atendido:'#64748b',Faltou:'#dc2626',Desmarcado:'#999'})[stAg(a)]||'#e0a800'};background:${({Agendado:'#fff3bf',Confirmado:'#c9f2d6',Atendido:'#e6ebf3',Faltou:'#fde8e8',Desmarcado:'#eee'})[stAg(a)]||'#fff3bf'}">${['Agendado','Confirmado','Atendido','Faltou','Desmarcado'].map(x=>`<option value="${x}" ${stAg(a)===x?'selected':''}>${x==='Desmarcado'?'Desmarcou':x}</option>`).join('')}</select></span></div>${agNovo(a,stAg(a))?`<div class="row"><span></span><span><i class="evtag" style="font-size:11px;padding:2px 8px">${esc(SEG().pessoa.toUpperCase())} NOVO</i></span></div>`:''}${serieHTML(a)}${agSessHTML(a)}${a.obs?`<div class="row"><span>Observação</span><span>${esc(a.obs)}</span></div>`:''}${agFinHTML(a)}${lancAgAtivo()?agValHTML(a):''}
+ openModal(`<h3 style="display:flex;align-items:center;gap:10px">${p?anivCanto(p,a.data):''}${p?`<span onclick="closeModal();go('paciente','${p.id}')" title="Abrir a ficha de ${esc(p.nome)}" style="cursor:pointer">${avatarPac(p,'lg')}</span>`:''}${p?`<a href="javascript:void(0)" onclick="closeModal();go('paciente','${p.id}')" title="Abrir a ficha completa: anamnese, fotos, documentos, financeiro e agendamentos" style="color:inherit;text-decoration:underline;text-underline-offset:3px;display:inline-flex;align-items:center;gap:6px">${esc(p.nome)}${ico('back',14)?'':''}<span style="font-size:12px;font-weight:600;color:var(--mut);text-decoration:none">abrir ficha</span></a>`:'<span>Paciente</span>'}</h3>${p?anaFaixa(p.id,1):''}${p?`<div class="row"><span>Anamnese</span><span>${esc(resumoAnamnese(p))}</span></div>`:''}${p&&str(p.cpf)?`<div class="row"><span>CPF</span><span>${esc(fmtCPF(p.cpf))}</span></div>`:''}${p&&enderecoDe(p)?`<div class="row"><span>Endereço</span><span>${esc(enderecoDe(p))}</span></div>`:''}${p&&(str(p.profissao)||str(p.empresa))?`<div class="row"><span>Trabalho</span><span>${esc([str(p.profissao),str(p.empresa)].filter(Boolean).join(' · '))}</span></div>`:''}<div class="row"><span>Data</span><span>${br(a.data)} às ${esc(a.hora)} (${a.duracao||30} min)</span></div><div class="row"><span>Profissional</span><span>${esc(a.profissional||'-')}</span></div><div class="row"><span>Procedimento</span><span>${esc(a.procedimento||'-')}</span></div><div class="row" style="align-items:center"><span><b>Situação</b></span><span><select id="agSt" onchange="setAgSt('${a.id}',this.value)" style="font-size:14px;font-weight:700;padding:8px 12px;border-radius:8px;border:2px solid ${({Agendado:'#e0a800',Confirmado:'#16a34a',Atendido:'#64748b',Faltou:'#dc2626',Desmarcado:'#999'})[stAg(a)]||'#e0a800'};background:${({Agendado:'#fff3bf',Confirmado:'#c9f2d6',Atendido:'#e6ebf3',Faltou:'#fde8e8',Desmarcado:'#eee'})[stAg(a)]||'#fff3bf'}">${['Agendado','Confirmado','Atendido','Faltou','Desmarcado'].map(x=>`<option value="${x}" ${stAg(a)===x?'selected':''}>${x==='Desmarcado'?'Desmarcou':x}</option>`).join('')}</select> <button type="button" class="btn danger sm" style="margin-left:8px;vertical-align:middle" onclick="agExcluirDia('${a.id}')" title="Exclui somente o atendimento do dia ${br(a.data)}. Os outros dias da série continuam.">Excluir</button></span></div>${agNovo(a,stAg(a))?`<div class="row"><span></span><span><i class="evtag" style="font-size:11px;padding:2px 8px">${esc(SEG().pessoa.toUpperCase())} NOVO</i></span></div>`:''}${serieHTML(a)}${agSessHTML(a)}${a.obs?`<div class="row"><span>Observação</span><span>${esc(a.obs)}</span></div>`:''}${agFinHTML(a)}${lancAgAtivo()?agValHTML(a):''}
  <div class="mact">${l?`<a class="btn green" href="${l}" target="_blank" rel="noopener">WhatsApp</a>`:''}${pixBt(valorAg(a),a.procedimento,p?p.id:'',(lancDoAg(a)||{}).id||'')}${p?`<button class="btn ghost" onclick="closeModal();contratoForm('${p.id}','${a.id}')" title="Gera o contrato com o serviço e o plano de pagamento, para a cliente assinar">${ico('doc',15)} Contrato</button>`:''}${p?`<button class="btn ghost" onclick="fotoDoAtendimento('${p.id}')">${ico('cam',15)} Foto</button><button class="btn ghost" onclick="anaRapida('${p.id}')">Anamnese</button><button class="btn ghost" onclick="fotoPerfil('${p.id}')">${p.foto?'Trocar foto':'Inserir foto'}</button><button class="btn ghost" onclick="goPront('${p.id}')">Prontuário</button><button class="btn ghost" onclick="closeModal();go('paciente','${p.id}')">Abrir ficha</button>`:''}${!ehSeg('podologia')&&!soAgenda()&&p?`<button class="btn soft" onclick="comandaDoAgendamento('${a.id}')">Abrir comanda</button>`:''}<button class="btn" onclick="closeModal();agForm('${a.id}')">Editar</button></div>`)}
 /* Situação financeira do atendimento, igual ao selo Financeiro Ok do Clinicorp */
 function agFinHTML(a){const l=lancDoAg(a);if(!l||!(Number(l.valor)>0))return '';const sd=Math.max(0,r2((Number(l.valor)||0)-pagoEf(l))),pn=parcNum(l);
@@ -1628,6 +1628,38 @@ function setAgSt(id,s){const a=S.agendamentos.find(x=>x.id===id);if(!a){closeMod
  sincLancAg(a);closeModal();save();render();
  if(s==='Atendido'&&ant!=='Atendido'&&precisaPerguntar(a)){UI.sessAnt=UI.sessAnt||{};UI.sessAnt[a.id]=ant;perguntarSessao(a.id);return}
  if(s==='Atendido'&&lancDoAg(a))setTimeout(()=>toast('Atendido: '+money(lancDoAg(a).valor)+' lançado a receber no financeiro'),50);toast(s==='Desmarcado'?'Desmarcou: o horário ficou livre na agenda':'Situação alterada para '+s.toLowerCase())}
+/* Exclui um atendimento, e so ele.
+   Quem tem serie, como o plano de dez sessoes, costuma precisar tirar um dia
+   so: a pessoa avisou que nao vem nesta quarta, mas o pacote continua. Entao
+   esta funcao apaga exclusivamente o registro daquele dia. Os demais dias da
+   serie permanecem, e a janela avisa isso antes de confirmar.
+   Sessao de pacote consumida volta para o saldo, e lancamento financeiro sem
+   nenhum pagamento recebido sai junto, para nao ficar cobranca de atendimento
+   que nao existe mais. Havendo valor ja recebido, o lancamento fica, e a
+   mensagem diz onde mexer. */
+function agExcluirDia(id){
+ if(!pode('excluir')){toast('O seu perfil de acesso não permite excluir agendamentos.');return}
+ const a=S.agendamentos.find(x=>x.id===id);if(!a){closeModal();return}
+ const p=pac(a.pacienteId),quem=p?p.nome:'este atendimento';
+ const naSerie=a.serieId?(S.agendamentos||[]).filter(x=>x.serieId===a.serieId).length:0;
+ const outros=naSerie>1?naSerie-1:0;
+ const l=lancDoAg(a),recebido=l?pagoEf(l):0;
+ const linhas=[
+  `Excluir o atendimento de <b>${esc(quem)}</b> em <b>${br(a.data)} às ${esc(a.hora)}</b>?`,
+  outros?`<br><br>Este atendimento faz parte de uma série de ${naSerie}. <b>Somente o dia ${br(a.data)} será excluído</b>: ${outros===1?'o outro dia continua':'os outros '+outros+' dias continuam'} na agenda.`:'',
+  a.sessaoPacote?'<br><br>A sessão do pacote volta para o saldo do paciente.':'',
+  l&&recebido<=0.004?'<br><br>O lançamento a receber deste atendimento sai junto, porque nada foi recebido nele.':'',
+  l&&recebido>0.004?`<br><br><b>Atenção:</b> este atendimento já tem ${money(recebido)} recebido. O agendamento sai da agenda, mas o lançamento financeiro permanece, para o caixa não ficar errado. Se for o caso de estornar, faça no Financeiro.`:'',
+  '<br><br>Esta exclusão não pode ser desfeita.'
+ ].join('');
+ confirmModal(linhas,()=>{
+  if(a.sessaoPacote&&typeof estornarSessao==='function')estornarSessao(a);
+  if(l&&pagoEf(l)<=0.004)S.lancamentos=S.lancamentos.filter(x=>x.id!==l.id);
+  S.agendamentos=S.agendamentos.filter(x=>x.id!==id);
+  closeModal();
+  toast(outros?`Atendimento de ${br(a.data)} excluído. Os outros dias da série continuam.`:'Atendimento excluído.');
+ },'Excluir somente este dia');
+}
 function delRec(col,id){if(!pode('excluir')){toast('O seu perfil de acesso não permite excluir registros.');return}
  confirmModal('Excluir este registro definitivamente?',()=>{if(col==='agendamentos'){const ag=S.agendamentos.find(x=>x.id===id);if(ag&&ag.sessaoPacote)estornarSessao(ag)}S[col]=S[col].filter(x=>x.id!==id);if(col==='fotos')fotoApagarArquivo(id)},'Excluir')}
 
@@ -4872,7 +4904,7 @@ function agNovo(a,s){if(s==='Desmarcado'||s==='Faltou')return false;const k=a.da
  const hist=c=>S[c].some(x=>x.pacienteId===a.pacienteId&&((x.data||x.vencimento||x.pagamento||'')<a.data)&&(x.data||x.vencimento||x.pagamento));
  return !hist('evolucoes')&&!hist('tratamentos')&&!S.lancamentos.some(l=>l.pacienteId===a.pacienteId&&l.pagamento&&l.pagamento<a.data)}
 /* ============ Atualização: aviso com botão Atualizar agora ============ */
-const VERSAO_APP='1.38.1';const URL_VERSAO_JSON='https://raw.githubusercontent.com/TheIgor12/blacksolutions/main/versao.json';
+const VERSAO_APP='1.38.2';const URL_VERSAO_JSON='https://raw.githubusercontent.com/TheIgor12/blacksolutions/main/versao.json';
 const numV=v=>String(v||'0').split(/\D+/).filter(Boolean).map(Number);
 function versaoMaior(a,b){const x=numV(a),y=numV(b);for(let i=0;i<Math.max(x.length,y.length);i++){const d=(x[i]||0)-(y[i]||0);if(d)return d>0}return false}
 const ATU={nova:null,timer:null};
@@ -5685,7 +5717,7 @@ function telaCopiaNaoAutorizada(){
   if(!origemAutorizada()){telaCopiaNaoAutorizada();return}}
  try{navigator.storage&&navigator.storage.persist&&navigator.storage.persist()}catch(e){}
  try{fonteAplicar()}catch(e){}
- try{if(/^https?:/.test(location.protocol)&&'serviceWorker' in navigator&&!window.pywebview)navigator.serviceWorker.register('./sw.js?v=1.38.1',{updateViaCache:'none'}).then(r=>r.update()).catch(()=>{})}catch(e){}
+ try{if(/^https?:/.test(location.protocol)&&'serviceWorker' in navigator&&!window.pywebview)navigator.serviceWorker.register('./sw.js?v=1.38.2',{updateViaCache:'none'}).then(r=>r.update()).catch(()=>{})}catch(e){}
  if(NV.ativa){
   if(!window.supabase||!window.supabase.createClient){UI.auth={modo:'offline',temCache:!!(await DB.get('ultimo'))};render();return}
   NV.sb=window.supabase.createClient(NUVEM.url,NUVEM.chave,{auth:{persistSession:true,autoRefreshToken:true}});
@@ -5736,30 +5768,30 @@ function agProf(nome){UI.profOff={};if(nome){S.profissionais.forEach(p=>{if(norm
 function menuProfs(){const L=az(S.profissionais.filter(p=>p.ativo!==false));if(!L.length)return '';const sel=UI.view==='agenda'?(UI.agProf||''):null;
  return `<div class="msec">AGENDA POR PROFISSIONAL</div><button class="${sel===''&&UI.view==='agenda'?'on':''}" onclick="agProf('')">${ico('cal',18)} Todos os profissionais</button>${L.map(p=>`<button class="${sel!=null&&norm(sel)===norm(p.nome)?'on':''}" onclick="agProf(${esc(JSON.stringify(p.nome))})"><span style="display:inline-block;width:12px;height:12px;border-radius:50%;background:${esc(p.cor||'#0a4bde')};margin:0 3px;flex:none"></span> ${esc(p.nome)}</button>`).join('')}`}
 </script>
-<script src="./bf-clinical.js?v=1.38.1"></script>
-<script src="./bf-fiscal-advanced.js?v=1.38.1"></script>
-<script src="./bf-receituario.js?v=1.38.1"></script>
-<script src="./bf-cadastro-fiscal.js?v=1.38.1"></script>
-<script src="./bf-context-actions.js?v=1.38.1"></script>
-<script src="./bf-integrity-audit.js?v=1.38.1"></script>
-<script src="./bf-blackpay-integrated.js?v=1.38.1"></script>
-<script src="./bf-tati-help.js?v=1.38.1"></script>
-<script src="./bf-mobile-photos.js?v=1.38.1"></script>
-<script src="./bf-documents.js?v=1.38.1"></script>
-<script src="./bf-workflow-123.js?v=1.38.1"></script>
-<script src="./bf-workflow-124.js?v=1.38.1"></script>
-<script>const bfMobileCss=document.createElement("link");bfMobileCss.rel="stylesheet";bfMobileCss.href="./bf-mobile-126.css?v=1.38.1";document.head.appendChild(bfMobileCss);</script>
-<script src="./bf-mobile-126.js?v=1.38.1"></script>
-<script>const bfNavCss=document.createElement("link");bfNavCss.rel="stylesheet";bfNavCss.href="./bf-navegacao-128.css?v=1.38.1";document.head.appendChild(bfNavCss);</script>
-<script src="./bf-navegacao-128.js?v=1.38.1"></script>
-<script src="./bf-barbearia-129.js?v=1.38.1"></script>
-<script src="./bf-catalogos-130.js?v=1.38.1"></script>
-<script src="./bf-sincronia-138.js?v=1.38.1"></script>
-<script src="./bf-cobranca-138.js?v=1.38.1"></script>
-<script src="./bf-assinante-138.js?v=1.38.1"></script>
-<script>const bfAssCss=document.createElement("link");bfAssCss.rel="stylesheet";bfAssCss.href="./bf-assinante-135.css?v=1.38.1";document.head.appendChild(bfAssCss);</script>
-<script src="./bf-assinante-135.js?v=1.38.1"></script>
-<script src="./bf-tutorial-136.js?v=1.38.1"></script>
-<script src="./bf-documentos-137.js?v=1.38.1"></script>
+<script src="./bf-clinical.js?v=1.38.2"></script>
+<script src="./bf-fiscal-advanced.js?v=1.38.2"></script>
+<script src="./bf-receituario.js?v=1.38.2"></script>
+<script src="./bf-cadastro-fiscal.js?v=1.38.2"></script>
+<script src="./bf-context-actions.js?v=1.38.2"></script>
+<script src="./bf-integrity-audit.js?v=1.38.2"></script>
+<script src="./bf-blackpay-integrated.js?v=1.38.2"></script>
+<script src="./bf-tati-help.js?v=1.38.2"></script>
+<script src="./bf-mobile-photos.js?v=1.38.2"></script>
+<script src="./bf-documents.js?v=1.38.2"></script>
+<script src="./bf-workflow-123.js?v=1.38.2"></script>
+<script src="./bf-workflow-124.js?v=1.38.2"></script>
+<script>const bfMobileCss=document.createElement("link");bfMobileCss.rel="stylesheet";bfMobileCss.href="./bf-mobile-126.css?v=1.38.2";document.head.appendChild(bfMobileCss);</script>
+<script src="./bf-mobile-126.js?v=1.38.2"></script>
+<script>const bfNavCss=document.createElement("link");bfNavCss.rel="stylesheet";bfNavCss.href="./bf-navegacao-128.css?v=1.38.2";document.head.appendChild(bfNavCss);</script>
+<script src="./bf-navegacao-128.js?v=1.38.2"></script>
+<script src="./bf-barbearia-129.js?v=1.38.2"></script>
+<script src="./bf-catalogos-130.js?v=1.38.2"></script>
+<script src="./bf-sincronia-138.js?v=1.38.2"></script>
+<script src="./bf-cobranca-138.js?v=1.38.2"></script>
+<script src="./bf-assinante-138.js?v=1.38.2"></script>
+<script>["./bf-assinante-135.css?v=1.38.2","./bf-assinante-138.css?v=1.38.2"].forEach(function(h){var l=document.createElement("link");l.rel="stylesheet";l.href=h;document.head.appendChild(l)});</script>
+<script src="./bf-assinante-135.js?v=1.38.2"></script>
+<script src="./bf-tutorial-136.js?v=1.38.2"></script>
+<script src="./bf-documentos-137.js?v=1.38.2"></script>
 </body>
 </html>

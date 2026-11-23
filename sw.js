@@ -1,7 +1,7 @@
 /* BlackFlow 1.28.0: network-first, sem guardar paciente nem token, offline seguro.
    Os modulos externos entram ja na instalacao: sem eles o sistema abre sem
    receituario, sem orcamento, sem fiscal e sem a navegacao entre janelas. */
-const CACHE='blackflow-v381-20261124';
+const CACHE='blackflow-v382-20261124';
 const BASE=['./','index.html','manifest.webmanifest','icone-192.png','icone-512.png',
  'bf-assinante-135.js',
  'bf-barbearia-129.js',
@@ -26,6 +26,7 @@ const BASE=['./','index.html','manifest.webmanifest','icone-192.png','icone-512.
  'bf-workflow-123.js',
  'bf-workflow-124.js',
  'bf-assinante-135.css',
+ 'bf-assinante-138.css',
  'bf-mobile-126.css',
  'bf-navegacao-128.css'];
 self.addEventListener('install',event=>{

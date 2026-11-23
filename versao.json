@@ -1,4 +1,4 @@
 {
-  "versao": "1.38.1",
-  "novidades": "Nova tela Assinante, no menu: número de assinante, plano, situação, próxima cobrança, forma de pagamento, histórico de cobranças, voucher e cancelamento, tudo dentro do sistema. A tela de fim de teste passou a fechar a assinatura por Pix ou cartão ali mesmo, sem abrir outra aba nem outro site. E a sincronização foi corrigida na raiz: o sistema tratava como disputa o eco do próprio aparelho, o que travava registros e deixava o indicador do alto sempre em erro. Agora nada fica congelado, a divergência de verdade se resolve sozinha mantendo o que está neste aparelho, e a versão da nuvem fica guardada para restaurar."
+  "versao": "1.38.2",
+  "novidades": "A área do assinante foi refeita: painel próprio, com o plano em destaque, o selo de Black Friday quando você está na promoção, o seu número de assinante, a escolha entre cartão e Pix ao lado do resumo da assinatura, e o botão de confirmar sempre à vista. O mesmo painel aparece quando o teste termina, dentro de uma janela, sem abrir outra aba nem outro site. No pop-up do agendamento entrou o botão Excluir, ao lado da situação: ele apaga apenas o atendimento daquele dia, e os outros dias de uma série, como um plano de dez sessões, continuam na agenda."
 }
