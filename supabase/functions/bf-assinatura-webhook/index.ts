@@ -37,8 +37,8 @@ import { createClient } from "jsr:@supabase/supabase-js@2";
 const SB_URL = Deno.env.get("SUPABASE_URL")!;
 const SB_SERVICE = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 const TOKEN = Deno.env.get("ASAAS_WEBHOOK_TOKEN") || "";
-const CHAVE = Deno.env.get("ASAAS_CHAVE") || "";
-const BASE = (Deno.env.get("ASAAS_BASE") || "https://api.asaas.com/v3").replace(/\/+$/, "");
+let CHAVE = Deno.env.get("ASAAS_CHAVE") || "";
+let BASE = (Deno.env.get("ASAAS_BASE") || "https://api.asaas.com/v3").replace(/\/+$/, "");
 
 const ok = (x: unknown, status = 200) =>
   new Response(JSON.stringify(x), { status, headers: { "Content-Type": "application/json" } });
@@ -53,6 +53,14 @@ async function asaas(caminho: string) {
 
 Deno.serve(async (req) => {
   if (req.method !== "POST") return ok({ erro: "método não permitido" }, 405);
+
+  const adm0 = createClient(SB_URL, SB_SERVICE, { auth: { persistSession: false } });
+  if (!CHAVE) {
+    /* A chave pode estar gravada pelo painel, e não como segredo do projeto. */
+    const { data } = await adm0.from("bs_config_pagamento").select("chave,base").eq("id", 1).maybeSingle();
+    if (data?.chave) CHAVE = String(data.chave);
+    if (data?.base) BASE = String(data.base).replace(/\/+$/, "");
+  }
   if (!CHAVE) return ok({ erro: "recebedor sem a chave do prestador" }, 503);
 
   /* Conferência de cabeçalho, apenas se o segredo existir. */
@@ -65,7 +73,7 @@ Deno.serve(async (req) => {
 
   const tipo = String(evento.event || "");
   const avisado = evento.payment || evento.subscription || {};
-  const adm = createClient(SB_URL, SB_SERVICE, { auth: { persistSession: false } });
+  const adm = adm0;
 
   /* O corpo é só aviso. A verdade vem do Asaas. */
   let cobranca: Record<string, any> | null = null;

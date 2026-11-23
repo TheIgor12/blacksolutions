@@ -43,9 +43,14 @@ const responde = (x: unknown, status = 200) =>
 const dig = (v: unknown) => String(v ?? "").replace(/\D/g, "");
 const txt = (v: unknown) => (typeof v === "string" ? v.trim() : "");
 
-const CHAVE = Deno.env.get("ASAAS_CHAVE") || "";
-const BASE = (Deno.env.get("ASAAS_BASE") || "https://api.asaas.com/v3").replace(/\/+$/, "");
-const CONFIGURADO = CHAVE.length > 20;
+/* A chave pode vir de duas fontes: do segredo do projeto, ou da tabela
+   bs_config_pagamento, gravada pelo painel da BlackSolutions. A segunda existe
+   para a configuracao inteira caber dentro do sistema, sem ninguem precisar
+   abrir o painel do Supabase. A tabela e fechada por RLS: ninguem le por fora,
+   so o servidor, com a chave de servico. */
+let CHAVE = Deno.env.get("ASAAS_CHAVE") || "";
+let BASE = (Deno.env.get("ASAAS_BASE") || "https://api.asaas.com/v3").replace(/\/+$/, "");
+let lidoDoBanco = false;
 
 const SB_URL = Deno.env.get("SUPABASE_URL")!;
 const SB_SERVICE = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
@@ -71,6 +76,15 @@ function cnpjValido(v: string) {
   return calc(v.slice(0, 12), [5, 4, 3, 2, 9, 8, 7, 6, 5, 4, 3, 2]) === +v[12] &&
     calc(v.slice(0, 13), [6, 5, 4, 3, 2, 9, 8, 7, 6, 5, 4, 3, 2]) === +v[13];
 }
+
+async function carregarChave(adm: any) {
+  if (CHAVE || lidoDoBanco) return;
+  lidoDoBanco = true;
+  const { data } = await adm.from("bs_config_pagamento").select("chave,base").eq("id", 1).maybeSingle();
+  if (data?.chave) CHAVE = String(data.chave);
+  if (data?.base) BASE = String(data.base).replace(/\/+$/, "");
+}
+function configurado() { return CHAVE.length > 20; }
 
 async function asaas(caminho: string, metodo = "GET", corpo?: unknown) {
   const r = await fetch(BASE + caminho, {
@@ -124,6 +138,7 @@ Deno.serve(async (req) => {
   if (!u?.user) return responde({ erro: "sessão expirada, entre de novo" }, 401);
 
   const adm = createClient(SB_URL, SB_SERVICE, { auth: { persistSession: false } });
+  await carregarChave(adm);
   const clinicaId = txt(corpo.clinica);
   if (!clinicaId) return responde({ erro: "clínica não informada" }, 400);
 
@@ -143,7 +158,7 @@ Deno.serve(async (req) => {
 
   if (acao === "estado") {
     return responde({
-      ok: true, configurado: CONFIGURADO,
+      ok: true, configurado: configurado(),
       planos: PLANOS,
       assinatura: assinatura
         ? {
@@ -156,7 +171,7 @@ Deno.serve(async (req) => {
     });
   }
 
-  if (!CONFIGURADO) {
+  if (!configurado()) {
     return responde({
       ok: false, configurado: false,
       erro: "A cobrança dentro do sistema ainda não foi ligada. Falta gravar a chave da conta do Asaas nos segredos do projeto.",
@@ -347,6 +362,18 @@ Deno.serve(async (req) => {
         }).eq("id", clinicaId);
       }
       return responde({ ok: true, pago, status: pg.status });
+    }
+
+    /* ---------- Histórico de cobranças, para a tela do assinante ---------- */
+    if (acao === "historico") {
+      if (!assinatura?.asaas_assinatura) return responde({ ok: true, cobrancas: [] });
+      const r = await asaas("/subscriptions/" + assinatura.asaas_assinatura + "/payments");
+      const cobrancas = ((r?.data || []) as Record<string, unknown>[]).map((p) => ({
+        id: p.id, valor: p.value, status: p.status, forma: p.billingType,
+        vencimento: p.dueDate, pago: p.paymentDate || p.clientPaymentDate || null,
+        descricao: p.description || "",
+      }));
+      return responde({ ok: true, cobrancas });
     }
 
     /* ---------- Cancelamento, inclusive o arrependimento de sete dias ---------- */

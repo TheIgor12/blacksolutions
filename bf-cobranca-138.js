@@ -285,19 +285,37 @@
   }
 
   /* ---------------- Entra no lugar dos endereços externos ---------------- */
+  /* Troca qualquer botao de assinar que levasse para fora pelo mesmo botao
+     abrindo a cobranca aqui dentro. Links de atendimento humano continuam
+     como estao: aquilo e conversa, nao pagamento. */
+  function paraDentro(h) {
+    return String(h).replace(
+      /<a class="btn([^"]*)"([^>]*?)href="[^"]*"([^>]*?)>([^<]*)<\/a>/g,
+      function (todo, classe, antes, depois, rotulo) {
+        if (/falar com|d[úu]vidas|suporte|atendimento/i.test(rotulo)) return todo;
+        var p = /s[óo] agenda/i.test(rotulo) ? 'agenda' : '';
+        var estilo = (antes + ' ' + depois).match(/style="([^"]*)"/);
+        return '<button type="button" class="btn' + classe + '"' +
+          (estilo ? ' style="' + estilo[1] + '"' : '') +
+          ' onclick="bfCobrancaAbrir(' + (p ? "'" + p + "'" : '') + ')">' + rotulo + '</button>';
+      });
+  }
+
   function trocarBloco() {
+    if (typeof window.promoFaixa === 'function') {
+      var faixa = window.promoFaixa;
+      window.promoFaixa = function () { return paraDentro(faixa.apply(this, arguments)); };
+    }
+    if (typeof window.promoBloco === 'function') {
+      var bloco = window.promoBloco;
+      window.promoBloco = function () { return paraDentro(bloco.apply(this, arguments)); };
+    }
     if (typeof window.blocoAssinatura !== 'function') return;
     var original = window.blocoAssinatura;
     window.blocoAssinatura = function () {
       var h = original.apply(this, arguments);
       /* Cada botão que levava para fora passa a abrir a cobrança aqui dentro. */
-      h = h.replace(/<a class="btn([^"]*)" style="width:100%" href="[^"]*" target="_blank" rel="noopener">([^<]*)<\/a>/g,
-        function (_t, classe, rotulo) {
-          var p = /s[óo] agenda/i.test(rotulo) ? 'agenda' : '';
-          return '<button type="button" class="btn' + classe + '" style="width:100%" ' +
-            'onclick="bfCobrancaAbrir(' + (p ? "'" + p + "'" : '') + ')">' + rotulo + '</button>';
-        });
-      return h;
+      return paraDentro(h);
     };
   }
   trocarBloco();

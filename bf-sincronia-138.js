@@ -1,34 +1,35 @@
 /* BlackFlow 1.38.0 — a sincronização volta a se resolver sozinha.
 
-   O que acontecia
-   ---------------
-   Desde a 1.27.0 um registro em disputa era preservado e marcado. A marca
-   ficava gravada no aparelho e o envio pulava aquele registro em todas as
-   sincronizações seguintes. Resultado: o alto da tela ficava eternamente em
-   "Conflito a resolver" mesmo com tudo em dia, e a pessoa tinha que entrar na
-   janela e decidir item por item para o indicador voltar ao normal.
+   O que estava errado, na raiz
+   ----------------------------
+   O sistema tratava como disputa o que era eco do próprio aparelho. O envio
+   grava o registro na nuvem, e a puxada seguinte traz esse mesmo registro de
+   volta, porque o número de sequência subiu. Se a pessoa tivesse editado de
+   novo nesse intervalo de poucos segundos, o sistema via alteração aqui e
+   alteração lá, concluía disputa e congelava o registro. Em clínica de um
+   operador só não existe o outro aparelho: era alarme falso, e voltava a cada
+   edição rápida.
 
-   Numa clínica com um único operador isso não é proteção, é trava: não existe
-   o outro aparelho que teria feito a alteração concorrente. A disputa quase
-   sempre é o mesmo aparelho comparando-se com o que ele próprio acabou de
-   gravar.
+   Pior, a marca de disputa ficava gravada no aparelho e o envio passava a
+   pular aquele registro em todas as rodadas seguintes. Por isso o alto da tela
+   não voltava ao normal nem depois de tudo sincronizado.
 
    O que passa a valer
    -------------------
-   O conflito é resolvido sozinho, mantendo o que está neste aparelho, que é o
-   que a pessoa escolheria de qualquer forma. Antes de qualquer sobrescrita, a
-   versão que está na nuvem é copiada para um arquivo guardado neste aparelho,
-   de modo que nada é descartado: a janela de sincronização passa a listar
-   essas cópias e permite voltar qualquer uma delas.
+   A correção está no index: quando o registro que volta da nuvem é igual ao
+   que este aparelho mandou, é eco, e a edição mais nova daqui continua valendo.
+   Nenhum registro fica congelado: toda rodada tenta de novo.
+
+   Para a disputa de verdade, que é a de dois aparelhos, este módulo resolve
+   sozinho mantendo o que está neste aparelho, e antes de qualquer sobrescrita
+   copia a versão da nuvem para um arquivo guardado aqui. Nada é descartado: a
+   janela de sincronização lista essas cópias e permite voltar qualquer uma.
 
    Casos tratados antes de qualquer sobrescrita:
-     as duas versões são iguais  -> a marca cai, não havia conflito de fato;
+     as duas versões são iguais  -> a marca cai, não havia disputa de fato;
      configurações divergentes   -> junção campo a campo, o que foi mexido aqui
                                     prevalece, o que só mudou lá é adotado;
-     demais registros            -> mantém o deste aparelho e arquiva o da nuvem.
-
-   A janela continua existindo em Configurações para quem quiser conferir o
-   que foi resolvido e restaurar alguma versão. */
+     demais registros            -> mantém o deste aparelho e arquiva o da nuvem. */
 (function () {
   'use strict';
   if (window.__bfSincronia138) return;
@@ -75,30 +76,40 @@
     var base = {};
     try { base = JSON.parse(NV.hashes['config:config'] || '{}') || {}; } catch (e) { base = {}; }
     var junto = Object.assign({}, remotoCfg || {});
-    var mexidos = [];
     Object.keys(S.config || {}).forEach(function (k) {
-      var aqui = JSON.stringify(S.config[k]);
-      if (aqui !== JSON.stringify(base[k])) { junto[k] = S.config[k]; mexidos.push(k); }
+      if (JSON.stringify(S.config[k]) !== JSON.stringify(base[k])) junto[k] = S.config[k];
     });
-    /* Campo apagado aqui de propósito continua apagado. */
     Object.keys(base).forEach(function (k) {
       if (!(k in (S.config || {})) && JSON.stringify(base[k]) === JSON.stringify((remotoCfg || {})[k])) delete junto[k];
     });
-    return { valor: junto, mexidos: mexidos };
+    return junto;
   }
 
   function iguais(a, b) {
     try { return bfRegMesmo(a, b); } catch (e) { return JSON.stringify(a) === JSON.stringify(b); }
   }
 
-  /* Resolve um conflito. Devolve o rótulo do que foi feito, ou vazio quando
-     não deu para resolver agora. */
+  /* Guarda a versão da nuvem antes de ela ser sobrescrita. Também é chamada
+     pelo index, quando este aparelho reencontra um registro que não tinha mais
+     na memória. */
+  window.bfArquivarVersao = async function (k, at) {
+    if (!at) return;
+    var p = String(k).split(':');
+    await carregarArquivo();
+    arquivo.unshift({
+      k: k, col: p[0], rid: p.slice(1).join(':'), em: new Date().toISOString(),
+      excluido: !!at.excluido, dados: at.dados || null,
+      motivo: ((NV.conflitos || {})[k] || {}).motivo || ''
+    });
+    if (arquivo.length > MAX_ARQUIVO) arquivo.length = MAX_ARQUIVO;
+    await gravarArquivo();
+  };
+
   async function resolverUm(k) {
     var p = String(k).split(':'), col = p[0], rid = p.slice(1).join(':');
     var at = await remoto(col, rid);
     var aqui = localDe(col, rid);
 
-    /* Sumiu da nuvem e não existe mais aqui: a marca não tem dono. */
     if (!at && !aqui) { delete NV.conflitos[k]; return 'marca sem registro'; }
 
     if (at && !at.excluido && aqui && iguais(bfRegBase(k, at.dados), aqui)) {
@@ -108,32 +119,19 @@
     }
 
     if (col === 'config') {
-      var r = juntarConfig(bfRegBase(k, (at && at.dados) || {}));
-      await guardar(k, col, rid, at);
-      S.config = r.valor;
+      await window.bfArquivarVersao(k, at);
+      S.config = juntarConfig(bfRegBase(k, (at && at.dados) || {}));
       NV.hashes[k] = JSON.stringify(bfRegBase(k, (at && at.dados) || {}));
       delete NV.conflitos[k];
       try { save(); } catch (e) { }
       return 'configurações juntadas';
     }
 
-    await guardar(k, col, rid, at);
-    NV.hashes[k] = at ? JSON.stringify(bfRegBase(k, at.dados)) : undefined;
-    if (!at) delete NV.hashes[k];
+    await window.bfArquivarVersao(k, at);
+    if (at) NV.hashes[k] = JSON.stringify(bfRegBase(k, at.dados));
+    else delete NV.hashes[k];
     delete NV.conflitos[k];
     return 'mantido o deste aparelho';
-  }
-
-  async function guardar(k, col, rid, at) {
-    if (!at) return;
-    await carregarArquivo();
-    arquivo.unshift({
-      k: k, col: col, rid: rid, em: new Date().toISOString(),
-      excluido: !!at.excluido, dados: at.dados || null,
-      motivo: (NV.conflitos[k] || {}).motivo || ''
-    });
-    if (arquivo.length > MAX_ARQUIVO) arquivo.length = MAX_ARQUIVO;
-    await gravarArquivo();
   }
 
   async function resolverTudo(silencioso) {
@@ -169,7 +167,7 @@
   var puxarOriginal = window.puxar;
   window.puxar = async function () {
     var n = await puxarOriginal.apply(this, arguments);
-    if (lista().length) setTimeout(function () { resolverTudo(false); }, 400);
+    if (lista().length) setTimeout(function () { resolverTudo(true); }, 400);
     return n;
   };
   setTimeout(function () { resolverTudo(true); }, 4000);
@@ -201,31 +199,32 @@
       servicos: 'Serviço', profissionais: 'Profissional', evolucoes: 'Evolução',
       tratamentos: 'Tratamento', produtos: 'Produto', contasPagar: 'Conta a pagar',
       config: 'Configurações da clínica', fotos: 'Foto', anamneses: 'Anamnese',
-      combos: 'Combo', comandas: 'Comanda'
+      combos: 'Combo', comandas: 'Comanda', vouchers: 'Voucher'
     };
-    var r = rotulos[a.col] || a.col;
     var d = a.dados || {};
     var nome = d.nome || d.descricao || d.procedimento || '';
-    return r + (nome ? ': ' + nome : '');
+    return (rotulos[a.col] || a.col) + (nome ? ': ' + nome : '');
   }
 
-  /* A janela passa a mostrar o que já foi resolvido. */
-  var abrirAntigo = window.bfConflitosAbrir;
   window.bfConflitosAbrir = async function () {
     await carregarArquivo();
-    var pendentes = lista();
-    if (pendentes.length) {
+    if (lista().length) {
       toast('Resolvendo as divergências...');
       await resolverTudo(true);
-      pendentes = lista();
     }
-    if (pendentes.length && typeof abrirAntigo === 'function') { abrirAntigo(); return; }
+    var pend = lista().length;
     var html = '<h3>Sincronização</h3>' +
-      '<p class="sub">Não há nada parado. O indicador no alto da tela está em Sincronizado.</p>';
+      '<p class="sub">' + (pend
+        ? 'Faltam ' + pend + ' registros para acertar. O sistema tenta de novo sozinho a cada rodada.'
+        : 'Não há nada parado. Tudo o que está neste aparelho já subiu para a nuvem.') + '</p>' +
+      '<div class="card" style="margin:12px 0;padding:12px">' +
+      '<b>Onde os seus dados ficam</b>' +
+      '<p class="sub" style="margin:6px 0 0">Na nuvem, sempre. Este aparelho guarda uma cópia para você continuar ' +
+      'trabalhando se a internet cair, e ela sobe assim que a conexão volta. Não existe mais escolha de pasta.</p></div>';
     if (arquivo.length) {
-      html += '<p class="sub" style="margin-top:12px">Quando o mesmo cadastro foi alterado em dois lugares, o sistema ' +
-        'ficou com o que está neste aparelho e guardou aqui a versão que estava na nuvem. ' +
-        'Nada foi descartado. Se alguma destas versões for a certa, é só restaurar.</p>';
+      html += '<div class="ast">Versões guardadas</div>' +
+        '<p class="sub" style="margin:0 0 10px">Quando o mesmo cadastro foi alterado em dois lugares, o sistema ficou ' +
+        'com o deste aparelho e guardou aqui o que estava na nuvem. Nada foi descartado.</p>';
       arquivo.slice(0, 20).forEach(function (a, i) {
         var q = String(a.em || '').slice(0, 10).split('-').reverse().join('/');
         html += '<div class="card" style="margin-bottom:8px;padding:10px">' +
@@ -239,12 +238,11 @@
     openModal(html, true);
   };
 
-  /* O rótulo do indicador só fala em conflito enquanto houver conflito de
-     verdade, e some assim que a resolução automática termina. */
-  var txt = window.syncTxt;
-  window.syncTxt = function () {
-    var h = txt.apply(this, arguments);
-    if (!lista().length) h = h.replace('Conflito a resolver', 'Sincronizado');
-    return h;
-  };
+  /* O indicador do alto abre esta janela. */
+  document.addEventListener('click', function (ev) {
+    var alvo = ev.target && ev.target.closest && ev.target.closest('#sync');
+    if (!alvo) return;
+    ev.preventDefault(); ev.stopPropagation();
+    window.bfConflitosAbrir();
+  }, true);
 })();
