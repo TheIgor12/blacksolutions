@@ -4871,7 +4871,7 @@ function agNovo(a,s){if(s==='Desmarcado'||s==='Faltou')return false;const k=a.da
  const hist=c=>S[c].some(x=>x.pacienteId===a.pacienteId&&((x.data||x.vencimento||x.pagamento||'')<a.data)&&(x.data||x.vencimento||x.pagamento));
  return !hist('evolucoes')&&!hist('tratamentos')&&!S.lancamentos.some(l=>l.pacienteId===a.pacienteId&&l.pagamento&&l.pagamento<a.data)}
 /* ============ Atualização: aviso com botão Atualizar agora ============ */
-const VERSAO_APP='1.37.0';const URL_VERSAO_JSON='https://raw.githubusercontent.com/TheIgor12/blacksolutions/main/versao.json';
+const VERSAO_APP='1.38.0';const URL_VERSAO_JSON='https://raw.githubusercontent.com/TheIgor12/blacksolutions/main/versao.json';
 const numV=v=>String(v||'0').split(/\D+/).filter(Boolean).map(Number);
 function versaoMaior(a,b){const x=numV(a),y=numV(b);for(let i=0;i<Math.max(x.length,y.length);i++){const d=(x[i]||0)-(y[i]||0);if(d)return d>0}return false}
 const ATU={nova:null,timer:null};
@@ -5299,7 +5299,7 @@ function vAuth(){const A=UI.auth;const box=c=>`<div class="auth"><div class="aut
  const msg=`<div id="authmsg" class="authmsg ${A.ok?'ok':'err'}">${esc(A.msg||'')}</div>`;
  switch(A.modo){
  case 'carregando':return box(`<h2>Carregando...</h2><p class="sub">${esc(A.msg||'Buscando os dados da clínica na nuvem.')}</p>`);
- case 'criar':return box(`<h2>Criar conta</h2><form onsubmit="authCriar();return false"><label>Seu nome<input id="au_nome" autocomplete="name"></label><label>E-mail<input id="au_email" type="email" autocomplete="email" value="${esc(A.email||'')}"></label><label>Senha (mínimo de 8 caracteres)<input id="au_senha" type="password" autocomplete="new-password"></label><label>Repita a senha<input id="au_senha2" type="password" autocomplete="new-password"></label>${msg}<button class="btn">Criar conta</button></form><div class="authlinks"><button class="lnk" onclick="UI.auth={modo:'entrar'};render()">Já tenho conta</button></div>`);
+ case 'criar':return box(`<h2>Criar conta</h2><form onsubmit="authCriar();return false"><label>Seu nome<input id="au_nome" autocomplete="name" value="${esc(A.nome||'')}"></label><label>Celular com WhatsApp<input id="au_cel" type="tel" inputmode="numeric" data-mask="fone" autocomplete="tel" value="${esc(A.cel||'')}" placeholder="(00) 00000-0000"></label><label>E-mail<input id="au_email" type="email" autocomplete="email" value="${esc(A.email||'')}"></label><label>Senha (mínimo de 8 caracteres)<input id="au_senha" type="password" autocomplete="new-password"></label><label>Repita a senha<input id="au_senha2" type="password" autocomplete="new-password"></label>${msg}<button class="btn">Criar conta</button></form><div class="authlinks"><button class="lnk" onclick="UI.auth={modo:'entrar'};render()">Já tenho conta</button></div>`);
  case 'codigo':return box(`<h2>Confirme seu e-mail</h2><p class="sub" style="margin-bottom:14px">Enviamos um e-mail de confirmação para <b>${esc(A.email)}</b>. Se não aparecer, olhe a caixa de spam.<br><br>Se o e-mail trouxer um <b>código</b>, digite abaixo. Se trouxer um <b>link</b>, clique nele, volte aqui e clique em Já confirmei.</p><form onsubmit="authCodigo();return false"><label>Código<input id="au_cod" inputmode="numeric" maxlength="10" autocomplete="one-time-code"></label>${msg}<button class="btn">Confirmar</button></form><button class="btn ghost" style="margin-top:10px" onclick="UI.auth={modo:'entrar',email:'${esc(A.email)}',msg:'Agora entre com o seu e-mail e senha.',ok:true};render()">Já confirmei pelo link</button><div class="authlinks"><button class="lnk" onclick="authReenviar()">Enviar de novo</button><button class="lnk" onclick="UI.auth={modo:'entrar',email:'${esc(A.email)}'};render()">Voltar</button></div>`);
  case 'esqueci':return box(`<h2>Recuperar senha</h2><p class="sub" style="margin-bottom:14px">Informe o e-mail da conta. Vamos enviar um código para criar uma nova senha.</p><form onsubmit="authEsqueci();return false"><label>E-mail<input id="au_email" type="email" value="${esc(A.email||'')}"></label>${msg}<button class="btn">Enviar código</button></form><div class="authlinks"><button class="lnk" onclick="UI.auth={modo:'entrar'};render()">Voltar</button></div>`);
  case 'nova_senha':return box(`<h2>Nova senha</h2><p class="sub" style="margin-bottom:14px">Digite o código enviado para <b>${esc(A.email)}</b> e escolha a nova senha.</p><form onsubmit="authNovaSenha();return false"><label>Código<input id="au_cod" inputmode="numeric" maxlength="10" autocomplete="one-time-code"></label><label>Nova senha<input id="au_senha" type="password" autocomplete="new-password"></label><label>Repita a nova senha<input id="au_senha2" type="password" autocomplete="new-password"></label>${msg}<button class="btn">Salvar nova senha</button></form><div class="authlinks"><button class="lnk" onclick="UI.auth={modo:'entrar'};render()">Voltar</button></div>`);
@@ -5309,10 +5309,10 @@ function vAuth(){const A=UI.auth;const box=c=>`<div class="auth"><div class="aut
   const escolhido=seg?(seg==='biomedicina'?bio:seg==='odontologia'?dent:pl==='agenda'?pa:seg==='barbearia'?pb:pc):null;const vCx=seg==='barbearia'?vB:seg==='biomedicina'?bio.preco.replace(' por mês',''):seg==='odontologia'?dent.preco.replace(' por mês',''):vC;
   return box(`<h2>Cadastre o seu negócio</h2><p class="sub" style="margin-bottom:6px">Você será o administrador. Depois poderá convidar a sua equipe.</p>
   <form onsubmit="authClinica();return false"><label>Nome do negócio<input id="au_clin" value="${esc2(A.clin||'')}" oninput="UI.auth.clin=this.value"></label>
-  <label>CPF do responsável<input id="au_cpf" data-mask="cpf" inputmode="numeric" value="${esc2(A.cpf||'')}" oninput="UI.auth.cpf=this.value" placeholder="000.000.000-00"></label>
-  <div class="ast">O negócio tem CNPJ?</div>
-  <div style="display:flex;gap:8px;flex-wrap:wrap"><button type="button" class="btn ${A.temCnpj===1?'':'ghost'} sm" onclick="authCnpjTem(1)">Sim, tenho CNPJ ou MEI</button><button type="button" class="btn ${A.temCnpj===0?'':'ghost'} sm" onclick="authCnpjTem(0)">Não, sou autônomo</button></div>
-  ${A.temCnpj===1?`<label style="margin-top:10px">CNPJ<input id="au_cnpj" data-mask="cnpj" value="${esc2(A.cnpj||'')}" oninput="UI.auth.cnpj=this.value" onblur="authCnpjBuscar()" placeholder="00.000.000/0000-00"></label>${A.cnpjMsg?`<div class="aresumo" style="${A.cnpjOk?'':'background:var(--warn-soft)'}">${esc2(A.cnpjMsg)}</div>`:'<div class="sub" style="margin:-6px 0 10px">Saia do campo e o sistema consulta a Receita Federal sozinho.</div>'}`:''}
+  <div class="ast">Você possui CNPJ?</div>
+  <div style="display:flex;gap:8px;flex-wrap:wrap"><button type="button" class="btn ${A.temCnpj===1?'':'ghost'} sm" onclick="authCnpjTem(1)">Possuo CNPJ</button><button type="button" class="btn ${A.temCnpj===0?'':'ghost'} sm" onclick="authCnpjTem(0)">Não possuo CNPJ</button></div>
+  ${A.temCnpj===1?`<label style="margin-top:10px">Insira o seu CNPJ<input id="au_cnpj" data-mask="cnpj" value="${esc2(A.cnpj||'')}" oninput="UI.auth.cnpj=this.value" onblur="authCnpjBuscar()" placeholder="00.000.000/0000-00"></label>${A.cnpjMsg?`<div class="aresumo" style="${A.cnpjOk?'':'background:var(--warn-soft)'}">${esc2(A.cnpjMsg)}</div>`:'<div class="sub" style="margin:-6px 0 10px">Saia do campo e o sistema consulta a Receita Federal sozinho.</div>'}`:''}
+  ${A.temCnpj===0?`<label style="margin-top:10px">Insira o seu CPF<input id="au_cpf" data-mask="cpf" inputmode="numeric" value="${esc2(A.cpf||'')}" oninput="UI.auth.cpf=this.value" placeholder="000.000.000-00"></label><div class="sub" style="margin:-6px 0 10px">Sem CNPJ, o cadastro fica no seu nome. Depois de abrir o CNPJ, dá para incluir em Configurações, no Cadastro fiscal.</div>`:''}
   <div class="ast">O que você faz?</div>
   ${op(1,'beleza','agenda','Atendo com hora marcada','Manicure, pedicure, cílios, sobrancelha, massagem, depilação e afins.',pl==='completo'&&A.op===1?vC:vA)}
   ${op(5,'barbearia','completo','Barbearia','Preço e tempo por barbeiro, combos de corte e barba, encaixe, comanda, caixa e financeiro.',pl==='agenda'&&A.op===5?vA:vB)}
@@ -5334,10 +5334,14 @@ async function authEntrar(){const email=val('#au_email'),senha=$('#au_senha').va
  if(error){if(/not confirmed/i.test(error.message)){await NV.sb.auth.resend({type:'signup',email});UI.auth={modo:'codigo',email,msg:'Seu e-mail ainda não foi confirmado. Enviamos um novo código.',ok:true};render();return}authMsg(traduz(error));return}
  await entrar(data.session)}
 async function authCriar(){const nome=val('#au_nome'),email=val('#au_email'),senha=$('#au_senha').value,s2=$('#au_senha2').value;
- if(!nome||!email){authMsg('Preencha nome e e-mail.');return}if(senha.length<8){authMsg('A senha precisa ter pelo menos 8 caracteres.');return}if(senha!==s2){authMsg('As senhas não conferem.');return}
- authMsg('Criando conta...',true);const {data,error}=await NV.sb.auth.signUp({email,password:senha,options:{data:{nome}}});
+ const celTxt=val('#au_cel'),cel=soDig(celTxt);
+ if(!nome||!email){authMsg('Preencha nome e e-mail.');return}
+ if(cel.length<10||cel.length>11){authMsg('Informe o celular com o código de área, como (47) 99999-0000.');return}
+ if(senha.length<8){authMsg('A senha precisa ter pelo menos 8 caracteres.');return}if(senha!==s2){authMsg('As senhas não conferem.');return}
+ UI.auth.nome=nome;UI.auth.cel=celTxt;
+ authMsg('Criando conta...',true);const {data,error}=await NV.sb.auth.signUp({email,password:senha,options:{data:{nome,celular:cel}}});
  if(error){authMsg(traduz(error));return}window.BSC&&BSC.evento('cadastro','blackflow');if(data.session){await entrar(data.session);return}
- UI.auth={modo:'codigo',email,msg:'Se este e-mail já tinha cadastro, volte e use Entrar.',ok:true};render()}
+ UI.auth={modo:'codigo',email,nome,cel:celTxt,msg:'Se este e-mail já tinha cadastro, volte e use Entrar.',ok:true};render()}
 async function authCodigo(){const cod=val('#au_cod').replace(/\s/g,'');if(!cod){authMsg('Digite o código.');return}authMsg('Confirmando...',true);
  let r=await NV.sb.auth.verifyOtp({email:UI.auth.email,token:cod,type:'signup'});if(r.error)r=await NV.sb.auth.verifyOtp({email:UI.auth.email,token:cod,type:'email'});
  if(r.error){authMsg(traduz(r.error));return}await entrar(r.data.session)}
@@ -5346,7 +5350,7 @@ async function authEsqueci(){const email=val('#au_email');if(!email){authMsg('In
 async function authNovaSenha(){const cod=val('#au_cod').replace(/\s/g,''),senha=$('#au_senha').value,s2=$('#au_senha2').value;if(senha.length<8){authMsg('A senha precisa ter pelo menos 8 caracteres.');return}if(senha!==s2){authMsg('As senhas não conferem.');return}
  authMsg('Salvando...',true);const r=await NV.sb.auth.verifyOtp({email:UI.auth.email,token:cod,type:'recovery'});if(r.error){authMsg(traduz(r.error));return}
  const u=await NV.sb.auth.updateUser({password:senha});if(u.error){authMsg(traduz(u.error));return}await entrar(r.data.session)}
-function authGuardar(){UI.auth.clin=val('#au_clin')||UI.auth.clin||'';const c=$('#au_cpf');if(c)UI.auth.cpf=c.value;const j=$('#au_cnpj');if(j)UI.auth.cnpj=j.value}
+function authGuardar(){UI.auth.clin=val('#au_clin')||UI.auth.clin||'';const c=$('#au_cpf');if(c)UI.auth.cpf=c.value;const j=$('#au_cnpj');if(j)UI.auth.cnpj=j.value;const t=$('#au_cel');if(t)UI.auth.cel=t.value}
 function authEsc(op,seg,plano){authGuardar();UI.auth.op=op;UI.auth.seg=seg;UI.auth.plano=plano;render()}
 function authPlano(plano){authGuardar();if(!UI.auth.seg){UI.auth.seg='beleza';UI.auth.op=plano==='agenda'?1:2}UI.auth.plano=plano;render()}
 function authCnpjTem(v){authGuardar();UI.auth.temCnpj=v;if(v===0){UI.auth.cnpj='';UI.auth.cnpjMsg='';UI.auth.cnpjOk=false;UI.auth.cnpjDados=null}render()}
@@ -5376,17 +5380,22 @@ async function authCnpjBuscar(){authGuardar();const d=soAlnum(UI.auth.cnpj||'');
  render()}
 let CAD=null;
 async function authClinica(){authGuardar();const nome=val('#au_clin')||UI.auth.clin||'';if(!nome){authMsg('Informe o nome do negócio.');return}
- const cpf=soDig(UI.auth.cpf||'');
- if(!cpf){authMsg('Informe o CPF do responsável.');return}
- if(!cpfValido(cpf)){authMsg('O CPF informado não é válido. Confira os números.');return}
- if(UI.auth.temCnpj===undefined){authMsg('Diga se o negócio tem CNPJ.');return}
+ if(UI.auth.temCnpj===undefined){authMsg('Diga se você possui CNPJ.');return}
  const cnpj=UI.auth.temCnpj===1?soAlnum(UI.auth.cnpj||''):'';
- if(UI.auth.temCnpj===1){if(!cnpj){authMsg('Informe o CNPJ.');return}if(!cnpjValido(cnpj)){authMsg('O CNPJ informado não é válido. Confira os caracteres.');return}}
+ const cpf=UI.auth.temCnpj===1?'':soDig(UI.auth.cpf||'');
+ if(UI.auth.temCnpj===1){if(!cnpj){authMsg('Insira o seu CNPJ.');return}if(!cnpjValido(cnpj)){authMsg('O CNPJ informado não é válido. Confira os caracteres.');return}}
+ else{if(!cpf){authMsg('Insira o seu CPF.');return}if(!cpfValido(cpf)){authMsg('O CPF informado não é válido. Confira os números.');return}}
  if(!UI.auth.seg){authMsg('Escolha o que você faz.');return}if(['biomedicina','odontologia'].includes(UI.auth.seg))UI.auth.plano='completo';
  authMsg('Criando...',true);CAD={segmento:UI.auth.seg,plano:UI.auth.plano||'completo'};
  const dd=UI.auth.cnpjDados||null;
- const {error}=await NV.sb.rpc('criar_clinica',{p_nome:nome,p_cpf:cpf,p_cnpj:cnpj||null,p_razao:(dd&&dd.razao)||null,p_verif:dd});if(error){CAD=null;authMsg(traduz(error));return}
- window.BSC&&BSC.evento('clique','clinica_criada');await entrar(NV.sessao)}
+ const cel=soDig((NV.sessao&&NV.sessao.user&&NV.sessao.user.user_metadata&&NV.sessao.user.user_metadata.celular)||UI.auth.cel||'');
+ let {error}=await NV.sb.rpc('criar_clinica',{p_nome:nome,p_cpf:cpf||null,p_cnpj:cnpj||null,p_razao:(dd&&dd.razao)||null,p_verif:dd,p_celular:cel||null});
+ if(error&&/p_celular|does not exist|not find|function public\.criar_clinica/i.test(String(error.message||error))){
+  const r2=await NV.sb.rpc('criar_clinica',{p_nome:nome,p_cpf:cpf||null,p_cnpj:cnpj||null,p_razao:(dd&&dd.razao)||null,p_verif:dd});error=r2.error}if(error){CAD=null;authMsg(traduz(error));return}
+ window.BSC&&BSC.evento('clique','clinica_criada');await entrar(NV.sessao);
+ /* Quando a cobranca interna estiver ligada e a configuracao pedir cartao no
+    teste, a tela de assinatura abre aqui mesmo, sem tirar ninguem do sistema. */
+ if(ASSINATURA&&ASSINATURA.cartao_no_teste&&typeof bfCobrancaAbrir==='function')setTimeout(()=>bfCobrancaAbrir(),1200)}
 async function entrar(sessao){NV.sessao=sessao;NV.offline=false;UI.auth={modo:'carregando'};render();
  try{await NV.sb.rpc('aceitar_convites')}catch(e){}
  const {data:m,error}=await NV.sb.from('membros').select('clinica_id,papel,clinicas(nome,ativa,valido_ate,plano,segmento)').eq('user_id',sessao.user.id);
@@ -5628,7 +5637,7 @@ function telaCopiaNaoAutorizada(){
   if(!origemAutorizada()){telaCopiaNaoAutorizada();return}}
  try{navigator.storage&&navigator.storage.persist&&navigator.storage.persist()}catch(e){}
  try{fonteAplicar()}catch(e){}
- try{if(/^https?:/.test(location.protocol)&&'serviceWorker' in navigator&&!window.pywebview)navigator.serviceWorker.register('./sw.js?v=1.37.0',{updateViaCache:'none'}).then(r=>r.update()).catch(()=>{})}catch(e){}
+ try{if(/^https?:/.test(location.protocol)&&'serviceWorker' in navigator&&!window.pywebview)navigator.serviceWorker.register('./sw.js?v=1.38.0',{updateViaCache:'none'}).then(r=>r.update()).catch(()=>{})}catch(e){}
  if(NV.ativa){
   if(!window.supabase||!window.supabase.createClient){UI.auth={modo:'offline',temCache:!!(await DB.get('ultimo'))};render();return}
   NV.sb=window.supabase.createClient(NUVEM.url,NUVEM.chave,{auth:{persistSession:true,autoRefreshToken:true}});
@@ -5679,29 +5688,30 @@ function agProf(nome){UI.profOff={};if(nome){S.profissionais.forEach(p=>{if(norm
 function menuProfs(){const L=az(S.profissionais.filter(p=>p.ativo!==false));if(!L.length)return '';const sel=UI.view==='agenda'?(UI.agProf||''):null;
  return `<div class="msec">AGENDA POR PROFISSIONAL</div><button class="${sel===''&&UI.view==='agenda'?'on':''}" onclick="agProf('')">${ico('cal',18)} Todos os profissionais</button>${L.map(p=>`<button class="${sel!=null&&norm(sel)===norm(p.nome)?'on':''}" onclick="agProf(${esc(JSON.stringify(p.nome))})"><span style="display:inline-block;width:12px;height:12px;border-radius:50%;background:${esc(p.cor||'#0a4bde')};margin:0 3px;flex:none"></span> ${esc(p.nome)}</button>`).join('')}`}
 </script>
-<script src="./bf-clinical.js?v=1.37.0"></script>
-<script src="./bf-fiscal-advanced.js?v=1.37.0"></script>
-<script src="./bf-receituario.js?v=1.37.0"></script>
-<script src="./bf-cadastro-fiscal.js?v=1.37.0"></script>
-<script src="./bf-context-actions.js?v=1.37.0"></script>
-<script src="./bf-integrity-audit.js?v=1.37.0"></script>
-<script src="./bf-blackpay-integrated.js?v=1.37.0"></script>
-<script src="./bf-tati-help.js?v=1.37.0"></script>
-<script src="./bf-mobile-photos.js?v=1.37.0"></script>
-<script src="./bf-documents.js?v=1.37.0"></script>
-<script src="./bf-workflow-123.js?v=1.37.0"></script>
-<script src="./bf-workflow-124.js?v=1.37.0"></script>
-<script>const bfMobileCss=document.createElement("link");bfMobileCss.rel="stylesheet";bfMobileCss.href="./bf-mobile-126.css?v=1.37.0";document.head.appendChild(bfMobileCss);</script>
-<script src="./bf-mobile-126.js?v=1.37.0"></script>
-<script>const bfNavCss=document.createElement("link");bfNavCss.rel="stylesheet";bfNavCss.href="./bf-navegacao-128.css?v=1.37.0";document.head.appendChild(bfNavCss);</script>
-<script src="./bf-navegacao-128.js?v=1.37.0"></script>
-<script src="./bf-barbearia-129.js?v=1.37.0"></script>
-<script src="./bf-catalogos-130.js?v=1.37.0"></script>
-<script src="./bf-conflitos-131.js?v=1.37.0"></script>
-<script src="./bf-local-134.js?v=1.37.0"></script>
-<script>const bfAssCss=document.createElement("link");bfAssCss.rel="stylesheet";bfAssCss.href="./bf-assinante-135.css?v=1.37.0";document.head.appendChild(bfAssCss);</script>
-<script src="./bf-assinante-135.js?v=1.37.0"></script>
-<script src="./bf-tutorial-136.js?v=1.37.0"></script>
-<script src="./bf-documentos-137.js?v=1.37.0"></script>
+<script src="./bf-clinical.js?v=1.38.0"></script>
+<script src="./bf-fiscal-advanced.js?v=1.38.0"></script>
+<script src="./bf-receituario.js?v=1.38.0"></script>
+<script src="./bf-cadastro-fiscal.js?v=1.38.0"></script>
+<script src="./bf-context-actions.js?v=1.38.0"></script>
+<script src="./bf-integrity-audit.js?v=1.38.0"></script>
+<script src="./bf-blackpay-integrated.js?v=1.38.0"></script>
+<script src="./bf-tati-help.js?v=1.38.0"></script>
+<script src="./bf-mobile-photos.js?v=1.38.0"></script>
+<script src="./bf-documents.js?v=1.38.0"></script>
+<script src="./bf-workflow-123.js?v=1.38.0"></script>
+<script src="./bf-workflow-124.js?v=1.38.0"></script>
+<script>const bfMobileCss=document.createElement("link");bfMobileCss.rel="stylesheet";bfMobileCss.href="./bf-mobile-126.css?v=1.38.0";document.head.appendChild(bfMobileCss);</script>
+<script src="./bf-mobile-126.js?v=1.38.0"></script>
+<script>const bfNavCss=document.createElement("link");bfNavCss.rel="stylesheet";bfNavCss.href="./bf-navegacao-128.css?v=1.38.0";document.head.appendChild(bfNavCss);</script>
+<script src="./bf-navegacao-128.js?v=1.38.0"></script>
+<script src="./bf-barbearia-129.js?v=1.38.0"></script>
+<script src="./bf-catalogos-130.js?v=1.38.0"></script>
+<script src="./bf-conflitos-131.js?v=1.38.0"></script>
+<script src="./bf-sincronia-138.js?v=1.38.0"></script>
+<script src="./bf-cobranca-138.js?v=1.38.0"></script>
+<script>const bfAssCss=document.createElement("link");bfAssCss.rel="stylesheet";bfAssCss.href="./bf-assinante-135.css?v=1.38.0";document.head.appendChild(bfAssCss);</script>
+<script src="./bf-assinante-135.js?v=1.38.0"></script>
+<script src="./bf-tutorial-136.js?v=1.38.0"></script>
+<script src="./bf-documentos-137.js?v=1.38.0"></script>
 </body>
 </html>

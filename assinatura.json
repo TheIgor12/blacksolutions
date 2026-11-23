@@ -73,5 +73,6 @@
     "funcao": "atendimento BlackFlow",
     "foto": "/img/tati-rosto.webp",
     "whatsapp": "https://wa.me/5547988432859"
-  }
+  },
+  "cartao_no_teste": false
 }

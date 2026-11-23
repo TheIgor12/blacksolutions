@@ -1,4 +1,4 @@
 {
-  "versao": "1.37.0",
-  "novidades": "Orçamento sai com a identidade visual da clínica. Logotipo ao centro, título em azul, paciente e tratamento lado a lado, tabela de serviço, descrição e valor com a faixa azul no cabeçalho e as linhas alternadas, total e barra de rodapé com telefone, endereço e Instagram. O formulário continua ligado ao cadastro de serviços: escolher o procedimento já traz o nome e o preço, e o botão de adicionar item monta o orçamento inteiro sem digitar valor. O receituário continua saindo sobre o papel timbrado carregado em Configurações, que é o caminho certo para documento de saúde."
+  "versao": "1.38.0",
+  "novidades": "A assinatura passa a ser fechada dentro do próprio sistema: o Pix aparece com QR Code e copia e cola na mesma janela, e o cartão de crédito é preenchido aqui, sem abrir outra aba nem outro site. O cadastro ficou mais curto: celular e e-mail na primeira etapa, e na segunda o sistema pergunta se você possui CNPJ, pedindo o CNPJ de quem possui e o CPF de quem não possui. A sincronização voltou a se resolver sozinha: quando o mesmo cadastro foi alterado em dois lugares, o sistema fica com o deste aparelho e guarda a versão da nuvem, que pode ser restaurada a qualquer momento. A escolha de guardar os dados em pasta do computador foi retirada: tudo fica na nuvem, como antes."
 }
