@@ -159,7 +159,14 @@
     openModal(
       '<h3>A sua barbearia já está pronta</h3>' +
       (novo
-        ? '<p class="sub">Deixei cadastrados ' + SERVICOS.length + ' serviços com preço e tempo, os produtos que a barbearia costuma vender e o horário de funcionamento de segunda a sábado. Tudo isso pode ser mudado depois, em Serviços e preços.</p>'
+        ? '<p class="sub">Deixei cadastrados ' + SERVICOS.length + ' serviços, os produtos que a barbearia costuma vender e o horário de funcionamento de segunda a sábado, tudo pronto para usar hoje mesmo.</p>' +
+          '<div class="card" style="margin:12px 0;border-left:4px solid var(--acc,#5a4cfb)">' +
+          '<b>Os preços são apenas um ponto de partida</b>' +
+          '<p class="sub" style="margin:6px 0 10px">Cada barbearia cobra o seu valor. Troque um por um, ou deixe todos em branco e preencha conforme for atendendo. Dá para ter preço diferente por barbeiro, em Serviços e preços.</p>' +
+          '<div style="display:flex;gap:8px;flex-wrap:wrap">' +
+          '<button type="button" class="btn sm" onclick="bfBarbPrecos()">Ajustar os preços agora</button>' +
+          '<button type="button" class="btn ghost sm" onclick="bfBarbZerar()">Deixar todos em branco</button>' +
+          '</div></div>'
         : '<p class="sub">O seu link de agendamento está publicado e funcionando.</p>') +
       '<div class="card" style="margin:14px 0;background:var(--acc-soft)">' +
       '<b>Link para o cliente marcar sozinho</b>' +
@@ -174,6 +181,19 @@
       true
     );
   }
+  /* Os preços entram como sugestão. Cada barbearia cobra o seu valor, então
+     a janela inicial oferece os dois caminhos: ajustar um por um ou apagar
+     todos e preencher conforme for atendendo. */
+  window.bfBarbPrecos = function () { closeModal(); if (typeof go === 'function') go('servicos'); };
+  window.bfBarbZerar = function () {
+    (S.servicos || []).forEach(function (x) { x.preco = ''; });
+    (S.produtos || []).forEach(function (x) { x.preco = ''; });
+    save();
+    if (typeof render === 'function') render();
+    closeModal();
+    toast('Preços em branco. Preencha em Serviços e preços quando quiser.');
+  };
+
   window.bfBarbAbrirLink = function () { janelaDoLink(false); };
   window.bfBarbCopiar = function () {
     var l = linkAtual();
