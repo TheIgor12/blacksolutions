@@ -1058,7 +1058,7 @@ function shell(content){const c=S.config;
  <datalist id="dlProdNomes">${az(S.produtos).map(x=>`<option value="${esc(x.nome)}">${Number(x.preco)>0?money(x.preco):''}</option>`).join('')}</datalist>
  <datalist id="dlServNomes">${az(S.servicos).map(x=>`<option value="${esc(x.nome)}">${Number(x.preco)>0?money(x.preco):''}</option>`).join('')}</datalist>
  <datalist id="dlServ">${az(S.servicos.filter(x=>x.ativo!==false)).map(x=>`<option value="${esc(x.nome)}">`).join('')}</datalist><datalist id="dlProf">${az(S.profissionais).map(p=>`<option value="${esc(p.nome)}">`).join('')}</datalist>
- ${(()=>{const d=diasTeste();return d!=null&&!UI.auth?`<div style="background:${d<=3?'var(--warn-soft)':'var(--acc-soft)'};padding:8px 16px;font-size:13px;display:flex;justify-content:center;gap:12px;align-items:center;flex-wrap:wrap"><span>Teste grátis da clínica: <b>${d<=0?'termina hoje':d===1?'falta 1 dia':'faltam '+d+' dias'}</b></span><button class="btn sm" onclick="abrirAssinatura()">Assinar com Pix ou cartão</button></div>`:''})()}${promoAviso()}<main>${barraAgenda()}${content}${typeof bfChatWidget==='function'?bfChatWidget():''}</main>`}
+ ${(()=>{const d=diasTeste();return d!=null&&!UI.auth&&UI.view!=='assinante'?`<div style="background:${d<=3?'var(--warn-soft)':'var(--acc-soft)'};padding:8px 16px;font-size:13px;display:flex;justify-content:center;gap:12px;align-items:center;flex-wrap:wrap"><span>Teste grátis da clínica: <b>${d<=0?'termina hoje':d===1?'falta 1 dia':'faltam '+d+' dias'}</b></span><button class="btn sm" onclick="abrirAssinatura()">Assinar com Pix ou cartão</button></div>`:''})()}${promoAviso()}<main>${barraAgenda()}${content}${typeof bfChatWidget==='function'?bfChatWidget():''}</main>`}
 const FUNCS=[['Comandas','comandas'],['Caixa do dia','caixa'],['Serviços e preços','servicos'],['Estoque e produtos','estoque'],['Comissões e salão-parceiro','comissoes'],['Protocolos','protocolos'],['Equipamentos','equipamentos'],['Segmento do negócio','config'],['Agenda','agenda'],['Pacientes','pacientes'],['Novo paciente','novoPaciente'],['Financeiro','financeiro'],['Conta Corrente','fin:conta'],['Fluxo de Caixa','fin:fluxo'],['Contas a Pagar','fin:pagar'],['Contas a Receber','fin:receber'],['Inadimplência e cobrança','fin:inad'],['Imposto de Renda','fin:ir'],['Dashboard Analítico','dashboard'],['Relatórios','relatorios'],['Aniversariantes','rel:pac_aniv'],['Alertas de retorno','rel:pac_ret'],['Profissionais','profissionais'],['Importar dados do Excel','importar'],['Backup dos dados','config'],['Orçamentos','orcamentos'],['Receituário','receituario'],['Configurações','config']];
 function goFunc(f){if(f==='novoPaciente'){go('pacientes');pacForm();return}if(f.startsWith('fin:')){UI.finTab=f.slice(4);go('financeiro');return}if(f.startsWith('rel:')){UI.rel=f.slice(4);go('relatorios');return}go(f)}
 function globalSearch(q){const r=$('#gsr');const n=norm(q);if(!n){r.classList.remove('on');return}
@@ -3963,7 +3963,7 @@ function anivCanto(p,ref){const a=anivDias(p,ref);if(!a||a.dias>ANIV_ANTES)retur
 function voltarAgenda(){closeModal();go('agenda')}
 /* Barra fixa em todas as telas, menos na propria agenda: um clique volta para a
    agenda no mesmo dia em que ela estava. Na ficha do paciente tambem leva para a lista. */
-function barraAgenda(){if(UI.auth||UI.view==='agenda')return '';try{if(typeof podeTela==='function'&&!podeTela('agenda'))return ''}catch(e){}
+function barraAgenda(){if(UI.auth||UI.view==='agenda'||UI.view==='assinante')return '';try{if(typeof podeTela==='function'&&!podeTela('agenda'))return ''}catch(e){}
  return `<div class="volta-ag"><button class="btn sm" onclick="voltarAgenda()">${ico('back',15)} Voltar para a agenda</button>${UI.view==='paciente'?`<button class="lnk" onclick="go('pacientes')">Ir para ${SEG().pessoas}</button>`:''}</div>`}
 function anivSelo(p){const a=anivDias(p);if(!a||a.dias>ANIV_ANTES)return '';
  return a.dias===0?`<span class="badge b-warn">\u{1F382} Faz aniversário hoje, ${a.idade} anos</span> `:`<span class="badge b-warn">\u{1F381} Aniversário em ${a.dias} ${a.dias===1?'dia':'dias'} (${br(a.dia)})</span> `}
@@ -4904,7 +4904,7 @@ function agNovo(a,s){if(s==='Desmarcado'||s==='Faltou')return false;const k=a.da
  const hist=c=>S[c].some(x=>x.pacienteId===a.pacienteId&&((x.data||x.vencimento||x.pagamento||'')<a.data)&&(x.data||x.vencimento||x.pagamento));
  return !hist('evolucoes')&&!hist('tratamentos')&&!S.lancamentos.some(l=>l.pacienteId===a.pacienteId&&l.pagamento&&l.pagamento<a.data)}
 /* ============ Atualização: aviso com botão Atualizar agora ============ */
-const VERSAO_APP='1.38.2';const URL_VERSAO_JSON='https://raw.githubusercontent.com/TheIgor12/blacksolutions/main/versao.json';
+const VERSAO_APP='1.38.3';const URL_VERSAO_JSON='https://raw.githubusercontent.com/TheIgor12/blacksolutions/main/versao.json';
 const numV=v=>String(v||'0').split(/\D+/).filter(Boolean).map(Number);
 function versaoMaior(a,b){const x=numV(a),y=numV(b);for(let i=0;i<Math.max(x.length,y.length);i++){const d=(x[i]||0)-(y[i]||0);if(d)return d>0}return false}
 const ATU={nova:null,timer:null};
@@ -5302,6 +5302,8 @@ function promoDias(){return PROMO?(+PROMO.dias||0):null}
 function promoMoeda(v){const n=+v||0;return 'R$ '+n.toFixed(2).replace('.',',')}
 function promoAviso(){/* barra no alto, só quando falta pouco ou já acabou */
  if(!PROMO||UI.auth)return '';
+ /* Na tela do assinante a promoção já aparece no painel, em destaque. */
+ if(UI.view==='assinante')return '';
  const d=promoDias();if(d==null||d>30)return '';
  const fim=br(PROMO.fim),dep=promoMoeda(PROMO.depois),at=promoMoeda(PROMO.valor);
  const txt=d<0?`O preço promocional de ${at} terminou em <b>${fim}</b>. A mensalidade agora é de <b>${dep}</b>.`
@@ -5717,7 +5719,7 @@ function telaCopiaNaoAutorizada(){
   if(!origemAutorizada()){telaCopiaNaoAutorizada();return}}
  try{navigator.storage&&navigator.storage.persist&&navigator.storage.persist()}catch(e){}
  try{fonteAplicar()}catch(e){}
- try{if(/^https?:/.test(location.protocol)&&'serviceWorker' in navigator&&!window.pywebview)navigator.serviceWorker.register('./sw.js?v=1.38.2',{updateViaCache:'none'}).then(r=>r.update()).catch(()=>{})}catch(e){}
+ try{if(/^https?:/.test(location.protocol)&&'serviceWorker' in navigator&&!window.pywebview)navigator.serviceWorker.register('./sw.js?v=1.38.3',{updateViaCache:'none'}).then(r=>r.update()).catch(()=>{})}catch(e){}
  if(NV.ativa){
   if(!window.supabase||!window.supabase.createClient){UI.auth={modo:'offline',temCache:!!(await DB.get('ultimo'))};render();return}
   NV.sb=window.supabase.createClient(NUVEM.url,NUVEM.chave,{auth:{persistSession:true,autoRefreshToken:true}});
@@ -5768,30 +5770,30 @@ function agProf(nome){UI.profOff={};if(nome){S.profissionais.forEach(p=>{if(norm
 function menuProfs(){const L=az(S.profissionais.filter(p=>p.ativo!==false));if(!L.length)return '';const sel=UI.view==='agenda'?(UI.agProf||''):null;
  return `<div class="msec">AGENDA POR PROFISSIONAL</div><button class="${sel===''&&UI.view==='agenda'?'on':''}" onclick="agProf('')">${ico('cal',18)} Todos os profissionais</button>${L.map(p=>`<button class="${sel!=null&&norm(sel)===norm(p.nome)?'on':''}" onclick="agProf(${esc(JSON.stringify(p.nome))})"><span style="display:inline-block;width:12px;height:12px;border-radius:50%;background:${esc(p.cor||'#0a4bde')};margin:0 3px;flex:none"></span> ${esc(p.nome)}</button>`).join('')}`}
 </script>
-<script src="./bf-clinical.js?v=1.38.2"></script>
-<script src="./bf-fiscal-advanced.js?v=1.38.2"></script>
-<script src="./bf-receituario.js?v=1.38.2"></script>
-<script src="./bf-cadastro-fiscal.js?v=1.38.2"></script>
-<script src="./bf-context-actions.js?v=1.38.2"></script>
-<script src="./bf-integrity-audit.js?v=1.38.2"></script>
-<script src="./bf-blackpay-integrated.js?v=1.38.2"></script>
-<script src="./bf-tati-help.js?v=1.38.2"></script>
-<script src="./bf-mobile-photos.js?v=1.38.2"></script>
-<script src="./bf-documents.js?v=1.38.2"></script>
-<script src="./bf-workflow-123.js?v=1.38.2"></script>
-<script src="./bf-workflow-124.js?v=1.38.2"></script>
-<script>const bfMobileCss=document.createElement("link");bfMobileCss.rel="stylesheet";bfMobileCss.href="./bf-mobile-126.css?v=1.38.2";document.head.appendChild(bfMobileCss);</script>
-<script src="./bf-mobile-126.js?v=1.38.2"></script>
-<script>const bfNavCss=document.createElement("link");bfNavCss.rel="stylesheet";bfNavCss.href="./bf-navegacao-128.css?v=1.38.2";document.head.appendChild(bfNavCss);</script>
-<script src="./bf-navegacao-128.js?v=1.38.2"></script>
-<script src="./bf-barbearia-129.js?v=1.38.2"></script>
-<script src="./bf-catalogos-130.js?v=1.38.2"></script>
-<script src="./bf-sincronia-138.js?v=1.38.2"></script>
-<script src="./bf-cobranca-138.js?v=1.38.2"></script>
-<script src="./bf-assinante-138.js?v=1.38.2"></script>
-<script>["./bf-assinante-135.css?v=1.38.2","./bf-assinante-138.css?v=1.38.2"].forEach(function(h){var l=document.createElement("link");l.rel="stylesheet";l.href=h;document.head.appendChild(l)});</script>
-<script src="./bf-assinante-135.js?v=1.38.2"></script>
-<script src="./bf-tutorial-136.js?v=1.38.2"></script>
-<script src="./bf-documentos-137.js?v=1.38.2"></script>
+<script src="./bf-clinical.js?v=1.38.3"></script>
+<script src="./bf-fiscal-advanced.js?v=1.38.3"></script>
+<script src="./bf-receituario.js?v=1.38.3"></script>
+<script src="./bf-cadastro-fiscal.js?v=1.38.3"></script>
+<script src="./bf-context-actions.js?v=1.38.3"></script>
+<script src="./bf-integrity-audit.js?v=1.38.3"></script>
+<script src="./bf-blackpay-integrated.js?v=1.38.3"></script>
+<script src="./bf-tati-help.js?v=1.38.3"></script>
+<script src="./bf-mobile-photos.js?v=1.38.3"></script>
+<script src="./bf-documents.js?v=1.38.3"></script>
+<script src="./bf-workflow-123.js?v=1.38.3"></script>
+<script src="./bf-workflow-124.js?v=1.38.3"></script>
+<script>const bfMobileCss=document.createElement("link");bfMobileCss.rel="stylesheet";bfMobileCss.href="./bf-mobile-126.css?v=1.38.3";document.head.appendChild(bfMobileCss);</script>
+<script src="./bf-mobile-126.js?v=1.38.3"></script>
+<script>const bfNavCss=document.createElement("link");bfNavCss.rel="stylesheet";bfNavCss.href="./bf-navegacao-128.css?v=1.38.3";document.head.appendChild(bfNavCss);</script>
+<script src="./bf-navegacao-128.js?v=1.38.3"></script>
+<script src="./bf-barbearia-129.js?v=1.38.3"></script>
+<script src="./bf-catalogos-130.js?v=1.38.3"></script>
+<script src="./bf-sincronia-138.js?v=1.38.3"></script>
+<script src="./bf-cobranca-138.js?v=1.38.3"></script>
+<script src="./bf-assinante-138.js?v=1.38.3"></script>
+<script>["./bf-assinante-135.css?v=1.38.3","./bf-assinante-138.css?v=1.38.3"].forEach(function(h){var l=document.createElement("link");l.rel="stylesheet";l.href=h;document.head.appendChild(l)});</script>
+<script src="./bf-assinante-135.js?v=1.38.3"></script>
+<script src="./bf-tutorial-136.js?v=1.38.3"></script>
+<script src="./bf-documentos-137.js?v=1.38.3"></script>
 </body>
 </html>

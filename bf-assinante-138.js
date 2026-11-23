@@ -18,7 +18,8 @@
 
   var A = {
     carregando: false, tentou: false, estado: null, historico: null,
-    numero: null, erro: '', forma: 'cartao', pix: null, gerandoPix: false, msg: ''
+    numero: null, cemPrimeiros: false, totalAssinantes: null,
+    erro: '', forma: 'cartao', pix: null, gerandoPix: false, msg: ''
   };
   window.__bfA = A;
 
@@ -45,7 +46,16 @@
     try {
       if (NV.sb && NV.sessao && NV.clinicaId) {
         var n = await NV.sb.rpc('bs_assinante_meu');
-        if (!n.error && n.data != null) { A.numero = n.data; chegou = true; }
+        if (!n.error && n.data) {
+          /* bs_assinante_meu devolve um objeto, nao um numero solto. */
+          var d = (typeof n.data === 'string') ? JSON.parse(n.data) : n.data;
+          if (d && d.tem && d.numero != null) {
+            A.numero = Number(d.numero) || null;
+            A.cemPrimeiros = !!d.cem_primeiros;
+            A.totalAssinantes = Number(d.total) || null;
+          } else { A.numero = null; }
+          chegou = true;
+        }
         var r = await NV.sb.functions.invoke('bf-assinatura', { body: { acao: 'estado', clinica: NV.clinicaId } });
         if (!r.error && r.data) { A.estado = r.data; chegou = true; }
         if (A.estado && A.estado.configurado && A.estado.assinatura) {
@@ -102,10 +112,10 @@
       h += '<span class="bfa-selo bf">★ <b>' + E(nome) + '</b>' +
         (p.fim ? ' até ' + E(data(p.fim)) : '') + '</span>';
     }
-    if (A.numero) {
-      var n = Number(A.numero) || 0;
+    var n = Number(A.numero) || 0;
+    if (n > 0) {
       h += '<span class="bfa-selo num">Assinante <b>nº ' + E(String(n).padStart(3, '0')) + '</b>' +
-        (n <= 100 ? ' · 100 primeiros' : '') + '</span>';
+        (A.cemPrimeiros || n <= 100 ? ' · entre os 100 primeiros' : '') + '</span>';
     }
     return h ? '<div class="bfa-selos">' + h + '</div>' : '';
   }
@@ -212,7 +222,8 @@
       '<div class="bfa-linha"><span>Plano</span><b>' + E(p.nome || '') + '</b></div>' +
       '<div class="bfa-linha"><span>Periodicidade</span><b>Mensal</b></div>' +
       (pr ? '<div class="bfa-linha"><span>Promoção</span><b>' + E(pr.codigo === 'BF2026' ? 'Black Friday' : String(pr.codigo)) + '</b></div>' : '') +
-      (A.numero ? '<div class="bfa-linha"><span>Assinante</span><b>nº ' + E(String(A.numero).padStart(3, '0')) + '</b></div>' : '') +
+      (Number(A.numero) > 0 ? '<div class="bfa-linha"><span>Assinante</span><b>nº ' +
+        E(String(Number(A.numero)).padStart(3, '0')) + '</b></div>' : '') +
       (ativa && ass && ass.proxima ? '<div class="bfa-linha"><span>Próxima cobrança</span><b>' + E(data(ass.proxima)) + '</b></div>' : '') +
       (ativa && ass ? '<div class="bfa-linha"><span>Pagamento</span><b>' + E(ass.forma === 'cartao' ? (ass.cartao || 'Cartão') : 'Pix') + '</b></div>' : '') +
       '<div class="bfa-linha total"><span>Total</span><b>' + E(moeda(hoje)) + '/mês</b></div>' +
@@ -295,8 +306,10 @@
         '<p class="bfa-sub">Assim que a primeira cobrança for gerada, ela aparece aqui.</p></div>') + blocoVoucher()
       : escolhaForma() + (A.forma === 'cartao' ? painelCartao() : painelPix()) + blocoVoucher();
 
-    return '<div class="bfa' + (opts.modal ? ' bfa-modal' : '') + '">' +
+    return '<div class="bfa' + (opts.modal ? ' bfa-modal' : '') + '"><div class="bfa-dentro">' +
       (opts.voltar ? '<button type="button" class="bfa-voltar" onclick="' + opts.voltar + '">← Voltar</button>' : '') +
+      (opts.modal ? '' :
+        '<button type="button" class="bfa-voltar" style="margin:0 0 10px" onclick="voltarAgenda()">← Voltar para a agenda</button>') +
       '<div class="bfa-hero"><div class="bfa-coroa">♛</div>' +
       '<div><h2>' + (ativa ? 'Sua assinatura <span>BlackFlow</span>' : 'Assinar o <span>BlackFlow</span>') + '</h2>' +
       '<p class="bfa-sub">' + (ativa
@@ -307,7 +320,7 @@
       cartaoPlano() +
       '<div class="bfa-grid"><div>' + esquerda + '</div>' + resumo(opts) + '</div>' +
       rodape() +
-      '</div>';
+      '</div></div>';
   };
 
   /* ------------------------------------------------------------------ */
@@ -370,12 +383,13 @@
   /* ------------------------------------------------------------------ */
   window.vAssinante = function () {
     if (!A.tentou && !A.carregando) carregar(false);
-    var cab = '<div class="phead"><div><h1>Assinante</h1>' +
-      '<p class="sub">Sua assinatura do BlackFlow, do começo ao fim, dentro do sistema.</p></div></div>';
     if ((A.carregando || !A.tentou) && !A.estado) {
-      return '<div class="page">' + cab +
-        '<div class="card" style="padding:22px">Carregando a sua assinatura...</div></div>';
+      return '<div class="bfa-tela"><div class="bfa"><div class="bfa-dentro">' +
+        '<div class="bfa-hero"><div class="bfa-coroa">♛</div><div><h2>Assinante</h2>' +
+        '<p class="bfa-sub">Carregando a sua assinatura...</p></div></div></div></div></div>';
     }
-    return '<div class="page" style="max-width:1180px">' + cab + window.bfAssPainelHTML({}) + '</div>';
+    /* Sem a caixa branca de página: o painel ocupa a tela inteira, de uma
+       borda à outra, porque esta é a vitrine do produto. */
+    return '<div class="bfa-tela">' + window.bfAssPainelHTML({}) + '</div>';
   };
 })();
