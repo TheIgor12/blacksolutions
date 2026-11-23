@@ -61,7 +61,7 @@ R.anaPintar=function(){
  const d=document.querySelector('#modalRoot');if(d)d.scrollTop=dlgTop;
 };
 const oldMenu=R.menuItens;
-R.menuItens=function(){const a=oldMenu();if(!a.some(x=>x[0]==='anamnese')&&podeTela('pacientes'))a.splice(1,0,['anamnese','Anamnese','file']);return a};
+R.menuItens=function(){const a=oldMenu();const semAnamnese=typeof ehSeg==='function'&&ehSeg('barbearia');if(!semAnamnese&&!a.some(x=>x[0]==='anamnese')&&podeTela('pacientes'))a.splice(1,0,['anamnese','Anamnese','file']);return a};
 R.vAnamnese=function(){
  const L=az(S.pacientes).filter(p=>p&&p.id);
  return '<div class="page"><div class="phead"><div><h1>Anamnese</h1><p class="sub">Módulo independente. As fichas também permanecem disponíveis nos prontuários.</p></div></div><div class="card"><label>Localizar paciente<input id="bf-ana-find" oninput="bfAnaFiltrar(this.value)" placeholder="Nome do paciente"></label><div id="bf-ana-list" style="margin-top:12px">'+L.map(p=>'<div class="row bf-ana-row" data-name="'+esc(norm(p.nome))+'"><span><b>'+esc(p.nome)+'</b><br><small>'+esc(resumoAnamnese(p))+'</small></span><span><button class="btn ghost sm" onclick="anaRapida('+esc(JSON.stringify(String(p.id)))+')">Histórico</button> <button class="btn sm" onclick="anaForm('+esc(JSON.stringify(String(p.id)))+')">Nova anamnese</button></span></div>').join('')+'</div></div></div>';
