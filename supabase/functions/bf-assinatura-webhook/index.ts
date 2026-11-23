@@ -94,6 +94,14 @@ Deno.serve(async (req) => {
     if (!cobranca || !pago) {
       return ok({ recebido: true, liberado: false, motivo: "o prestador não confirmou o pagamento", situacao });
     }
+    /* Cada cobranca estende a validade uma vez so. O Asaas reenvia aviso
+       quando a resposta demora ou falha, e sem esta trava o mesmo pagamento
+       daria dois meses de acesso. */
+    const { data: jaLiberado } = await adm.from("bs_assinatura_eventos")
+      .select("id").eq("cobranca", String(fonte.id)).eq("liberou", true).limit(1);
+    if (jaLiberado && jaLiberado.length) {
+      return ok({ recebido: true, liberado: false, motivo: "esta cobrança já havia sido liberada" });
+    }
     const { data: c } = await adm.from("clinicas").select("valido_ate,plano").eq("id", clinicaId).maybeSingle();
     if (!c) return ok({ recebido: true, liberado: false, motivo: "clínica não encontrada" });
     const hoje = new Date();
@@ -108,6 +116,8 @@ Deno.serve(async (req) => {
     await adm.from("bs_assinaturas").update({
       status: "PAGA", proximo_vencimento: novo, atualizado_em: new Date().toISOString(),
     }).eq("clinica_id", clinicaId);
+    await adm.from("bs_assinatura_eventos").update({ liberou: true })
+      .eq("clinica_id", clinicaId).eq("cobranca", String(fonte.id)).eq("evento", tipo);
     return ok({ recebido: true, liberado: true, valido_ate: novo });
   }
 

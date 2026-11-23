@@ -58,3 +58,15 @@ select 'CONFERENCIA=' ||
        ' eventos:' || (select count(*) from information_schema.tables
                         where table_schema='public' and table_name='bs_assinatura_eventos')::text ||
        ' linhas:' || (select count(*) from public.bs_assinaturas)::text as resultado;
+
+-- ---------------------------------------------------------------------------
+-- Marca de liberação já feita, para o mesmo pagamento não estender a validade
+-- duas vezes quando o prestador reenvia o aviso.
+-- ---------------------------------------------------------------------------
+alter table public.bs_assinatura_eventos add column if not exists liberou boolean not null default false;
+create index if not exists bs_assin_eventos_cobranca on public.bs_assinatura_eventos(cobranca) where liberou;
+
+select 'CONFERENCIA2=' ||
+       'coluna_liberou:' || (select count(*) from information_schema.columns
+                              where table_schema='public' and table_name='bs_assinatura_eventos'
+                                and column_name='liberou')::text as resultado;
