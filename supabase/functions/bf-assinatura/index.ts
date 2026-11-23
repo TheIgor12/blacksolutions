@@ -185,6 +185,22 @@ Deno.serve(async (req) => {
     return String(novo.id);
   }
 
+  /* Guarda contra cobranca dobrada.
+     A conta do Asaas ja tem assinaturas criadas por link de pagamento, de
+     antes desta tela existir. Se a pessoa clicar em assinar aqui, uma segunda
+     assinatura nasceria para o mesmo cliente, e ela pagaria duas vezes todo
+     mes sem perceber. Entao, antes de criar qualquer coisa, procuramos uma
+     assinatura ativa do mesmo cliente. Havendo, ela e reaproveitada: no Pix,
+     devolvemos a cobranca em aberto que ja existe; no cartao, avisamos em vez
+     de criar outra. */
+  async function assinaturaAtivaDe(cliente: string) {
+    const r = await asaas("/subscriptions?customer=" + encodeURIComponent(cliente) + "&status=ACTIVE");
+    const lista = (r?.data || []) as Record<string, unknown>[];
+    if (!lista.length) return null;
+    /* A da propria clinica vem primeiro; qualquer outra ativa tambem conta. */
+    return lista.find((x) => String(x.externalReference || "") === clinicaId) || lista[0];
+  }
+
   async function gravar(campos: Record<string, unknown>) {
     await adm.from("bs_assinaturas").upsert({
       clinica_id: clinicaId, atualizado_em: new Date().toISOString(), ...campos,
@@ -198,7 +214,8 @@ Deno.serve(async (req) => {
     /* ---------- Pix ---------- */
     if (acao === "pix") {
       const cliente = await clienteAsaas(corpo);
-      const assin = await asaas("/subscriptions", "POST", {
+      const jaTem = await assinaturaAtivaDe(cliente);
+      const assin = jaTem || await asaas("/subscriptions", "POST", {
         customer: cliente,
         billingType: "PIX",
         value: P.valor,
@@ -217,8 +234,8 @@ Deno.serve(async (req) => {
         proximo_vencimento: pg.dueDate || amanha(0), criado_em: assinatura?.criado_em || new Date().toISOString(),
       });
       return responde({
-        ok: true, configurado: true, forma: "pix",
-        cobranca: pg.id, valor: P.valor, plano: P.nome,
+        ok: true, configurado: true, forma: "pix", reaproveitada: !!jaTem,
+        cobranca: pg.id, valor: Number(assin.value || P.valor), plano: P.nome,
         copia_e_cola: qr?.payload || "", imagem: qr?.encodedImage || "",
         expira_em: qr?.expirationDate || "",
       });
@@ -243,6 +260,22 @@ Deno.serve(async (req) => {
       if (!txt(corpo.numero)) return responde({ erro: "Informe o número do endereço do titular." }, 400);
 
       const cliente = await clienteAsaas(corpo);
+      const jaTem = await assinaturaAtivaDe(cliente);
+      if (jaTem && !corpo.forcar) {
+        await gravar({
+          asaas_cliente: cliente, asaas_assinatura: String(jaTem.id), plano,
+          valor: Number(jaTem.value || P.valor), forma: "cartao", status: "ACTIVE",
+          proximo_vencimento: String(jaTem.nextDueDate || ""),
+          criado_em: assinatura?.criado_em || new Date().toISOString(),
+        });
+        return responde({
+          ok: true, configurado: true, forma: "cartao", reaproveitada: true, pago: true,
+          assinatura: String(jaTem.id), proxima: jaTem.nextDueDate || null,
+          aviso: "Já existe uma assinatura ativa neste CPF ou CNPJ, no valor de R$ " +
+            String(jaTem.value).replace(".", ",") + ", com próxima cobrança em " +
+            String(jaTem.nextDueDate || "") + ". Nenhuma cobrança nova foi criada.",
+        });
+      }
       const ip = req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() || "127.0.0.1";
 
       const assin = await asaas("/subscriptions", "POST", {

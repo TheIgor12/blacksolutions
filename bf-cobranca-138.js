@@ -126,7 +126,9 @@
 
     var img = r.imagem ? '<img alt="QR Code do Pix" style="width:220px;height:220px;display:block;margin:0 auto;border-radius:10px;background:#fff;padding:8px" src="data:image/png;base64,' + esc_(r.imagem) + '">' : '';
     openModal('<h3>Pague ' + esc_(moeda(r.valor)) + ' por Pix</h3>' +
-      '<p class="sub" style="margin-bottom:12px">Aponte a câmera do aplicativo do seu banco para o código. ' +
+      '<p class="sub" style="margin-bottom:12px">' +
+      (r.reaproveitada ? 'Esta é a cobrança em aberto da sua assinatura, nenhuma cobrança nova foi criada. ' : '') +
+      'Aponte a câmera do aplicativo do seu banco para o código. ' +
       'Assim que o pagamento cair, esta tela avisa sozinha.</p>' + img +
       '<label style="margin-top:12px">Pix copia e cola' +
       '<textarea id="bfPixCodigo" readonly rows="3" style="font-family:ui-monospace,monospace;font-size:12px">' + esc_(r.copia_e_cola) + '</textarea></label>' +
@@ -232,6 +234,12 @@
       return;
     }
     limparCampos();
+    if (r.reaproveitada) {
+      openModal('<h3>Você já é assinante</h3>' +
+        '<p class="sub">' + esc_(r.aviso || 'Já existe uma assinatura ativa neste CPF ou CNPJ. Nenhuma cobrança nova foi criada.') + '</p>' +
+        '<div class="mact"><button class="btn" onclick="bfCobrancaFim()">Continuar</button></div>', true);
+      return;
+    }
     openModal('<h3>Assinatura confirmada</h3>' +
       '<p class="sub">Cartão ' + esc_(r.cartao || '') + '. ' +
       (r.pago ? 'O pagamento já foi aprovado e o acesso está liberado.' :
