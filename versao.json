@@ -1,4 +1,4 @@
 {
-  "versao": "1.32.0",
-  "novidades": "Preços da barbearia passam a ser claramente um ponto de partida. A janela de boas-vindas explica que cada barbearia cobra o seu valor e oferece dois caminhos com um toque: ajustar os preços agora, que abre Serviços e preços, ou deixar todos em branco para preencher conforme for atendendo. Os serviços, os produtos e o link de agendamento continuam entrando prontos, e o preço por barbeiro continua disponível."
+  "versao": "1.33.0",
+  "novidades": "Correção importante no envio de fotos. Um único arquivo recusado pelo servidor interrompia a fila inteira, e todo o acervo ficava guardado apenas no computador, sem chegar à nuvem. Agora a recusa vale só para aquele arquivo: ele sai da fila, fica contado, e os demais seguem. Falha geral continua parando o envio, como deve ser. O aviso na tela passa a dizer quantos arquivos ficaram de fora e por quê. Também entrou a liberação, no servidor, dos tipos que a clínica guarda de verdade: imagem e PDF."
 }

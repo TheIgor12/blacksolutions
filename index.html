@@ -675,13 +675,20 @@ async function filaEnviar(){if(FT.enviando||!nuvemFotos())return;FT.enviando=tru
     if(!blob){await FT.filaDel(k);FT.pend--;continue}
     const ai=arqInfo(id);
     const {error}=await NV.sb.storage.from('fotos').upload(k+'.'+ai.ext,blob,{upsert:true,contentType:ai.mime});
-    if(error){const m=String(error.message||error);FT.erroNuvem=/bucket not found/i.test(m)?'a nuvem de fotos ainda não foi ativada no servidor':/row-level|security|unauthorized|403/i.test(m)?'sem permissão para enviar fotos desta clínica':m;throw error}
+    if(error){const m=String(error.message||error);
+     /* Recusa de UM arquivo não pode parar a fila inteira. Um PDF que o
+        servidor não aceita travava o envio das outras milhares de fotos,
+        que ficavam só neste computador, sem ninguém saber. O arquivo
+        recusado sai da fila, fica anotado, e os demais seguem. */
+     const soEsse=/mime type|not supported|payload too large|exceeded the maximum|invalid|entity too large|413|415/i.test(m);
+     if(soEsse){FT.recusadas=(FT.recusadas||0)+1;FT.ultimaRecusa=m;await FT.filaDel(k);FT.pend--;continue}
+     FT.erroNuvem=/bucket not found/i.test(m)?'a nuvem de fotos ainda não foi ativada no servidor':/row-level|security|unauthorized|403/i.test(m)?'sem permissão para enviar fotos desta clínica':m;throw error}
     FT.erroNuvem='';await FT.filaDel(k);FT.pend--;const f=S.fotos.find(x=>x.id===id);if(f&&f.img&&f.thumb){delete f.img;sujo=true}}};
   await Promise.all([um(),um(),um()]);if(sujo)save()}
  catch(e){console.warn('fotos',e)}
  finally{FT.enviando=false;fotoStatus()}}
 function fotoStatus(){const e=$('#fotoSt');if(e)e.innerHTML=fotoStatusTxt()}
-function fotoStatusTxt(){if(!NV.ativa)return 'As fotos ficam guardadas neste computador.';if(FT.erroNuvem)return '<span style="color:var(--bad)">As fotos novas estão guardadas neste computador, mas ainda não foram enviadas para a nuvem. Motivo: '+esc(FT.erroNuvem)+'</span>';return FT.enviando||FT.pend>0?'Enviando fotos para a nuvem: faltam '+FT.pend+'. Pode usar o sistema normalmente; não feche o programa até terminar.':'Nenhum envio de fotos pendente neste dispositivo. Isso não confirma a integridade de todos os arquivos históricos.'}
+function fotoStatusTxt(){if(!NV.ativa)return 'As fotos ficam guardadas neste computador.';if(FT.erroNuvem)return '<span style="color:var(--bad)">As fotos novas estão guardadas neste computador, mas ainda não foram enviadas para a nuvem. Motivo: '+esc(FT.erroNuvem)+'</span>';if(FT.recusadas)return '<span style="color:var(--warn-txt,#92400e)">'+FT.recusadas+' arquivo(s) o servidor não aceitou e foram deixados de lado. Os demais seguiram normalmente. Último motivo: '+esc(FT.ultimaRecusa||'')+'</span>';return FT.enviando||FT.pend>0?'Enviando fotos para a nuvem: faltam '+FT.pend+'. Pode usar o sistema normalmente; não feche o programa até terminar.':'Nenhum envio de fotos pendente neste dispositivo. Isso não confirma a integridade de todos os arquivos históricos.'}
 /* Devolve o endereço da imagem inteira: deste computador, ou baixa da nuvem e guarda */
 async function fotoCheia(f){if(!f)return '';if(f.img)return f.img;if(FT.urls[f.id])return FT.urls[f.id];
  let blob=await FT.get(f.id);
@@ -4858,7 +4865,7 @@ function agNovo(a,s){if(s==='Desmarcado'||s==='Faltou')return false;const k=a.da
  const hist=c=>S[c].some(x=>x.pacienteId===a.pacienteId&&((x.data||x.vencimento||x.pagamento||'')<a.data)&&(x.data||x.vencimento||x.pagamento));
  return !hist('evolucoes')&&!hist('tratamentos')&&!S.lancamentos.some(l=>l.pacienteId===a.pacienteId&&l.pagamento&&l.pagamento<a.data)}
 /* ============ Atualização: aviso com botão Atualizar agora ============ */
-const VERSAO_APP='1.32.0';const URL_VERSAO_JSON='https://raw.githubusercontent.com/TheIgor12/blacksolutions/main/versao.json';
+const VERSAO_APP='1.33.0';const URL_VERSAO_JSON='https://raw.githubusercontent.com/TheIgor12/blacksolutions/main/versao.json';
 const numV=v=>String(v||'0').split(/\D+/).filter(Boolean).map(Number);
 function versaoMaior(a,b){const x=numV(a),y=numV(b);for(let i=0;i<Math.max(x.length,y.length);i++){const d=(x[i]||0)-(y[i]||0);if(d)return d>0}return false}
 const ATU={nova:null,timer:null};
@@ -5615,7 +5622,7 @@ function telaCopiaNaoAutorizada(){
   if(!origemAutorizada()){telaCopiaNaoAutorizada();return}}
  try{navigator.storage&&navigator.storage.persist&&navigator.storage.persist()}catch(e){}
  try{fonteAplicar()}catch(e){}
- try{if(/^https?:/.test(location.protocol)&&'serviceWorker' in navigator&&!window.pywebview)navigator.serviceWorker.register('./sw.js?v=1.32.0',{updateViaCache:'none'}).then(r=>r.update()).catch(()=>{})}catch(e){}
+ try{if(/^https?:/.test(location.protocol)&&'serviceWorker' in navigator&&!window.pywebview)navigator.serviceWorker.register('./sw.js?v=1.33.0',{updateViaCache:'none'}).then(r=>r.update()).catch(()=>{})}catch(e){}
  if(NV.ativa){
   if(!window.supabase||!window.supabase.createClient){UI.auth={modo:'offline',temCache:!!(await DB.get('ultimo'))};render();return}
   NV.sb=window.supabase.createClient(NUVEM.url,NUVEM.chave,{auth:{persistSession:true,autoRefreshToken:true}});
@@ -5666,24 +5673,24 @@ function agProf(nome){UI.profOff={};if(nome){S.profissionais.forEach(p=>{if(norm
 function menuProfs(){const L=az(S.profissionais.filter(p=>p.ativo!==false));if(!L.length)return '';const sel=UI.view==='agenda'?(UI.agProf||''):null;
  return `<div class="msec">AGENDA POR PROFISSIONAL</div><button class="${sel===''&&UI.view==='agenda'?'on':''}" onclick="agProf('')">${ico('cal',18)} Todos os profissionais</button>${L.map(p=>`<button class="${sel!=null&&norm(sel)===norm(p.nome)?'on':''}" onclick="agProf(${esc(JSON.stringify(p.nome))})"><span style="display:inline-block;width:12px;height:12px;border-radius:50%;background:${esc(p.cor||'#0a4bde')};margin:0 3px;flex:none"></span> ${esc(p.nome)}</button>`).join('')}`}
 </script>
-<script src="./bf-clinical.js?v=1.32.0"></script>
-<script src="./bf-fiscal-advanced.js?v=1.32.0"></script>
-<script src="./bf-receituario.js?v=1.32.0"></script>
-<script src="./bf-cadastro-fiscal.js?v=1.32.0"></script>
-<script src="./bf-context-actions.js?v=1.32.0"></script>
-<script src="./bf-integrity-audit.js?v=1.32.0"></script>
-<script src="./bf-blackpay-integrated.js?v=1.32.0"></script>
-<script src="./bf-tati-help.js?v=1.32.0"></script>
-<script src="./bf-mobile-photos.js?v=1.32.0"></script>
-<script src="./bf-documents.js?v=1.32.0"></script>
-<script src="./bf-workflow-123.js?v=1.32.0"></script>
-<script src="./bf-workflow-124.js?v=1.32.0"></script>
-<script>const bfMobileCss=document.createElement("link");bfMobileCss.rel="stylesheet";bfMobileCss.href="./bf-mobile-126.css?v=1.32.0";document.head.appendChild(bfMobileCss);</script>
-<script src="./bf-mobile-126.js?v=1.32.0"></script>
-<script>const bfNavCss=document.createElement("link");bfNavCss.rel="stylesheet";bfNavCss.href="./bf-navegacao-128.css?v=1.32.0";document.head.appendChild(bfNavCss);</script>
-<script src="./bf-navegacao-128.js?v=1.32.0"></script>
-<script src="./bf-barbearia-129.js?v=1.32.0"></script>
-<script src="./bf-catalogos-130.js?v=1.32.0"></script>
-<script src="./bf-conflitos-131.js?v=1.32.0"></script>
+<script src="./bf-clinical.js?v=1.33.0"></script>
+<script src="./bf-fiscal-advanced.js?v=1.33.0"></script>
+<script src="./bf-receituario.js?v=1.33.0"></script>
+<script src="./bf-cadastro-fiscal.js?v=1.33.0"></script>
+<script src="./bf-context-actions.js?v=1.33.0"></script>
+<script src="./bf-integrity-audit.js?v=1.33.0"></script>
+<script src="./bf-blackpay-integrated.js?v=1.33.0"></script>
+<script src="./bf-tati-help.js?v=1.33.0"></script>
+<script src="./bf-mobile-photos.js?v=1.33.0"></script>
+<script src="./bf-documents.js?v=1.33.0"></script>
+<script src="./bf-workflow-123.js?v=1.33.0"></script>
+<script src="./bf-workflow-124.js?v=1.33.0"></script>
+<script>const bfMobileCss=document.createElement("link");bfMobileCss.rel="stylesheet";bfMobileCss.href="./bf-mobile-126.css?v=1.33.0";document.head.appendChild(bfMobileCss);</script>
+<script src="./bf-mobile-126.js?v=1.33.0"></script>
+<script>const bfNavCss=document.createElement("link");bfNavCss.rel="stylesheet";bfNavCss.href="./bf-navegacao-128.css?v=1.33.0";document.head.appendChild(bfNavCss);</script>
+<script src="./bf-navegacao-128.js?v=1.33.0"></script>
+<script src="./bf-barbearia-129.js?v=1.33.0"></script>
+<script src="./bf-catalogos-130.js?v=1.33.0"></script>
+<script src="./bf-conflitos-131.js?v=1.33.0"></script>
 </body>
 </html>
