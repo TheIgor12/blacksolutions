@@ -1,5 +1,4 @@
 {
-  "versao": "1.27.1",
-  "data": "2026-11-20",
-  "novidades": "Segmento escolhido uma única vez: impede que a seleção reapareça ao reabrir, faz o Supabase prevalecer sobre cache local e vincula a escolha à clínica certa. Mantém o plano Só agenda e os dados históricos preservados."
+  "versao": "1.28.0",
+  "novidades": "Seta de voltar entre as janelas. Quem estava no atendimento, abriu o WhatsApp e de lá abriu o Pix agora tem uma seta no canto superior esquerdo que desfaz um passo por vez, em vez de só Fechar, que derrubava tudo e devolvia para a agenda. O que já estava digitado volta preenchido. Também passa a aparecer a pergunta Deseja mesmo sair, numa caixa no meio da tela, quando a pessoa fecha no X, clica fora da janela ou aperta Esc com algo digitado e ainda não salvo. Sem nada digitado, fecha direto como antes. O módulo Medicina foi retirado do sistema. Os módulos externos passam a entrar no cache já na instalação, para o sistema não abrir incompleto."
 }

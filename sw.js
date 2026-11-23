@@ -1,6 +1,24 @@
-/* BlackFlow 1.27.0: network-first, no patient/token caching, safe offline handling */
-const CACHE='blackflow-v270-20261120';
-const BASE=['./','index.html','manifest.webmanifest','icone-192.png','icone-512.png'];
+/* BlackFlow 1.28.0: network-first, sem guardar paciente nem token, offline seguro.
+   Os modulos externos entram ja na instalacao: sem eles o sistema abre sem
+   receituario, sem orcamento, sem fiscal e sem a navegacao entre janelas. */
+const CACHE='blackflow-v280-20261123';
+const BASE=['./','index.html','manifest.webmanifest','icone-192.png','icone-512.png',
+ 'bf-blackpay-integrated.js',
+ 'bf-cadastro-fiscal.js',
+ 'bf-clinical.js',
+ 'bf-context-actions.js',
+ 'bf-documents.js',
+ 'bf-fiscal-advanced.js',
+ 'bf-integrity-audit.js',
+ 'bf-mobile-126.js',
+ 'bf-mobile-photos.js',
+ 'bf-navegacao-128.js',
+ 'bf-receituario.js',
+ 'bf-tati-help.js',
+ 'bf-workflow-123.js',
+ 'bf-workflow-124.js',
+ 'bf-mobile-126.css',
+ 'bf-navegacao-128.css'];
 self.addEventListener('install',event=>{
  event.waitUntil(caches.open(CACHE)
   .then(cache=>Promise.allSettled(BASE.map(path=>cache.add(path))))
