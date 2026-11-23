@@ -24,20 +24,20 @@ Em **Supabase → Edge Functions → Secrets**, acrescente:
 | Nome | Valor |
 |---|---|
 | `ASAAS_CHAVE` | a chave de produção da sua conta do Asaas |
-| `ASAAS_WEBHOOK_TOKEN` | um texto aleatório criado por você, de uns trinta caracteres |
 | `ASAAS_BASE` | apenas se for testar no ambiente de testes: `https://api-sandbox.asaas.com/v3` |
 
-Eu não gravo chave nem token: credencial é sua e não passa por mim.
+É um segredo só. Eu não gravo chave: credencial é sua e não passa por mim.
 
-Depois disso, no painel do Asaas, em **Integrações → Webhooks**, cadastre:
+No painel do Asaas, em **Integrações → Webhooks**, o endereço é
+`https://blszdbjpxgtloblxlusr.supabase.co/functions/v1/bf-assinatura-webhook`,
+com os eventos de pagamento confirmado, pagamento recebido, pagamento vencido,
+pagamento estornado e assinatura removida.
 
-- endereço: `https://blszdbjpxgtloblxlusr.supabase.co/functions/v1/bf-assinatura-webhook`
-- token de autenticação: o mesmo valor que você gravou em `ASAAS_WEBHOOK_TOKEN`
-- eventos: pagamento confirmado, pagamento recebido, pagamento vencido,
-  pagamento estornado, assinatura removida
-
-Sem o token igual nos dois lados, a função recusa a chamada e nada muda no
-banco. É de propósito: evita que qualquer um force uma liberação de acesso.
+O campo de token de autenticação pode ficar vazio, e isso não é descuido. O
+recebedor não acredita no que vem escrito na chamada: ele pega o número da
+cobrança, pergunta ao próprio Asaas, com a chave da conta, qual é a situação de
+verdade, e só então mexe na validade. Quem tentar forjar uma confirmação não
+consegue, porque a resposta que vale é a do Asaas, não a de quem chamou.
 
 ## 3. Como a tela passa a funcionar
 
