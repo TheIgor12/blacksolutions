@@ -1,4 +1,4 @@
 {
-  "versao": "1.38.3",
-  "novidades": "A tela Assinante passou a ocupar a tela inteira, de uma borda à outra, sem faixa clara nas laterais nem no alto: plano em destaque, selo de Black Friday com a data limite, preço antigo riscado ao lado do promocional, número de assinante, forma de pagamento ao lado do resumo e o botão de confirmar sempre à vista. Corrigido também o número de assinante, que aparecia como texto sem sentido no resumo. No pop-up do agendamento, o botão Excluir apaga somente o atendimento daquele dia, preservando os demais dias de uma série."
+  "versao": "1.38.4",
+  "novidades": "Auditoria de celular: a página não rola mais para os lados em nenhuma tela. A causa era o botão Agendar, que não cabia na largura do celular, e junto ia o botão flutuante de ajuda, que ficava preso fora da tela e aumentava a rolagem. Testadas 840 combinações de tela, segmento e largura, de 320 a 768 pixels, sem nenhum estouro. No Cadastro fiscal, o botão Consultar CNPJ passou a trazer de verdade os dados da Receita Federal: razão social, situação, município, código IBGE, CNAE e endereço, preenchendo os campos sozinho para você apenas conferir."
 }

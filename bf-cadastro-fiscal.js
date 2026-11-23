@@ -81,28 +81,87 @@ window.bfcadLoad=async function(){
    '<p class="sub" style="margin-top:10px">O CNPJ pertence à clínica, não ao navegador. Caso precise alterá-lo futuramente, somente o administrador poderá confirmar a substituição.</p>';
  }catch(e){el.innerHTML='<h2>Cadastro fiscal e CNPJ</h2><div class="note">Não foi possível carregar o cadastro: '+E(e.message||e)+'</div>';}
 };
+/* Consulta publica do CNPJ.
+   A funcao do banco valida e guarda, mas nao sai para a internet. Quem traz
+   os dados da Receita e o proprio navegador, do mesmo jeito que o cadastro
+   inicial ja faz: BrasilAPI primeiro, CNPJa como reserva. Assim o municipio,
+   o codigo IBGE, o CNAE e a razao social chegam sozinhos, e a pessoa so
+   confere. Nada e inventado: nao vindo resposta, os campos ficam como estao e
+   a tela diz que a consulta nao respondeu. */
+async function bfcadBuscarPublico(doc){
+ try{
+  const x=await fetch('https://brasilapi.com.br/api/cnpj/v1/'+doc);
+  if(x.ok){const j=await x.json();
+   return {razao:j.razao_social||j.nome_fantasia||'',fantasia:j.nome_fantasia||'',
+    situacao:j.descricao_situacao_cadastral||'',municipio:j.municipio||'',uf:j.uf||'',
+    ibge:String(j.codigo_municipio_ibge||''),cnae:String(j.cnae_fiscal||''),
+    logradouro:[j.descricao_tipo_de_logradouro,j.logradouro].filter(Boolean).join(' '),
+    numero:String(j.numero||''),bairro:j.bairro||'',cep:String(j.cep||'').replace(/\D/g,''),
+    simples:(j.opcao_pelo_simples===true||j.opcao_pelo_mei===true),
+    fonte:'Receita Federal, via BrasilAPI'}}
+  if(x.status===404)return {naoExiste:true};
+ }catch(e){}
+ try{
+  const x=await fetch('https://open.cnpja.com/office/'+doc);
+  if(x.ok){const j=await x.json();const a=j.address||{};
+   return {razao:(j.company&&j.company.name)||'',fantasia:j.alias||'',
+    situacao:(j.status&&j.status.text)||'',municipio:a.city||'',uf:a.state||'',
+    ibge:'',cnae:String((j.mainActivity&&j.mainActivity.id)||'').replace(/\D/g,''),
+    logradouro:a.street||'',numero:String(a.number||''),bairro:a.district||'',
+    cep:String(a.zip||'').replace(/\D/g,''),
+    simples:!!(j.company&&j.company.simples&&j.company.simples.optant),
+    fonte:'consulta pública CNPJa'}}
+  if(x.status===404)return {naoExiste:true};
+ }catch(e){}
+ return null;
+}
+
 window.bfcadConsultar=async function(manual=true){
  if(!can())return;
  const doc=dig(v("bfcad-cnpj"));
  if(!doc||!cnpjValido(doc)){if(manual)status("CNPJ inválido: confira os 14 dígitos e os dígitos verificadores.");return}
- if(lastQuery?.cnpj===doc&&lastQuery.verificado){
-  if(manual)status("Consulta anterior reaproveitada.",true);return;
- }
- status("Consultando dados cadastrais públicos...");
+ if(lastQuery?.cnpj===doc&&lastQuery.verificado&&!manual){status("Consulta anterior reaproveitada.",true);return}
+ status("Consultando a Receita Federal...");
  const el=document.getElementById("bfcad-consulta");
- try{
-  const {data,error:err}=await NV.sb.rpc("bf_cadastro_fiscal_consultar",{p_clinica:NV.clinicaId,p_cnpj:doc});
-  if(err)throw err;
-  if(dig(v("bfcad-cnpj"))!==doc)return;
-  lastQuery=data;
-  const info=data?.consulta||{};
-  if(info.ibge&&/^\d{7}$/.test(String(info.ibge))&&(!v("bfcad-ibge")||doc!==oldCnpj))document.getElementById("bfcad-ibge").value=info.ibge;
-  if(info.cnae&&/^\d{7}$/.test(String(info.cnae))&&(!v("bfcad-cnae")||doc!==oldCnpj))document.getElementById("bfcad-cnae").value=info.cnae;
-  if(el)el.textContent=data.verificado?
-   "Razão social: "+(info.razao||"não informada")+" · Situação: "+(info.situacao||"não informada")+" · Fonte: "+(info.fonte||"consulta pública"):
-   data.aviso||"Consulta pública indisponível";
-  status(data.verificado?"Dados consultados. Confira os campos antes de salvar.":(data.aviso||"Consulta indisponível."),data.verificado);
- }catch(e){status("Não foi possível consultar agora. Você ainda pode salvar um CNPJ válido e conferir os dados depois.");}
+
+ /* O banco confere o CNPJ e registra a tentativa. */
+ let base=null;
+ try{const {data,error:err}=await NV.sb.rpc("bf_cadastro_fiscal_consultar",{p_clinica:NV.clinicaId,p_cnpj:doc});
+  if(!err)base=data;}catch(e){}
+ if(dig(v("bfcad-cnpj"))!==doc)return;
+
+ const info=await bfcadBuscarPublico(doc);
+ if(dig(v("bfcad-cnpj"))!==doc)return;
+
+ if(info&&info.naoExiste){
+  lastQuery={cnpj:doc,verificado:false};
+  if(el)el.textContent="Este CNPJ não foi encontrado no cadastro da Receita Federal.";
+  status("CNPJ não encontrado na Receita Federal.");return;
+ }
+ if(!info){
+  lastQuery=base||{cnpj:doc,verificado:false};
+  if(el)el.textContent="A consulta pública não respondeu agora. Os campos continuam como estão.";
+  status("Consulta indisponível no momento. Você pode salvar e conferir depois.");return;
+ }
+
+ const por=(id,valor)=>{const e=document.getElementById(id);if(e&&valor&&(!e.value||doc!==oldCnpj))e.value=valor};
+ if(/^\d{7}$/.test(String(info.ibge||'')))por("bfcad-ibge",info.ibge);
+ if(/^\d{7}$/.test(String(info.cnae||'')))por("bfcad-cnae",info.cnae);
+ const sn=document.getElementById("bfcad-sn");
+ if(sn&&info.simples&&!v("bfcad-im"))sn.value="sim";
+
+ lastQuery={cnpj:doc,verificado:true,consulta:info};
+ window.bfcadUltimaConsulta=lastQuery;
+ const endereco=[info.logradouro,info.numero,info.bairro].filter(Boolean).join(', ');
+ if(el)el.innerHTML=
+  "<b>"+E(info.razao||'Razão social não informada')+"</b>"+
+  (info.fantasia&&info.fantasia!==info.razao?" · "+E(info.fantasia):"")+
+  "<br>Situação: "+E(info.situacao||'não informada')+
+  (info.municipio?" · "+E(info.municipio)+(info.uf?"/"+E(info.uf):""):"")+
+  (info.ibge?" · IBGE "+E(info.ibge):"")+
+  (endereco?"<br>"+E(endereco)+(info.cep?" · CEP "+E(info.cep):""):"")+
+  "<br><small>Fonte: "+E(info.fonte)+". Confira antes de salvar.</small>";
+ status("Dados da Receita trazidos. Confira e salve.",true);
 };
 window.bfcadSalvar=async function(){
  if(!can())return error("Somente o administrador pode salvar este cadastro.");
