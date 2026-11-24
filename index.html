@@ -3,6 +3,13 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<!-- Política de conteúdo: o navegador passa a recusar script, folha de estilo,
+     imagem ou conexão que venha de origem que não esteja nesta lista. É a
+     defesa que sobra quando algo injeta conteúdo na página.
+     script-src ainda precisa de 'unsafe-inline' porque o sistema usa onclick
+     direto no HTML em centenas de lugares; tirar isso é reescrever a interface
+     inteira, e está anotado no plano de segurança como dívida. -->
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://cdnjs.cloudflare.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' data: https://fonts.gstatic.com; img-src 'self' data: blob: https://*.supabase.co; media-src 'self' data: blob:; connect-src 'self' blob: data: https://*.supabase.co https://raw.githubusercontent.com https://brasilapi.com.br https://open.cnpja.com https://viacep.com.br https://generativelanguage.googleapis.com; worker-src 'self' blob:; object-src 'none'; base-uri 'self'; form-action 'self'">
 <title>BlackFlow</title>
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link id="fonteLink" href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
 <link rel="icon" id="fav">
@@ -10,7 +17,11 @@
 <script>if(/^https?:/.test(location.protocol)){document.write('<link rel="manifest" href="manifest.webmanifest"><link rel="apple-touch-icon" href="icone-180.png">')}</script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcode-generator/1.4.4/qrcode.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<!-- Versão presa. Antes era @2, que deixa o CDN trocar o arquivo sozinho a
+     qualquer momento dentro de um sistema que guarda prontuário. 2.119.2 é a
+     mesma versão que já rodava em produção, e dist/umd/supabase.js é o
+     arquivo que o próprio pacote indica para CDN, conferido no package.json. -->
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.119.2/dist/umd/supabase.js"></script>
 <style>
 :root{--acc:#5a4cfb;--acc-soft:color-mix(in srgb,var(--acc) 9%,#fff);--navy:#3a2f86;--bf1:#1b86fb;--bf2:#5a4cfb;--bf3:#7f22fd;--bf4:#c734dd;--bf5:#f139ce;--bf-escuro:#02010f;--bf-barra:#0a0820;--bg:#f2f2f3;--card:#fff;--ink:#1f2328;--mut:#6b7280;--line:#e5e7eb;--top:#0a0820;--ok:#2e9d5b;--ok-soft:#e5f5ec;--warn:#b77d00;--warn-soft:#fff5d6;--bad:#d64545;--bad-soft:#fde8e8;--info:#2f7fc1;--info-soft:#e6f0fa}
 *{box-sizing:border-box}
@@ -854,11 +865,46 @@ const PALETA=['#0a4bde','#254775','#1f9e9e','#c9862b','#2e9d5b','#9c6ade','#d645
 function ensureProf(nome){nome=str(nome);if(!nome)return '';let p=S.profissionais.find(x=>norm(x.nome)===norm(nome));if(!p){p={id:uid(),nome,cor:PALETA[S.profissionais.length%PALETA.length],ativo:true};S.profissionais.push(p)}return p.nome}
 function profColor(n){const p=S.profissionais.find(x=>norm(x.nome)===norm(n));return p?p.cor:'#0a4bde'}
 function nextCodigo(){let m=0;S.pacientes.forEach(p=>{const n=parseInt(p.codigo,10);if(n>m)m=n});return String(m+1)}
+/* Quem é o mesmo paciente, e quem só tem o mesmo nome.
+   -----------------------------------------------------
+   CPF igual é a mesma pessoa. Código igual com nome igual é a mesma pessoa.
+   Nome igual, sozinho, NÃO é a mesma pessoa: Maria Silva da planilha pode ser
+   outra Maria Silva. Antes o sistema fundia as duas sem avisar, e prontuário
+   fundido não se separa depois. Agora o nome igual cria ficha separada,
+   marcada para conferência, e quem decide é a profissional. */
 function findPatient(nome,cpf,codigo){const k=keyCPF(cpf);if(k){const p=S.pacientes.find(p=>keyCPF(p.cpf)===k);if(p)return p}
  if(codigo){const p=S.pacientes.find(p=>String(p.codigo)===String(codigo)&&norm(p.nome)===norm(nome));if(p)return p}
- const n=norm(nome);if(!n)return null;return S.pacientes.find(p=>norm(p.nome)===n)||null}
+ return null}
+function xaraDe(nome){const n=norm(nome);if(!n)return null;return S.pacientes.find(p=>norm(p.nome)===n)||null}
 function ensurePatient(nomeRaw,cpf){const {nome,codigo}=splitNome(nomeRaw);let p=findPatient(nome,cpf,codigo);
- if(!p&&nome){p={id:uid(),codigo:codigo||nextCodigo(),nome,cpf:str(cpf),status:'Ativo',criadoPorImportacao:true};S.pacientes.push(p)}return p}
+ if(p)return p;
+ if(!nome)return null;
+ const xara=xaraDe(nome);
+ p={id:uid(),codigo:codigo||nextCodigo(),nome,cpf:str(cpf),status:'Ativo',criadoPorImportacao:true};
+ if(xara){p.conferirDuplicado=xara.id;p.conferirEm=todayISO()}
+ S.pacientes.push(p);
+ return p}
+/* Quantos aguardam conferência, para a faixa de aviso. */
+const pacConferir=()=>S.pacientes.filter(p=>p.conferirDuplicado&&pac(p.conferirDuplicado));
+/* São pessoas diferentes: tira a marca e pronto. */
+function pacSeparado(id){const p=pac(id);if(!p)return;delete p.conferirDuplicado;delete p.conferirEm;save();render();toast('Marcado como pessoa diferente.')}
+/* É a mesma pessoa: tudo do registro novo passa para o antigo, e o novo sai.
+   O caminho é este, e não o contrário, porque o registro antigo é o que já
+   tem histórico, anexos e vínculo com a agenda. */
+function pacJuntar(id){const novo=pac(id);if(!novo)return;const velho=pac(novo.conferirDuplicado);
+ if(!velho){pacSeparado(id);return}
+ const conta=COLS.filter(c=>c!=='pacientes').reduce((a,c)=>a+(S[c]||[]).filter(x=>x&&x.pacienteId===novo.id).length,0);
+ confirmModal(`Juntar a ficha importada de <b>${esc(novo.nome)}</b> (código ${esc(novo.codigo)}) na ficha que já existia (código ${esc(velho.codigo)})?<br><br>
+  <b>${conta}</b> ${conta===1?'registro vai passar':'registros vão passar'} para a ficha antiga, e a ficha importada será apagada.<br><br>
+  Isto não tem como desfazer. Em caso de dúvida, use <b>São pessoas diferentes</b>: duas fichas separadas são corrigíveis, uma ficha fundida não.`,
+  ()=>{
+   COLS.filter(c=>c!=='pacientes').forEach(c=>{(S[c]||[]).forEach(x=>{if(x&&x.pacienteId===novo.id)x.pacienteId=velho.id})});
+   /* O que o registro antigo não tinha é aproveitado; o que ele já tinha fica. */
+   ['cpf','celular','nascimento','email','endereco','numero','bairro','cidade','uf','cep'].forEach(k=>{
+    if(!str(velho[k])&&str(novo[k]))velho[k]=novo[k]});
+   const i=S.pacientes.findIndex(x=>x.id===novo.id);if(i>=0)S.pacientes.splice(i,1);
+   toast('Fichas juntadas. '+conta+(conta===1?' registro passou.':' registros passaram.'));
+  },'Juntar as fichas')}
 const pac=id=>S.pacientes.find(p=>p.id===id);
 /* ---- Apoio para digitar o nome do paciente em qualquer tela ---- */
 function acharPac(v){const {nome,codigo}=splitNome(v||'');return nome?findPatient(nome,'',codigo):null}
@@ -1798,7 +1844,25 @@ function pacIrLetra(L){const arr=pacFiltered();UI.pacLetra=L||'';
  if(!L){UI.pacPage=0;refreshPac();return}
  const i=arr.findIndex(x=>azLetra(x.nome)===L);if(i<0){refreshPac();return}
  UI.pacPage=Math.floor(i/UI.pacPer);refreshPac();setTimeout(()=>azPiscar('pacR_'+arr[i].id),60)}
-function vPacientes(){return `<div class="page"><div class="phead"><div><h1>${SEG().pessoas}</h1><p class="sub">Busque, cadastre e acompanhe ${ehSeg('podologia')?'os pacientes da sua clínica':'os seus clientes'}.</p></div><button class="btn" onclick="pacForm()">${ico('plus',16)} Novo ${SEG().pessoa.toLowerCase()}</button></div>
+/* Faixa de conferência: fichas criadas pela importação com nome igual ao de
+   alguém que já existia. Fica no alto da lista até a profissional decidir. */
+function faixaDuplicados(){
+ const L=pacConferir();
+ if(!L.length)return '';
+ return `<div class="card" style="border:1px solid var(--bad);margin-bottom:14px">
+  <b style="color:var(--bad)">${L.length} ${L.length===1?'ficha importada tem':'fichas importadas têm'} nome igual ao de ${L.length===1?'alguém':'pessoas'} que já estava${L.length===1?'':'m'} no sistema</b>
+  <p class="sub" style="margin:6px 0 12px">O sistema não juntou nada sozinho, porque nome igual não quer dizer mesma pessoa. Confira uma a uma: duas fichas separadas são corrigíveis depois, uma ficha fundida não.</p>
+  ${L.map(p=>{const v=pac(p.conferirDuplicado);return `<div class="rec" style="border-top:1px solid var(--line,#e6e6ef);padding:10px 0;display:flex;gap:10px;justify-content:space-between;align-items:flex-start;flex-wrap:wrap">
+   <div style="min-width:0;flex:1 1 240px;font-size:13px;line-height:1.6">
+    <b>${esc(p.nome)}</b><br>
+    <span style="color:var(--mut)">importada agora, código ${esc(p.codigo)}${p.cpf?' · CPF '+esc(p.cpf):' · sem CPF'}</span><br>
+    <span style="color:var(--mut)">já existia: código ${esc(v?v.codigo:'?')}${v&&v.cpf?' · CPF '+esc(v.cpf):' · sem CPF'}${v&&v.celular?' · '+esc(v.celular):''}</span></div>
+   <div style="display:flex;gap:8px;flex-wrap:wrap">
+    <button class="btn ghost sm" onclick="go('paciente','${p.id}')">Abrir a importada</button>
+    <button class="btn ghost sm" onclick="pacSeparado('${p.id}')">São pessoas diferentes</button>
+    <button class="btn sm" onclick="pacJuntar('${p.id}')">É a mesma pessoa</button></div></div>`}).join('')}
+ </div>`}
+function vPacientes(){return `<div class="page">${faixaDuplicados()}<div class="phead"><div><h1>${SEG().pessoas}</h1><p class="sub">Busque, cadastre e acompanhe ${ehSeg('podologia')?'os pacientes da sua clínica':'os seus clientes'}.</p></div><button class="btn" onclick="pacForm()">${ico('plus',16)} Novo ${SEG().pessoa.toLowerCase()}</button></div>
  <div class="card"><input class="inp" style="width:100%;max-width:420px;margin-bottom:12px" placeholder="Pesquise por nome, CPF, celular ou código (use % antes para sobrenome)" value="${esc(UI.pacQuery)}" oninput="UI.pacQuery=this.value;UI.pacPage=0;refreshPac()"><div id="pacAZ">${azBarra(pacFiltered(),'pacIrLetra',UI.pacLetra||'')}</div><div id="pacT">${pacTable()}</div></div></div>`}
 function pacForm(id){const p=id?pac(id):null;
  formModal(p?'Editar cadastro':'Novo '+SEG().pessoa.toLowerCase(),[{k:'nome',l:'Nome completo',req:true,full:true},{k:'celular',l:'Celular / WhatsApp',req:!p},{k:'nascimento',l:'Data de nascimento',type:'date'},{k:'cpf',l:'CPF'},{k:'telefone',l:'Telefone fixo'},{k:'email',l:'E-mail',type:'email'},{k:'rg',l:'RG'},{k:'sexo',l:'Sexo',type:'select',opts:['','Feminino','Masculino','Outro']},{k:'estadoCivil',l:'Estado civil'},{k:'profissao',l:'Profissão'},{k:'comoConheceu',l:'Como conheceu',type:'select',opts:['','Google','Instagram','Facebook','Indicado por','Passou em frente','Outros']},{k:'indicadoPor',l:'Indicado por (nome de quem indicou)',list:'dlPac'},
@@ -3894,9 +3958,16 @@ function atendSalvar(){const A=UI.atend;A.cliente=$('#atCli').value;A.data=$('#a
  UI.agDate=A.data;UI.atend=null;closeModal();save();render();toast(itens.length>1?itens.length+' serviços agendados no mesmo atendimento':'Agendado')}
 
 /* ============ Ficha do cliente: abas por segmento ============ */
-function abasCliente(){const filtra=L=>pode('fichaFin')?L:L.filter(([k])=>k!=='financeiro'&&k!=='comandasC');
- if(soAgenda())return [['geral','Visão Geral'],['prontuario','Prontuário'],['agendamentos','Agendamentos']];
- return filtra(abasClienteTodas())}
+/* Abas clínicas: prontuário, anamnese, evolução, fotos, exames, termos e
+   avaliação. Quem não tem a permissão clínica vê a ficha do paciente para
+   agendar e cobrar, e não vê nada disso. Antes bastava ter a tela Pacientes
+   para abrir a anamnese e as fotos de todo mundo. */
+const ABAS_CLINICAS=['prontuario','anamnese','evolucao','fotos','exames','avaliacao','termos','ficha','aplicacoes','receituario'];
+function abasCliente(){
+ const filtra=L=>pode('fichaFin')?L:L.filter(([k])=>k!=='financeiro'&&k!=='comandasC');
+ const clinico=L=>pode('clinico')?L:L.filter(([k])=>!ABAS_CLINICAS.includes(k));
+ if(soAgenda())return clinico([['geral','Visão Geral'],['prontuario','Prontuário'],['agendamentos','Agendamentos']]);
+ return clinico(filtra(abasClienteTodas()))}
 function abasClienteTodas(){
  if(ehSeg('estetica'))return [['geral','Visão Geral'],['prontuario','Prontuário'],['sessoes','Pacotes de sessões'],['avaliacao','Avaliação'],['fotos','Antes e depois'],['exames','Exames'],['documentos','Documentos'],['termos','Termos'],['contratos','Contratos'],['aplicacoes','Produtos aplicados'],['comandasC','Comandas'],['financeiro','Financeiro'],['evolucao','Evolução'],['anamnese','Anamnese'],['agendamentos','Agendamentos']];
  if(ehSeg('barbearia'))return [['geral','Visão Geral'],['prontuario','Prontuário'],['comandasC','Comandas'],['sessoes','Pacotes e planos'],['fotos','Fotos'],['documentos','Documentos'],['agendamentos','Agendamentos']];
@@ -5143,7 +5214,7 @@ function agNovo(a,s){if(s==='Desmarcado'||s==='Faltou')return false;const k=a.da
  const hist=c=>S[c].some(x=>x.pacienteId===a.pacienteId&&((x.data||x.vencimento||x.pagamento||'')<a.data)&&(x.data||x.vencimento||x.pagamento));
  return !hist('evolucoes')&&!hist('tratamentos')&&!S.lancamentos.some(l=>l.pacienteId===a.pacienteId&&l.pagamento&&l.pagamento<a.data)}
 /* ============ Atualização: aviso com botão Atualizar agora ============ */
-const VERSAO_APP='1.42.0';const URL_VERSAO_JSON='https://raw.githubusercontent.com/TheIgor12/blacksolutions/main/versao.json';
+const VERSAO_APP='1.43.0';const URL_VERSAO_JSON='https://raw.githubusercontent.com/TheIgor12/blacksolutions/main/versao.json';
 const numV=v=>String(v||'0').split(/\D+/).filter(Boolean).map(Number);
 function versaoMaior(a,b){const x=numV(a),y=numV(b);for(let i=0;i<Math.max(x.length,y.length);i++){const d=(x[i]||0)-(y[i]||0);if(d)return d>0}return false}
 const ATU={nova:null,timer:null};
@@ -5153,15 +5224,19 @@ const ATU={nova:null,timer:null};
    muda, sobe uma janela dizendo o que mudou no trabalho dela, com as palavras
    do dia a dia, e nao com os nomes internos do sistema. Sobe uma vez por
    versao em cada aparelho, e nunca por cima de outra janela aberta. */
-const NOVIDADES={versao:'1.42.0',itens:[
+const NOVIDADES={versao:'1.43.0',itens:[
  {seg:'podologia',t:'Pés interativos, um módulo novo no menu',
   d:'No menu apareceu Pés interativos. Você escolhe o paciente e gira o pé para ver o peito do pé, o lado de fora, a sola, o lado de dentro, a ponta dos dedos e o calcanhar. Tocando em cima do lugar que está tratando, o sistema pergunta se quer guardar aquele ponto, você diz sim ou não, escolhe o que encontrou e escreve a sua anotação. O ponto fica marcado no desenho com número e com o nome anatômico do lugar, e tudo isso aparece na anamnese do paciente na mesma hora. Pododáctilo é o nome do dedo do pé, do primeiro ao quinto, de dentro para fora. O primeiro é o hálux.'},
  {t:'Pacote e avulso não se misturam mais no orçamento',
   d:'Quando o serviço tem pacote cadastrado, ele aparece na lista em duas linhas: uma do avulso, com o valor da sessão, e uma do pacote, com o valor fechado. Escolhendo o pacote, o orçamento leva o valor fechado, uma vez, com as sessões escritas na descrição. Antes o sistema multiplicava as sessões do pacote pelo preço avulso, e o total saía maior do que o combinado.'},
  {t:'Alta e abandono do tratamento',
   d:'No pop-up do agendamento e no relatório de quem não vem há muito tempo apareceram os botões de dar alta e de registrar abandono. Os dois ficam na evolução clínica, com data e profissional, e geram documento para o paciente assinar.'},
- {seg:'podologia',t:'Cores por achado, pintar área e zonas de referência',
-  d:'Cada achado tem a sua cor, e a mesma cor aparece no ponto do desenho, no ponto do modelo tridimensional e na lista. Além de marcar um ponto, você pode ligar Pintar área e contornar com o dedo ou com o mouse a região tratada, que fica pintada na cor do achado. E tem a grade anatômica: ligando Zonas em cor, o desenho mostra as sete zonas do mapeamento podológico, numeradas, com a legenda ao lado.'},
+ {t:'Quem vê o prontuário agora é só quem precisa',
+  d:'Os perfis de acesso ganharam a permissão clínica. Recepção e estoque passam a ver a ficha do paciente para agendar e cobrar, sem prontuário, sem anamnese, sem evolução, sem fotos e sem exames. Profissional continua vendo tudo. Entrou também o perfil Financeiro. Se a sua equipe usa perfis, confira em Configurações quem fica com a permissão clínica.'},
+ {t:'Nome igual não junta mais paciente sozinho',
+  d:'Na importação de planilha, uma pessoa com o mesmo nome de alguém que já existe deixou de ser fundida automaticamente. O sistema cria a ficha separada, marca para conferência e mostra um aviso na lista de pacientes, onde você decide se são a mesma pessoa ou não. Juntar prontuário errado não tem volta, e por isso agora quem decide é você.'},
+ {seg:'podologia',t:'O pé em três dimensões ganhou unhas e pele',
+  d:'O modelo ganhou unhas nos cinco dedos, textura de pele e iluminação de estúdio, e a malha ficou bem mais lisa. Cada achado tem a sua cor, e a mesma cor aparece no ponto do desenho, no ponto do modelo tridimensional e na lista. Além de marcar um ponto, você pode ligar Pintar área e contornar com o dedo ou com o mouse a região tratada, que fica pintada na cor do achado. E tem a grade anatômica: ligando Zonas em cor, o desenho mostra as sete zonas do mapeamento podológico, numeradas, com a legenda ao lado.'},
  {seg:'podologia',t:'Pé em três dimensões, no computador',
   d:'No módulo Pés interativos, quem estiver no computador tem também o pé em três dimensões. Arrasta com o mouse para girar em volta inteira, rola para aproximar e toca no pé para marcar. O ponto marcado ali aparece depois no celular, no desenho plano da mesma região, porque é o mesmo registro. No celular continua o desenho de sempre, que não baixa nada a mais.'},
  {t:'Aparência no celular',
@@ -5372,18 +5447,26 @@ async function fotoAddRef(pid,tipo,id,input){const fs=[...input.files];input.val
 /* ============ Configurações ============ */
 /* ---- Perfis de acesso: cada pessoa vê só o que precisa ---- */
 function telasPerm(){const P=SEG().pessoas;return [['agenda','Agenda'],['pacientes',P],['exames','Exames'],['confirmacao','Confirmação e alertas'],['servicos',ehSeg('podologia')?'Procedimentos e preços':'Serviços e preços'],['estoque','Estoque'],['comandas','Comandas'],['caixa','Caixa do dia'],['financeiro','Financeiro'],['relatorios','Relatórios'],['dashboard','Dashboard'],['comissoes','Comissões'],['indicacoes','Indicações'],['vouchers','Vouchers'],['protocolos','Protocolos'],['equipamentos','Equipamentos'],['importar','Importar dados'],['profissionais','Profissionais'],['orcamentos','Orçamentos'],['receituario','Receituário'],['config','Configurações']]}
-const EXTRAS_PERM=[['fichaFin','Ver o financeiro na ficha do cliente'],['valores','Ver valores e preços nas telas'],['excluir','Excluir registros'],['exportar','Baixar backup e exportar para Excel']];
+const EXTRAS_PERM=[
+ ['clinico','Abrir prontuário, anamnese, evolução, fotos e exames do paciente'],['fichaFin','Ver o financeiro na ficha do cliente'],['valores','Ver valores e preços nas telas'],['excluir','Excluir registros'],['exportar','Baixar backup e exportar para Excel']];
 function perfisPadrao(){return [
  {id:'recepcao',nome:'Recepção',telas:['agenda','pacientes','confirmacao','comandas','servicos'],extras:{valores:true}},
  {id:'estoquista',nome:'Estoque',telas:['estoque','servicos'],extras:{valores:true}},
- {id:'profissional',nome:'Profissional',telas:['agenda','pacientes','servicos'],extras:{}}]}
+ {id:'profissional',nome:'Profissional',telas:['agenda','pacientes','servicos','prontuarios','fotorapida'],extras:{clinico:true}},
+ {id:'financeiro',nome:'Financeiro',telas:['financeiro','relatorios','pacientes','servicos'],extras:{valores:true,fichaFin:true}}]}
 function perfis(){if(!Array.isArray(S.config.perfis)||!S.config.perfis.length){S.config.perfis=perfisPadrao()}return S.config.perfis}
 function acessos(){if(!S.config.acessos||typeof S.config.acessos!=='object')S.config.acessos={};return S.config.acessos}
 function emailAtual(){const u=NV.sessao&&NV.sessao.user;return u?String(u.email||'').toLowerCase():''}
 function perfilAtual(){if(!NV.ativa)return null;if(NV.papel==='admin')return null;
  const id=acessos()[emailAtual()];if(!id)return null;return perfis().find(x=>x.id===id)||null}
-function podeTela(k){const pf=perfilAtual();if(!pf)return true;if(k==='prontuarios'||k==='fotorapida')k='pacientes';if(k==='orcamentos')k='servicos';if(k==='receituario')k='pacientes';return (pf.telas||[]).includes(k)}
+function podeTela(k){const pf=perfilAtual();if(!pf)return true;
+ if(TELAS_CLINICAS.includes(k)&&!pode('clinico'))return false;
+ if(k==='prontuarios'||k==='fotorapida'||k==='pesmapa'||k==='evolucoes')k='pacientes';
+ if(k==='orcamentos')k='servicos';if(k==='receituario')k='pacientes';
+ return (pf.telas||[]).includes(k)}
 function pode(k){const pf=perfilAtual();if(!pf)return true;return !!(pf.extras||{})[k]}
+/* Telas clínicas inteiras, fora da ficha do paciente. */
+const TELAS_CLINICAS=['prontuarios','fotorapida','receituario','evolucoes','pesmapa','bfclinico'];
 function perfilForm(id){const novo=!id;const pf=novo?{id:'p'+uid().slice(0,6),nome:'',telas:['agenda','pacientes'],extras:{}}:perfis().find(x=>x.id===id);if(!pf)return;
  const chk=(k,n,marc,fn)=>`<label class="chk" style="margin:4px 0"><input type="checkbox" ${marc?'checked':''} onchange="${fn}"> ${esc(n)}</label>`;
  window._pf=JSON.parse(JSON.stringify(pf));
@@ -6004,7 +6087,7 @@ function telaCopiaNaoAutorizada(){
   if(!origemAutorizada()){telaCopiaNaoAutorizada();return}}
  try{navigator.storage&&navigator.storage.persist&&navigator.storage.persist()}catch(e){}
  try{fonteAplicar()}catch(e){}
- try{if(/^https?:/.test(location.protocol)&&'serviceWorker' in navigator&&!window.pywebview)navigator.serviceWorker.register('./sw.js?v=1.42.0',{updateViaCache:'none'}).then(r=>r.update()).catch(()=>{})}catch(e){}
+ try{if(/^https?:/.test(location.protocol)&&'serviceWorker' in navigator&&!window.pywebview)navigator.serviceWorker.register('./sw.js?v=1.43.0',{updateViaCache:'none'}).then(r=>r.update()).catch(()=>{})}catch(e){}
  if(NV.ativa){
   if(!window.supabase||!window.supabase.createClient){UI.auth={modo:'offline',temCache:!!(await DB.get('ultimo'))};render();return}
   NV.sb=window.supabase.createClient(NUVEM.url,NUVEM.chave,{auth:{persistSession:true,autoRefreshToken:true}});
@@ -6055,33 +6138,33 @@ function agProf(nome){UI.profOff={};if(nome){S.profissionais.forEach(p=>{if(norm
 function menuProfs(){const L=az(S.profissionais.filter(p=>p.ativo!==false));if(!L.length)return '';const sel=UI.view==='agenda'?(UI.agProf||''):null;
  return `<div class="msec">AGENDA POR PROFISSIONAL</div><button class="${sel===''&&UI.view==='agenda'?'on':''}" onclick="agProf('')">${ico('cal',18)} Todos os profissionais</button>${L.map(p=>`<button class="${sel!=null&&norm(sel)===norm(p.nome)?'on':''}" onclick="agProf(${esc(JSON.stringify(p.nome))})"><span style="display:inline-block;width:12px;height:12px;border-radius:50%;background:${esc(p.cor||'#0a4bde')};margin:0 3px;flex:none"></span> ${esc(p.nome)}</button>`).join('')}`}
 </script>
-<script src="./bf-clinical.js?v=1.42.0"></script>
-<script src="./bf-fiscal-advanced.js?v=1.42.0"></script>
-<script src="./bf-nfse-139.js?v=1.42.0"></script>
-<script src="./bf-pes-141.js?v=1.42.0"></script>
-<script src="./bf-pes3d-141.js?v=1.42.0"></script>
-<script src="./bf-receituario.js?v=1.42.0"></script>
-<script src="./bf-cadastro-fiscal.js?v=1.42.0"></script>
-<script src="./bf-context-actions.js?v=1.42.0"></script>
-<script src="./bf-integrity-audit.js?v=1.42.0"></script>
-<script src="./bf-blackpay-integrated.js?v=1.42.0"></script>
-<script src="./bf-tati-help.js?v=1.42.0"></script>
-<script src="./bf-mobile-photos.js?v=1.42.0"></script>
-<script src="./bf-documents.js?v=1.42.0"></script>
-<script src="./bf-workflow-123.js?v=1.42.0"></script>
-<script src="./bf-workflow-124.js?v=1.42.0"></script>
-<script>const bfMobileCss=document.createElement("link");bfMobileCss.rel="stylesheet";bfMobileCss.href="./bf-mobile-126.css?v=1.42.0";document.head.appendChild(bfMobileCss);</script>
-<script src="./bf-mobile-126.js?v=1.42.0"></script>
-<script>const bfNavCss=document.createElement("link");bfNavCss.rel="stylesheet";bfNavCss.href="./bf-navegacao-128.css?v=1.42.0";document.head.appendChild(bfNavCss);</script>
-<script src="./bf-navegacao-128.js?v=1.42.0"></script>
-<script src="./bf-barbearia-129.js?v=1.42.0"></script>
-<script src="./bf-catalogos-130.js?v=1.42.0"></script>
-<script src="./bf-sincronia-138.js?v=1.42.0"></script>
-<script src="./bf-cobranca-138.js?v=1.42.0"></script>
-<script src="./bf-assinante-138.js?v=1.42.0"></script>
-<script>["./bf-assinante-135.css?v=1.42.0","./bf-assinante-138.css?v=1.42.0"].forEach(function(h){var l=document.createElement("link");l.rel="stylesheet";l.href=h;document.head.appendChild(l)});</script>
-<script src="./bf-assinante-135.js?v=1.42.0"></script>
-<script src="./bf-tutorial-136.js?v=1.42.0"></script>
-<script src="./bf-documentos-137.js?v=1.42.0"></script>
+<script src="./bf-clinical.js?v=1.43.0"></script>
+<script src="./bf-fiscal-advanced.js?v=1.43.0"></script>
+<script src="./bf-nfse-139.js?v=1.43.0"></script>
+<script src="./bf-pes-141.js?v=1.43.0"></script>
+<script src="./bf-pes3d-141.js?v=1.43.0"></script>
+<script src="./bf-receituario.js?v=1.43.0"></script>
+<script src="./bf-cadastro-fiscal.js?v=1.43.0"></script>
+<script src="./bf-context-actions.js?v=1.43.0"></script>
+<script src="./bf-integrity-audit.js?v=1.43.0"></script>
+<script src="./bf-blackpay-integrated.js?v=1.43.0"></script>
+<script src="./bf-tati-help.js?v=1.43.0"></script>
+<script src="./bf-mobile-photos.js?v=1.43.0"></script>
+<script src="./bf-documents.js?v=1.43.0"></script>
+<script src="./bf-workflow-123.js?v=1.43.0"></script>
+<script src="./bf-workflow-124.js?v=1.43.0"></script>
+<script>const bfMobileCss=document.createElement("link");bfMobileCss.rel="stylesheet";bfMobileCss.href="./bf-mobile-126.css?v=1.43.0";document.head.appendChild(bfMobileCss);</script>
+<script src="./bf-mobile-126.js?v=1.43.0"></script>
+<script>const bfNavCss=document.createElement("link");bfNavCss.rel="stylesheet";bfNavCss.href="./bf-navegacao-128.css?v=1.43.0";document.head.appendChild(bfNavCss);</script>
+<script src="./bf-navegacao-128.js?v=1.43.0"></script>
+<script src="./bf-barbearia-129.js?v=1.43.0"></script>
+<script src="./bf-catalogos-130.js?v=1.43.0"></script>
+<script src="./bf-sincronia-138.js?v=1.43.0"></script>
+<script src="./bf-cobranca-138.js?v=1.43.0"></script>
+<script src="./bf-assinante-138.js?v=1.43.0"></script>
+<script>["./bf-assinante-135.css?v=1.43.0","./bf-assinante-138.css?v=1.43.0"].forEach(function(h){var l=document.createElement("link");l.rel="stylesheet";l.href=h;document.head.appendChild(l)});</script>
+<script src="./bf-assinante-135.js?v=1.43.0"></script>
+<script src="./bf-tutorial-136.js?v=1.43.0"></script>
+<script src="./bf-documentos-137.js?v=1.43.0"></script>
 </body>
 </html>

@@ -726,7 +726,11 @@
 
   /* --------------------------------------------------------- integração */
   var cabe = function () {
-    return !soAgenda() && String((S && S.config && S.config.segmento) || 'podologia') === 'podologia';
+    /* Podologia, e só para quem tem permissão clínica: o mapa dos pés é
+       prontuário, não é agenda. */
+    if (soAgenda()) return false;
+    if (String((S && S.config && S.config.segmento) || 'podologia') !== 'podologia') return false;
+    return typeof podeTela !== 'function' || podeTela('pesmapa');
   };
   var menuAntes = menuItens;
   menuItens = function () {

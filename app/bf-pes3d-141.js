@@ -34,7 +34,7 @@
   window.__bfPes3d141 = true;
 
   var THREE = null, carregando = null;
-  var cena, rend, cam, grupo, malha, luzes, animando = false, alvo = null;
+  var cena, rend, cam, grupo, malha, unhasMesh, luzes, animando = false, alvo = null;
   var pinos = [], raios = null, aoTocar = null, destruidor = null;
 
   /* ------------------------------------------------------------ cabimento */
@@ -87,7 +87,23 @@
     { y: 90, z: 43, rx: 21, rz: 20 },
     { y: 104, z: 44, rx: 20, rz: 19 }
   ];
-  var N = 32;                       /* pontos de cada seção */
+  var N = 52;                       /* pontos de cada seção */
+  /* Entre duas fatias desenhadas à mão entram outras calculadas, para a
+     silhueta sair lisa em vez de facetada. */
+  function adensar(L, vezes) {
+    var out = [];
+    for (var i = 0; i < L.length - 1; i++) {
+      var a = L[i], b = L[i + 1];
+      for (var k = 0; k < vezes; k++) {
+        var t = k / vezes, u = t * t * (3 - 2 * t);
+        out.push({ z: a.z + (b.z - a.z) * t, w: a.w + (b.w - a.w) * u,
+                   h: a.h + (b.h - a.h) * u, arco: a.arco + (b.arco - a.arco) * u,
+                   base: (a.base || 0) + ((b.base || 0) - (a.base || 0)) * u });
+      }
+    }
+    out.push(L[L.length - 1]);
+    return out;
+  }
   var DEDOS = [
     { nome: 1, x: -31, r0: 13.0, r1: 11.0, comp: 40, abre: -0.04, sobe: 0.00 },
     { nome: 2, x: -12, r0: 9.6, r1: 8.0, comp: 37, abre: 0.00, sobe: 0.01 },
@@ -154,7 +170,7 @@
     }
     /* corpo */
     var anéis = [];
-    SECOES.forEach(function (s) {
+    adensar(SECOES, 4).forEach(function (s) {
       var c = contornoSecao(s), anel = [];
       c.forEach(function (p) { anel.push(põe(p[0], p[1], s.z, regiaoCorpo(p[0], p[1], s.z, s))); });
       anéis.push(anel);
@@ -167,7 +183,8 @@
       }
     }
     /* tampas das duas pontas */
-    var s0 = SECOES[0], sF = SECOES[SECOES.length - 1];
+    var FINAS = adensar(SECOES, 4);
+    var s0 = FINAS[0], sF = FINAS[FINAS.length - 1];
     var cTras = põe(0, s0.h * 0.5 + (s0.base || 0), s0.z - 3, 'calc');
     var cFren = põe(0, sF.h * 0.5 + (sF.base || 0), sF.z + 3, 'meta');
     for (var k = 0; k < N; k++) {
@@ -198,9 +215,9 @@
     var cTopo = põe(0, topo.y + 2, topo.z, 'torn');
     for (var tc = 0; tc < N; tc++) idx.push(cTopo, anéisT[anéisT.length - 1][tc], anéisT[anéisT.length - 1][(tc + 1) % N]);
     /* dedos */
-    var M = 10, AN = 16;
+    var M = 14, AN = 24;
     DEDOS.forEach(function (d) {
-      var base = SECOES[SECOES.length - 1];
+      var base = FINAS[FINAS.length - 1];
       var y0 = base.h * 0.52 + (base.base || 0);
       var anéisD = [];
       /* Os anéis vão até nove décimos do dedo e a ponta fecha num ponto só,
@@ -232,11 +249,45 @@
       for (var u = 0; u < AN; u++) idx.push(pontaC, ult[u], ult[(u + 1) % AN]);
     });
 
+    /* As unhas são geometria à parte, com material próprio: é a unha que o
+       olho procura primeiro num pé, e sem ela o desenho fica de manequim. */
+    var unhas = { pos: [], idx: [], reg: [] };
+    function põeU(x, y, z, r) { unhas.pos.push(x, y, z); unhas.reg.push(r); return unhas.pos.length / 3 - 1; }
+    DEDOS.forEach(function (d) {
+      var base = FINAS[FINAS.length - 1];
+      var y0 = base.h * 0.52 + (base.base || 0);
+      var fIni = 0.44, fFim = 0.78;
+      var largura = d.r0 * 0.58, AU = 20, MU = 8;
+      var linhas = [];
+      for (var m = 0; m <= MU; m++) {
+        var f = fIni + (fFim - fIni) * (m / MU);
+        var cz = base.z - 8 + d.comp * f;
+        var cx = d.x + d.abre * d.comp * f;
+        var cy = y0 + d.sobe * d.comp * f;
+        var rr = d.r0 + (d.r1 - d.r0) * f;
+        var estreita = Math.sin(Math.PI * (m / MU)) * 0.25 + 0.80;
+        var lin = [];
+        for (var i = 0; i <= AU; i++) {
+          var t = (i / AU - 0.5) * Math.PI * 0.62;
+          var px = cx + Math.sin(t) * largura * estreita;
+          var py = cy + Math.cos(t) * (rr + 0.35);
+          lin.push(põeU(px, py, cz, 'u' + d.nome));
+        }
+        linhas.push(lin);
+      }
+      for (var q = 0; q < linhas.length - 1; q++) {
+        for (var w = 0; w < AU; w++) {
+          unhas.idx.push(linhas[q][w], linhas[q + 1][w], linhas[q + 1][w + 1]);
+          unhas.idx.push(linhas[q][w], linhas[q + 1][w + 1], linhas[q][w + 1]);
+        }
+      }
+    });
+
     var centros = {};
     Object.keys(somaReg).forEach(function (r) {
       centros[r] = [somaReg[r][0] / contaReg[r], somaReg[r][1] / contaReg[r], somaReg[r][2] / contaReg[r]];
     });
-    return { pos: pos, idx: idx, reg: reg, centros: centros };
+    return { pos: pos, idx: idx, reg: reg, centros: centros, unhas: unhas };
   }
   var MALHA = null;
   function malhaDados() { if (!MALHA) MALHA = gerarMalha(); return MALHA; }
@@ -295,6 +346,57 @@
     cam.lookAt(ax, ay, ALVO.z);
   }
 
+  /* -------------------------------------------------------- texturas */
+  /* A pele é desenhada aqui, num quadro de 512 por 512: tom de base, variação
+     em manchas e um granulado fino. Não é foto de ninguém, não pesa no
+     carregamento e não tem licença de terceiro. */
+  var TEX = {};
+  /* chapa, e não quadro: já existe um quadro() que é o laço de desenho da
+     cena, e dois nomes iguais fizeram a textura chamar o laço por engano. */
+  function chapa(n) {
+    var c = document.createElement('canvas'); c.width = n; c.height = n;
+    return { c: c, g: c.getContext('2d') };
+  }
+  function texturaPele() {
+    if (TEX.pele) return TEX.pele;
+    var q = chapa(512), g = q.g;
+    g.fillStyle = '#edc8ac'; g.fillRect(0, 0, 512, 512);
+    var i, x, y, r;
+    for (i = 0; i < 420; i++) {
+      x = Math.random() * 512; y = Math.random() * 512; r = 30 + Math.random() * 90;
+      var gr = g.createRadialGradient(x, y, 0, x, y, r);
+      var q1 = Math.random();
+      gr.addColorStop(0, q1 > 0.5 ? 'rgba(248,219,200,0.16)' : 'rgba(214,166,140,0.12)');
+      gr.addColorStop(1, 'rgba(0,0,0,0)');
+      g.fillStyle = gr; g.beginPath(); g.arc(x, y, r, 0, 6.283); g.fill();
+    }
+    var img = g.getImageData(0, 0, 512, 512), dd = img.data;
+    for (i = 0; i < dd.length; i += 4) {
+      var n = (Math.random() - 0.5) * 9;
+      dd[i] += n; dd[i + 1] += n * 0.9; dd[i + 2] += n * 0.8;
+    }
+    g.putImageData(img, 0, 0);
+    var t = new THREE.CanvasTexture(q.c);
+    t.wrapS = t.wrapT = THREE.RepeatWrapping; t.repeat.set(6, 6);
+    TEX.pele = t; return t;
+  }
+  /* Relevo: linhas finas cruzadas, que é o desenho da pele vista de perto. */
+  function texturaRelevo() {
+    if (TEX.relevo) return TEX.relevo;
+    var q = chapa(512), g = q.g;
+    g.fillStyle = '#808080'; g.fillRect(0, 0, 512, 512);
+    g.lineWidth = 1;
+    for (var i = 0; i < 1400; i++) {
+      var x = Math.random() * 512, y = Math.random() * 512;
+      var a = Math.random() * Math.PI, c = 6 + Math.random() * 22;
+      g.strokeStyle = Math.random() > 0.5 ? 'rgba(255,255,255,0.33)' : 'rgba(0,0,0,0.28)';
+      g.beginPath(); g.moveTo(x, y); g.lineTo(x + Math.cos(a) * c, y + Math.sin(a) * c); g.stroke();
+    }
+    var t = new THREE.CanvasTexture(q.c);
+    t.wrapS = t.wrapT = THREE.RepeatWrapping; t.repeat.set(7, 7);
+    TEX.relevo = t; return t;
+  }
+
   function pinoMesh(cor) {
     /* a cor vem do achado, igual à do desenho plano */
     var g = new THREE.SphereGeometry(7, 16, 12);
@@ -350,16 +452,41 @@
       geo.setAttribute('position', new THREE.Float32BufferAttribute(d.pos, 3));
       geo.setIndex(d.idx);
       geo.computeVertexNormals();
+      /* Mapeamento cilíndrico simples: serve para pele, que não tem desenho
+         com lugar certo, e evita costura visível. */
+      var uv = [];
+      for (var vi = 0; vi < d.pos.length; vi += 3) {
+        var px = d.pos[vi], py = d.pos[vi + 1], pz = d.pos[vi + 2];
+        uv.push((Math.atan2(px, py - 25) / (Math.PI * 2)) + 0.5, pz / 260);
+      }
+      geo.setAttribute('uv', new THREE.Float32BufferAttribute(uv, 2));
       malha = new THREE.Mesh(geo, new THREE.MeshStandardMaterial({
-        color: 0xf2d9c4, roughness: 0.82, metalness: 0.0, flatShading: false, side: THREE.DoubleSide
+        map: texturaPele(), bumpMap: texturaRelevo(), bumpScale: 0.5,
+        color: 0xfff4ec, roughness: 0.74, metalness: 0.0, side: THREE.DoubleSide
       }));
       malha.userData.reg = d.reg;
       grupo.add(malha);
       enquadrar(geo);
 
-      cena.add(new THREE.HemisphereLight(0xffffff, 0x9aa0b4, 1.05));
-      var dl = new THREE.DirectionalLight(0xffffff, 1.15); dl.position.set(-160, 260, 220); cena.add(dl);
-      var dl2 = new THREE.DirectionalLight(0xffffff, 0.45); dl2.position.set(200, 60, -180); cena.add(dl2);
+      /* Unhas: geometria própria, mais clara e com brilho, e por isso
+         separada do corpo. */
+      var gu = new THREE.BufferGeometry();
+      gu.setAttribute('position', new THREE.Float32BufferAttribute(d.unhas.pos, 3));
+      gu.setIndex(d.unhas.idx);
+      gu.computeVertexNormals();
+      unhasMesh = new THREE.Mesh(gu, new THREE.MeshStandardMaterial({
+        color: 0xfaf0e6, roughness: 0.18, metalness: 0.02, side: THREE.DoubleSide
+      }));
+      unhasMesh.userData.reg = d.unhas.reg;
+      grupo.add(unhasMesh);
+
+      /* Luz de três pontos, como em estúdio: principal alta à frente,
+         preenchimento fraco do lado oposto e contraluz para destacar a
+         silhueta do pé do fundo claro da tela. */
+      cena.add(new THREE.HemisphereLight(0xfff4ea, 0xc8b5a8, 0.95));
+      var dl = new THREE.DirectionalLight(0xfff1e4, 1.35); dl.position.set(-180, 300, 260); cena.add(dl);
+      var dl2 = new THREE.DirectionalLight(0xdfe6ff, 0.42); dl2.position.set(240, 90, -140); cena.add(dl2);
+      var dl3 = new THREE.DirectionalLight(0xffffff, 0.55); dl3.position.set(40, -140, -260); cena.add(dl3);
 
       raios = new THREE.Raycaster();
       posicionarCamera();
@@ -376,6 +503,7 @@
     if (destruidor) { try { destruidor(); } catch (e) { } destruidor = null; }
     if (rend) { try { rend.dispose(); } catch (e) { } }
     if (malha) { malha.geometry.dispose(); malha.material.dispose(); }
+    if (unhasMesh) { unhasMesh.geometry.dispose(); unhasMesh.material.dispose(); unhasMesh = null; }
     pinos.forEach(function (p) { p.geometry.dispose(); p.material.dispose(); });
     pinos = []; cena = null; rend = null; cam = null; grupo = null; malha = null;
   };
@@ -439,10 +567,11 @@
     /* Primeiro os pinos: tocar num ponto já marcado abre aquele ponto. */
     var nosPinos = raios.intersectObjects(pinos, false);
     if (nosPinos.length) { aoTocar({ pino: nosPinos[0].object.userData.id }); return; }
-    var hits = raios.intersectObject(malha, false);
+    var alvos2 = unhasMesh ? [malha, unhasMesh] : [malha];
+    var hits = raios.intersectObjects(alvos2, false);
     if (!hits.length) return;
     var h = hits[0];
-    var regs = malha.userData.reg || [];
+    var regs = (h.object.userData.reg) || [];
     var reg = regs[h.face.a] || regs[h.face.b] || regs[h.face.c] || '';
     /* A posição volta na coordenada da malha, sem o espelho do pé esquerdo,
        para o ponto do pé esquerdo não virar ponto do direito ao ser redesenhado. */
