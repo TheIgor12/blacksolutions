@@ -247,8 +247,22 @@
   };
 
   /* ----------------------------------------------------------- estado UI */
-  var P = { pid: '', pe: 'D', vista: 'dorsal', abrindo: null, grade: false, pintando: false, traco: [], pintandoAgora: false };
+  var P = { clinica: null, pid: '', pe: 'D', vista: 'dorsal', angulo: 'dorsal', modoManual: false, abrindo: null, grade: false, pintando: false, traco: [], pintandoAgora: false };
   window.__bfPesP = P;
+  var contextoModal = null;
+  function contexto() {
+    return { pid: P.pid, pe: P.pe, vista: P.vista, clinica: NV.clinicaId || '', estado: S };
+  }
+  function contextoValido(c) {
+    return !!(c && c.estado === S && c.clinica === (NV.clinicaId || '') &&
+      c.pid === P.pid && c.pe === P.pe && c.vista === P.vista && UI.view === TELA &&
+      cabe() && pacDe(c.pid));
+  }
+  function contextoObrigatorio() {
+    var c = contextoModal; contextoModal = null;
+    if (contextoValido(c)) return c;
+    closeModal(); toast('A ficha mudou. Selecione o paciente e tente de novo.'); return null;
+  }
 
   function pacAtivos() {
     return (S.pacientes || []).filter(function (x) { return x.status !== 'Inativo'; })
@@ -275,6 +289,7 @@
        eram desenho de traço: cai no centro da própria região, na vista onde
        aquela região se vê. */
     var dest = vistaDaRegiao(p.regiao);
+    if (p.vista === '3d' && !dest) dest = (localDaRegiao(p.regiao) || {}).vista;
     if (!dest || dest !== P.vista) {
       if (p.vista !== P.vista) return null;
       dest = P.vista;
@@ -510,9 +525,11 @@
     P.pintandoAgora = false;
     if (P.traco.length < 5) { P.traco = []; previewPintar(); return; }
     var c = centroArea(P.traco);
-    comMapa(P.vista, function () { perguntarArea(regiaoNaFigura(P.vista, c.x, c.y)); });
+    var origem = contexto();
+    comMapa(P.vista, function () { if (contextoValido(origem)) perguntarArea(regiaoNaFigura(origem.vista, c.x, c.y)); });
   };
   function perguntarArea(reg) {
+    contextoModal = contexto();
     var onde = (LADO[P.pe] || P.pe) + (VISTAS[P.vista] ? ', ' + VISTAS[P.vista].nome.toLowerCase() : '') +
       (reg ? ', ' + nomeRegiao(P.vista, reg) : '');
     openModal('<h3 style="margin-top:0">Salvar esta área?</h3>' +
@@ -526,7 +543,8 @@
   }
   window.bfPesDescartarArea = function () { P.traco = []; closeModal(); render(); };
   window.bfPesSalvarArea = function (reg) {
-    var m = mapaDe(P.pid, true);
+    var origem = contextoObrigatorio(); if (!origem) return;
+    var m = mapaDe(origem.pid, true);
     m.pontos.push({
       id: uid(), pe: P.pe, vista: P.vista, v: 2, forma: 'area', pts: P.traco.slice(),
       x: centroArea(P.traco).x, y: centroArea(P.traco).y, regiao: reg || '',
@@ -549,7 +567,8 @@
     var alvo = ev.target && ev.target.closest ? ev.target.closest('.bfp-pino') : null;
     if (alvo) { window.bfPesAbrirPino(alvo.getAttribute('data-pino')); return; }
     var p = pontoDoEvento(ev); if (!p) return;
-    comMapa(P.vista, function () { perguntar(regiaoNaFigura(P.vista, p.x, p.y), p.x, p.y); });
+    var origem = contexto();
+    comMapa(P.vista, function () { if (contextoValido(origem)) perguntar(regiaoNaFigura(origem.vista, p.x, p.y), p.x, p.y); });
   };
   /* O mapa de regiões é uma imagem e pode ainda estar chegando no primeiro
      toque. Em vez de gravar um ponto sem nome de lugar, espera por ele. */
@@ -562,7 +581,9 @@
   }
 
   window.bfPesSalvarPonto = function (x, y, reg, z) {
-    var m = mapaDe(P.pid, true);
+    var origem = contextoObrigatorio();
+    if (!origem || !Number.isFinite(x) || !Number.isFinite(y)) return;
+    var m = mapaDe(origem.pid, true);
     var tipo = (document.getElementById('bfp-tipo') || {}).value || '';
     var nota = (document.getElementById('bfp-nota') || {}).value || '';
     var ponto = {
@@ -571,7 +592,7 @@
       prof: str(S.config.responsavel || nomeUsuario && nomeUsuario() || '')
     };
     ponto.v = 2;
-    if (z !== undefined && z !== null) { ponto.z = z; ponto.vista = '3d'; }
+    if (Number.isFinite(z)) { ponto.z = z; ponto.vista = '3d'; ponto.malha = window.bfPes3dMalha; }
     m.pontos.push(ponto);
     m.em = todayISO();
     closeModal(); save(); render();
@@ -579,11 +600,13 @@
   };
   /* A mesma pergunta serve ao desenho plano e ao pé em três dimensões. */
   function perguntar(reg, x, y, z) {
+    contextoModal = contexto();
+    var paciente = pacDe(contextoModal.pid); if (!paciente) return;
     var onde = (LADO[P.pe] || P.pe) + (VISTAS[P.vista] ? ', ' + VISTAS[P.vista].nome.toLowerCase() : '') +
       (reg ? ', ' + nomeRegiao(P.vista, reg) : '');
     openModal('<h3 style="margin-top:0">Salvar este ponto?</h3>' +
       '<p class="sub" style="margin:0 0 14px">Você tocou em <b>' + E(onde) + '</b>.<br>' +
-      'Quer salvar este clique como local do seu tratamento?</p>' +
+      'Salvar na ficha de <b>' + E(paciente.nome) + '</b>?</p>' +
       '<div class="fgrid"><label>O que foi encontrado<select id="bfp-tipo">' +
       ACHADOS.map(function (a) { return '<option>' + E(a) + '</option>'; }).join('') + '</select></label>' +
       '<label class="full">Anotação<textarea id="bfp-nota" rows="2" placeholder="O que viu, o que fez, o que orientou"></textarea></label></div>' +
@@ -595,7 +618,8 @@
   window.bfPesAbrirPino = function (id) {
     var m = mapaDe(P.pid, false); if (!m) return;
     var p = m.pontos.find(function (x) { return x.id === id; }); if (!p) return;
-    openModal('<h3 style="margin-top:0">Ponto ' + (m.pontos.indexOf(p) + 1) + '</h3>' +
+    contextoModal = contexto();
+    openModal('<h3 style="margin-top:0">Ponto '  + (m.pontos.indexOf(p) + 1) + '</h3>' +
       '<p class="sub" style="margin:0 0 14px">' + E(LADO[p.pe]) +
       (VISTAS[p.vista] ? ', ' + E(VISTAS[p.vista].nome.toLowerCase()) : ', pé em três dimensões') +
       (p.regiao ? ', ' + E(nomeRegiao(p.vista, p.regiao)) : '') + ' · marcado em ' + E(br(p.em)) + '</p>' +
@@ -608,14 +632,16 @@
       '<button class="btn" onclick="bfPesGravarPonto(\'' + p.id + '\')">Salvar</button></div>');
   };
   window.bfPesGravarPonto = function (id) {
-    var m = mapaDe(P.pid, false); if (!m) return;
+    var origem = contextoObrigatorio(); if (!origem) return;
+    var m = mapaDe(origem.pid, false); if (!m) return;
     var p = m.pontos.find(function (x) { return x.id === id; }); if (!p) return;
     p.tipo = str((document.getElementById('bfp-tipo') || {}).value || '');
     p.nota = str((document.getElementById('bfp-nota') || {}).value || '').slice(0, 400);
     m.em = todayISO(); closeModal(); save(); render(); toast('Ponto atualizado.');
   };
   window.bfPesApagarPonto = function (id) {
-    var m = mapaDe(P.pid, false); if (!m) return;
+    var origem = contextoObrigatorio(); if (!origem) return;
+    var m = mapaDe(origem.pid, false); if (!m) return;
     var i = m.pontos.findIndex(function (x) { return x.id === id; });
     if (i < 0) return;
     m.pontos.splice(i, 1); m.em = todayISO();
@@ -635,7 +661,18 @@
   window.bfPesVista = function (v) {
     if (v !== '3d' && !VISTAS[v]) return;
     if (P.vista === '3d' && v !== '3d' && window.bfPes3dDestruir) window.bfPes3dDestruir();
+    P.modoManual = true;
     P.vista = v; render();
+  };
+  window.bfPesAngulo = function (v) {
+    if (!VISTAS[v]) return;
+    if (P.vista !== '3d') { window.bfPesVista(v); return; }
+    P.angulo = v;
+    document.querySelectorAll('[data-bfp-angulo]').forEach(function (b) {
+      var ativo = b.dataset.bfpAngulo === v;
+      b.classList.toggle('ghost', !ativo); b.setAttribute('aria-pressed',String(ativo));
+    });
+    window.bfPes3dAngulo(v);
   };
   window.bfPesPe = function (l) {
     P.pe = (l === 'E' ? 'E' : 'D');
@@ -643,7 +680,10 @@
     render();
   };
   window.bfPesPaciente = function (id) {
-    P.pid = String(id || ''); P.abrindo = null;
+    P.clinica = NV.clinicaId || '';
+    P.pid = pacDe(String(id || '')) ? String(id) : ''; P.abrindo = null;
+    P.pintandoAgora = false; P.traco = [];
+    if (!P.modoManual) P.vista = tem3d() ? '3d' : 'dorsal';
     if (P.vista === '3d' && window.bfPes3dDestruir) window.bfPes3dDestruir();
     render();
   };
@@ -658,29 +698,36 @@
       destino = Lr ? Lr.vista : 'dorsal';
     }
     if (P.vista === '3d' && destino !== '3d' && window.bfPes3dDestruir) window.bfPes3dDestruir();
+    if (destino === '3d') {
+      P.angulo = vistaDaRegiao(p.regiao) || (localDaRegiao(p.regiao) || {}).vista || 'dorsal';
+    }
     P.pe = p.pe; P.vista = destino; P.abrindo = p.id; render();
   };
   window.bfPesObs = function (v) {
+    if (!contextoValido(contexto())) return;
     var m = mapaDe(P.pid, true); m.obs = String(v || '').slice(0, 1200); m.em = todayISO();
     clearTimeout(window.__bfPesT); window.__bfPesT = setTimeout(save, 700);
   };
   window.bfPesLimpar = function () {
     var m = mapaDe(P.pid, false); if (!m || !m.pontos.length) return;
+    var origem = contexto();
     confirmModal('Apagar os <b>' + m.pontos.length + '</b> pontos marcados deste paciente? A anotação geral continua.',
-      function () { m.pontos = []; m.em = todayISO(); save(); render(); toast('Mapa limpo.'); }, 'Apagar os pontos');
+      function () { if (!contextoValido(origem)) return; m.pontos = []; m.em = todayISO(); save(); render(); toast('Mapa limpo.'); }, 'Apagar os pontos');
   };
 
   /* ---------------------------------------------- mandar para a evolução */
   window.bfPesParaEvolucao = function () {
     var m = mapaDe(P.pid, false), p = pacDe(P.pid);
     if (!m || !p || (!m.pontos.length && !str(m.obs))) { toast('Marque ao menos um ponto antes.'); return; }
+    var origem = contexto();
     var texto = 'MAPA DOS PÉS\n' + m.pontos.map(function (x, i) { return (i + 1) + '. ' + textoPonto(x); }).join('\n') +
       (str(m.obs) ? '\n\nObservação: ' + str(m.obs) : '');
     confirmModal('Lançar o mapa de <b>' + E(p.nome) + '</b> na evolução clínica de hoje, com ' +
       m.pontos.length + ' ' + (m.pontos.length === 1 ? 'ponto' : 'pontos') + '?',
       function () {
+        if (!contextoValido(origem)) { toast('A ficha mudou. Nenhuma evolução foi lançada.'); return; }
         S.evolucoes.push({
-          id: uid(), pacienteId: P.pid, data: todayISO(), texto: texto,
+          id: uid(), pacienteId: origem.pid, data: todayISO(), texto: texto,
           profissional: str(S.config.responsavel || nomeUsuario()), origem: 'mapa-pes'
         });
         toast('Lançado na evolução clínica.');
@@ -690,46 +737,40 @@
   /* ------------------------------------------------------------- a tela */
   var tem3d = function () { return typeof window.bfPes3dCabe === 'function' && window.bfPes3dCabe(); };
   function barraVistas() {
+    var tres = P.vista === '3d';
     var botoes = GIRO.concat(PONTAS).map(function (k) {
-      return '<button class="btn ' + (P.vista === k ? '' : 'ghost') + ' sm" onclick="bfPesVista(\'' + k + '\')">' +
-        E(VISTAS[k].nome) + '</button>';
+      var ativo = (tres ? P.angulo : P.vista) === k;
+      return '<button class="btn ' + (ativo ? '' : 'ghost') + ' sm" data-bfp-angulo="' + k +
+        '" aria-pressed="' + ativo + '" onclick="bfPesAngulo(\'' + k + '\')">' + E(VISTAS[k].nome) + '</button>';
     }).join('');
-    if (tem3d()) botoes += '<button class="btn ' + (P.vista === '3d' ? '' : 'ghost') +
-      ' sm bfp-b3d" onclick="bfPesVista(\'3d\')">Pé em três dimensões</button>';
+    if (tem3d()) botoes += '<button class="btn ghost sm bfp-b3d" onclick="bfPesVista(\'' +
+      (tres ? P.angulo : '3d') + '\')">' + (tres ? 'Usar vistas 2D e pintar área' : 'Voltar ao modelo 3D') + '</button>';
     return '<div class="bfp-vistas' + (tem3d() ? ' com3d' : '') + '">' + botoes + '</div>';
   }
 
-  /* ------------------------------------------- o pé em três dimensões */
-  /* Um ponto marcado no desenho plano não tem coordenada de profundidade.
-     Para ele aparecer no modelo, cai no centro da própria região, que o
-     gerador da malha calculou vértice a vértice. */
   function pontos3d() {
     var m = mapaDe(P.pid, false); if (!m) return [];
-    var C = (typeof window.bfPes3dCentros === 'function') ? window.bfPes3dCentros() : {};
-    var L = [];
-    m.pontos.forEach(function (p) {
-      if (p.pe !== P.pe) return;
-      var cor = parseInt(corDe(p.tipo).slice(1), 16);
-      if (p.z !== undefined && p.z !== null) { L.push({ id: p.id, x: p.x, y: p.y, z: p.z, cor: cor }); return; }
-      var c = C[p.regiao];
-      if (c) L.push({ id: p.id, x: c[0], y: c[1], z: c[2], cor: cor });
+    return m.pontos.filter(function (p) { return p.pe === P.pe; }).map(function (p) {
+      return { id:p.id, x:p.x, y:p.y, z:p.z, regiao:p.regiao, malha:p.malha, cor:parseInt(corDe(p.tipo).slice(1),16) };
     });
-    return L;
   }
   function montar3d() {
     var caixa = document.getElementById('bfp-3d'); if (!caixa) return;
-    caixa.innerHTML = '<p class="bfp-carregando">Montando o pé...</p>';
+    var origem = contexto();
+    caixa.innerHTML = '<p class="bfp-carregando">Carregando modelo 3D...</p>';
+    function falhar() {
+      if (!caixa.isConnected || !contextoValido(origem)) return;
+      P.modoManual = true; P.vista = P.angulo || 'dorsal';
+      render(); toast('O 3D não abriu neste aparelho. As vistas 2D continuam disponíveis.');
+    }
     window.bfPes3dMontar(caixa, {
-      pe: P.pe, pontos: pontos3d(),
+      pe: P.pe, pontos: pontos3d(), angulo: P.angulo, foco: P.abrindo, aoFalhar:falhar,
       aoTocar: function (r) {
+        if (!contextoValido(origem)) return;
         if (r.pino) { window.bfPesAbrirPino(r.pino); return; }
         perguntar(r.regiao, r.x, r.y, r.z);
       }
-    }).catch(function (e) {
-      caixa.innerHTML = '<p class="bfp-carregando">Não foi possível abrir o pé em três dimensões neste computador. ' +
-        'Use os desenhos acima, que registram a mesma coisa.</p>';
-      console.error('BlackFlow 3D:', e);
-    });
+    }).catch(falhar);
   }
 
   function listaPontos(m) {
@@ -741,7 +782,8 @@
         '<span>' + E(LADO[p.pe]) +
         (VISTAS[p.vista] ? ', ' + E(VISTAS[p.vista].nome.toLowerCase()) : '') +
         (p.regiao ? ', ' + E(nomeRegiao(p.vista, p.regiao)) : '') +
-        (p.vista === '3d' ? ' <i class="bfp-marca3d">marcado em três dimensões</i>' : '') + '</span>' +
+        (p.vista === '3d' ? ' <i class="bfp-marca3d">' +
+          (p.malha === window.bfPes3dMalha ? 'marcado em 3D' : 'modelo anterior · posição aproximada no novo 3D') + '</i>' : '') + '</span>' +
         (p.nota ? '<small>' + E(p.nota) + '</small>' : '') +
         '<small class="bfp-data">' + E(br(p.em)) + (p.prof ? ' · ' + E(p.prof) : '') + '</small></div>' +
         '<div class="bfp-li-b"><button class="btn ghost sm" onclick="bfPesIr(\'' + p.id + '\')">ver no pé</button>' +
@@ -765,7 +807,9 @@
         ? '<button class="btn ghost sm" onclick="bfPes3dModo(\'girar\')">Girar</button>' +
           '<button class="btn ghost sm" onclick="bfPes3dModo(\'mover\')">Mover</button>' +
           '<button class="btn ghost sm" onclick="bfPes3dReenquadrar()">Enquadrar de novo</button>' +
-          '<button class="btn ghost sm" onclick="bfPes3dGrade()">Grade da malha</button>'
+          '<button class="btn ghost sm" aria-label="Aproximar" onclick="bfPes3dZoom(true)">Zoom +</button>' +
+          '<button class="btn ghost sm" aria-label="Afastar" onclick="bfPes3dZoom(false)">Zoom −</button>' +
+          '<button class="btn ghost sm" aria-pressed="true" onclick="this.setAttribute(\'aria-pressed\',String(bfPes3dGrade()))">Números dos dedos</button>'
         : '<button class="btn ' + (P.pintando ? '' : 'ghost') + ' sm" onclick="bfPesPincel()">' +
           (P.pintando ? 'Pintando área' : 'Pintar área') + '</button>' +
           '<button class="btn ' + (P.grade ? '' : 'ghost') + ' sm" onclick="bfPesGrade()">Zonas em cor</button>') +
@@ -781,7 +825,9 @@
       '<ul class="bfp-leg">' + ZONAS.map(function (z) {
         return '<li><i class="num" style="background:' + z.cor + '">' + z.n + '</i>' + E(z.nome) + '</li>';
       }).join('') + '</ul>' +
-      '<p class="bfp-nota-painel">Ligue "Zonas em cor" para ver a grade anatômica por cima do desenho.</p></div>';
+      '<p class="bfp-nota-painel">' + (P.vista === '3d'
+        ? 'No modelo, 1 a 5 identificam os dedos, do hálux ao dedo mínimo. As cores desta legenda são usadas na vista 2D.'
+        : 'Ligue "Zonas em cor" para ver as regiões anatômicas no desenho.') + '</p></div>';
   }
   function tela() {
     var L = pacAtivos(), m = P.pid ? mapaDe(P.pid, false) : null, p = pacDe(P.pid);
@@ -815,12 +861,7 @@
         '</div>' +
         (ehTres
           ? '<p class="bfp-legenda"><b>' + E(LADO[P.pe]) + ' · Pé em três dimensões</b><br>' +
-            'Arraste com o mouse para girar em volta inteira, role para aproximar e toque no pé para marcar o ponto.</p>' +
-            '<div class="bfp-pontas">' +
-            '<button class="btn ghost sm" onclick="bfPes3dAngulo(\'dorsal\')">Ver por cima</button>' +
-            '<button class="btn ghost sm" onclick="bfPes3dAngulo(\'plantar\')">Ver a sola</button>' +
-            '<button class="btn ghost sm" onclick="bfPes3dAngulo(\'lateral\')">Ver de fora</button>' +
-            '<button class="btn ghost sm" onclick="bfPes3dAngulo(\'medial\')">Ver de dentro</button></div>'
+            'Arraste para girar livremente. Role ou faça o gesto de pinça para aproximar. Toque para marcar.</p>'
           : '<p class="bfp-legenda"><b>' + E(LADO[P.pe]) + ' · ' + E(v.nome) + '</b><br>' + E(v.ajuda) + '</p>' +
             '<div class="bfp-pontas"><button class="btn ghost sm" onclick="bfPesPonta(\'dedos\')">Virar para a ponta dos dedos</button>' +
             '<button class="btn ghost sm" onclick="bfPesPonta(\'calcanhar\')">Virar para o calcanhar</button></div>') +
@@ -856,9 +897,25 @@
   };
   var renderAntes = render;
   render = function () {
-    if (UI.view !== TELA) return renderAntes();
-    if (NV.ativa && UI.auth) return renderAntes();
-    if (!cabe()) { UI.view = 'agenda'; return renderAntes(); }
+    if (UI.view !== TELA) {
+      if (window.bfPes3dDestruir) window.bfPes3dDestruir();
+      return renderAntes();
+    }
+    if (NV.ativa && UI.auth) {
+      P.pid = '';
+      if (window.bfPes3dDestruir) window.bfPes3dDestruir();
+      return renderAntes();
+    }
+    if (!cabe()) {
+      if (window.bfPes3dDestruir) window.bfPes3dDestruir();
+      UI.view = 'agenda'; return renderAntes();
+    }
+    if (P.clinica !== (NV.clinicaId || '') || (P.pid && !pacDe(P.pid))) {
+      P.pid = ''; P.abrindo = null; P.traco = []; P.pintandoAgora = false;
+      P.clinica = NV.clinicaId || '';
+    }
+    if (P.vista === '3d' && !tem3d()) P.vista = 'dorsal';
+    if (window.bfPes3dDestruir) window.bfPes3dDestruir();
     document.getElementById('app').innerHTML = shell(tela());
     try { fonteAplicar(); } catch (e) { }
     if (P.vista === '3d' && P.pid) setTimeout(montar3d, 0);
@@ -893,7 +950,10 @@
     '.bfp-pes .btn,.bfp-pontas .btn,.bfp-acoes .btn{width:100%;min-width:0;justify-content:center;white-space:normal;text-align:center}' +
     '.bfp-vistas{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}' +
     '.bfp-vistas.com3d .bfp-b3d{grid-column:1/-1}' +
-    '.bfp-3d{padding:0;overflow:hidden;cursor:grab;display:flex;align-items:center;justify-content:center;min-height:320px}' +
+     '.bfp-3d{position:relative;padding:0;overflow:hidden;cursor:grab;display:flex;align-items:center;justify-content:center;min-height:280px}' +
+    '.bfp-3d-labels{position:absolute;inset:0;pointer-events:none}' +
+    '.bfp-3d-labels span{position:absolute;transform:translate(-50%,-50%);border:1px solid #fff;background:#242341;color:#fff;' +
+    'border-radius:50%;width:19px;height:19px;text-align:center;font-size:11px;line-height:17px;font-weight:700}'  +
     '.bfp-carregando{margin:0;padding:24px;text-align:center;font-size:13px;color:var(--mut);line-height:1.6}' +
     '.bfp-vistas .btn{justify-content:center;white-space:normal;text-align:center;min-width:0}' +
     '.bfp-palco-in{display:flex;align-items:center;gap:6px;position:relative}' +
