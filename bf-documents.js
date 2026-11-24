@@ -11,7 +11,7 @@ const findPatient=id=>(S.pacientes||[]).find(x=>x.id===id);
 const address=p=>[p?.endereco,p?.numero,p?.complemento,p?.bairro,p?.cidade,p?.uf,p?.cep].filter(Boolean).join(', ');
 const clinic=()=>String(S.config.clinica||'Clínica');
 const docs=()=>{if(!Array.isArray(S.orcamentos))S.orcamentos=[];if(!Array.isArray(S.receitasDocs))S.receitasDocs=[];return S};
-const draft={kind:'orc',pid:'',items:[{servicoId:'',nome:'',descricao:'',valor:0,quantidade:1}],meds:[{nome:'',tipo:'Industrializado',concentracao:'',forma:'',posologia:'',quantidade:'',orientacoes:''}],nome:'',cpf:'',endereco:'',tratamento:'',validade:'',nota:'',farmacia:''};
+const draft={kind:'orc',pid:'',items:[{servicoId:'',nome:'',descricao:'',valor:0,quantidade:1,pacote:false}],meds:[{nome:'',tipo:'Industrializado',concentracao:'',forma:'',posologia:'',quantidade:'',orientacoes:''}],nome:'',cpf:'',endereco:'',tratamento:'',validade:'',nota:'',farmacia:''};
 const getFields=()=>{const f=document.getElementById('bf-doc-form');if(!f)return;for(const k of ['nome','cpf','endereco','tratamento','validade','nota','farmacia']){const v=f.elements.namedItem(k);if(v)draft[k]=v.value}};
 const patientFields=(p)=>{draft.pid=p?.id||'';draft.nome=p?.nome||'';draft.cpf=p?.cpf||'';draft.endereco=address(p);};
 const itemID=x=>'bf-oi-'+x;
@@ -21,29 +21,47 @@ function commonFields(){return '<div class="bf-doc-grid">'+selectPatientHTML()+
  '<label>Nome completo<input name="nome" required maxlength="180" value="'+E(draft.nome)+'"></label>'+
  '<label>CPF (quando houver)<input name="cpf" inputmode="numeric" maxlength="18" value="'+E(draft.cpf)+'"></label>'+
  '<label class="full">Endereço<input name="endereco" maxlength="280" value="'+E(draft.endereco)+'"></label></div>'}
-/* Preco de um servico, do jeito que a clinica cadastrou.
-   Quem vende pacote costuma gravar o preco do pacote inteiro e o numero de
-   sessoes, deixando o preco avulso em branco. Entao o unitario sai da divisao,
-   e a quantidade ja vem do proprio cadastro, nao de adivinhacao pelo nome. */
+/* Pacote e avulso sao coisas diferentes, e o sistema nao escolhe por conta.
+
+   No cadastro de servicos a clinica guarda tres campos: preco, que e o valor
+   avulso de uma sessao; precoPacote, que e o valor fechado do pacote; e
+   sessoesPacote, que e quantas sessoes o pacote tem.
+
+   Quem tem os dois cadastrados vende dos dois jeitos, e por isso aparecem duas
+   linhas na lista de escolha, uma do avulso e uma do pacote. Escolhendo o
+   pacote, o orcamento leva o valor fechado, uma vez, com as sessoes escritas
+   na descricao. Escolhendo o avulso, leva o valor da sessao e a quantidade que
+   a profissional digitar.
+
+   Misturar os dois foi o defeito medido em 24/11/2026: um pacote de dez
+   sessoes cadastrado por R$ 600,00 saiu no orcamento por R$ 1.000,00, porque o
+   sistema pegou as dez sessoes do pacote e multiplicou pelo preco avulso de
+   R$ 100,00. A quantidade de um pacote e um, e o valor e o do pacote. */
 function pacoteDoServico(s){
  const n=Math.max(0,Math.floor(Number(s&&s.sessoesPacote)||0));
  const tot=Math.max(0,Number(s&&s.precoPacote)||0);
- return n>1&&tot>0?{sessoes:n,total:tot,unitario:Math.round(tot/n*100)/100}:null;
+ return n>1&&tot>0?{sessoes:n,total:tot}:null;
 }
-function unitarioDoServico(s){
- const direto=Math.max(0,Number(s&&s.preco)||0);
- if(direto>0)return direto;
- const pac=pacoteDoServico(s);
- return pac?pac.unitario:0;
-}
-const svcOptions=sel=>'<option value="">Selecionar serviço cadastrado</option>'+safeList().map(s=>{
- const pac=pacoteDoServico(s),u=unitarioDoServico(s);
- return '<option value="'+E(s.id)+'"'+(String(s.id)===String(sel)?' selected':'')+'>'+
-  E((s.origem==='produto'?'Produto: ':'Serviço: ')+s.nome)+' — '+moneyBR(u)+
-  (pac?E(' a sessão · pacote de '+pac.sessoes+' por '+moneyBR(pac.total)):'')+'</option>'}).join('');
-/* Quantas sessoes o proprio nome do servico ja anuncia.
-   "LASERTERAPIA PLANO 10 SESSOES" significa dez, entao a quantidade vem
-   preenchida e o total sai certo sem ninguem precisar digitar. */
+const avulsoDoServico=s=>Math.max(0,Number(s&&s.preco)||0);
+const svcOptions=sel=>{
+ let h='<option value="">Selecionar serviço cadastrado</option>';
+ safeList().forEach(s=>{
+  const nome=(s.origem==='produto'?'Produto: ':'Serviço: ')+s.nome;
+  const av=avulsoDoServico(s),pac=pacoteDoServico(s);
+  if(av>0||!pac){
+   h+='<option value="'+E(s.id)+'"'+(String(sel)===String(s.id)?' selected':'')+'>'+
+      E(nome+(pac?' (avulso)':'')+' — '+moneyBR(av)+(pac?' a sessão':''))+'</option>';
+  }
+  if(pac){
+   h+='<option value="'+E(s.id)+'|p"'+(String(sel)===s.id+'|p'?' selected':'')+'>'+
+      E('Pacote: '+s.nome+' — '+pac.sessoes+' sessões por '+moneyBR(pac.total))+'</option>';
+  }
+ });
+ return h;
+};
+/* Quantas sessoes o NOME anuncia. Nao serve para calcular: serve para avisar a
+   profissional, porque o nome e texto livre e o sistema nao tem como saber se o
+   valor cadastrado e da sessao ou do plano inteiro. */
 function sessoesNoNome(nome){
  const m=String(nome||'').match(/(\d{1,3})\s*(?:x\s*)?sess[õo]es?/i);
  const n=m?Number(m[1]):0;
@@ -52,13 +70,27 @@ function sessoesNoNome(nome){
 const subtotal=x=>(Math.max(0,Number(x.valor)||0))*(Math.max(1,Number(x.quantidade)||1));
 const totalOrc=()=>draft.items.reduce((a,x)=>a+subtotal(x),0);
 
-function budgetRows(){return draft.items.map((x,i)=>'<div class="bf-doc-row"><div class="bf-doc-grid">'+
+/* Aviso quando o nome anuncia sessoes e o item nao e pacote cadastrado. O
+   sistema nao adivinha: mostra a duvida e deixa a profissional decidir. */
+function avisoSessoes(x){
+ if(x.pacote)return '';
+ const n=sessoesNoNome(x.nome);if(!n)return '';
+ const q=Math.max(1,Number(x.quantidade)||1);
+ const sv=safeList().find(z=>String(z.id)===String(x.servicoId));
+ if(pacoteDoServico(sv))return '';
+ return '<div class="bf-doc-aviso">O nome fala de <b>'+n+' sessões</b> e este item está lançado como avulso, '+
+  'com quantidade '+q+'. Se os '+moneyBR(x.valor)+' são o valor de cada sessão, coloque '+n+' na quantidade. '+
+  'Se já são o valor fechado do plano, deixe a quantidade em 1. Para o sistema preencher isso sozinho, '+
+  'cadastre o pacote em Serviços, no campo de valor do pacote e número de sessões.</div>';
+}
+function budgetRows(){return draft.items.map((x,i)=>'<div class="bf-doc-row'+(x.pacote?' bf-doc-row-pac':'')+'"><div class="bf-doc-grid">'+
  '<label>Serviço<select data-index="'+i+'" onchange="bfDocChooseService('+i+',this.value)">'+svcOptions(x.servicoId)+'</select></label>'+
  '<label>Nome do serviço / produto<input data-index="'+i+'" data-key="nome" value="'+E(x.nome)+'" required></label>'+
  '<label class="full">Descrição<textarea data-index="'+i+'" data-key="descricao" rows="2">'+E(x.descricao)+'</textarea></label>'+
- '<label>Quantidade<input data-index="'+i+'" data-key="quantidade" type="number" min="1" max="999" step="1" value="'+E(x.quantidade)+'" oninput="bfDocTotais()"></label>'+
- '<label>Valor unitário (R$)<input data-index="'+i+'" data-key="valor" type="number" min="0" max="999999" step="0.01" value="'+E(x.valor)+'" oninput="bfDocTotais()"></label>'+
- '</div><div class="bf-doc-sub"><span>Total deste item</span><b id="bf-doc-sub-'+i+'">'+moneyBR(subtotal(x))+'</b></div>'+
+ '<label>'+(x.pacote?'Quantos pacotes':'Quantidade')+'<input data-index="'+i+'" data-key="quantidade" type="number" min="1" max="999" step="1" value="'+E(x.quantidade)+'" oninput="bfDocTotais()"></label>'+
+ '<label>'+(x.pacote?'Valor fechado do pacote (R$)':'Valor unitário (R$)')+'<input data-index="'+i+'" data-key="valor" type="number" min="0" max="999999" step="0.01" value="'+E(x.valor)+'" oninput="bfDocTotais()"></label>'+
+ '</div>'+(x.pacote?'<div class="bf-doc-selo">Pacote fechado</div>':'')+avisoSessoes(x)+
+ '<div class="bf-doc-sub"><span>Total deste item</span><b id="bf-doc-sub-'+i+'">'+moneyBR(subtotal(x))+'</b></div>'+
  '<button class="btn ghost sm" type="button" onclick="bfDocRemove('+i+')" '+(draft.items.length===1?'disabled':'')+'>Remover item</button></div>').join('')}
 function medRows(){return draft.meds.map((x,i)=>'<div class="bf-doc-row"><div class="bf-doc-grid">'+
  '<label>Categoria<select data-med="'+i+'" data-key="tipo"><option'+(x.tipo==='Industrializado'?' selected':'')+'>Industrializado</option><option'+(x.tipo==='Manipulado'?' selected':'')+'>Manipulado</option></select></label>'+
@@ -86,17 +118,21 @@ function renderForm(){const f=document.getElementById('bf-doc-form');if(!f)retur
  '<div class="bf-doc-actions"><button class="btn ghost" type="button" onclick="closeModal()">Cancelar</button>'+
  '<button class="btn ghost" type="button" onclick="bfDocSubmit(false)">Salvar rascunho</button>'+
  '<button class="btn" type="button" onclick="bfDocSubmit(true)">Salvar e gerar PDF</button></div>'}
-window.bfDocChooseService=function(i,id){syncRows();let x=draft.items[i];if(!x)return;
- const s=safeList().find(v=>String(v.id)===id);
- x.servicoId=id;x.nome=s?.nome||x.nome;x.descricao=s?.descricao||x.descricao||'';
- x.valor=unitarioDoServico(s);
- /* A quantidade vem do cadastro do pacote. Nao havendo cadastro, vem do nome,
-    porque "PLANO 10 SESSOES" ja diz quantas sao. */
+window.bfDocChooseService=function(i,valor){syncRows();let x=draft.items[i];if(!x)return;
+ const v=String(valor||''),ehPacote=v.endsWith('|p'),id=ehPacote?v.slice(0,-2):v;
+ const s=safeList().find(z=>String(z.id)===id);
+ x.servicoId=v;x.pacote=ehPacote;x.nome=s?.nome||x.nome;
  const pac=pacoteDoServico(s);
- const n=pac?pac.sessoes:sessoesNoNome(x.nome);
- /* Trocar de servico zera a quantidade do anterior: sem isso, as dez sessoes
-    do plano ficariam coladas no servico avulso escolhido depois. */
- x.quantidade=n||1;
+ if(ehPacote&&pac){
+  /* Pacote: uma linha, valor fechado, sessoes na descricao. */
+  x.valor=pac.total;x.quantidade=1;
+  const base=String(s?.descricao||'').trim();
+  const diz='Pacote de '+pac.sessoes+' sessões.';
+  x.descricao=base?(base.indexOf('sessões')>=0?base:diz+' '+base):diz;
+ }else{
+  x.valor=avulsoDoServico(s);x.quantidade=1;
+  x.descricao=String(s?.descricao||'').trim();
+ }
  renderForm()};
 
 /* Recalcula sem redesenhar o formulario, para o campo nao perder o foco
@@ -106,14 +142,14 @@ window.bfDocTotais=function(){
  draft.items.forEach((x,i)=>{const e=document.getElementById('bf-doc-sub-'+i);if(e)e.textContent=moneyBR(subtotal(x))});
  const t=document.getElementById('bf-doc-total');if(t)t.textContent=moneyBR(totalOrc());
 };
-window.bfDocAdd=function(){syncRows();if(draft.kind==='orc')draft.items.push({servicoId:'',nome:'',descricao:'',valor:0,quantidade:1});
+window.bfDocAdd=function(){syncRows();if(draft.kind==='orc')draft.items.push({servicoId:'',nome:'',descricao:'',valor:0,quantidade:1,pacote:false});
  else draft.meds.push({nome:'',tipo:'Industrializado',concentracao:'',forma:'',posologia:'',quantidade:'',orientacoes:''});
  renderForm()};
 window.bfDocRemove=function(i){syncRows();const list=draft.kind==='orc'?draft.items:draft.meds;if(list.length<=1)return;list.splice(i,1);renderForm()};
 window.bfDocsSelectPatient=function(id){syncRows();patientFields(findPatient(id));renderForm()};
 window.bfDocOpen=function(kind,pid,id){
  if(kind==='receita'&&!window.confirm('O receituário gera um rascunho. Confirma que será revisado e assinado por profissional habilitado antes de utilizar?'))return;
- draft.kind=kind==='receita'?'receita':'orc';draft.items=[{servicoId:'',nome:'',descricao:'',valor:0,quantidade:1}];
+ draft.kind=kind==='receita'?'receita':'orc';draft.items=[{servicoId:'',nome:'',descricao:'',valor:0,quantidade:1,pacote:false}];
  draft.meds=[{nome:'',tipo:'Industrializado',concentracao:'',forma:'',posologia:'',quantidade:'',orientacoes:''}];
  draft.tratamento='';draft.validade='';draft.nota='';draft.farmacia=S.config.bfFarmacia||'';
  patientFields(findPatient(pid));draft.editId='';
@@ -202,6 +238,6 @@ window.bfDocUpload=async function(input){const file=input.files?.[0];if(!file)re
  S.config.bfModeloFundo=base;save();render();toast('Papel timbrado carregado para orçamento e receituário. Confira se está em branco.')
  }catch(e){console.warn(e);toast('Não foi possível ler o modelo. Use PDF simples, PNG ou JPG em branco.')}
 };
-const css='<style>.bf-doc-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}.bf-doc-grid label,.bf-doc-note{display:flex;flex-direction:column;gap:4px;font-size:12px;color:var(--mut);min-width:0}.bf-doc-grid .full{grid-column:1/-1}.bf-doc-grid input,.bf-doc-grid select,.bf-doc-grid textarea,.bf-doc-note textarea{width:100%;background:#fff;border:1px solid var(--line);border-radius:7px;color:var(--ink);padding:9px;font:inherit}.bf-doc-row{border:1px solid var(--line);border-radius:12px;margin:12px 0;padding:12px}.bf-doc-row .btn{margin-top:8px}.bf-doc-actions,.bf-doc-config-actions{display:flex;flex-wrap:wrap;gap:8px;justify-content:flex-end;margin-top:16px}.bf-doc-note{margin-top:12px}.bf-doc-warning{padding:12px;border:1px solid #c68b35;background:#fff5dd;border-radius:10px;font-size:12px}.bf-doc-sub{display:flex;justify-content:space-between;align-items:baseline;gap:10px;margin-top:10px;padding-top:9px;border-top:1px dashed var(--line);font-size:12px;color:var(--mut)}.bf-doc-sub b{font-size:15px;color:var(--ink);font-variant-numeric:tabular-nums}.bf-doc-total{display:flex;justify-content:space-between;align-items:baseline;gap:10px;margin-top:14px;padding:12px 14px;border-radius:12px;background:var(--acc-soft,#eef0ff);font-size:13px;font-weight:600;color:var(--mut)}.bf-doc-total b{font-size:20px;color:var(--acc,#5a4cfb);font-variant-numeric:tabular-nums}@media(max-width:650px){.bf-doc-grid{grid-template-columns:1fr}.bf-doc-grid .full{grid-column:auto}/* Botao de rotulo longo em meia largura quebrava em duas linhas e ficava mais alto que o vizinho. No celular cada um ocupa a linha inteira. */.bf-doc-actions .btn,.bf-doc-row .btn,.bf-doc-actions+.btn{flex:1 1 100%;width:100%;white-space:normal;justify-content:center;min-height:44px}.bf-doc-grid input,.bf-doc-grid select,.bf-doc-grid textarea,.bf-doc-note textarea{font-size:16px;min-height:46px;padding:11px 12px;border-radius:10px}.bf-doc-grid textarea,.bf-doc-note textarea{min-height:92px}.bf-doc-grid label,.bf-doc-note{font-size:12.5px;font-weight:600}.bf-doc-row{padding:12px 11px;border-radius:14px}.bf-doc-total b{font-size:22px}}</style>';
+const css='<style>.bf-doc-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}.bf-doc-grid label,.bf-doc-note{display:flex;flex-direction:column;gap:4px;font-size:12px;color:var(--mut);min-width:0}.bf-doc-grid .full{grid-column:1/-1}.bf-doc-grid input,.bf-doc-grid select,.bf-doc-grid textarea,.bf-doc-note textarea{width:100%;background:#fff;border:1px solid var(--line);border-radius:7px;color:var(--ink);padding:9px;font:inherit}.bf-doc-row{border:1px solid var(--line);border-radius:12px;margin:12px 0;padding:12px}.bf-doc-row-pac{border-color:#5a4cfb;box-shadow:inset 3px 0 0 #5a4cfb}.bf-doc-selo{display:inline-block;margin-top:10px;padding:3px 9px;border-radius:999px;background:#5a4cfb;color:#fff;font-size:11px;font-weight:700;letter-spacing:.3px}.bf-doc-aviso{margin-top:10px;padding:10px 12px;border:1px solid #c68b35;background:#fff5dd;border-radius:10px;font-size:12px;line-height:1.5}.bf-doc-row .btn{margin-top:8px}.bf-doc-actions,.bf-doc-config-actions{display:flex;flex-wrap:wrap;gap:8px;justify-content:flex-end;margin-top:16px}.bf-doc-note{margin-top:12px}.bf-doc-warning{padding:12px;border:1px solid #c68b35;background:#fff5dd;border-radius:10px;font-size:12px}.bf-doc-sub{display:flex;justify-content:space-between;align-items:baseline;gap:10px;margin-top:10px;padding-top:9px;border-top:1px dashed var(--line);font-size:12px;color:var(--mut)}.bf-doc-sub b{font-size:15px;color:var(--ink);font-variant-numeric:tabular-nums}.bf-doc-total{display:flex;justify-content:space-between;align-items:baseline;gap:10px;margin-top:14px;padding:12px 14px;border-radius:12px;background:var(--acc-soft,#eef0ff);font-size:13px;font-weight:600;color:var(--mut)}.bf-doc-total b{font-size:20px;color:var(--acc,#5a4cfb);font-variant-numeric:tabular-nums}@media(max-width:650px){.bf-doc-grid{grid-template-columns:1fr}.bf-doc-grid .full{grid-column:auto}/* Botao de rotulo longo em meia largura quebrava em duas linhas e ficava mais alto que o vizinho. No celular cada um ocupa a linha inteira. */.bf-doc-actions .btn,.bf-doc-row .btn,.bf-doc-actions+.btn{flex:1 1 100%;width:100%;white-space:normal;justify-content:center;min-height:44px}.bf-doc-grid input,.bf-doc-grid select,.bf-doc-grid textarea,.bf-doc-note textarea{font-size:16px;min-height:46px;padding:11px 12px;border-radius:10px}.bf-doc-grid textarea,.bf-doc-note textarea{min-height:92px}.bf-doc-grid label,.bf-doc-note{font-size:12.5px;font-weight:600}.bf-doc-row{padding:12px 11px;border-radius:14px}.bf-doc-total b{font-size:22px}}</style>';
 document.head.insertAdjacentHTML('beforeend',css);
 })();

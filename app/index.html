@@ -2120,7 +2120,7 @@ function pAna(p){const L=S.anamneses.filter(a=>a.pacienteId===p.id).sort((a,b)=>
  ${anaFaixa(p.id)}
  ${L.map((a,i)=>{const open=UI.anaOpen[a.id]??i===0;return `<div class="card"><div style="display:flex;justify-content:space-between;align-items:center;gap:10px;cursor:pointer" onclick="UI.anaOpen['${a.id}']=${!open};render()"><div><b>${i===0?'Atual':'Anterior'}</b> <span style="color:var(--mut)">Data de criação: ${br(a.data)} ${a.modelo?' . '+esc(a.modelo):''}</span></div><span class="lnk">${open?'Recolher':'Ver respostas'}</span></div>
  ${open?`<div class="qa" style="margin-top:12px">${a.respostas.map(r=>{const al=anaEhAlerta(r);const d=str(r.det2||r.obs);
-  return `<div${al?' style="color:var(--bad);font-weight:700"':''}>${esc(r.q)}</div><div${al?' style="color:var(--bad);font-weight:700"':''}>${esc(r.a)||'<span style="color:var(--mut);font-weight:400">não respondido</span>'}${d?' · '+esc(d):''}</div>`}).join('')}</div>${fotosMini(p.id,'anamnese',a.id)}<div class="mact"><button class="btn ghost sm" style="color:var(--bad)" onclick="delRec('anamneses','${a.id}')">Excluir</button><button class="btn ghost sm" onclick="anaForm('${p.id}','${a.id}')">Editar</button></div>`:''}</div>`}).join('')||'<div class="card mini-empty">Nenhuma anamnese registrada.</div>'}`}
+  return `<div${al?' style="color:var(--bad);font-weight:700"':''}>${esc(r.q)}</div><div${al?' style="color:var(--bad);font-weight:700"':''}>${esc(r.a)||'<span style="color:var(--mut);font-weight:400">não respondido</span>'}${d?' · '+esc(d):''}</div>`}).join('')}</div>${anaMapaFicha(a)}${fotosMini(p.id,'anamnese',a.id)}<div class="mact"><button class="btn ghost sm" style="color:var(--bad)" onclick="delRec('anamneses','${a.id}')">Excluir</button><button class="btn ghost sm" onclick="anaForm('${p.id}','${a.id}')">Editar</button></div>`:''}</div>`}).join('')||'<div class="card mini-empty">Nenhuma anamnese registrada.</div>'}`}
 /* ============ Anamnese estruturada ============
    Antes isto era uma caixa de texto onde a pessoa digitava "Pergunta: Resposta"
    linha por linha. Quem preenchia errava a ordem, esquecia pergunta e não
@@ -2156,6 +2156,15 @@ function anamModelo(){const m=S.config&&Array.isArray(S.config.anamPerguntas)&&S
    pessoa respondeu Sim, ou escreveu alguma coisa numa pergunta de texto. */
 function anaEhAlerta(r){if(!r||!r.alerta)return false;
  return r.tipo==='texto'?!!str(r.a):norm(r.a)==='sim'}
+/* O que foi marcado no mapa do pe, escrito por extenso na ficha. */
+function anaMapaFicha(a){
+ const m=a&&a.mapa;if(!m)return '';
+ const t=(typeof window.bfPodoTexto==='function')?window.bfPodoTexto(m):'';
+ const o=str(m.obs);
+ if(!t&&!o)return '';
+ return `<div style="margin-top:12px;border:1px solid var(--line,#e6e6ef);border-radius:12px;padding:10px 12px;font-size:12.5px;line-height:1.6">
+  <b>Mapa dos pododáctilos</b>${t?`<div style="margin-top:4px">${esc(t)}</div>`:''}
+  ${o?`<div style="margin-top:4px;color:var(--mut)">${esc(o)}</div>`:''}</div>`}
 function anaUltima(pid){return S.anamneses.filter(a=>a.pacienteId===pid).sort((a,b)=>str(b.data).localeCompare(str(a.data)))[0]||null}
 function anaAlertas(pid){const a=anaUltima(pid);if(!a||!Array.isArray(a.respostas))return [];
  return a.respostas.filter(anaEhAlerta).map(r=>({q:r.q,a:r.a,det:str(r.det2||r.obs)}))}
@@ -2171,8 +2180,15 @@ function anaForm(pid,id){const a=id?S.anamneses.find(x=>x.id===id):null;
  const itens=a&&Array.isArray(a.respostas)&&a.respostas.length
   ? a.respostas.map(r=>({q:str(r.q),tipo:r.tipo==='texto'?'texto':(r.tipo?'simnao':(/^(sim|nao|não)$/i.test(str(r.a))?'simnao':'texto')),alerta:!!r.alerta,det:str(r.det),a:str(r.a),det2:str(r.det2||r.obs)}))
   : base.map(x=>({...x,a:'',det2:''}));
- UI.ana={pid,id:id||'',data:(a&&a.data)||todayISO(),modelo:(a&&a.modelo)||'Anamnese podológica',itens};
+ const mapa=(a&&a.mapa&&typeof a.mapa==='object')
+  ?{pontos:Array.isArray(a.mapa.pontos)?a.mapa.pontos.slice():[],obs:str(a.mapa.obs)}
+  :{pontos:[],obs:''};
+ UI.ana={pid,id:id||'',data:(a&&a.data)||todayISO(),modelo:(a&&a.modelo)||'Anamnese podológica',itens,mapa};
  anaPintar()}
+/* O mapa do pe e da podologia. Odontologia e biomedicina tratam outra coisa,
+   e um desenho de pe na anamnese delas seria so estorvo. */
+const podoMapaCabe=()=>typeof window.bfPodoMapaHTML==='function'&&!soAgenda()&&
+  String((S&&S.config&&S.config.segmento)||'podologia')==='podologia';
 function anaPintar(){openModal(anaHTML(),'820px')}
 function anaHTML(){const A=UI.ana,p=pac(A.pid);
  const nAl=A.itens.filter(anaEhAlerta).length;
@@ -2182,6 +2198,7 @@ function anaHTML(){const A=UI.ana,p=pac(A.pid);
   <label>Data<input type="date" value="${esc(A.data)}" oninput="UI.ana.data=this.value"></label>
   <label>Modelo<input value="${esc(A.modelo)}" oninput="UI.ana.modelo=this.value"></label></div>
  ${nAl?`<div style="border:1px solid var(--bad);border-radius:12px;padding:10px 12px;margin:12px 0;font-size:13px"><b style="color:var(--bad)">${nAl} ${nAl===1?'resposta exige atenção':'respostas exigem atenção'}</b> e ${nAl===1?'vai aparecer':'vão aparecer'} em vermelho na ficha e no agendamento.</div>`:''}
+ ${podoMapaCabe()?window.bfPodoMapaHTML():''}
  <div data-bf-ana-scroll style="max-height:52vh;overflow:auto;margin:12px 0;padding-right:4px">
  ${A.itens.map((r,i)=>{const al=anaEhAlerta(r);
   return `<div style="border:1px solid ${al?'var(--bad)':'var(--line,#e6e6ef)'};border-radius:12px;padding:12px;margin-bottom:10px">
@@ -2217,9 +2234,12 @@ function anaAdd(){formModal('Acrescentar pergunta',[
   setTimeout(anaPintar,60)})}
 function anaSalvar(){const A=UI.ana;
  const respostas=A.itens.map(r=>({q:r.q,a:str(r.a),tipo:r.tipo,alerta:!!r.alerta,det:str(r.det),det2:str(r.det2)}));
- if(!respostas.some(r=>str(r.a))){toast('Responda ao menos uma pergunta antes de salvar.');return}
- if(A.id){const a=S.anamneses.find(x=>x.id===A.id);if(a)Object.assign(a,{data:A.data,modelo:A.modelo,respostas})}
- else S.anamneses.push({id:uid(),pacienteId:A.pid,data:A.data,modelo:A.modelo,respostas,origem:'manual'});
+ const temMapa=!!(A.mapa&&((A.mapa.pontos||[]).length||str(A.mapa.obs)));
+ if(!respostas.some(r=>str(r.a))&&!temMapa){toast('Responda ao menos uma pergunta, ou marque o mapa do pé, antes de salvar.');return}
+ const mapa=(A.mapa&&(A.mapa.pontos||[]).length||str(A.mapa&&A.mapa.obs))
+  ?{pontos:(A.mapa.pontos||[]).slice(),obs:str(A.mapa.obs)}:null;
+ if(A.id){const a=S.anamneses.find(x=>x.id===A.id);if(a)Object.assign(a,{data:A.data,modelo:A.modelo,respostas,mapa})}
+ else S.anamneses.push({id:uid(),pacienteId:A.pid,data:A.data,modelo:A.modelo,respostas,mapa,origem:'manual'});
  const n=respostas.filter(anaEhAlerta).length;
  closeModal();save();render();
  toast(n?'Anamnese salva. '+n+(n===1?' alerta marcado.':' alertas marcados.'):'Anamnese salva.')}
@@ -5128,10 +5148,51 @@ function agNovo(a,s){if(s==='Desmarcado'||s==='Faltou')return false;const k=a.da
  const hist=c=>S[c].some(x=>x.pacienteId===a.pacienteId&&((x.data||x.vencimento||x.pagamento||'')<a.data)&&(x.data||x.vencimento||x.pagamento));
  return !hist('evolucoes')&&!hist('tratamentos')&&!S.lancamentos.some(l=>l.pacienteId===a.pacienteId&&l.pagamento&&l.pagamento<a.data)}
 /* ============ Atualização: aviso com botão Atualizar agora ============ */
-const VERSAO_APP='1.39.2';const URL_VERSAO_JSON='https://raw.githubusercontent.com/TheIgor12/blacksolutions/main/versao.json';
+const VERSAO_APP='1.40.0';const URL_VERSAO_JSON='https://raw.githubusercontent.com/TheIgor12/blacksolutions/main/versao.json';
 const numV=v=>String(v||'0').split(/\D+/).filter(Boolean).map(Number);
 function versaoMaior(a,b){const x=numV(a),y=numV(b);for(let i=0;i<Math.max(x.length,y.length);i++){const d=(x[i]||0)-(y[i]||0);if(d)return d>0}return false}
 const ATU={nova:null,timer:null};
+
+/* ============ Novidades da versao: o aviso que sobe uma vez ============
+   A profissional nao le notas de versao. Entao, quando a versao instalada
+   muda, sobe uma janela dizendo o que mudou no trabalho dela, com as palavras
+   do dia a dia, e nao com os nomes internos do sistema. Sobe uma vez por
+   versao em cada aparelho, e nunca por cima de outra janela aberta. */
+const NOVIDADES={versao:'1.40.0',itens:[
+ {seg:'podologia',t:'Mapa dos pododáctilos na anamnese',
+  d:'Na anamnese agora tem o desenho dos dois pés, o peito do pé visto de cima e a sola vista de baixo, com o pé direito e o pé esquerdo escritos embaixo de cada um. Você toca na unha, no dedo, no espaço entre os dedos ou na parte do pé que está tratando, e o que foi marcado fica escrito por extenso na ficha. Pododáctilo é o nome do dedo do pé, numerado do primeiro ao quinto, de dentro para fora. O primeiro é o hálux.'},
+ {t:'Pacote e avulso não se misturam mais no orçamento',
+  d:'Quando o serviço tem pacote cadastrado, ele aparece na lista em duas linhas: uma do avulso, com o valor da sessão, e uma do pacote, com o valor fechado. Escolhendo o pacote, o orçamento leva o valor fechado, uma vez, com as sessões escritas na descrição. Antes o sistema multiplicava as sessões do pacote pelo preço avulso, e o total saía maior do que o combinado.'},
+ {t:'Alta e abandono do tratamento',
+  d:'No pop-up do agendamento e no relatório de quem não vem há muito tempo apareceram os botões de dar alta e de registrar abandono. Os dois ficam na evolução clínica, com data e profissional, e geram documento para o paciente assinar.'},
+ {t:'Aparência no celular',
+  d:'Os campos e os botões ficaram do mesmo tamanho em todas as telas, e a letra dos campos aumentou, para o celular parar de dar zoom sozinho quando você toca para escrever.'}]};
+function novidadeItens(){const seg=String((S&&S.config&&S.config.segmento)||'podologia');
+ return NOVIDADES.itens.filter(x=>!x.seg||x.seg===seg)}
+function novidadeAbrir(){const L=novidadeItens();if(!L.length)return;
+ openModal(`<h3 style="margin-top:0">O que mudou para você</h3>
+ <p class="sub" style="margin:0 0 14px">Versão ${esc(NOVIDADES.versao)}. Isto aqui é o seu aviso: foi alterado pensando no seu atendimento.</p>
+ ${L.map(x=>`<div style="border:1px solid var(--line,#e6e6ef);border-radius:12px;padding:12px;margin-bottom:10px">
+  <b style="font-size:14px">${esc(x.t)}</b>
+  <p style="margin:6px 0 0;font-size:13px;line-height:1.6;color:var(--mut)">${esc(x.d)}</p></div>`).join('')}
+ <div class="mact"><button class="btn" onclick="novidadeVista()">Entendi</button></div>`,'760px');
+}
+function novidadeVista(){try{localStorage.setItem('bfNovidade',NOVIDADES.versao)}catch(e){}closeModal()}
+function novidadeIniciar(){
+ let visto='';try{visto=localStorage.getItem('bfNovidade')||''}catch(e){}
+ if(visto===NOVIDADES.versao)return;
+ /* Na primeira entrada costuma haver outra janela aberta, como a do catálogo.
+    Em vez de desistir, espera a tela ficar livre, por até dez minutos. Depois
+    disso para, para não subir no meio do atendimento, e o aviso continua à mão
+    em Minha conta. */
+ let tentativas=0;
+ const t=setInterval(function(){
+  if(++tentativas>240){clearInterval(t);return}
+  if(UI.auth||!NV.ativa)return;
+  if(document.body.classList.contains('bf-modal-open'))return;
+  clearInterval(t);novidadeAbrir();
+ },2500);
+}
 async function atuChecar(manual){try{const r=await fetch(URL_VERSAO_JSON+'?t='+Date.now(),{cache:'no-store'});const j=await r.json();const v=String(j.versao||'').replace(/^v/i,'');
   if(versaoMaior(v,VERSAO_APP)){ATU.nova={versao:v,novidades:j.novidades||''};atuFaixa()}else{ATU.nova=null;atuFaixa();if(manual)toast('Você já está na versão mais nova ('+VERSAO_APP+')')}}
  catch(e){if(manual)toast('Não foi possível procurar atualização agora. Verifique a internet.')}}
@@ -5146,7 +5207,7 @@ async function atuAgora(){const b=document.getElementById('atuBtn');if(b){b.disa
  if(window.pywebview&&ATU.nova&&tentou===ATU.nova.versao){openModal(`<h3>Atualizar o BlackFlow</h3><p>Esta instalação é de uma versão antiga e só se atualiza ao abrir. Faça assim:</p><ol style="margin:0 0 12px;padding-left:20px;line-height:1.7"><li>Feche o BlackFlow no X do canto da janela.</li><li>Abra o BlackFlow de novo.</li><li>Na pergunta <b>Atualização disponível</b>, clique em <b>Sim</b>.</li><li>Ele fecha e abre sozinho, já na versão ${esc(ATU.nova.versao)}. Depois disso, o botão Atualizar agora passa a funcionar direto.</li></ol><p style="color:var(--mut);font-size:13px">Os dados continuam salvos na nuvem.</p><div class="mact"><button class="btn ghost" onclick="closeModal()">Fechar</button></div>`);if(b){b.disabled=false;b.textContent='Atualizar agora'}return}
  atuRecarregar()}
 async function refrescar(b){if(b)b.classList.add('gira');try{if(NV.ativa&&typeof sincronizar==='function')await sincronizar()}catch(e){}await atuChecar(false);render();toast(ATU.nova?'Dados atualizados. Há uma versão nova do sistema: use o botão Atualizar agora.':'Tudo atualizado')}
-function atuIniciar(){if(ATU.timer)return;setTimeout(()=>atuChecar(false),6000);ATU.timer=setInterval(()=>atuChecar(false),30*60000)}
+function atuIniciar(){if(ATU.timer)return;setTimeout(()=>atuChecar(false),6000);ATU.timer=setInterval(()=>atuChecar(false),30*60000);novidadeIniciar()}
 
 /* ============ Valor do procedimento lançado pela agenda (podologia) ============ */
 const lancAgAtivo=()=>!soAgenda()&&ehSeg('podologia')&&S.config.lancarAgenda!==false;
@@ -5905,6 +5966,7 @@ async function abrirConta(){if(!NV.ativa){go('config');return}const u=NV.sessao.
  ${NV.papel==='admin'&&!NV.offline?`<h3 style="margin-top:20px">Convidar pessoa da equipe</h3><div class="fgrid"><label>E-mail<input id="cv_email" type="email"></label><label>Perfil<select id="cv_papel"><option value="usuario">Usuário</option><option value="admin">Administrador</option></select></label></div><div class="mact" style="justify-content:flex-start"><button class="btn" onclick="convidar()">Enviar convite</button></div><p class="sub">A pessoa baixa o programa, clica em Criar conta e usa exatamente este e-mail. Ao entrar, ela já cai na sua clínica.</p>`:''}
  <div class="row"><span>Letra do sistema</span><span><b>${esc(fonteAtual().n)}</b> <button class="lnk" onclick="irParaFonte()">trocar</button></span></div>
  <div class="row"><span>Versão do sistema</span><span id="verApp">${esc(VERSAO_APP)}</span></div>
+ <div class="row"><span>O que mudou nesta versão</span><span><button class="lnk" onclick="closeModal();novidadeAbrir()">ver de novo</button></span></div>
  <div class="mact"><button class="btn ghost" onclick="closeModal()">Fechar</button><button class="btn danger" onclick="sair()">Sair</button></div>`,true);
  if(window.pywebview&&window.pywebview.api&&window.pywebview.api.versao){window.pywebview.api.versao().then(v=>{const e=$('#verApp');if(e)e.textContent=v.app})}}
 async function convidar(){const email=val('#cv_email');if(!email){toast('Informe o e-mail');return}const {error}=await NV.sb.rpc('convidar',{p_clinica:NV.clinicaId,p_email:email,p_papel:$('#cv_papel').value});if(error){toast(traduz(error));return}toast('Convite registrado para '+email);abrirConta()}
@@ -5943,7 +6005,7 @@ function telaCopiaNaoAutorizada(){
   if(!origemAutorizada()){telaCopiaNaoAutorizada();return}}
  try{navigator.storage&&navigator.storage.persist&&navigator.storage.persist()}catch(e){}
  try{fonteAplicar()}catch(e){}
- try{if(/^https?:/.test(location.protocol)&&'serviceWorker' in navigator&&!window.pywebview)navigator.serviceWorker.register('./sw.js?v=1.39.2',{updateViaCache:'none'}).then(r=>r.update()).catch(()=>{})}catch(e){}
+ try{if(/^https?:/.test(location.protocol)&&'serviceWorker' in navigator&&!window.pywebview)navigator.serviceWorker.register('./sw.js?v=1.40.0',{updateViaCache:'none'}).then(r=>r.update()).catch(()=>{})}catch(e){}
  if(NV.ativa){
   if(!window.supabase||!window.supabase.createClient){UI.auth={modo:'offline',temCache:!!(await DB.get('ultimo'))};render();return}
   NV.sb=window.supabase.createClient(NUVEM.url,NUVEM.chave,{auth:{persistSession:true,autoRefreshToken:true}});
@@ -5994,31 +6056,32 @@ function agProf(nome){UI.profOff={};if(nome){S.profissionais.forEach(p=>{if(norm
 function menuProfs(){const L=az(S.profissionais.filter(p=>p.ativo!==false));if(!L.length)return '';const sel=UI.view==='agenda'?(UI.agProf||''):null;
  return `<div class="msec">AGENDA POR PROFISSIONAL</div><button class="${sel===''&&UI.view==='agenda'?'on':''}" onclick="agProf('')">${ico('cal',18)} Todos os profissionais</button>${L.map(p=>`<button class="${sel!=null&&norm(sel)===norm(p.nome)?'on':''}" onclick="agProf(${esc(JSON.stringify(p.nome))})"><span style="display:inline-block;width:12px;height:12px;border-radius:50%;background:${esc(p.cor||'#0a4bde')};margin:0 3px;flex:none"></span> ${esc(p.nome)}</button>`).join('')}`}
 </script>
-<script src="./bf-clinical.js?v=1.39.2"></script>
-<script src="./bf-fiscal-advanced.js?v=1.39.2"></script>
-<script src="./bf-nfse-139.js?v=1.39.2"></script>
-<script src="./bf-receituario.js?v=1.39.2"></script>
-<script src="./bf-cadastro-fiscal.js?v=1.39.2"></script>
-<script src="./bf-context-actions.js?v=1.39.2"></script>
-<script src="./bf-integrity-audit.js?v=1.39.2"></script>
-<script src="./bf-blackpay-integrated.js?v=1.39.2"></script>
-<script src="./bf-tati-help.js?v=1.39.2"></script>
-<script src="./bf-mobile-photos.js?v=1.39.2"></script>
-<script src="./bf-documents.js?v=1.39.2"></script>
-<script src="./bf-workflow-123.js?v=1.39.2"></script>
-<script src="./bf-workflow-124.js?v=1.39.2"></script>
-<script>const bfMobileCss=document.createElement("link");bfMobileCss.rel="stylesheet";bfMobileCss.href="./bf-mobile-126.css?v=1.39.2";document.head.appendChild(bfMobileCss);</script>
-<script src="./bf-mobile-126.js?v=1.39.2"></script>
-<script>const bfNavCss=document.createElement("link");bfNavCss.rel="stylesheet";bfNavCss.href="./bf-navegacao-128.css?v=1.39.2";document.head.appendChild(bfNavCss);</script>
-<script src="./bf-navegacao-128.js?v=1.39.2"></script>
-<script src="./bf-barbearia-129.js?v=1.39.2"></script>
-<script src="./bf-catalogos-130.js?v=1.39.2"></script>
-<script src="./bf-sincronia-138.js?v=1.39.2"></script>
-<script src="./bf-cobranca-138.js?v=1.39.2"></script>
-<script src="./bf-assinante-138.js?v=1.39.2"></script>
-<script>["./bf-assinante-135.css?v=1.39.2","./bf-assinante-138.css?v=1.39.2"].forEach(function(h){var l=document.createElement("link");l.rel="stylesheet";l.href=h;document.head.appendChild(l)});</script>
-<script src="./bf-assinante-135.js?v=1.39.2"></script>
-<script src="./bf-tutorial-136.js?v=1.39.2"></script>
-<script src="./bf-documentos-137.js?v=1.39.2"></script>
+<script src="./bf-clinical.js?v=1.40.0"></script>
+<script src="./bf-fiscal-advanced.js?v=1.40.0"></script>
+<script src="./bf-nfse-139.js?v=1.40.0"></script>
+<script src="./bf-podomapa-140.js?v=1.40.0"></script>
+<script src="./bf-receituario.js?v=1.40.0"></script>
+<script src="./bf-cadastro-fiscal.js?v=1.40.0"></script>
+<script src="./bf-context-actions.js?v=1.40.0"></script>
+<script src="./bf-integrity-audit.js?v=1.40.0"></script>
+<script src="./bf-blackpay-integrated.js?v=1.40.0"></script>
+<script src="./bf-tati-help.js?v=1.40.0"></script>
+<script src="./bf-mobile-photos.js?v=1.40.0"></script>
+<script src="./bf-documents.js?v=1.40.0"></script>
+<script src="./bf-workflow-123.js?v=1.40.0"></script>
+<script src="./bf-workflow-124.js?v=1.40.0"></script>
+<script>const bfMobileCss=document.createElement("link");bfMobileCss.rel="stylesheet";bfMobileCss.href="./bf-mobile-126.css?v=1.40.0";document.head.appendChild(bfMobileCss);</script>
+<script src="./bf-mobile-126.js?v=1.40.0"></script>
+<script>const bfNavCss=document.createElement("link");bfNavCss.rel="stylesheet";bfNavCss.href="./bf-navegacao-128.css?v=1.40.0";document.head.appendChild(bfNavCss);</script>
+<script src="./bf-navegacao-128.js?v=1.40.0"></script>
+<script src="./bf-barbearia-129.js?v=1.40.0"></script>
+<script src="./bf-catalogos-130.js?v=1.40.0"></script>
+<script src="./bf-sincronia-138.js?v=1.40.0"></script>
+<script src="./bf-cobranca-138.js?v=1.40.0"></script>
+<script src="./bf-assinante-138.js?v=1.40.0"></script>
+<script>["./bf-assinante-135.css?v=1.40.0","./bf-assinante-138.css?v=1.40.0"].forEach(function(h){var l=document.createElement("link");l.rel="stylesheet";l.href=h;document.head.appendChild(l)});</script>
+<script src="./bf-assinante-135.js?v=1.40.0"></script>
+<script src="./bf-tutorial-136.js?v=1.40.0"></script>
+<script src="./bf-documentos-137.js?v=1.40.0"></script>
 </body>
 </html>
