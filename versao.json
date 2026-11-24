@@ -1,4 +1,4 @@
 {
-  "versao": "1.45.0",
-  "novidades": "Pés Interativos com modelo anatômico 3D, giro livre, zoom e dedos numerados de 1 a 5. As marcações ficam ligadas à ficha do paciente, preservando o mapa anterior, as vistas 2D e o fluxo da evolução clínica."
+  "versao": "1.46.0",
+  "novidades": "Ditado local e revisão ortográfica em português do Brasil nas anotações dos Pés Interativos, na anamnese, na evolução e em campos clínicos selecionados. Revise o texto antes de inserir; o BlackFlow não envia nem armazena áudio."
 }
