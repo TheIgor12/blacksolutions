@@ -731,7 +731,7 @@ const waIco=()=>`<span class="wa">${ico('wa',15)}</span>`;
 function defaultState(){return {versao:1,config:{clinica:'Minha clínica',usuario:'Administrador',cor:'#5a4cfb',corTopo:'#0a0820',logo:'',
  msgCobranca:'Olá {nome}, tudo bem? Aqui é da {clinica}. Consta em aberto o valor de {valor}, referente a parcelas vencidas desde {vencimento}. Podemos combinar a forma de pagamento?',
  msgRetorno:'Olá {nome}, tudo bem? Aqui é da {clinica}. Já faz um tempo desde o seu último atendimento. Vamos agendar o seu retorno?',diasRetorno:90,msgRec:{},iaChave:'',contratoModelo:'',responsavel:'',profissaoResp:'',registroResp:'',comarca:'',segmento:'',taxas:{},descontarTaxa:false,cashback:'',cashbackDias:''},
- orcamentos:[],receitasDocs:[],pacientes:[],lancamentos:[],tratamentos:[],anamneses:[],agendamentos:[],contasPagar:[],evolucoes:[],profissionais:[],importacoes:[],servicos:[],produtos:[],documentos:[],movEstoque:[],comandas:[],caixas:[],avaliacoes:[],fotos:[],termos:[],contratos:[],fichas:[],protocolos:[],equipamentos:[],vouchers:[],combos:[]}}
+ orcamentos:[],receitasDocs:[],pacientes:[],lancamentos:[],tratamentos:[],anamneses:[],agendamentos:[],contasPagar:[],evolucoes:[],profissionais:[],importacoes:[],servicos:[],produtos:[],documentos:[],movEstoque:[],comandas:[],caixas:[],avaliacoes:[],fotos:[],termos:[],contratos:[],fichas:[],protocolos:[],equipamentos:[],vouchers:[],combos:[],pesMapas:[]}}
 let S=defaultState();
 const DB={
  open(){return new Promise((res,rej)=>{const r=indexedDB.open('happyfeet-gestao',1);r.onupgradeneeded=()=>r.result.createObjectStore('kv');r.onsuccess=()=>res(r.result);r.onerror=()=>rej(r.error)})},
@@ -2118,9 +2118,10 @@ function evoForm(id,pid){const e=id?S.evolucoes.find(x=>x.id===id):null;formModa
 function pAna(p){const L=S.anamneses.filter(a=>a.pacienteId===p.id).sort((a,b)=>(b.data||'').localeCompare(a.data||''));
  return `<div class="phead"><h2 style="margin:0">Anamnese</h2><button class="btn" onclick="anaForm('${p.id}')">${ico('plus',16)} Nova Anamnese</button></div>
  ${anaFaixa(p.id)}
+ ${pesFicha(p.id)}
  ${L.map((a,i)=>{const open=UI.anaOpen[a.id]??i===0;return `<div class="card"><div style="display:flex;justify-content:space-between;align-items:center;gap:10px;cursor:pointer" onclick="UI.anaOpen['${a.id}']=${!open};render()"><div><b>${i===0?'Atual':'Anterior'}</b> <span style="color:var(--mut)">Data de criação: ${br(a.data)} ${a.modelo?' . '+esc(a.modelo):''}</span></div><span class="lnk">${open?'Recolher':'Ver respostas'}</span></div>
  ${open?`<div class="qa" style="margin-top:12px">${a.respostas.map(r=>{const al=anaEhAlerta(r);const d=str(r.det2||r.obs);
-  return `<div${al?' style="color:var(--bad);font-weight:700"':''}>${esc(r.q)}</div><div${al?' style="color:var(--bad);font-weight:700"':''}>${esc(r.a)||'<span style="color:var(--mut);font-weight:400">não respondido</span>'}${d?' · '+esc(d):''}</div>`}).join('')}</div>${anaMapaFicha(a)}${fotosMini(p.id,'anamnese',a.id)}<div class="mact"><button class="btn ghost sm" style="color:var(--bad)" onclick="delRec('anamneses','${a.id}')">Excluir</button><button class="btn ghost sm" onclick="anaForm('${p.id}','${a.id}')">Editar</button></div>`:''}</div>`}).join('')||'<div class="card mini-empty">Nenhuma anamnese registrada.</div>'}`}
+  return `<div${al?' style="color:var(--bad);font-weight:700"':''}>${esc(r.q)}</div><div${al?' style="color:var(--bad);font-weight:700"':''}>${esc(r.a)||'<span style="color:var(--mut);font-weight:400">não respondido</span>'}${d?' · '+esc(d):''}</div>`}).join('')}</div>${fotosMini(p.id,'anamnese',a.id)}<div class="mact"><button class="btn ghost sm" style="color:var(--bad)" onclick="delRec('anamneses','${a.id}')">Excluir</button><button class="btn ghost sm" onclick="anaForm('${p.id}','${a.id}')">Editar</button></div>`:''}</div>`}).join('')||'<div class="card mini-empty">Nenhuma anamnese registrada.</div>'}`}
 /* ============ Anamnese estruturada ============
    Antes isto era uma caixa de texto onde a pessoa digitava "Pergunta: Resposta"
    linha por linha. Quem preenchia errava a ordem, esquecia pergunta e não
@@ -2156,15 +2157,20 @@ function anamModelo(){const m=S.config&&Array.isArray(S.config.anamPerguntas)&&S
    pessoa respondeu Sim, ou escreveu alguma coisa numa pergunta de texto. */
 function anaEhAlerta(r){if(!r||!r.alerta)return false;
  return r.tipo==='texto'?!!str(r.a):norm(r.a)==='sim'}
-/* O que foi marcado no mapa do pe, escrito por extenso na ficha. */
-function anaMapaFicha(a){
- const m=a&&a.mapa;if(!m)return '';
- const t=(typeof window.bfPodoTexto==='function')?window.bfPodoTexto(m):'';
- const o=str(m.obs);
- if(!t&&!o)return '';
- return `<div style="margin-top:12px;border:1px solid var(--line,#e6e6ef);border-radius:12px;padding:10px 12px;font-size:12.5px;line-height:1.6">
-  <b>Mapa dos pododáctilos</b>${t?`<div style="margin-top:4px">${esc(t)}</div>`:''}
-  ${o?`<div style="margin-top:4px;color:var(--mut)">${esc(o)}</div>`:''}</div>`}
+/* O mapa dos pes e gravado por paciente, no modulo Pes interativos, e a ficha
+   le dele direto. Assim nao existem duas verdades: o que a profissional marca
+   la aparece aqui no mesmo instante, sem copia e sem risco de divergir. */
+function pesFicha(pid){
+ if(typeof window.bfPesResumo!=='function')return '';
+ const r=window.bfPesResumo(pid);if(!r)return '';
+ const L=r.pontos||[];
+ return `<div class="card" style="margin-top:0">
+  <div style="display:flex;justify-content:space-between;align-items:baseline;gap:10px;flex-wrap:wrap">
+   <b>Mapa dos pés</b><button class="lnk" onclick="bfPesPaciente('${pid}');go('pesmapa')">abrir os pés interativos</button></div>
+  ${L.length?`<ol style="margin:10px 0 0;padding-left:20px;font-size:13px;line-height:1.7">
+   ${L.map(p=>`<li>${esc(window.bfPesTextoPonto?window.bfPesTextoPonto(p):'')}</li>`).join('')}</ol>`
+  :'<p class="sub" style="margin:8px 0 0">Nenhum ponto marcado ainda.</p>'}
+  ${r.obs?`<p class="sub" style="margin:10px 0 0">${esc(r.obs)}</p>`:''}</div>`}
 function anaUltima(pid){return S.anamneses.filter(a=>a.pacienteId===pid).sort((a,b)=>str(b.data).localeCompare(str(a.data)))[0]||null}
 function anaAlertas(pid){const a=anaUltima(pid);if(!a||!Array.isArray(a.respostas))return [];
  return a.respostas.filter(anaEhAlerta).map(r=>({q:r.q,a:r.a,det:str(r.det2||r.obs)}))}
@@ -2180,15 +2186,8 @@ function anaForm(pid,id){const a=id?S.anamneses.find(x=>x.id===id):null;
  const itens=a&&Array.isArray(a.respostas)&&a.respostas.length
   ? a.respostas.map(r=>({q:str(r.q),tipo:r.tipo==='texto'?'texto':(r.tipo?'simnao':(/^(sim|nao|não)$/i.test(str(r.a))?'simnao':'texto')),alerta:!!r.alerta,det:str(r.det),a:str(r.a),det2:str(r.det2||r.obs)}))
   : base.map(x=>({...x,a:'',det2:''}));
- const mapa=(a&&a.mapa&&typeof a.mapa==='object')
-  ?{pontos:Array.isArray(a.mapa.pontos)?a.mapa.pontos.slice():[],obs:str(a.mapa.obs)}
-  :{pontos:[],obs:''};
- UI.ana={pid,id:id||'',data:(a&&a.data)||todayISO(),modelo:(a&&a.modelo)||'Anamnese podológica',itens,mapa};
+ UI.ana={pid,id:id||'',data:(a&&a.data)||todayISO(),modelo:(a&&a.modelo)||'Anamnese podológica',itens};
  anaPintar()}
-/* O mapa do pe e da podologia. Odontologia e biomedicina tratam outra coisa,
-   e um desenho de pe na anamnese delas seria so estorvo. */
-const podoMapaCabe=()=>typeof window.bfPodoMapaHTML==='function'&&!soAgenda()&&
-  String((S&&S.config&&S.config.segmento)||'podologia')==='podologia';
 function anaPintar(){openModal(anaHTML(),'820px')}
 function anaHTML(){const A=UI.ana,p=pac(A.pid);
  const nAl=A.itens.filter(anaEhAlerta).length;
@@ -2198,7 +2197,6 @@ function anaHTML(){const A=UI.ana,p=pac(A.pid);
   <label>Data<input type="date" value="${esc(A.data)}" oninput="UI.ana.data=this.value"></label>
   <label>Modelo<input value="${esc(A.modelo)}" oninput="UI.ana.modelo=this.value"></label></div>
  ${nAl?`<div style="border:1px solid var(--bad);border-radius:12px;padding:10px 12px;margin:12px 0;font-size:13px"><b style="color:var(--bad)">${nAl} ${nAl===1?'resposta exige atenção':'respostas exigem atenção'}</b> e ${nAl===1?'vai aparecer':'vão aparecer'} em vermelho na ficha e no agendamento.</div>`:''}
- ${podoMapaCabe()?window.bfPodoMapaHTML():''}
  <div data-bf-ana-scroll style="max-height:52vh;overflow:auto;margin:12px 0;padding-right:4px">
  ${A.itens.map((r,i)=>{const al=anaEhAlerta(r);
   return `<div style="border:1px solid ${al?'var(--bad)':'var(--line,#e6e6ef)'};border-radius:12px;padding:12px;margin-bottom:10px">
@@ -2234,12 +2232,9 @@ function anaAdd(){formModal('Acrescentar pergunta',[
   setTimeout(anaPintar,60)})}
 function anaSalvar(){const A=UI.ana;
  const respostas=A.itens.map(r=>({q:r.q,a:str(r.a),tipo:r.tipo,alerta:!!r.alerta,det:str(r.det),det2:str(r.det2)}));
- const temMapa=!!(A.mapa&&((A.mapa.pontos||[]).length||str(A.mapa.obs)));
- if(!respostas.some(r=>str(r.a))&&!temMapa){toast('Responda ao menos uma pergunta, ou marque o mapa do pé, antes de salvar.');return}
- const mapa=(A.mapa&&(A.mapa.pontos||[]).length||str(A.mapa&&A.mapa.obs))
-  ?{pontos:(A.mapa.pontos||[]).slice(),obs:str(A.mapa.obs)}:null;
- if(A.id){const a=S.anamneses.find(x=>x.id===A.id);if(a)Object.assign(a,{data:A.data,modelo:A.modelo,respostas,mapa})}
- else S.anamneses.push({id:uid(),pacienteId:A.pid,data:A.data,modelo:A.modelo,respostas,mapa,origem:'manual'});
+ if(!respostas.some(r=>str(r.a))){toast('Responda ao menos uma pergunta antes de salvar.');return}
+ if(A.id){const a=S.anamneses.find(x=>x.id===A.id);if(a)Object.assign(a,{data:A.data,modelo:A.modelo,respostas})}
+ else S.anamneses.push({id:uid(),pacienteId:A.pid,data:A.data,modelo:A.modelo,respostas,origem:'manual'});
  const n=respostas.filter(anaEhAlerta).length;
  closeModal();save();render();
  toast(n?'Anamnese salva. '+n+(n===1?' alerta marcado.':' alertas marcados.'):'Anamnese salva.')}
@@ -5148,7 +5143,7 @@ function agNovo(a,s){if(s==='Desmarcado'||s==='Faltou')return false;const k=a.da
  const hist=c=>S[c].some(x=>x.pacienteId===a.pacienteId&&((x.data||x.vencimento||x.pagamento||'')<a.data)&&(x.data||x.vencimento||x.pagamento));
  return !hist('evolucoes')&&!hist('tratamentos')&&!S.lancamentos.some(l=>l.pacienteId===a.pacienteId&&l.pagamento&&l.pagamento<a.data)}
 /* ============ Atualização: aviso com botão Atualizar agora ============ */
-const VERSAO_APP='1.40.0';const URL_VERSAO_JSON='https://raw.githubusercontent.com/TheIgor12/blacksolutions/main/versao.json';
+const VERSAO_APP='1.41.0';const URL_VERSAO_JSON='https://raw.githubusercontent.com/TheIgor12/blacksolutions/main/versao.json';
 const numV=v=>String(v||'0').split(/\D+/).filter(Boolean).map(Number);
 function versaoMaior(a,b){const x=numV(a),y=numV(b);for(let i=0;i<Math.max(x.length,y.length);i++){const d=(x[i]||0)-(y[i]||0);if(d)return d>0}return false}
 const ATU={nova:null,timer:null};
@@ -5158,9 +5153,9 @@ const ATU={nova:null,timer:null};
    muda, sobe uma janela dizendo o que mudou no trabalho dela, com as palavras
    do dia a dia, e nao com os nomes internos do sistema. Sobe uma vez por
    versao em cada aparelho, e nunca por cima de outra janela aberta. */
-const NOVIDADES={versao:'1.40.0',itens:[
- {seg:'podologia',t:'Mapa dos pododáctilos na anamnese',
-  d:'Na anamnese agora tem o desenho dos dois pés, o peito do pé visto de cima e a sola vista de baixo, com o pé direito e o pé esquerdo escritos embaixo de cada um. Você toca na unha, no dedo, no espaço entre os dedos ou na parte do pé que está tratando, e o que foi marcado fica escrito por extenso na ficha. Pododáctilo é o nome do dedo do pé, numerado do primeiro ao quinto, de dentro para fora. O primeiro é o hálux.'},
+const NOVIDADES={versao:'1.41.0',itens:[
+ {seg:'podologia',t:'Pés interativos, um módulo novo no menu',
+  d:'No menu apareceu Pés interativos. Você escolhe o paciente e gira o pé para ver o peito do pé, o lado de fora, a sola, o lado de dentro, a ponta dos dedos e o calcanhar. Tocando em cima do lugar que está tratando, o sistema pergunta se quer guardar aquele ponto, você diz sim ou não, escolhe o que encontrou e escreve a sua anotação. O ponto fica marcado no desenho com número e com o nome anatômico do lugar, e tudo isso aparece na anamnese do paciente na mesma hora. Pododáctilo é o nome do dedo do pé, do primeiro ao quinto, de dentro para fora. O primeiro é o hálux.'},
  {t:'Pacote e avulso não se misturam mais no orçamento',
   d:'Quando o serviço tem pacote cadastrado, ele aparece na lista em duas linhas: uma do avulso, com o valor da sessão, e uma do pacote, com o valor fechado. Escolhendo o pacote, o orçamento leva o valor fechado, uma vez, com as sessões escritas na descrição. Antes o sistema multiplicava as sessões do pacote pelo preço avulso, e o total saía maior do que o combinado.'},
  {t:'Alta e abandono do tratamento',
@@ -5504,7 +5499,7 @@ function exportAll(){if(!pode('exportar')){toast('O seu perfil de acesso não pe
 // Preencha com os dados do seu projeto Supabase. Em branco, o sistema funciona só neste computador.
 const NUVEM={url:'https://blszdbjpxgtloblxlusr.supabase.co',chave:'sb_publishable_0Tns_mDN2N1iQmw_sEzFXw_SRMy1uXK'};
 const NV={ativa:!!(NUVEM.url&&NUVEM.chave),sb:null,sessao:null,clinicaId:null,papel:'',nomeClinica:'',hashes:{},cursor:0,status:'local',ocupado:false,offline:false,timer:null,conflitos:{}};
-const COLS=['orcamentos','receitasDocs','combos','vouchers','documentos','pacientes','lancamentos','tratamentos','anamneses','agendamentos','contasPagar','evolucoes','profissionais','importacoes','servicos','produtos','movEstoque','comandas','caixas','avaliacoes','fotos','contratos','termos','fichas','protocolos','equipamentos'];
+const COLS=['orcamentos','receitasDocs','combos','vouchers','documentos','pacientes','lancamentos','tratamentos','anamneses','agendamentos','contasPagar','evolucoes','profissionais','importacoes','servicos','produtos','movEstoque','comandas','caixas','avaliacoes','fotos','contratos','termos','fichas','protocolos','equipamentos','pesMapas'];
 const URL_ASSINATURA='https://raw.githubusercontent.com/TheIgor12/blacksolutions/main/assinatura.json';
 let ASSINATURA=null;
 /* O prazo da degustação fica em um lugar só, no assinatura.json, para mudar
@@ -6005,7 +6000,7 @@ function telaCopiaNaoAutorizada(){
   if(!origemAutorizada()){telaCopiaNaoAutorizada();return}}
  try{navigator.storage&&navigator.storage.persist&&navigator.storage.persist()}catch(e){}
  try{fonteAplicar()}catch(e){}
- try{if(/^https?:/.test(location.protocol)&&'serviceWorker' in navigator&&!window.pywebview)navigator.serviceWorker.register('./sw.js?v=1.40.0',{updateViaCache:'none'}).then(r=>r.update()).catch(()=>{})}catch(e){}
+ try{if(/^https?:/.test(location.protocol)&&'serviceWorker' in navigator&&!window.pywebview)navigator.serviceWorker.register('./sw.js?v=1.41.0',{updateViaCache:'none'}).then(r=>r.update()).catch(()=>{})}catch(e){}
  if(NV.ativa){
   if(!window.supabase||!window.supabase.createClient){UI.auth={modo:'offline',temCache:!!(await DB.get('ultimo'))};render();return}
   NV.sb=window.supabase.createClient(NUVEM.url,NUVEM.chave,{auth:{persistSession:true,autoRefreshToken:true}});
@@ -6056,32 +6051,32 @@ function agProf(nome){UI.profOff={};if(nome){S.profissionais.forEach(p=>{if(norm
 function menuProfs(){const L=az(S.profissionais.filter(p=>p.ativo!==false));if(!L.length)return '';const sel=UI.view==='agenda'?(UI.agProf||''):null;
  return `<div class="msec">AGENDA POR PROFISSIONAL</div><button class="${sel===''&&UI.view==='agenda'?'on':''}" onclick="agProf('')">${ico('cal',18)} Todos os profissionais</button>${L.map(p=>`<button class="${sel!=null&&norm(sel)===norm(p.nome)?'on':''}" onclick="agProf(${esc(JSON.stringify(p.nome))})"><span style="display:inline-block;width:12px;height:12px;border-radius:50%;background:${esc(p.cor||'#0a4bde')};margin:0 3px;flex:none"></span> ${esc(p.nome)}</button>`).join('')}`}
 </script>
-<script src="./bf-clinical.js?v=1.40.0"></script>
-<script src="./bf-fiscal-advanced.js?v=1.40.0"></script>
-<script src="./bf-nfse-139.js?v=1.40.0"></script>
-<script src="./bf-podomapa-140.js?v=1.40.0"></script>
-<script src="./bf-receituario.js?v=1.40.0"></script>
-<script src="./bf-cadastro-fiscal.js?v=1.40.0"></script>
-<script src="./bf-context-actions.js?v=1.40.0"></script>
-<script src="./bf-integrity-audit.js?v=1.40.0"></script>
-<script src="./bf-blackpay-integrated.js?v=1.40.0"></script>
-<script src="./bf-tati-help.js?v=1.40.0"></script>
-<script src="./bf-mobile-photos.js?v=1.40.0"></script>
-<script src="./bf-documents.js?v=1.40.0"></script>
-<script src="./bf-workflow-123.js?v=1.40.0"></script>
-<script src="./bf-workflow-124.js?v=1.40.0"></script>
-<script>const bfMobileCss=document.createElement("link");bfMobileCss.rel="stylesheet";bfMobileCss.href="./bf-mobile-126.css?v=1.40.0";document.head.appendChild(bfMobileCss);</script>
-<script src="./bf-mobile-126.js?v=1.40.0"></script>
-<script>const bfNavCss=document.createElement("link");bfNavCss.rel="stylesheet";bfNavCss.href="./bf-navegacao-128.css?v=1.40.0";document.head.appendChild(bfNavCss);</script>
-<script src="./bf-navegacao-128.js?v=1.40.0"></script>
-<script src="./bf-barbearia-129.js?v=1.40.0"></script>
-<script src="./bf-catalogos-130.js?v=1.40.0"></script>
-<script src="./bf-sincronia-138.js?v=1.40.0"></script>
-<script src="./bf-cobranca-138.js?v=1.40.0"></script>
-<script src="./bf-assinante-138.js?v=1.40.0"></script>
-<script>["./bf-assinante-135.css?v=1.40.0","./bf-assinante-138.css?v=1.40.0"].forEach(function(h){var l=document.createElement("link");l.rel="stylesheet";l.href=h;document.head.appendChild(l)});</script>
-<script src="./bf-assinante-135.js?v=1.40.0"></script>
-<script src="./bf-tutorial-136.js?v=1.40.0"></script>
-<script src="./bf-documentos-137.js?v=1.40.0"></script>
+<script src="./bf-clinical.js?v=1.41.0"></script>
+<script src="./bf-fiscal-advanced.js?v=1.41.0"></script>
+<script src="./bf-nfse-139.js?v=1.41.0"></script>
+<script src="./bf-pes-141.js?v=1.41.0"></script>
+<script src="./bf-receituario.js?v=1.41.0"></script>
+<script src="./bf-cadastro-fiscal.js?v=1.41.0"></script>
+<script src="./bf-context-actions.js?v=1.41.0"></script>
+<script src="./bf-integrity-audit.js?v=1.41.0"></script>
+<script src="./bf-blackpay-integrated.js?v=1.41.0"></script>
+<script src="./bf-tati-help.js?v=1.41.0"></script>
+<script src="./bf-mobile-photos.js?v=1.41.0"></script>
+<script src="./bf-documents.js?v=1.41.0"></script>
+<script src="./bf-workflow-123.js?v=1.41.0"></script>
+<script src="./bf-workflow-124.js?v=1.41.0"></script>
+<script>const bfMobileCss=document.createElement("link");bfMobileCss.rel="stylesheet";bfMobileCss.href="./bf-mobile-126.css?v=1.41.0";document.head.appendChild(bfMobileCss);</script>
+<script src="./bf-mobile-126.js?v=1.41.0"></script>
+<script>const bfNavCss=document.createElement("link");bfNavCss.rel="stylesheet";bfNavCss.href="./bf-navegacao-128.css?v=1.41.0";document.head.appendChild(bfNavCss);</script>
+<script src="./bf-navegacao-128.js?v=1.41.0"></script>
+<script src="./bf-barbearia-129.js?v=1.41.0"></script>
+<script src="./bf-catalogos-130.js?v=1.41.0"></script>
+<script src="./bf-sincronia-138.js?v=1.41.0"></script>
+<script src="./bf-cobranca-138.js?v=1.41.0"></script>
+<script src="./bf-assinante-138.js?v=1.41.0"></script>
+<script>["./bf-assinante-135.css?v=1.41.0","./bf-assinante-138.css?v=1.41.0"].forEach(function(h){var l=document.createElement("link");l.rel="stylesheet";l.href=h;document.head.appendChild(l)});</script>
+<script src="./bf-assinante-135.js?v=1.41.0"></script>
+<script src="./bf-tutorial-136.js?v=1.41.0"></script>
+<script src="./bf-documentos-137.js?v=1.41.0"></script>
 </body>
 </html>

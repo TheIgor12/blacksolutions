@@ -21,6 +21,14 @@ cp manifest.webmanifest app/manifest.webmanifest
 for f in bf-*.js bf-*.css icone-*.png; do
   [ -f "$f" ] && cp "$f" "app/$f"
 done
+# Tira de app/ o que nao existe mais na raiz: modulo removido que continua la
+# e carregado pelo navegador de quem entra por /app/, e volta a vida sozinho.
+for f in app/bf-*.js app/bf-*.css; do
+  [ -f "$f" ] || continue
+  base=$(basename "$f")
+  [ -f "$base" ] || { rm -f "$f"; echo "removido app/$base (nao existe mais na raiz)"; }
+done
+
 # Confere: todo arquivo que o index.html pede tem de existir em app/
 falta=0
 for f in $(grep -o 'src="\./[^"?]*"' index.html | sed 's/src="\.\///;s/"//' ; \
