@@ -135,9 +135,19 @@
     });
     return best;
   }
+  /* O pé em três dimensões é só de computador, e a regra tem três partes ao
+     mesmo tempo: tela de 1024 pixels para cima, ponteiro fino, que é mouse ou
+     caneta, e WebGL. Existe notebook com tela sensível ao toque e tablet com
+     caneta, então largura sozinha não decide.
+     Sem as três, o botão nem aparece, e com isso o celular não baixa a
+     biblioteca de 687 kilobytes nem o modelo de 252: quem atende no celular
+     usa as seis vistas, que registram a mesma coisa. */
   window.bfPes3dCabe = function () {
     if (suporta !== undefined) return suporta;
     try {
+      if (!window.matchMedia ||
+          !matchMedia('(min-width:1024px)').matches ||
+          !matchMedia('(pointer:fine)').matches) { suporta = false; return suporta; }
       var ctx = document.createElement('canvas').getContext('webgl2');
       suporta = !!ctx;
       var ext = ctx && ctx.getExtension('WEBGL_lose_context');
