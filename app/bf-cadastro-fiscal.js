@@ -1,4 +1,4 @@
-/* BlackFlow 1.14.0 — Cadastro fiscal unificado (todos os segmentos).
+/* BlackFlow 1.47.0 — Cadastro fiscal unificado (todos os segmentos).
    Fonte de verdade: clinicas.cnpj e bf_fiscal_config no Supabase.
    Não habilita emissão automática de NFS-e. */
 (function(){
@@ -76,10 +76,94 @@ window.bfcadLoad=async function(){
       field("bfcad-serie","Série DPS",fiscal.serie_dps||1,'type="number" min="1" max="49999"')+
       select("bfcad-ambiente","Ambiente",[['homologacao','Teste / homologação'],['producao','Produção — requer habilitação']],fiscal.ambiente||"homologacao"))+
    '</details>'+
+   bfcadTokenHtml()+
    '<div id="bfcad-msg" role="status" style="min-height:22px;margin:10px 0"></div>'+
    '<button class="btn" id="bfcad-save" onclick="bfcadSalvar()">Salvar e vincular à NFS-e</button>'+
    '<p class="sub" style="margin-top:10px">O CNPJ pertence à clínica, não ao navegador. Caso precise alterá-lo futuramente, somente o administrador poderá confirmar a substituição.</p>';
+  bfcadTokenSituacao();
  }catch(e){el.innerHTML='<h2>Cadastro fiscal e CNPJ</h2><div class="note">Não foi possível carregar o cadastro: '+E(e.message||e)+'</div>';}
+};
+
+/* ------------------------------------------------------------------ */
+/* Token do integrador fiscal, por clínica                             */
+/*                                                                     */
+/* A nota sai com o CNPJ desta clínica, e quem assina é o certificado  */
+/* digital dela. Na Focus NFe o token que emite é o token DA EMPRESA,  */
+/* criado quando aquela empresa é cadastrada lá. Por isso o token é    */
+/* desta clínica e de mais ninguém: não existe token do sistema que    */
+/* sirva para todas, porque a nota sairia com o CNPJ errado.           */
+/*                                                                     */
+/* O token é gravado por função do banco, em tabela com RLS ligada e   */
+/* nenhuma política de leitura. Quem lê é apenas a função de borda que */
+/* emite a nota. Para a tela voltam só os seis últimos caracteres.     */
+/* ------------------------------------------------------------------ */
+function bfcadTokenHtml(){
+ return '<div class="note" style="margin:14px 0">'+
+  '<h3 style="margin:0 0 6px;font-size:16px">Token para emitir com o CNPJ desta clínica</h3>'+
+  '<p class="sub" style="margin:0 0 8px">A nota fiscal sai com o CNPJ desta clínica. No integrador, quem emite é o token da empresa, aquele que aparece depois que o CNPJ e o certificado digital A1 são cadastrados lá. Cole abaixo o token desta clínica. Ele fica guardado no servidor e nunca volta inteiro para esta tela.</p>'+
+  '<div id="bfcad-tk-situacao" class="sub" role="status" style="margin:0 0 8px">Conferindo se já existe token gravado...</div>'+
+  line(field("bfcad-tk","Token da empresa no integrador fiscal","",'type="password" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="cole aqui o token"')+
+       select("bfcad-tk-amb","Ambiente deste token",[['homologacao','Teste / homologação'],['producao','Produção']],"homologacao"))+
+  '<div style="display:flex;gap:8px;flex-wrap:wrap">'+
+   '<button class="btn sm" onclick="bfcadTokenSalvar()">Gravar token desta clínica</button>'+
+   '<button class="btn ghost sm" onclick="bfcadTokenApagar()">Apagar token gravado</button>'+
+  '</div>'+
+  '<div id="bfcad-tk-msg" role="status" style="min-height:22px;margin-top:8px"></div>'+
+  '<p class="sub" style="margin:8px 0 0">Comece sempre pelo ambiente de teste. Só troque para produção depois que uma nota de teste for autorizada pelo município.</p>'+
+ '</div>';
+}
+function bfcadTokenMsg(txt,ok){
+ const el=document.getElementById("bfcad-tk-msg");
+ if(el){el.textContent=txt||"";el.style.color=ok?"#176044":"#9d3c18";}
+}
+window.bfcadTokenSituacao=async function(){
+ const el=document.getElementById("bfcad-tk-situacao");
+ if(!el||!can())return;
+ try{
+  const {data,error:err}=await NV.sb.rpc("bf_fiscal_token_situacao",{p_clinica:NV.clinicaId});
+  if(err)throw err;
+  const d=data||{};
+  if(d.tem){
+   const amb=String(d.ambiente||"homologacao")==="producao"?"produção":"teste / homologação";
+   el.innerHTML='Token gravado, terminado em <b>'+E(d.final||"")+'</b>, ambiente de '+E(amb)+'.'+
+    (d.em?' Última gravação em '+E(new Date(d.em).toLocaleDateString("pt-BR"))+'.':'');
+   el.style.color="#176044";
+   const sel=document.getElementById("bfcad-tk-amb");
+   if(sel)sel.value=String(d.ambiente||"homologacao");
+  }else{
+   el.textContent="Nenhum token gravado para esta clínica. Sem ele a nota não é emitida.";
+   el.style.color="#9d3c18";
+  }
+ }catch(e){
+  el.textContent="Não foi possível conferir o token: "+String(e.message||e).slice(0,160);
+  el.style.color="#9d3c18";
+ }
+};
+window.bfcadTokenSalvar=async function(){
+ if(!can())return bfcadTokenMsg("Somente o administrador desta conta pode gravar o token.",false);
+ const campo=document.getElementById("bfcad-tk");
+ const tk=String(campo&&campo.value||"").trim();
+ const amb=v("bfcad-tk-amb")||"homologacao";
+ if(tk.length<16)return bfcadTokenMsg("Cole o token inteiro. O que foi digitado é curto demais para ser um token.",false);
+ bfcadTokenMsg("Gravando...",true);
+ try{
+  const {data,error:err}=await NV.sb.rpc("bf_fiscal_token_gravar",
+   {p_clinica:NV.clinicaId,p_token:tk,p_ambiente:amb,p_integrador:"focusnfe"});
+  if(err)throw err;
+  if(campo)campo.value="";
+  bfcadTokenMsg("Token gravado, terminado em "+String((data&&data.final)||"")+".",true);
+  bfcadTokenSituacao();
+ }catch(e){bfcadTokenMsg(String(e.message||e).slice(0,240),false);}
+};
+window.bfcadTokenApagar=async function(){
+ if(!can())return bfcadTokenMsg("Somente o administrador desta conta pode apagar o token.",false);
+ if(!confirm("Apagar o token fiscal desta clínica? Enquanto não houver outro token gravado, nenhuma nota será emitida."))return;
+ try{
+  const {error:err}=await NV.sb.rpc("bf_fiscal_token_apagar",{p_clinica:NV.clinicaId});
+  if(err)throw err;
+  bfcadTokenMsg("Token apagado.",true);
+  bfcadTokenSituacao();
+ }catch(e){bfcadTokenMsg(String(e.message||e).slice(0,240),false);}
 };
 /* Consulta publica do CNPJ.
    A funcao do banco valida e guarda, mas nao sai para a internet. Quem traz

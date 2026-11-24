@@ -1,4 +1,4 @@
 {
-  "versao": "1.46.1",
-  "novidades": "O ditado verifica variantes locais de português do Brasil e oferece um teste de permissão do microfone separado da disponibilidade do reconhecimento. Sem envio ou gravação de áudio."
+  "versao": "1.47.0",
+  "novidades": "A nota fiscal sai com o CNPJ da própria clínica. Em Configurações, Cadastro fiscal, grave o token do integrador fiscal da sua empresa. O token fica guardado no servidor e a tela mostra apenas os seis últimos caracteres."
 }

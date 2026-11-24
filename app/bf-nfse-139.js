@@ -47,8 +47,10 @@
       return;
     }
     if (!e.configurado) {
-      el.innerHTML = '<b>Emissão ainda não ligada.</b> Falta gravar a chave do integrador fiscal no painel da ' +
-        'BlackSolutions, em Fiscal. Enquanto isso, o rascunho e a conferência funcionam, e a emissão fica bloqueada.' +
+      el.innerHTML = '<b>Emissão ainda não ligada.</b> A nota sai com o CNPJ desta clínica, então o token do ' +
+        'integrador fiscal também é desta clínica. Grave o token em Configurações, Cadastro fiscal. Enquanto isso, ' +
+        'o rascunho e a conferência funcionam, e a emissão fica bloqueada.' +
+        '<br><button class="btn ghost sm" style="margin-top:8px" onclick="bfcadAbrir()">Abrir o cadastro fiscal</button>' +
         '<br><a href="https://www.nfse.gov.br/EmissorNacional" target="_blank" rel="noopener">Abrir o Emissor Nacional de NFS-e</a>';
       return;
     }
@@ -75,9 +77,11 @@
 
     if (!e.configurado) {
       openModal('<h3>Emissão não ligada</h3>' +
-        '<p class="sub">A chave do integrador fiscal ainda não foi gravada. Sem ela, nenhuma nota pode ser ' +
-        'transmitida. Isso é configuração da BlackSolutions, não da sua clínica.</p>' +
-        '<div class="mact"><button class="btn" onclick="closeModal()">Entendi</button></div>');
+        '<p class="sub">A nota fiscal sai com o CNPJ desta clínica, e quem assina é o certificado digital dela. ' +
+        'Por isso o token do integrador é o desta clínica, e ele ainda não foi gravado. Sem ele nenhuma nota é ' +
+        'transmitida. Grave o token em Configurações, Cadastro fiscal.</p>' +
+        '<div class="mact"><button class="btn" onclick="closeModal();bfcadAbrir()">Abrir o cadastro fiscal</button>' +
+        '<button class="btn ghost" onclick="closeModal()">Agora não</button></div>');
       return;
     }
     if (!e.pode_emitir) { janelaFalta(e.impedimentos || []); return; }

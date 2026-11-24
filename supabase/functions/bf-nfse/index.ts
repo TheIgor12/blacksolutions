@@ -73,22 +73,27 @@ function cnpjValido(v: string) {
 /* ------------------------------------------------------------------ */
 /* Configuracao do integrador                                          */
 /* ------------------------------------------------------------------ */
-type Conf = { integrador: string; token: string; ambiente: string };
+type Conf = { integrador: string; token: string; ambiente: string; origem: string };
 
-async function configIntegrador(adm: any): Promise<Conf> {
-  let token = Deno.env.get("NFSE_TOKEN") || "";
-  let integrador = (Deno.env.get("NFSE_INTEGRADOR") || "focusnfe").toLowerCase();
-  let ambiente = (Deno.env.get("NFSE_AMBIENTE") || "").toLowerCase();
-  if (!token) {
-    const { data } = await adm.from("bs_config_fiscal").select("token,integrador,ambiente").eq("id", 1).maybeSingle();
-    if (data?.token) {
-      token = String(data.token);
-      integrador = String(data.integrador || "focusnfe").toLowerCase();
-      ambiente = String(data.ambiente || "homologacao").toLowerCase();
-    }
-  }
-  if (!ambiente) ambiente = "homologacao";
-  return { integrador, token, ambiente };
+/**
+ * Qual token emite a nota desta clinica.
+ *
+ * A nota sai com o CNPJ da clinica, e quem assina e o certificado digital
+ * dela. Na Focus NFe o token que emite e o token DA EMPRESA, criado quando
+ * aquela empresa e cadastrada la. Logo, o token e por clinica, e nao do
+ * sistema. Nao existe token de reserva: emitir com o token de outra empresa
+ * faria sair uma nota com o CNPJ dessa outra empresa. Por isso, sem token
+ * gravado pela propria clinica, esta funcao recusa e diz o que falta.
+ */
+async function configIntegrador(adm: any, clinicaId: string): Promise<Conf> {
+  const { data } = await adm.from("bf_fiscal_token")
+    .select("token,integrador,ambiente")
+    .eq("clinica_id", clinicaId).maybeSingle();
+  const token = String(data?.token || "").trim();
+  const integrador = String(data?.integrador || "focusnfe").toLowerCase();
+  let ambiente = String(data?.ambiente || "homologacao").toLowerCase();
+  if (ambiente !== "producao") ambiente = "homologacao";
+  return { integrador, token, ambiente, origem: token ? "clinica" : "nenhum" };
 }
 
 function baseFocus(ambiente: string) {
@@ -118,7 +123,9 @@ async function focus(conf: Conf, caminho: string, metodo = "GET", corpo?: unknow
 /* ------------------------------------------------------------------ */
 function impedimentos(cfg: any, conf: Conf, nota: any): string[] {
   const falta: string[] = [];
-  if (!conf.token) falta.push("A chave do integrador fiscal não foi gravada no painel da BlackSolutions.");
+  if (!conf.token) {
+    falta.push("Esta clínica ainda não gravou o token do integrador fiscal dela. A nota sai com o CNPJ da clínica, então o token tem de ser o da empresa dela na Focus NFe, em Configurações, Fiscal.");
+  }
   if (!cfg) { falta.push("Esta clínica ainda não tem cadastro fiscal."); return falta; }
   if (!cnpjValido(dig(cfg.cnpj))) falta.push("O CNPJ do cadastro fiscal está ausente ou inválido.");
   if (!/^\d{7}$/.test(String(cfg.municipio_ibge || ""))) falta.push("Falta o código IBGE do município no cadastro fiscal.");
@@ -250,7 +257,7 @@ Deno.serve(async (req) => {
     return responde({ erro: "só o administrador da clínica pode emitir nota fiscal" }, 403);
   }
 
-  const conf = await configIntegrador(adm);
+  const conf = await configIntegrador(adm, clinicaId);
   const { data: cfg } = await adm.from("bf_fiscal_config").select("*").eq("clinica_id", clinicaId).maybeSingle();
 
   /* ---------------- Situação ---------------- */
@@ -349,7 +356,7 @@ Deno.serve(async (req) => {
 
   /* ---------------- Conferir ---------------- */
   if (acao === "conferir") {
-    if (!conf.token) return responde({ erro: "chave fiscal não configurada" }, 503);
+    if (!conf.token) return responde({ erro: "esta clínica ainda não gravou o token fiscal dela" }, 503);
     const ref = txt(nota.integracao_referencia);
     if (!ref) return responde({ ok: true, status: nota.status || "rascunho" });
     const rota = rotaDe(cfg);
@@ -372,7 +379,7 @@ Deno.serve(async (req) => {
 
   /* ---------------- Cancelamento ---------------- */
   if (acao === "cancelar") {
-    if (!conf.token) return responde({ erro: "chave fiscal não configurada" }, 503);
+    if (!conf.token) return responde({ erro: "esta clínica ainda não gravou o token fiscal dela" }, 503);
     const justificativa = txt(corpo.justificativa);
     if (justificativa.length < 15) {
       return responde({ erro: "a justificativa do cancelamento precisa de pelo menos 15 caracteres" }, 400);
