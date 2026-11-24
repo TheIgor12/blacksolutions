@@ -1,0 +1,37 @@
+/* BlackFlow 1.35.0 — selo do assinante e engrenagem por tela. Só aparência. */
+
+.bf-selo{
+ display:inline-block;padding:3px 10px;border-radius:999px;
+ background:var(--acc-soft,#eef0ff);color:var(--acc,#5a4cfb);
+ font:700 12px/1.5 inherit;letter-spacing:.01em;white-space:nowrap;
+}
+
+.bf-cfg-tela{
+ flex:0 0 auto;display:inline-flex;align-items:center;justify-content:center;
+ width:38px;height:38px;margin:0 2px 0 0;
+ border:0;border-radius:10px;background:transparent;
+ color:inherit;opacity:.75;font:400 20px/1 system-ui;cursor:pointer;
+ touch-action:manipulation;
+}
+.bf-cfg-tela:hover{opacity:1;background:rgba(255,255,255,.14)}
+.bf-cfg-tela:focus-visible{outline:3px solid var(--acc,#5a4cfb);outline-offset:2px}
+
+@media(max-width:800px){
+ .bf-cfg-tela{width:40px;height:40px;margin-right:10px}
+ .bf-selo{font-size:11px;padding:2px 8px}
+}
+
+/* Botão flutuante da Tati */
+.bf-tati-bt{
+ position:fixed;z-index:60;
+ right:calc(16px + env(safe-area-inset-right,0px));
+ bottom:calc(16px + env(safe-area-inset-bottom,0px));
+ width:58px;height:58px;padding:0;border-radius:50%;
+ border:3px solid var(--acc,#5a4cfb);background:#fff;cursor:pointer;
+ box-shadow:0 10px 28px rgba(0,0,0,.28);touch-action:manipulation;
+ display:flex;align-items:center;justify-content:center;overflow:hidden;
+}
+.bf-tati-bt img{width:100%;height:100%;object-fit:cover;border-radius:50%;display:block}
+.bf-tati-bt:hover{transform:translateY(-2px)}
+.bf-tati-bt:focus-visible{outline:3px solid var(--acc,#5a4cfb);outline-offset:3px}
+@media(max-width:800px){.bf-tati-bt{width:54px;height:54px;bottom:calc(74px + env(safe-area-inset-bottom,0px))}}

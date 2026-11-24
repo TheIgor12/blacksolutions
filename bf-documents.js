@@ -21,14 +21,45 @@ function commonFields(){return '<div class="bf-doc-grid">'+selectPatientHTML()+
  '<label>Nome completo<input name="nome" required maxlength="180" value="'+E(draft.nome)+'"></label>'+
  '<label>CPF (quando houver)<input name="cpf" inputmode="numeric" maxlength="18" value="'+E(draft.cpf)+'"></label>'+
  '<label class="full">Endereço<input name="endereco" maxlength="280" value="'+E(draft.endereco)+'"></label></div>'}
-const svcOptions=sel=>'<option value="">Selecionar serviço cadastrado</option>'+safeList().map(s=>'<option value="'+E(s.id)+'"'+(String(s.id)===String(sel)?' selected':'')+'>'+E((s.origem==='produto'?'Produto: ':'Serviço: ')+s.nome)+' — '+moneyBR(s.preco)+'</option>').join('');
+/* Preco de um servico, do jeito que a clinica cadastrou.
+   Quem vende pacote costuma gravar o preco do pacote inteiro e o numero de
+   sessoes, deixando o preco avulso em branco. Entao o unitario sai da divisao,
+   e a quantidade ja vem do proprio cadastro, nao de adivinhacao pelo nome. */
+function pacoteDoServico(s){
+ const n=Math.max(0,Math.floor(Number(s&&s.sessoesPacote)||0));
+ const tot=Math.max(0,Number(s&&s.precoPacote)||0);
+ return n>1&&tot>0?{sessoes:n,total:tot,unitario:Math.round(tot/n*100)/100}:null;
+}
+function unitarioDoServico(s){
+ const direto=Math.max(0,Number(s&&s.preco)||0);
+ if(direto>0)return direto;
+ const pac=pacoteDoServico(s);
+ return pac?pac.unitario:0;
+}
+const svcOptions=sel=>'<option value="">Selecionar serviço cadastrado</option>'+safeList().map(s=>{
+ const pac=pacoteDoServico(s),u=unitarioDoServico(s);
+ return '<option value="'+E(s.id)+'"'+(String(s.id)===String(sel)?' selected':'')+'>'+
+  E((s.origem==='produto'?'Produto: ':'Serviço: ')+s.nome)+' — '+moneyBR(u)+
+  (pac?E(' a sessão · pacote de '+pac.sessoes+' por '+moneyBR(pac.total)):'')+'</option>'}).join('');
+/* Quantas sessoes o proprio nome do servico ja anuncia.
+   "LASERTERAPIA PLANO 10 SESSOES" significa dez, entao a quantidade vem
+   preenchida e o total sai certo sem ninguem precisar digitar. */
+function sessoesNoNome(nome){
+ const m=String(nome||'').match(/(\d{1,3})\s*(?:x\s*)?sess[õo]es?/i);
+ const n=m?Number(m[1]):0;
+ return n>1&&n<=999?n:0;
+}
+const subtotal=x=>(Math.max(0,Number(x.valor)||0))*(Math.max(1,Number(x.quantidade)||1));
+const totalOrc=()=>draft.items.reduce((a,x)=>a+subtotal(x),0);
+
 function budgetRows(){return draft.items.map((x,i)=>'<div class="bf-doc-row"><div class="bf-doc-grid">'+
  '<label>Serviço<select data-index="'+i+'" onchange="bfDocChooseService('+i+',this.value)">'+svcOptions(x.servicoId)+'</select></label>'+
  '<label>Nome do serviço / produto<input data-index="'+i+'" data-key="nome" value="'+E(x.nome)+'" required></label>'+
  '<label class="full">Descrição<textarea data-index="'+i+'" data-key="descricao" rows="2">'+E(x.descricao)+'</textarea></label>'+
- '<label>Quantidade<input data-index="'+i+'" data-key="quantidade" type="number" min="1" max="999" step="1" value="'+E(x.quantidade)+'"></label>'+
- '<label>Valor unitário (R$)<input data-index="'+i+'" data-key="valor" type="number" min="0" max="999999" step="0.01" value="'+E(x.valor)+'"></label>'+
- '</div><button class="btn ghost sm" type="button" onclick="bfDocRemove('+i+')" '+(draft.items.length===1?'disabled':'')+'>Remover item</button></div>').join('')}
+ '<label>Quantidade<input data-index="'+i+'" data-key="quantidade" type="number" min="1" max="999" step="1" value="'+E(x.quantidade)+'" oninput="bfDocTotais()"></label>'+
+ '<label>Valor unitário (R$)<input data-index="'+i+'" data-key="valor" type="number" min="0" max="999999" step="0.01" value="'+E(x.valor)+'" oninput="bfDocTotais()"></label>'+
+ '</div><div class="bf-doc-sub"><span>Total deste item</span><b id="bf-doc-sub-'+i+'">'+moneyBR(subtotal(x))+'</b></div>'+
+ '<button class="btn ghost sm" type="button" onclick="bfDocRemove('+i+')" '+(draft.items.length===1?'disabled':'')+'>Remover item</button></div>').join('')}
 function medRows(){return draft.meds.map((x,i)=>'<div class="bf-doc-row"><div class="bf-doc-grid">'+
  '<label>Categoria<select data-med="'+i+'" data-key="tipo"><option'+(x.tipo==='Industrializado'?' selected':'')+'>Industrializado</option><option'+(x.tipo==='Manipulado'?' selected':'')+'>Manipulado</option></select></label>'+
  '<label>Medicamento / fórmula<input data-med="'+i+'" data-key="nome" value="'+E(x.nome)+'" required></label>'+
@@ -41,6 +72,7 @@ function medRows(){return draft.meds.map((x,i)=>'<div class="bf-doc-row"><div cl
 function collectionHTML(){return draft.kind==='orc'?
  '<div class="bf-doc-grid"><label>Tratamento / objetivo<input name="tratamento" value="'+E(draft.tratamento)+'"></label><label>Validade da proposta<input type="date" name="validade" value="'+E(draft.validade)+'"></label></div><div id="bf-doc-rows">'+budgetRows()+'</div>'+
  '<button class="btn ghost" type="button" onclick="bfDocAdd()">+ Adicionar outro serviço ou produto</button>'+
+ '<div class="bf-doc-total"><span>Total do orçamento</span><b id="bf-doc-total">'+moneyBR(totalOrc())+'</b></div>'+
  '<label class="bf-doc-note">Condições e observações<textarea name="nota" rows="2">'+E(draft.nota)+'</textarea></label>':
  '<p class="bf-doc-warning"><b>Atenção:</b> o documento é apenas rascunho. Medicamentos e posologia devem ser definidos e revisados por profissional legalmente habilitado. Receitas controladas exigem procedimentos específicos.</p>'+
  '<div id="bf-doc-rows">'+medRows()+'</div><button class="btn ghost" type="button" onclick="bfDocAdd()">+ Adicionar medicamento ou fórmula</button>'+
@@ -54,7 +86,26 @@ function renderForm(){const f=document.getElementById('bf-doc-form');if(!f)retur
  '<div class="bf-doc-actions"><button class="btn ghost" type="button" onclick="closeModal()">Cancelar</button>'+
  '<button class="btn ghost" type="button" onclick="bfDocSubmit(false)">Salvar rascunho</button>'+
  '<button class="btn" type="button" onclick="bfDocSubmit(true)">Salvar e gerar PDF</button></div>'}
-window.bfDocChooseService=function(i,id){syncRows();let x=draft.items[i];if(!x)return;const s=safeList().find(v=>String(v.id)===id);x.servicoId=id;x.nome=s?.nome||x.nome;x.valor=Math.max(0,Number(s?.preco)||0);x.descricao=s?.descricao||x.descricao||'';renderForm()};
+window.bfDocChooseService=function(i,id){syncRows();let x=draft.items[i];if(!x)return;
+ const s=safeList().find(v=>String(v.id)===id);
+ x.servicoId=id;x.nome=s?.nome||x.nome;x.descricao=s?.descricao||x.descricao||'';
+ x.valor=unitarioDoServico(s);
+ /* A quantidade vem do cadastro do pacote. Nao havendo cadastro, vem do nome,
+    porque "PLANO 10 SESSOES" ja diz quantas sao. */
+ const pac=pacoteDoServico(s);
+ const n=pac?pac.sessoes:sessoesNoNome(x.nome);
+ /* Trocar de servico zera a quantidade do anterior: sem isso, as dez sessoes
+    do plano ficariam coladas no servico avulso escolhido depois. */
+ x.quantidade=n||1;
+ renderForm()};
+
+/* Recalcula sem redesenhar o formulario, para o campo nao perder o foco
+   enquanto a pessoa digita. */
+window.bfDocTotais=function(){
+ syncRows();
+ draft.items.forEach((x,i)=>{const e=document.getElementById('bf-doc-sub-'+i);if(e)e.textContent=moneyBR(subtotal(x))});
+ const t=document.getElementById('bf-doc-total');if(t)t.textContent=moneyBR(totalOrc());
+};
 window.bfDocAdd=function(){syncRows();if(draft.kind==='orc')draft.items.push({servicoId:'',nome:'',descricao:'',valor:0,quantidade:1});
  else draft.meds.push({nome:'',tipo:'Industrializado',concentracao:'',forma:'',posologia:'',quantidade:'',orientacoes:''});
  renderForm()};
@@ -151,6 +202,6 @@ window.bfDocUpload=async function(input){const file=input.files?.[0];if(!file)re
  S.config.bfModeloFundo=base;save();render();toast('Papel timbrado carregado para orçamento e receituário. Confira se está em branco.')
  }catch(e){console.warn(e);toast('Não foi possível ler o modelo. Use PDF simples, PNG ou JPG em branco.')}
 };
-const css='<style>.bf-doc-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}.bf-doc-grid label,.bf-doc-note{display:flex;flex-direction:column;gap:4px;font-size:12px;color:var(--mut);min-width:0}.bf-doc-grid .full{grid-column:1/-1}.bf-doc-grid input,.bf-doc-grid select,.bf-doc-grid textarea,.bf-doc-note textarea{width:100%;background:#fff;border:1px solid var(--line);border-radius:7px;color:var(--ink);padding:9px;font:inherit}.bf-doc-row{border:1px solid var(--line);border-radius:12px;margin:12px 0;padding:12px}.bf-doc-row .btn{margin-top:8px}.bf-doc-actions,.bf-doc-config-actions{display:flex;flex-wrap:wrap;gap:8px;justify-content:flex-end;margin-top:16px}.bf-doc-note{margin-top:12px}.bf-doc-warning{padding:12px;border:1px solid #c68b35;background:#fff5dd;border-radius:10px;font-size:12px}@media(max-width:650px){.bf-doc-grid{grid-template-columns:1fr}.bf-doc-grid .full{grid-column:auto}.bf-doc-actions .btn{flex:1;white-space:normal;justify-content:center}}</style>';
+const css='<style>.bf-doc-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}.bf-doc-grid label,.bf-doc-note{display:flex;flex-direction:column;gap:4px;font-size:12px;color:var(--mut);min-width:0}.bf-doc-grid .full{grid-column:1/-1}.bf-doc-grid input,.bf-doc-grid select,.bf-doc-grid textarea,.bf-doc-note textarea{width:100%;background:#fff;border:1px solid var(--line);border-radius:7px;color:var(--ink);padding:9px;font:inherit}.bf-doc-row{border:1px solid var(--line);border-radius:12px;margin:12px 0;padding:12px}.bf-doc-row .btn{margin-top:8px}.bf-doc-actions,.bf-doc-config-actions{display:flex;flex-wrap:wrap;gap:8px;justify-content:flex-end;margin-top:16px}.bf-doc-note{margin-top:12px}.bf-doc-warning{padding:12px;border:1px solid #c68b35;background:#fff5dd;border-radius:10px;font-size:12px}.bf-doc-sub{display:flex;justify-content:space-between;align-items:baseline;gap:10px;margin-top:10px;padding-top:9px;border-top:1px dashed var(--line);font-size:12px;color:var(--mut)}.bf-doc-sub b{font-size:15px;color:var(--ink);font-variant-numeric:tabular-nums}.bf-doc-total{display:flex;justify-content:space-between;align-items:baseline;gap:10px;margin-top:14px;padding:12px 14px;border-radius:12px;background:var(--acc-soft,#eef0ff);font-size:13px;font-weight:600;color:var(--mut)}.bf-doc-total b{font-size:20px;color:var(--acc,#5a4cfb);font-variant-numeric:tabular-nums}@media(max-width:650px){.bf-doc-grid{grid-template-columns:1fr}.bf-doc-grid .full{grid-column:auto}/* Botao de rotulo longo em meia largura quebrava em duas linhas e ficava mais alto que o vizinho. No celular cada um ocupa a linha inteira. */.bf-doc-actions .btn,.bf-doc-row .btn,.bf-doc-actions+.btn{flex:1 1 100%;width:100%;white-space:normal;justify-content:center;min-height:44px}.bf-doc-grid input,.bf-doc-grid select,.bf-doc-grid textarea,.bf-doc-note textarea{font-size:16px;min-height:46px;padding:11px 12px;border-radius:10px}.bf-doc-grid textarea,.bf-doc-note textarea{min-height:92px}.bf-doc-grid label,.bf-doc-note{font-size:12.5px;font-weight:600}.bf-doc-row{padding:12px 11px;border-radius:14px}.bf-doc-total b{font-size:22px}}</style>';
 document.head.insertAdjacentHTML('beforeend',css);
 })();

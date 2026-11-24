@@ -69,7 +69,7 @@ async function upload(file,name){const r=await NV.sb.storage.from(BUCKET).upload
 async function downloadPDF(name){const r=await NV.sb.storage.from(BUCKET).download(name);if(r.error)throw r.error;return r.data;}
 const path=kind=>cid()+'/'+uid()+'/'+kind+'/'+crypto.randomUUID()+'.pdf';
 const safeName=x=>String(x||'documento').normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^A-Za-z0-9_-]+/g,'_').slice(0,50);
-const warnings=()=>seg()==='medicina'?'Medicina: apenas receitas simples em rascunho. Necessário CRM/UF e assinatura adequada. Controlados e notificações exigem SNCR e não são emitidos neste módulo.':seg()==='odontologia'?'Receitas sujeitas a controle especial devem seguir a Anvisa e os serviços oficiais do CFO.':seg()==='biomedicina'?'Prescrição restrita à habilitação profissional e às normas CFBM/Anvisa; não abrange tratamento indiscriminado de doenças ou deficiência vitamínica.':'Em Podologia, utilize orientações e encaminhamentos; o sistema não autoriza prescrição de medicamentos.';
+const warnings=()=>false?'Medicina: apenas receitas simples em rascunho. Necessário CRM/UF e assinatura adequada. Controlados e notificações exigem SNCR e não são emitidos neste módulo.':seg()==='odontologia'?'Receitas sujeitas a controle especial devem seguir a Anvisa e os serviços oficiais do CFO.':seg()==='biomedicina'?'Prescrição restrita à habilitação profissional e às normas CFBM/Anvisa; não abrange tratamento indiscriminado de doenças ou deficiência vitamínica.':'Em Podologia, utilize orientações e encaminhamentos; o sistema não autoriza prescrição de medicamentos.';
 const configLink=()=>btn('Configurar modelo PDF',"UI.cfgTab='receituario';go('config')");
 async function config(){
  try{
@@ -128,9 +128,9 @@ window.bfRecRegisterProfessional=async function(){
  try{
   if(NV.papel!=='admin'||seg()==='podologia')throw Error('Somente administrador do segmento clínico.');
   const user_id=read('bfrec-member'),nome=read('bfrec-pro-name'),inscricao=read('bfrec-pro-reg'),uf=read('bfrec-pro-uf').toUpperCase();
-  if(!user_id||nome.length<4||!inscricao||!/^[A-Z]{2}$/.test(uf)||(seg()==='medicina'&&!/^\d{1,10}$/.test(inscricao)))throw Error('Confira usuário, nome, CRM/registro e UF.');
+  if(!user_id||nome.length<4||!inscricao||!/^[A-Z]{2}$/.test(uf))throw Error('Confira usuário, nome, CRM/registro e UF.');
   const r=await NV.sb.from('bf_profissionais').upsert({
-   clinica_id:cid(),user_id,segmento:seg(),nome,inscricao,uf,conselho:seg()==='odontologia'?'CRO':seg()==='medicina'?'CRM':'CRBM',habilitacoes:[],ativo:true
+   clinica_id:cid(),user_id,segmento:seg(),nome,inscricao,uf,conselho:seg()==='odontologia'?'CRO':'CRBM',habilitacoes:[],ativo:true
   },{onConflict:'clinica_id,user_id,segmento'});
   if(r.error)throw r.error;toast('Profissional cadastrado. Verifique documentos de habilitação.');config();
  }catch(e){fail(e)}
@@ -148,7 +148,7 @@ window.bfRecSaveModel=async function(){
   if(!await allowed())throw Error('Sem autorização profissional.');
   const file=document.getElementById('bfrec-model-file')?.files?.[0];
   let name=read('bfrec-name'),registration=read('bfrec-reg'),top=Number(read('bfrec-top')||140),bottom=Number(read('bfrec-bottom')||65);
-  if(seg()==='medicina'){
+  if(false){
    const profs=await list('bf_profissionais','nome,conselho,inscricao,uf,ativo',{clinica_id:cid(),user_id:uid(),segmento:'medicina'});
    const prof=profs[0];
    if(!prof?.ativo||prof.conselho!=='CRM'||!/^\d{1,10}$/.test(prof.inscricao||'')||!/^[A-Z]{2}$/.test(prof.uf||''))throw Error('Médico com CRM/UF é obrigatório no cadastro.');
@@ -208,8 +208,8 @@ async function home(){
   if(model){
    body+=card('Novo documento',
     '<label><small>Paciente</small>'+choice('bfrec-paciente',(S.pacientes||[]).map(p=>[p.id,p.nome]))+'</label>'+
-    '<label style="display:block;margin:12px 0"><small>Tipo de documento</small>'+choice('bfrec-tipo',seg()==='podologia'?[['orientacoes','Orientações'],['encaminhamento','Encaminhamento']]:[['receituario_simples',seg()==='medicina'?'Receita médica simples (rascunho)':'Receituário comum (rascunho)'],['orientacoes','Orientações'],['encaminhamento','Encaminhamento']])+'</label>'+
-    (seg()==='medicina'?
+    '<label style="display:block;margin:12px 0"><small>Tipo de documento</small>'+choice('bfrec-tipo',seg()==='podologia'?[['orientacoes','Orientações'],['encaminhamento','Encaminhamento']]:[['receituario_simples',false?'Receita médica simples (rascunho)':'Receituário comum (rascunho)'],['orientacoes','Orientações'],['encaminhamento','Encaminhamento']])+'</label>'+
+    (false?
      '<p class="sub">Este formulário gera apenas rascunho de receita simples. Não emita antimicrobianos sujeitos a retenção, notificações ou controlados por este módulo.</p>'+
      row(field('bfrec-med','Medicamento (denominação)')+field('bfrec-apresentacao','Concentração e forma farmacêutica'))+
      row(field('bfrec-via','Via de administração')+field('bfrec-posologia','Dose, frequência e horários'))+
@@ -243,7 +243,7 @@ window.bfRecGenerate=async()=>{
   if(!document.getElementById('bfrec-responsavel')?.checked)throw Error('Confirme a responsabilidade profissional.');
   const p=person(read('bfrec-paciente')),tipo=read('bfrec-tipo');
   let texto=read('bfrec-texto');
-  if(seg()==='medicina'){
+  if(false){
    const profs=await list('bf_profissionais','nome,conselho,inscricao,uf,ativo',{clinica_id:cid(),user_id:uid(),segmento:'medicina'});
    const prof=profs[0];
    if(!prof?.ativo||prof.conselho!=='CRM'||!/^\d{1,10}$/.test(prof.inscricao||'')||!/^[A-Z]{2}$/.test(prof.uf||''))throw Error('Cadastre um médico com CRM e UF antes de criar a receita.');

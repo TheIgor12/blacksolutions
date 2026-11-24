@@ -1,0 +1,250 @@
+/* BlackFlow 1.38.2 — a área do assinante.
+
+   Painel escuro, com peso visual próprio, dentro do sistema claro. É de
+   propósito: a tela de assinatura é a vitrine do produto, e precisa parecer
+   com o que está sendo vendido. Tudo aqui vive sob .bfa, então nada vaza
+   para o resto do sistema. */
+
+/* A tela inteira é o painel: nenhuma faixa branca sobrando nas laterais nem
+   no pé. O conteúdo respira dentro de um trilho centrado, mas o fundo vai de
+   borda a borda. */
+.bfa-tela{width:100%;max-width:none;margin:0;padding:0}
+.bfa-tela .bfa{
+ border-radius:0;box-shadow:none;
+ min-height:calc(100dvh - 48px);
+ padding:clamp(20px,2.4vw,40px) clamp(16px,3.2vw,56px) clamp(28px,3vw,52px);
+}
+.bfa-dentro{max-width:1520px;margin:0 auto;width:100%}
+
+.bfa{
+ --bfa-roxo:#8b5cf6; --bfa-roxo2:#a855f7; --bfa-ciano:#22d3ee;
+ --bfa-fundo:#0c0a17; --bfa-fundo2:#15122a; --bfa-bd:rgba(168,85,247,.28);
+ --bfa-tx:#f4f2ff; --bfa-mut:#a9a3c7;
+ position:relative;border-radius:20px;overflow:hidden;
+ background:
+  radial-gradient(1200px 420px at 88% -10%, rgba(34,211,238,.20), transparent 62%),
+  radial-gradient(900px 480px at 4% 108%, rgba(139,92,246,.26), transparent 60%),
+  linear-gradient(160deg,#0c0a17 0%,#15122a 55%,#0d0b1a 100%);
+ color:var(--bfa-tx);
+ padding:clamp(18px,3vw,30px);
+ font-family:inherit;
+ box-shadow:0 24px 60px rgba(12,10,23,.28);
+}
+.bfa *{box-sizing:border-box}
+.bfa h2,.bfa h3,.bfa h4{color:var(--bfa-tx);margin:0}
+.bfa .bfa-sub{color:var(--bfa-mut);margin:6px 0 0;font-size:14px;line-height:1.5}
+
+/* ---------- topo ---------- */
+.bfa-hero{display:flex;align-items:center;gap:16px;margin:0 0 20px;flex-wrap:wrap}
+.bfa-coroa{
+ width:60px;height:60px;flex:0 0 60px;border-radius:16px;display:grid;place-items:center;
+ background:linear-gradient(145deg,rgba(139,92,246,.35),rgba(34,211,238,.18));
+ border:1px solid var(--bfa-bd);font-size:28px;line-height:1;
+}
+.bfa-hero h2{font-size:clamp(22px,2.6vw,30px);font-weight:800;letter-spacing:-.01em}
+.bfa-hero h2 span{background:linear-gradient(90deg,var(--bfa-roxo2),var(--bfa-ciano));
+ -webkit-background-clip:text;background-clip:text;color:transparent}
+
+/* ---------- selos ---------- */
+.bfa-selos{display:flex;gap:8px;flex-wrap:wrap;margin-left:auto}
+.bfa-selo{
+ display:inline-flex;align-items:center;gap:7px;padding:8px 14px;border-radius:999px;
+ font-size:13px;font-weight:700;border:1px solid var(--bfa-bd);
+ background:rgba(139,92,246,.14);color:var(--bfa-tx);white-space:nowrap;
+}
+.bfa-selo.bf{background:linear-gradient(90deg,rgba(139,92,246,.4),rgba(34,211,238,.26));
+ border-color:rgba(34,211,238,.45)}
+.bfa-selo.num{background:rgba(255,255,255,.07)}
+.bfa-selo b{font-weight:800}
+
+/* ---------- cartão do plano ---------- */
+.bfa-plano{
+ position:relative;border-radius:18px;padding:22px;margin:0 0 22px;
+ background:linear-gradient(130deg,rgba(139,92,246,.30),rgba(34,211,238,.14) 70%,rgba(139,92,246,.10));
+ border:1px solid var(--bfa-bd);
+ display:flex;align-items:center;gap:20px;flex-wrap:wrap;
+}
+.bfa-plano .bfa-coroa{width:54px;height:54px;flex-basis:54px;font-size:25px}
+.bfa-plano-tx{flex:1 1 260px;min-width:0}
+.bfa-plano-tx b{display:block;font-size:clamp(19px,2vw,24px);font-weight:800}
+.bfa-plano-tx p{margin:6px 0 0;color:var(--bfa-mut);font-size:14px;line-height:1.5}
+.bfa-plano-vlr{text-align:right;flex:0 0 auto}
+.bfa-plano-vlr i{font-style:normal;font-size:17px;font-weight:700;color:var(--bfa-mut)}
+.bfa-plano-vlr b{font-size:clamp(30px,4vw,44px);font-weight:800;letter-spacing:-.02em;line-height:1}
+.bfa-plano-vlr small{font-size:15px;color:var(--bfa-mut);font-weight:700}
+.bfa-pill{
+ display:inline-flex;align-items:center;gap:7px;margin-top:10px;padding:8px 14px;border-radius:999px;
+ background:rgba(255,255,255,.08);border:1px solid var(--bfa-bd);font-size:13px;font-weight:700;
+}
+.bfa-risco{display:block;text-decoration:line-through;color:var(--bfa-mut);font-size:16px;font-weight:700;margin:0 0 2px}
+
+/* ---------- corpo em duas colunas ---------- */
+.bfa-grid{display:grid;grid-template-columns:minmax(0,1.6fr) minmax(300px,400px);gap:22px;align-items:start}
+@media(max-width:980px){.bfa-grid{grid-template-columns:1fr}}
+@media(min-width:1500px){.bfa-grid{gap:30px}}
+
+.bfa-bloco{margin:0 0 18px}
+.bfa-bloco-tit{display:flex;align-items:center;gap:12px;margin:0 0 12px}
+.bfa-bloco-tit .ic{
+ width:40px;height:40px;flex:0 0 40px;border-radius:12px;display:grid;place-items:center;
+ background:rgba(139,92,246,.18);border:1px solid var(--bfa-bd);font-size:19px;
+}
+.bfa-bloco-tit b{display:block;font-size:17px;font-weight:800}
+.bfa-bloco-tit span{display:block;color:var(--bfa-mut);font-size:13px;margin-top:2px}
+
+/* ---------- escolha da forma ---------- */
+.bfa-formas{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+@media(max-width:560px){.bfa-formas{grid-template-columns:1fr}}
+.bfa-forma{
+ display:flex;align-items:center;gap:12px;padding:16px 18px;border-radius:14px;cursor:pointer;
+ background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.10);
+ color:var(--bfa-tx);font-size:16px;font-weight:700;text-align:left;width:100%;
+ transition:border-color .15s,background .15s;
+}
+.bfa-forma:hover{border-color:var(--bfa-bd);background:rgba(139,92,246,.10)}
+.bfa-forma.on{border-color:var(--bfa-roxo2);background:rgba(139,92,246,.18);
+ box-shadow:0 0 0 1px rgba(168,85,247,.35) inset}
+.bfa-forma .bola{
+ margin-left:auto;width:22px;height:22px;border-radius:50%;flex:0 0 22px;
+ border:2px solid rgba(255,255,255,.28);display:grid;place-items:center;font-size:13px;color:transparent;
+}
+.bfa-forma.on .bola{border-color:var(--bfa-roxo2);background:var(--bfa-roxo2);color:#fff}
+
+/* ---------- painéis ---------- */
+.bfa-painel{
+ border-radius:16px;padding:18px;background:rgba(255,255,255,.045);
+ border:1px solid rgba(255,255,255,.10);
+}
+.bfa-painel+.bfa-painel{margin-top:14px}
+.bfa-painel>h4{font-size:16px;font-weight:800;margin:0 0 4px}
+.bfa-painel>p.bfa-sub{margin:0 0 14px}
+
+/* ---------- formulário do cartão ---------- */
+.bfa-campos{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+@media(max-width:560px){.bfa-campos{grid-template-columns:1fr}}
+.bfa-campo{display:flex;flex-direction:column;gap:6px;min-width:0}
+.bfa-campo.full{grid-column:1/-1}
+.bfa-campo label{font-size:13px;font-weight:700;color:var(--bfa-mut)}
+.bfa-campo input{
+ width:100%;padding:13px 14px;border-radius:11px;font-size:15px;font-family:inherit;
+ background:rgba(8,6,18,.72);color:var(--bfa-tx);
+ border:1px solid rgba(255,255,255,.14);outline:none;margin:0;
+}
+.bfa-campo input::placeholder{color:#6f6990}
+.bfa-campo input:focus{border-color:var(--bfa-roxo2);box-shadow:0 0 0 3px rgba(139,92,246,.22)}
+.bfa-bandeiras{display:flex;gap:6px;align-items:center;margin-top:2px}
+.bfa-bandeiras i{
+ font-style:normal;font-size:11px;font-weight:800;letter-spacing:.04em;padding:4px 8px;border-radius:6px;
+ background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.12);color:var(--bfa-mut);
+}
+
+/* ---------- Pix ---------- */
+.bfa-pix{text-align:center}
+.bfa-qr{
+ display:inline-block;padding:12px;border-radius:16px;background:#fff;margin:4px auto 12px;
+ box-shadow:0 0 0 2px rgba(34,211,238,.45),0 10px 30px rgba(0,0,0,.35);
+}
+.bfa-qr img{display:block;width:210px;height:210px;border-radius:6px}
+.bfa-copia{
+ width:100%;padding:12px;border-radius:11px;font-family:ui-monospace,SFMono-Regular,Menlo,monospace;
+ font-size:12px;line-height:1.5;background:rgba(8,6,18,.72);color:var(--bfa-mut);
+ border:1px solid rgba(255,255,255,.14);resize:none;margin:0;
+}
+
+/* ---------- resumo ---------- */
+.bfa-resumo{
+ border-radius:18px;padding:20px;position:sticky;top:12px;
+ background:linear-gradient(170deg,rgba(139,92,246,.16),rgba(34,211,238,.07));
+ border:1px solid var(--bfa-bd);
+}
+.bfa-linha{display:flex;justify-content:space-between;gap:12px;padding:11px 0;font-size:15px;
+ border-bottom:1px solid rgba(255,255,255,.09)}
+.bfa-linha span{color:var(--bfa-mut)}
+.bfa-linha b{font-weight:700;text-align:right}
+.bfa-linha.total{border-bottom:0;padding-top:14px;font-size:17px}
+.bfa-linha.total b{font-size:21px;font-weight:800;
+ background:linear-gradient(90deg,var(--bfa-roxo2),var(--bfa-ciano));
+ -webkit-background-clip:text;background-clip:text;color:transparent}
+
+.bfa-bt{
+ width:100%;margin:16px 0 14px;padding:16px 18px;border:0;border-radius:14px;cursor:pointer;
+ background:linear-gradient(95deg,var(--bfa-roxo),var(--bfa-roxo2) 55%,#c084fc);
+ color:#fff;font-size:16px;font-weight:800;font-family:inherit;
+ display:flex;align-items:center;justify-content:center;gap:10px;
+ box-shadow:0 12px 30px rgba(139,92,246,.38);transition:transform .12s,box-shadow .12s;
+}
+.bfa-bt:hover{transform:translateY(-1px);box-shadow:0 16px 36px rgba(139,92,246,.48)}
+.bfa-bt:disabled{opacity:.6;cursor:default;transform:none}
+.bfa-bt.sec{background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.16);
+ box-shadow:none;font-weight:700;font-size:15px;padding:13px 16px;margin:0}
+.bfa-bt.sec:hover{background:rgba(255,255,255,.14);transform:none;box-shadow:none}
+.bfa-botoes{display:flex;gap:10px;flex-wrap:wrap;margin:0 0 18px}
+.bfa-botoes .bfa-bt{width:auto;margin:0}
+
+.bfa-checks{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:10px}
+.bfa-checks li{display:flex;align-items:flex-start;gap:10px;font-size:14px;color:var(--bfa-tx)}
+.bfa-checks i{
+ font-style:normal;flex:0 0 20px;width:20px;height:20px;border-radius:50%;display:grid;place-items:center;
+ background:rgba(34,197,94,.22);color:#4ade80;font-size:12px;font-weight:800;margin-top:1px;
+}
+
+.bfa-seguro{
+ margin-top:16px;border-radius:14px;padding:14px 16px;display:flex;gap:12px;align-items:flex-start;
+ background:rgba(34,211,238,.08);border:1px solid rgba(34,211,238,.22);
+}
+.bfa-seguro .ic{flex:0 0 36px;width:36px;height:36px;border-radius:10px;display:grid;place-items:center;
+ background:rgba(34,211,238,.18);font-size:18px}
+.bfa-seguro b{display:block;font-size:14px;font-weight:800}
+.bfa-seguro p{margin:4px 0 0;font-size:13px;color:var(--bfa-mut);line-height:1.5}
+
+/* ---------- rodapé de confiança ---------- */
+.bfa-rodape{
+ margin-top:20px;border-radius:14px;padding:14px 18px;
+ background:rgba(255,255,255,.045);border:1px solid rgba(255,255,255,.10);
+ display:flex;align-items:center;gap:16px;flex-wrap:wrap;
+}
+.bfa-rodape .tx{flex:1 1 320px;min-width:0;font-size:14px;color:var(--bfa-mut)}
+.bfa-rodape .tx b{color:var(--bfa-tx);font-weight:800;margin-right:8px}
+.bfa-marcas{display:flex;gap:16px;flex-wrap:wrap;margin-left:auto}
+.bfa-marca{display:flex;align-items:center;gap:8px;font-size:12px;color:var(--bfa-mut);line-height:1.3}
+.bfa-marca b{display:block;color:var(--bfa-tx);font-size:12px;font-weight:800}
+
+/* ---------- avisos e situação ---------- */
+.bfa-aviso{border-radius:12px;padding:13px 15px;font-size:14px;line-height:1.5;margin:0 0 16px;
+ background:rgba(245,197,66,.12);border:1px solid rgba(245,197,66,.3);color:#fde68a}
+.bfa-aviso.bom{background:rgba(34,197,94,.12);border-color:rgba(34,197,94,.3);color:#bbf7d0}
+.bfa-aviso.ruim{background:rgba(248,113,113,.12);border-color:rgba(248,113,113,.3);color:#fecaca}
+
+/* ---------- histórico ---------- */
+.bfa-hist{width:100%;border-collapse:collapse;font-size:14px}
+.bfa-hist th{
+ text-align:left;padding:10px 12px;font-size:12px;letter-spacing:.05em;text-transform:uppercase;
+ color:var(--bfa-mut);border-bottom:1px solid rgba(255,255,255,.12);font-weight:800;
+}
+.bfa-hist td{padding:12px;border-bottom:1px solid rgba(255,255,255,.07);color:var(--bfa-tx)}
+.bfa-hist tr:last-child td{border-bottom:0}
+.bfa-hist .num{text-align:right;white-space:nowrap}
+.bfa-tag{display:inline-block;padding:4px 10px;border-radius:999px;font-size:12px;font-weight:700;
+ background:rgba(255,255,255,.08);color:var(--bfa-mut)}
+.bfa-tag.ok{background:rgba(34,197,94,.18);color:#86efac}
+.bfa-tag.esperando{background:rgba(245,197,66,.18);color:#fde68a}
+.bfa-tag.ruim{background:rgba(248,113,113,.18);color:#fca5a5}
+
+/* ---------- dentro da janela ---------- */
+.bfa-modal{margin:-6px -4px 0;border-radius:16px}
+.bfa-modal .bfa-resumo{position:static}
+
+/* ---------- voltar ---------- */
+.bfa-voltar{
+ background:none;border:0;color:var(--bfa-mut);font:inherit;font-size:14px;font-weight:700;
+ cursor:pointer;padding:6px 0;display:inline-flex;align-items:center;gap:7px;
+}
+.bfa-voltar:hover{color:var(--bfa-tx)}
+
+/* Celular: campo com 16 pixels de fonte, senao o iOS da zoom ao tocar nele e
+   desloca o painel inteiro. Medido em 390 por 844: antes vinham com 15. */
+@media(max-width:760px){
+ .bfa-campo input{font-size:16px;min-height:48px;padding:12px 14px}
+ .bfa-campo label{font-size:12.5px}
+ .bfa-campos{gap:12px}
+}

@@ -406,6 +406,93 @@ th{font-weight:600;letter-spacing:.01em}
 .agc-pe button{flex:1;padding:11px;border:1px solid var(--line,#e5e7eb);background:var(--card,#fff);border-radius:12px;font:inherit;font-weight:600;color:var(--acc);cursor:pointer}
 .fotbt{display:flex;gap:8px;flex-wrap:wrap}
 .fotbt label{cursor:pointer}
+/* Com janela aberta o botao flutuante de ajuda sai da frente: no celular ele
+   cobria o conteudo da propria janela. */
+body.bf-modal-open #bf-tati-root{display:none!important}
+/* =====================================================================
+   Harmonia no celular, 24/11/2026
+   Medido antes de escrever: num varrimento de 84 combinacoes de tela e
+   largura, os campos apareciam com oito alturas diferentes (22, 26, 36,
+   38, 40, 47, 66 e 76 pixels) e os botoes com seis (25, 26, 27, 32, 34 e
+   41). Lado a lado, isso e o que da o aspecto desalinhado das telas no
+   celular. Vinte e sete campos ainda vinham com fonte de 15 pixels, e
+   abaixo de 16 o iOS da zoom sozinho ao tocar no campo, o que desloca a
+   tela inteira.
+   Daqui para frente, no celular, campo tem uma altura e botao tem duas:
+   normal e pequeno. Nada de valor solto.
+   ===================================================================== */
+.agst{font-size:14px;font-weight:700;padding:8px 12px;border-radius:8px;vertical-align:middle}
+.agstr span:last-child{display:flex;gap:8px;align-items:center;flex-wrap:wrap;justify-content:flex-end}
+
+@media(max-width:760px){
+ /* Campos: uma altura, uma fonte, um raio. 16 pixels impede o zoom do iOS. */
+ .fgrid input,.fgrid select,.fgrid textarea,.filters input,.filters select,.filters textarea,.inp,.agst,
+ .modal input,.modal select,.modal textarea{
+  font-size:16px;line-height:1.3;border-radius:10px;padding:11px 12px;min-height:46px;box-sizing:border-box}
+ .fgrid textarea,.modal textarea,.filters textarea{min-height:92px;padding:10px 12px}
+ .fgrid input[type=checkbox],.fgrid input[type=radio],.filters input[type=checkbox],.filters input[type=radio],
+ .modal input[type=checkbox],.modal input[type=radio],input[type=checkbox],input[type=radio]{
+  min-height:0;width:21px;height:21px;padding:0;margin:0;flex:0 0 21px}
+ .fgrid input[type=color],.modal input[type=color]{min-height:46px;height:46px;width:100%;padding:3px}
+ .fgrid input[type=range],.modal input[type=range]{min-height:0;padding:0}
+ /* Campo estreito posto a mao no HTML passa a ocupar a linha: no celular
+    nao ha espaco para campo de 92 pixels ao lado de um rotulo. */
+ .filters label,.fgrid label{width:100%;font-size:12.5px;font-weight:600;gap:5px}
+ .filters input,.filters select,.fgrid input:not([type=checkbox]):not([type=radio]),.fgrid select{width:100%!important}
+ .filters{gap:10px}
+ .filters label.chk,.fgrid label.chk{flex-direction:row;align-items:center;gap:9px;font-size:14px;min-height:46px}
+
+ /* Botoes: duas alturas, e so duas. */
+ .btn{min-height:44px;font-size:14.5px;padding:11px 16px;border-radius:10px;justify-content:center}
+ .btn.sm{min-height:40px;font-size:13.5px;padding:9px 13px}
+ .lnk{min-height:30px}
+
+ /* Barra de acoes: pares de largura igual, em vez de fila irregular. */
+ .mact{gap:8px;margin-top:16px;justify-content:stretch}
+ .mact>.btn,.mact>a.btn,.mact>button.btn{flex:1 1 calc(50% - 4px);min-width:calc(50% - 4px)}
+ .mact>.btn[style*="margin-right:auto"]{flex:1 1 100%;min-width:100%}
+
+ /* Linha de rotulo e valor: o rotulo em cima, o valor embaixo, alinhados
+    a esquerda. Antes o valor comprido empurrava o rotulo e ficava torto. */
+ .modal .row{display:flex;flex-direction:column;align-items:flex-start;gap:3px;padding:9px 0}
+ .modal .row{align-items:flex-start!important}
+ .modal .row>span:first-child{font-size:12px;font-weight:600;color:var(--mut);text-transform:none}
+ .modal .row>span:last-child{font-size:14.5px;text-align:left;width:100%}
+ .modal .row.agstr>span:last-child{justify-content:flex-start}
+
+ /* Janela: menos moldura e mais conteudo. */
+ .modalw{padding:12px 10px 28px;align-items:flex-start}
+ .modal{padding:16px 14px;border-radius:14px}
+ .modal h3{font-size:18px;line-height:1.25;margin:0 0 6px}
+
+ /* Cartao e pagina com o mesmo respiro em toda tela. */
+ .page{padding:14px 12px 26px}
+ .card{padding:14px;border-radius:14px}
+ .phead{gap:10px}
+ .phead h1{font-size:21px}
+ .phead h2{font-size:17px}
+ .phead>div:last-child{display:flex;flex-wrap:wrap;gap:8px;width:100%}
+ .phead>div:last-child>.btn{flex:1 1 calc(50% - 4px)}
+
+ /* Tabela: fonte legivel e celula com folga, rolando dentro da propria caixa. */
+ .tbl{font-size:13.5px}
+ .tbl th,.tbl td{padding:10px 9px}
+ .tbl .btn.sm{width:100%}
+
+ /* Os tres campos que fugiam do padrao medido: a busca do alto, a busca da
+    Ajuda e o campo dentro de rotulo, todos com altura propria. */
+ .gsearch input{min-height:42px;padding:10px 12px;font-size:16px;border-radius:10px}
+ .ajbusca{padding:4px 12px;border-radius:12px}
+ .ajbusca input{font-size:16px;min-height:42px}
+ .card>label>input,.card>label>select{min-height:46px;font-size:16px;padding:11px 12px;border-radius:10px}
+}
+@media(max-width:430px){
+ /* Em tela estreita o par vira coluna unica: dois botoes de 170 pixels com
+    texto cortado ficam pior do que dois botoes inteiros, um sob o outro. */
+ .mact>.btn,.mact>a.btn,.mact>button.btn,.phead>div:last-child>.btn{flex:1 1 100%;min-width:100%}
+ .mact{align-items:stretch}
+}
+
 </style>
 <script>if(/(^|\.)blackflow\.app\.br$/.test(location.hostname)){var bsc=document.createElement('script');bsc.src='/cliques.js';bsc.async=true;bsc.setAttribute('data-modo','app');document.head.appendChild(bsc)}</script></head>
 <body>
@@ -863,6 +950,22 @@ function lastApptMap(){const m={};const t=todayISO();S.agendamentos.forEach(a=>{
 function retornoList(){const m=lastApptMap(),t=todayISO(),lim=Number(S.config.diasRetorno)||90;return S.pacientes.filter(p=>p.status!=='Inativo').map(p=>({p,o:m[p.id]})).filter(x=>x.o&&x.o.last&&!x.o.next&&diffDays(x.o.last,t)>=lim).map(x=>({p:x.p,last:x.o.last,dias:diffDays(x.o.last,t)})).sort((a,b)=>a.dias-b.dias)}
 function inadList(){const t=todayISO();const g={};S.lancamentos.forEach(l=>{if(stLanc(l)!=='Em atraso')return;const s=saldoL(l);if(s<=0)return;const o=g[l.pacienteId]||(g[l.pacienteId]={pacienteId:l.pacienteId,qtd:0,valor:0,maisAntigo:l.vencimento});o.qtd++;o.valor+=s;if(l.vencimento<o.maisAntigo)o.maisAntigo=l.vencimento});
  return Object.values(g).map(o=>({...o,p:pac(o.pacienteId),dias:diffDays(o.maisAntigo,t),totalAberto:S.lancamentos.filter(l=>l.pacienteId===o.pacienteId).reduce((a,l)=>a+saldoL(l),0)})).filter(o=>o.p).sort((a,b)=>b.valor-a.valor)}
+/* Reconvite: a mensagem que chama de volta quem sumiu.
+   Nao cita procedimento de proposito. O ultimo procedimento pode ter sido
+   concluido, ou a pessoa pode ter recebido alta dele, e nesse caso cobrar
+   retorno "do mesmo procedimento" soa desatento. O convite e para uma
+   avaliacao nova, que e o que de fato interessa a quem ficou um ano fora. */
+const CONVITE_PADRAO={
+ podologia:'Olá {nome}, tudo bem? Aqui é da {clinica}.\n\nFaz um tempinho que a gente não te vê por aqui, e lembramos de você com carinho.\n\nQue tal marcar uma avaliação para vermos como estão os seus pés? É uma conversa tranquila, sem compromisso: a gente olha as unhas, a pele e a pisada, e você sai sabendo o que está bem e o que merece atenção.\n\nTenho horários nesta semana. Quer que eu reserve um para você?',
+ odontologia:'Olá {nome}, tudo bem? Aqui é da {clinica}.\n\nFaz um tempinho que a gente não te vê por aqui, e lembramos de você com carinho.\n\nQue tal marcar uma avaliação para vermos como está a saúde da sua boca? É uma consulta tranquila, sem compromisso: olhamos os dentes e a gengiva, e você sai sabendo o que está bem e o que merece atenção.\n\nTenho horários nesta semana. Quer que eu reserve um para você?',
+ biomedicina:'Olá {nome}, tudo bem? Aqui é da {clinica}.\n\nFaz um tempinho que a gente não te vê por aqui, e lembramos de você com carinho.\n\nQue tal marcar uma avaliação para vermos como está a sua pele hoje? É uma conversa tranquila, sem compromisso: avaliamos o que mudou desde a última vez e você sai sabendo o que faz sentido agora.\n\nTenho horários nesta semana. Quer que eu reserve um para você?',
+ padrao:'Olá {nome}, tudo bem? Aqui é da {clinica}.\n\nFaz um tempinho que a gente não te vê por aqui, e lembramos de você com carinho.\n\nQue tal marcar uma avaliação, sem compromisso, para vermos como você está hoje e o que faz sentido agora?\n\nTenho horários nesta semana. Quer que eu reserve um para você?'};
+function conviteTexto(){
+ return S.config.msgConvite||CONVITE_PADRAO[segK()]||CONVITE_PADRAO.padrao;
+}
+function conviteMsg(p){
+ return fillMsg(conviteTexto(),{nome:firstName(p&&p.nome),clinica:S.config.clinica||''});
+}
 function fillMsg(tpl,vars){return String(tpl||'').replace(/\{(\w+)\}/g,(m,k)=>vars[k]??m)}
 function firstName(n){return String(n||'').trim().split(/\s+/)[0]||''}
 
@@ -1585,7 +1688,13 @@ function serieDesmarcar(id){const a=S.agendamentos.find(x=>x.id===id);if(!a||!a.
 function serieHTML(a){if(!a.serieId)return '';
  const tot=(S.agendamentos||[]).filter(x=>x.serieId===a.serieId).length;
  const futuros=(S.agendamentos||[]).filter(x=>x.serieId===a.serieId&&x.data>=a.data&&!['Atendido','Desmarcado'].includes(stAg(x))).length;
- return `<div class="row"><span>Série</span><span>${a.seriePos||'?'} de ${a.serieTotal||tot}${a.serieModo?' · '+esc(String(a.serieModo).toLowerCase()):''}
+ /* Serie criada antes de a posicao passar a ser gravada nao tem seriePos.
+    Em vez de mostrar interrogacao, a posicao sai da ordem das datas. */
+ let pos=Number(a.seriePos)||0;
+ if(!pos){const ord=(S.agendamentos||[]).filter(x=>x.serieId===a.serieId)
+   .sort((x,y)=>String(x.data+x.hora).localeCompare(String(y.data+y.hora)));
+  pos=ord.findIndex(x=>x.id===a.id)+1}
+ return `<div class="row"><span>Série</span><span>${pos||1} de ${a.serieTotal||tot}${a.serieModo?' · '+esc(String(a.serieModo).toLowerCase()):''}
   ${futuros>1?`<br><button class="btn ghost sm" style="margin-top:6px" onclick="closeModal();serieDesmarcar('${a.id}')">Desmarcar daqui em diante</button>`:''}</span></div>`}
 function agForm(id,pacienteId,pre){pre=pre||{};const a=id?S.agendamentos.find(x=>x.id===id):null;UI.agEditando=id||null;UI.agForcar=false;const p=a?pac(a.pacienteId):(pacienteId?pac(pacienteId):null);
  formModal(a?'Editar agendamento':'Novo agendamento',[{k:'paciente',l:SEG().pessoa,req:true,list:'dlPac',full:true,aviso:o=>avisoPaciente(o.paciente)},{k:'celular',l:'Celular / WhatsApp',full:true,req:true,mostrarSe:o=>pacPedeCelular(o.paciente)},
@@ -1625,8 +1734,8 @@ function agForm(id,pacienteId,pre){pre=pre||{};const a=id?S.agendamentos.find(x=
     const r=criarSerie(ag,modoRep,nv);setTimeout(()=>openModal(serieResumo(r,modoRep,pp.nome)),180)}if(ant==='Atendido'&&stAg(ag)!=='Atendido')estornarSessao(ag);if(stAg(ag)!=='Atendido')delete ag.semPacote;sincLancAg(ag);if(stAg(ag)==='Atendido'&&ant!=='Atendido'&&precisaPerguntar(ag)){UI.sessAnt=UI.sessAnt||{};UI.sessAnt[ag.id]=ant;setTimeout(()=>perguntarSessao(ag.id),150)}if(lancAgAtivo()){const pr=precoProc(ag.procedimento);if(pr&&!pacoteAtivo(ag)&&['Agendado','Confirmado'].includes(stAg(ag)))setTimeout(()=>toast('Valor de '+money(pr)+' lançado como previsto no financeiro'),60)}},
   a?`<button class="btn danger" style="margin-right:auto" onclick="delRec('agendamentos','${a.id}')">Excluir</button>`:'')}
 function agModal(id){const a=S.agendamentos.find(x=>x.id===id);if(!a)return;const p=pac(a.pacienteId);const l=p?waLink(p.celular):'';
- openModal(`<h3 style="display:flex;align-items:center;gap:10px">${p?anivCanto(p,a.data):''}${p?`<span onclick="closeModal();go('paciente','${p.id}')" title="Abrir a ficha de ${esc(p.nome)}" style="cursor:pointer">${avatarPac(p,'lg')}</span>`:''}${p?`<a href="javascript:void(0)" onclick="closeModal();go('paciente','${p.id}')" title="Abrir a ficha completa: anamnese, fotos, documentos, financeiro e agendamentos" style="color:inherit;text-decoration:underline;text-underline-offset:3px;display:inline-flex;align-items:center;gap:6px">${esc(p.nome)}${ico('back',14)?'':''}<span style="font-size:12px;font-weight:600;color:var(--mut);text-decoration:none">abrir ficha</span></a>`:'<span>Paciente</span>'}</h3>${p?anaFaixa(p.id,1):''}${p?`<div class="row"><span>Anamnese</span><span>${esc(resumoAnamnese(p))}</span></div>`:''}${p&&str(p.cpf)?`<div class="row"><span>CPF</span><span>${esc(fmtCPF(p.cpf))}</span></div>`:''}${p&&enderecoDe(p)?`<div class="row"><span>Endereço</span><span>${esc(enderecoDe(p))}</span></div>`:''}${p&&(str(p.profissao)||str(p.empresa))?`<div class="row"><span>Trabalho</span><span>${esc([str(p.profissao),str(p.empresa)].filter(Boolean).join(' · '))}</span></div>`:''}<div class="row"><span>Data</span><span>${br(a.data)} às ${esc(a.hora)} (${a.duracao||30} min)</span></div><div class="row"><span>Profissional</span><span>${esc(a.profissional||'-')}</span></div><div class="row"><span>Procedimento</span><span>${esc(a.procedimento||'-')}</span></div><div class="row" style="align-items:center"><span><b>Situação</b></span><span><select id="agSt" onchange="setAgSt('${a.id}',this.value)" style="font-size:14px;font-weight:700;padding:8px 12px;border-radius:8px;border:2px solid ${({Agendado:'#e0a800',Confirmado:'#16a34a',Atendido:'#64748b',Faltou:'#dc2626',Desmarcado:'#999'})[stAg(a)]||'#e0a800'};background:${({Agendado:'#fff3bf',Confirmado:'#c9f2d6',Atendido:'#e6ebf3',Faltou:'#fde8e8',Desmarcado:'#eee'})[stAg(a)]||'#fff3bf'}">${['Agendado','Confirmado','Atendido','Faltou','Desmarcado'].map(x=>`<option value="${x}" ${stAg(a)===x?'selected':''}>${x==='Desmarcado'?'Desmarcou':x}</option>`).join('')}</select> <button type="button" class="btn danger sm" style="margin-left:8px;vertical-align:middle" onclick="agExcluirDia('${a.id}')" title="Exclui somente o atendimento do dia ${br(a.data)}. Os outros dias da série continuam.">Excluir</button></span></div>${agNovo(a,stAg(a))?`<div class="row"><span></span><span><i class="evtag" style="font-size:11px;padding:2px 8px">${esc(SEG().pessoa.toUpperCase())} NOVO</i></span></div>`:''}${serieHTML(a)}${agSessHTML(a)}${a.obs?`<div class="row"><span>Observação</span><span>${esc(a.obs)}</span></div>`:''}${agFinHTML(a)}${lancAgAtivo()?agValHTML(a):''}
- <div class="mact">${l?`<a class="btn green" href="${l}" target="_blank" rel="noopener">WhatsApp</a>`:''}${pixBt(valorAg(a),a.procedimento,p?p.id:'',(lancDoAg(a)||{}).id||'')}${p?`<button class="btn ghost" onclick="closeModal();contratoForm('${p.id}','${a.id}')" title="Gera o contrato com o serviço e o plano de pagamento, para a cliente assinar">${ico('doc',15)} Contrato</button>`:''}${p?`<button class="btn ghost" onclick="fotoDoAtendimento('${p.id}')">${ico('cam',15)} Foto</button><button class="btn ghost" onclick="anaRapida('${p.id}')">Anamnese</button><button class="btn ghost" onclick="fotoPerfil('${p.id}')">${p.foto?'Trocar foto':'Inserir foto'}</button><button class="btn ghost" onclick="goPront('${p.id}')">Prontuário</button><button class="btn ghost" onclick="closeModal();go('paciente','${p.id}')">Abrir ficha</button>`:''}${!ehSeg('podologia')&&!soAgenda()&&p?`<button class="btn soft" onclick="comandaDoAgendamento('${a.id}')">Abrir comanda</button>`:''}<button class="btn" onclick="closeModal();agForm('${a.id}')">Editar</button></div>`)}
+ openModal(`<h3 style="display:flex;align-items:center;gap:10px">${p?anivCanto(p,a.data):''}${p?`<span onclick="closeModal();go('paciente','${p.id}')" title="Abrir a ficha de ${esc(p.nome)}" style="cursor:pointer">${avatarPac(p,'lg')}</span>`:''}${p?`<a href="javascript:void(0)" onclick="closeModal();go('paciente','${p.id}')" title="Abrir a ficha completa: anamnese, fotos, documentos, financeiro e agendamentos" style="color:inherit;text-decoration:underline;text-underline-offset:3px;display:inline-flex;align-items:center;gap:6px">${esc(p.nome)}${ico('back',14)?'':''}<span style="font-size:12px;font-weight:600;color:var(--mut);text-decoration:none">abrir ficha</span></a>`:'<span>Paciente</span>'}</h3>${p?anaFaixa(p.id,1):''}${p&&p.alta&&p.alta.tipo?`<div class="note ${p.alta.tipo==='alta'?'':'warn'}" style="margin:0 0 10px"><b>${p.alta.tipo==='alta'?'Alta do tratamento':'Abandono do tratamento'}</b> registrada em ${br(p.alta.data)}${p.alta.procedimento?' · '+esc(p.alta.procedimento):''}</div>`:''}${p?`<div class="row"><span>Anamnese</span><span>${esc(resumoAnamnese(p))}</span></div>`:''}${p&&str(p.cpf)?`<div class="row"><span>CPF</span><span>${esc(fmtCPF(p.cpf))}</span></div>`:''}${p&&enderecoDe(p)?`<div class="row"><span>Endereço</span><span>${esc(enderecoDe(p))}</span></div>`:''}${p&&(str(p.profissao)||str(p.empresa))?`<div class="row"><span>Trabalho</span><span>${esc([str(p.profissao),str(p.empresa)].filter(Boolean).join(' · '))}</span></div>`:''}<div class="row"><span>Data</span><span>${br(a.data)} às ${esc(a.hora)} (${a.duracao||30} min)</span></div><div class="row"><span>Profissional</span><span>${esc(a.profissional||'-')}</span></div><div class="row"><span>Procedimento</span><span>${esc(a.procedimento||'-')}</span></div><div class="row agstr" style="align-items:center"><span><b>Situação</b></span><span><select id="agSt" class="agst" onchange="setAgSt('${a.id}',this.value)" style="border:2px solid ${({Agendado:'#e0a800',Confirmado:'#16a34a',Atendido:'#64748b',Faltou:'#dc2626',Desmarcado:'#999'})[stAg(a)]||'#e0a800'};background:${({Agendado:'#fff3bf',Confirmado:'#c9f2d6',Atendido:'#e6ebf3',Faltou:'#fde8e8',Desmarcado:'#eee'})[stAg(a)]||'#fff3bf'}">${['Agendado','Confirmado','Atendido','Faltou','Desmarcado'].map(x=>`<option value="${x}" ${stAg(a)===x?'selected':''}>${x==='Desmarcado'?'Desmarcou':x}</option>`).join('')}</select> <button type="button" class="btn danger sm" onclick="agExcluirDia('${a.id}')" title="Exclui somente o atendimento do dia ${br(a.data)}. Os outros dias da série continuam.">Excluir</button></span></div>${agNovo(a,stAg(a))?`<div class="row"><span></span><span><i class="evtag" style="font-size:11px;padding:2px 8px">${esc(SEG().pessoa.toUpperCase())} NOVO</i></span></div>`:''}${serieHTML(a)}${agSessHTML(a)}${a.obs?`<div class="row"><span>Observação</span><span>${esc(a.obs)}</span></div>`:''}${agFinHTML(a)}${lancAgAtivo()?agValHTML(a):''}
+ <div class="mact">${l?`<a class="btn green" href="${l}" target="_blank" rel="noopener">WhatsApp</a>`:''}${pixBt(valorAg(a),a.procedimento,p?p.id:'',(lancDoAg(a)||{}).id||'')}${p?`<button class="btn ghost" onclick="closeModal();contratoForm('${p.id}','${a.id}')" title="Gera o contrato com o serviço e o plano de pagamento, para a cliente assinar">${ico('doc',15)} Contrato</button>`:''}${p?`<button class="btn ghost" onclick="fotoDoAtendimento('${p.id}')">${ico('cam',15)} Foto</button><button class="btn ghost" onclick="anaRapida('${p.id}')">Anamnese</button><button class="btn ghost" onclick="fotoPerfil('${p.id}')">${p.foto?'Trocar foto':'Inserir foto'}</button><button class="btn ghost" onclick="goPront('${p.id}')">Prontuário</button>${altaCabe()?`<button class="btn ghost" onclick="altaEscolher('${p.id}')" title="Dar alta ou registrar abandono do tratamento, com documento para assinar">${ico('doc',15)} Alta ou abandono</button>`:''}<button class="btn ghost" onclick="closeModal();go('paciente','${p.id}')">Abrir ficha</button>`:''}${!ehSeg('podologia')&&!soAgenda()&&p?`<button class="btn soft" onclick="comandaDoAgendamento('${a.id}')">Abrir comanda</button>`:''}<button class="btn" onclick="closeModal();agForm('${a.id}')">Editar</button></div>`)}
 /* Situação financeira do atendimento, igual ao selo Financeiro Ok do Clinicorp */
 function agFinHTML(a){const l=lancDoAg(a);if(!l||!(Number(l.valor)>0))return '';const sd=Math.max(0,r2((Number(l.valor)||0)-pagoEf(l))),pn=parcNum(l);
  return `<div class="row" style="align-items:center"><span>Financeiro</span><span style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
@@ -2491,7 +2600,7 @@ function repData(id){const t=todayISO();
    cols:['Paciente','Celular','Último atendimento','Dias sem vir','Último procedimento','Situação'],
    rows:L.map(x=>[x.p.nome,x.p.celular||'',x.last?br(x.last):'',x.dias==null?'':x.dias,
     (ultProc[x.p.id]||{}).proc||'',sit(x)]),
-   wa:0};
+   wa:0,waConvite:1,ids:L.map(x=>x.p.id),alta:1};
  }
  case 'pac_aniv':{const m=pad(UI.relMes);return {filtro:`<label>Mês<select onchange="UI.relMes=+this.value;render()">${MESES.map((x,i)=>`<option value="${i+1}" ${i+1===UI.relMes?'selected':''}>${x}</option>`).join('')}</select></label>`,cols:['Dia','Paciente','Idade que completa','Celular'],rows:S.pacientes.filter(p=>p.nascimento&&p.nascimento.slice(5,7)===m).sort((a,b)=>a.nascimento.slice(8).localeCompare(b.nascimento.slice(8))).map(p=>[p.nascimento.slice(8),p.nome,new Date().getFullYear()-+p.nascimento.slice(0,4),p.celular||''])}}
  case 'pac_recup':return {html:recHTML(),cols:[],rows:[]};
@@ -2679,9 +2788,10 @@ function recDetalhe(serv,L,selDias,livre){const R=recUI();
  <div class="recbar"><span>${lista.length} ${lista.length===1?'pessoa':'pessoas'} nesta situação${v?`, ${money(lista.length*v)} parados`:''}</span>
   <span style="display:flex;gap:8px">
   <button class="btn ghost sm" onclick="recExportar()">${ico('down',15)} Baixar em Excel</button>
-  <button class="btn sm" onclick="recAbrirVarios()">Abrir os ${Math.min(10,lista.length)} primeiros no WhatsApp</button></span></div>
+  <button class="btn green sm" onclick="recConvidarVarios()">${ico('wa',15)} Convidar os ${Math.min(10,lista.length)} primeiros</button>
+  <button class="btn ghost sm" onclick="recAbrirVarios()">Abrir com a mensagem do serviço</button></span></div>
  <div class="tw"><table class="tbl"><thead><tr><th>${esc(SEG().pessoa)}</th><th>Celular</th><th>Última vinda</th><th class="num"><button class="ordbt" onclick="recSet('desc',!(UI.rec&&UI.rec.desc))" title="Clique para inverter a ordem">Dias parado <i>${(UI.rec&&UI.rec.desc)?'&darr;':'&uarr;'}</i></button></th><th>${g==='abandonou'?'Sessões':g==='avaliou'?'Avaliação em':g==='naoretornou'?'Fez este serviço':'Último procedimento'}</th><th></th></tr></thead><tbody>
-  ${lista.slice(0,mostra).map(it=>{const msg=recMsg(g,it,serv);const w=waLink(it.p.celular,msg);
+  ${lista.slice(0,mostra).map(it=>{const msg=recMsg(g,it,serv);const w=waLink(it.p.celular,msg);const wc=waLink(it.p.celular,conviteMsg(it.p));
    return `<tr><td><button class="lnk" onclick="goPront('${it.p.id}')">${esc(nomePessoa(it.p.nome))}</button></td>
     <td>${esc(it.p.celular||'-')}</td><td>${br(it.ult)}</td>
     <td class="num"><b class="${it.dias>=180?'recalto':it.dias>=90?'recmed':''}">${it.dias}</b></td>
@@ -2689,7 +2799,9 @@ function recDetalhe(serv,L,selDias,livre){const R=recUI();
        :g==='avaliou'?br(it.dataAv)+` (${it.diasAv} dias)`
        :g==='naoretornou'?`${it.vezes}x, última em ${br(it.ultServ)}`
        :esc(it.ultProc||'-')}</td>
-    <td>${w?`<a class="btn sm" href="${w}" target="_blank" rel="noopener" onclick="recMarcar('${it.p.id}')">${ico('wa',14)} Chamar</a>`
+    <td>${wc?`<div style="display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end">
+         <a class="btn green sm" href="${wc}" target="_blank" rel="noopener" onclick="recMarcar('${it.p.id}')" title="Mensagem carinhosa convidando para uma avaliação, sem citar procedimento">${ico('wa',14)} Convidar</a>
+         <a class="btn ghost sm" href="${w}" target="_blank" rel="noopener" onclick="recMarcar('${it.p.id}')" title="Mensagem ligada a ${esc(serv)}">Sobre o serviço</a></div>`
         :`<span class="badge warn">sem celular</span>`}</td></tr>`}).join('')}
   </tbody></table></div>
  ${lista.length>mostra?`<div style="text-align:center;margin-top:12px"><button class="btn ghost" onclick="recSet('mostra',${mostra+40})">Mostrar mais (${lista.length-mostra} restantes)</button></div>`:''}`
@@ -2716,6 +2828,13 @@ function recAbrirVarios(){const R=recUI();const {L,g}=recListaAtual();
  confirmModal(`Vão abrir <b>${com.length}</b> abas, uma por pessoa, com a mensagem já escrita. Você confere e envia cada uma: o sistema não envia nada sozinho.<br><br>Mande com calma, uma a cada poucos minutos. Disparo rápido para muitos números seguidos é o que faz o WhatsApp bloquear o número.`,
   ()=>{com.forEach((it,i)=>setTimeout(()=>window.open(waLink(it.p.celular,recMsg(g,it,R.serv)),'_blank'),i*350));
    com.forEach(it=>recMarcar(it.p.id))},'Abrir '+com.length+' conversas')}
+/* Convite em lote, com a mensagem carinhosa, sem citar servico. */
+function recConvidarVarios(){const {L}=recListaAtual();
+ const com=L.filter(it=>waLink(it.p.celular,'')).slice(0,10);
+ if(!com.length){toast('Nenhum desses tem celular cadastrado.');return}
+ confirmModal(`Vão abrir <b>${com.length}</b> abas, uma por pessoa, com o convite para avaliação já escrito. Você confere e envia cada uma: o sistema não envia nada sozinho.<br><br>Mande com calma, uma a cada poucos minutos. Disparo rápido para muitos números seguidos é o que faz o WhatsApp bloquear o número.`,
+  ()=>{com.forEach((it,i)=>setTimeout(()=>window.open(waLink(it.p.celular,conviteMsg(it.p)),'_blank'),i*350));
+   com.forEach(it=>recMarcar(it.p.id))},'Abrir '+com.length+' convites')}
 function recExportar(){const R=recUI();const {L,g}=recListaAtual();
  if(typeof XLSX==='undefined'){toast('Biblioteca de Excel não carregou');return}
  const cols=['Nome','Celular','Última vinda','Dias parado','Situação','Detalhe','Mensagem'];
@@ -2910,7 +3029,7 @@ function vRelatorios(){const r=repData(UI.rel);const title=Object.values(REPORTS
  <div class="card"><div class="phead"><h2 style="margin:0">${esc(title)}</h2><div style="display:flex;gap:8px"><button class="btn ghost sm" onclick="window.print()">${ico('print',15)} Imprimir</button>${r.html?'':`<button class="btn sm" onclick="exportRows('${UI.rel}',window._rep.cols,window._rep.rows)">${ico('down',15)} Exportar Excel</button>`}</div></div>
  ${r.range||r.filtro?`<div class="filters">${r.range?`<label>De<input type="date" value="${UI.de}" onchange="UI.de=this.value;render()"></label><label>Até<input type="date" value="${UI.ate}" onchange="UI.ate=this.value;render()"></label>`:''}${r.filtro||''}</div>`:''}
  ${r.nota?`<div class="note">${esc(r.nota)}</div>`:''}
- ${r.html?r.html:`<div class="tw"><table class="tbl"><thead><tr>${r.cols.map((c,i)=>`<th class="${mi.has(i)?'num':''}">${esc(c)}</th>`).join('')}${r.wa===0?'<th></th>':''}</tr></thead><tbody>${r.rows.map(row=>`<tr>${row.map((v,i)=>`<td class="${mi.has(i)?'num':''}">${mi.has(i)?money(v):esc(v===''?'-':v)}</td>`).join('')}${r.wa===0?`<td>${(()=>{const l=waLink(row[1],fillMsg(S.config.msgRetorno,{nome:firstName(row[0]),clinica:S.config.clinica}));return l?`<a class="btn green sm" href="${l}" target="_blank" rel="noopener">WhatsApp</a>`:''})()}</td>`:''}</tr>`).join('')||`<tr><td colspan="${r.cols.length+1}" class="empty">Sem dados.</td></tr>`}</tbody></table></div><p class="sub">${r.rows.length} linhas</p>`}</div></div></div>`}
+ ${r.html?r.html:`<div class="tw"><table class="tbl"><thead><tr>${r.cols.map((c,i)=>`<th class="${mi.has(i)?'num':''}">${esc(c)}</th>`).join('')}${r.wa===0?'<th></th>':''}${r.alta&&r.ids&&altaCabe()?'<th>Tratamento</th>':''}</tr></thead><tbody>${r.rows.map((row,ri)=>`<tr>${row.map((v,i)=>`<td class="${mi.has(i)?'num':''}">${mi.has(i)?money(v):esc(v===''?'-':v)}</td>`).join('')}${r.wa===0?`<td>${(()=>{const l=waLink(row[1],r.waConvite?conviteMsg({nome:row[0]}):fillMsg(S.config.msgRetorno,{nome:firstName(row[0]),clinica:S.config.clinica}));return l?`<a class="btn green sm" href="${l}" target="_blank" rel="noopener">${r.waConvite?'Convidar':'WhatsApp'}</a>`:''})()}</td>`:''}${r.alta&&r.ids&&altaCabe()?`<td><button class="btn ghost sm" onclick="altaEscolher('${r.ids[ri]}')" title="Dar alta ou registrar abandono do tratamento">Alta ou abandono</button></td>`:''}</tr>`).join('')||`<tr><td colspan="${r.cols.length+2}" class="empty">Sem dados.</td></tr>`}</tbody></table></div><p class="sub">${r.rows.length} linhas</p>`}</div></div></div>`}
 function exportRows(name,cols,rows){if(typeof XLSX==='undefined'){toast('Biblioteca de Excel não carregou');return}const ws=XLSX.utils.aoa_to_sheet([cols,...(rows||[])]);const wb=XLSX.utils.book_new();XLSX.utils.book_append_sheet(wb,ws,'Dados');saveWB(wb,`${name}_${todayISO()}.xlsx`)}
 
 /* ============ Profissionais ============ */
@@ -3182,6 +3301,11 @@ const VIEWS_AGENDA=['inicio','agenda','pacientes','paciente','profissionais','se
 const segK=()=>SEGMENTOS[S.config.segmento]?S.config.segmento:'podologia';
 const SEG=()=>SEGMENTOS[segK()];
 const ehSeg=(...k)=>k.includes(segK());
+/* Alta e abandono existem onde ha tratamento com comeco e fim: podologia,
+   odontologia, biomedicina e estetica. Barbearia e salao nao tratam, atendem,
+   e por isso nao recebem o botao. */
+const altaCabe=()=>!soAgenda()&&['podologia','odontologia','biomedicina','estetica']
+  .includes(String((typeof S!=='undefined'&&S&&S.config&&S.config.segmento)||'podologia'));
 const FORMAS=['Dinheiro','Pix','Cartão de crédito','Cartão de débito','Boleto','Cashback','Transferência','Deixar em aberto'];
 const VINCULOS=['Empregado','Profissional-parceiro (Lei 13.352/2016)','Autônomo','Sócio ou proprietário'];
 const ehParceiro=p=>/parceiro/i.test(p&&p.vinculo||'');
@@ -4750,6 +4874,22 @@ function termoForm(pid,tipo){const p=pac(pid);UI.termo={pid,tipo};
    Sem isso o paciente liberado continuaria aparecendo na lista de quem sumiu,
    e a clinica nao teria como provar que o tratamento foi interrompido por
    decisao dele, que e justamente a discussao que aparece depois. */
+/* Janela de escolha, usada no pop-up da agenda e na lista de quem sumiu.
+   Dois botoes soltos ocupariam a largura toda no celular, e no pop-up da
+   agenda ja ha botao demais: aqui entra um, que explica a diferenca antes de
+   a profissional decidir. */
+function altaEscolher(pid){
+ const p=pac(pid);if(!p){toast('Paciente não encontrado.');return}
+ const a=p.alta&&p.alta.tipo?p.alta:null;
+ openModal(`<h3>Encerramento do tratamento</h3>
+ <p class="sub">${esc(p.nome)}</p>
+ ${a?`<div class="note ${a.tipo==='alta'?'':'warn'}" style="margin:0 0 12px"><b>Já existe registro de ${a.tipo==='alta'?'alta':'abandono'}</b> em ${br(a.data)}${a.procedimento?' · '+esc(a.procedimento):''}. Registrar de novo substitui o anterior.</div>`:''}
+ <div class="note" style="margin:0 0 14px"><b>Alta</b> é quando o tratamento chegou ao fim com o resultado alcançado.<br><b>Abandono</b> é quando o paciente interrompeu antes do fim, por decisão dele. Os dois ficam na evolução clínica, com data, profissional e o que foi orientado, e geram documento para assinar.</div>
+ <div class="mact" style="flex-wrap:wrap">
+ <button class="btn ghost" onclick="closeModal()">Voltar</button>
+ <button class="btn ghost" onclick="closeModal();altaRegistrar('${pid}','abandono')" title="Registra que o paciente interrompeu o tratamento antes do fim">Registrar abandono</button>
+ <button class="btn green" onclick="closeModal();altaRegistrar('${pid}','alta')" title="Encerra o tratamento com o resultado alcançado">Dar alta</button></div>`);
+}
 function altaRegistrar(pid,tipo){
  const p=pac(pid);if(!p)return;
  const nome=tipo==='alta'?'alta do tratamento':'abandono do tratamento';
@@ -4988,7 +5128,7 @@ function agNovo(a,s){if(s==='Desmarcado'||s==='Faltou')return false;const k=a.da
  const hist=c=>S[c].some(x=>x.pacienteId===a.pacienteId&&((x.data||x.vencimento||x.pagamento||'')<a.data)&&(x.data||x.vencimento||x.pagamento));
  return !hist('evolucoes')&&!hist('tratamentos')&&!S.lancamentos.some(l=>l.pacienteId===a.pacienteId&&l.pagamento&&l.pagamento<a.data)}
 /* ============ Atualização: aviso com botão Atualizar agora ============ */
-const VERSAO_APP='1.39.1';const URL_VERSAO_JSON='https://raw.githubusercontent.com/TheIgor12/blacksolutions/main/versao.json';
+const VERSAO_APP='1.39.2';const URL_VERSAO_JSON='https://raw.githubusercontent.com/TheIgor12/blacksolutions/main/versao.json';
 const numV=v=>String(v||'0').split(/\D+/).filter(Boolean).map(Number);
 function versaoMaior(a,b){const x=numV(a),y=numV(b);for(let i=0;i<Math.max(x.length,y.length);i++){const d=(x[i]||0)-(y[i]||0);if(d)return d>0}return false}
 const ATU={nova:null,timer:null};
@@ -5803,7 +5943,7 @@ function telaCopiaNaoAutorizada(){
   if(!origemAutorizada()){telaCopiaNaoAutorizada();return}}
  try{navigator.storage&&navigator.storage.persist&&navigator.storage.persist()}catch(e){}
  try{fonteAplicar()}catch(e){}
- try{if(/^https?:/.test(location.protocol)&&'serviceWorker' in navigator&&!window.pywebview)navigator.serviceWorker.register('./sw.js?v=1.39.1',{updateViaCache:'none'}).then(r=>r.update()).catch(()=>{})}catch(e){}
+ try{if(/^https?:/.test(location.protocol)&&'serviceWorker' in navigator&&!window.pywebview)navigator.serviceWorker.register('./sw.js?v=1.39.2',{updateViaCache:'none'}).then(r=>r.update()).catch(()=>{})}catch(e){}
  if(NV.ativa){
   if(!window.supabase||!window.supabase.createClient){UI.auth={modo:'offline',temCache:!!(await DB.get('ultimo'))};render();return}
   NV.sb=window.supabase.createClient(NUVEM.url,NUVEM.chave,{auth:{persistSession:true,autoRefreshToken:true}});
@@ -5854,31 +5994,31 @@ function agProf(nome){UI.profOff={};if(nome){S.profissionais.forEach(p=>{if(norm
 function menuProfs(){const L=az(S.profissionais.filter(p=>p.ativo!==false));if(!L.length)return '';const sel=UI.view==='agenda'?(UI.agProf||''):null;
  return `<div class="msec">AGENDA POR PROFISSIONAL</div><button class="${sel===''&&UI.view==='agenda'?'on':''}" onclick="agProf('')">${ico('cal',18)} Todos os profissionais</button>${L.map(p=>`<button class="${sel!=null&&norm(sel)===norm(p.nome)?'on':''}" onclick="agProf(${esc(JSON.stringify(p.nome))})"><span style="display:inline-block;width:12px;height:12px;border-radius:50%;background:${esc(p.cor||'#0a4bde')};margin:0 3px;flex:none"></span> ${esc(p.nome)}</button>`).join('')}`}
 </script>
-<script src="./bf-clinical.js?v=1.39.1"></script>
-<script src="./bf-fiscal-advanced.js?v=1.39.1"></script>
-<script src="./bf-nfse-139.js?v=1.39.1"></script>
-<script src="./bf-receituario.js?v=1.39.1"></script>
-<script src="./bf-cadastro-fiscal.js?v=1.39.1"></script>
-<script src="./bf-context-actions.js?v=1.39.1"></script>
-<script src="./bf-integrity-audit.js?v=1.39.1"></script>
-<script src="./bf-blackpay-integrated.js?v=1.39.1"></script>
-<script src="./bf-tati-help.js?v=1.39.1"></script>
-<script src="./bf-mobile-photos.js?v=1.39.1"></script>
-<script src="./bf-documents.js?v=1.39.1"></script>
-<script src="./bf-workflow-123.js?v=1.39.1"></script>
-<script src="./bf-workflow-124.js?v=1.39.1"></script>
-<script>const bfMobileCss=document.createElement("link");bfMobileCss.rel="stylesheet";bfMobileCss.href="./bf-mobile-126.css?v=1.39.1";document.head.appendChild(bfMobileCss);</script>
-<script src="./bf-mobile-126.js?v=1.39.1"></script>
-<script>const bfNavCss=document.createElement("link");bfNavCss.rel="stylesheet";bfNavCss.href="./bf-navegacao-128.css?v=1.39.1";document.head.appendChild(bfNavCss);</script>
-<script src="./bf-navegacao-128.js?v=1.39.1"></script>
-<script src="./bf-barbearia-129.js?v=1.39.1"></script>
-<script src="./bf-catalogos-130.js?v=1.39.1"></script>
-<script src="./bf-sincronia-138.js?v=1.39.1"></script>
-<script src="./bf-cobranca-138.js?v=1.39.1"></script>
-<script src="./bf-assinante-138.js?v=1.39.1"></script>
-<script>["./bf-assinante-135.css?v=1.39.1","./bf-assinante-138.css?v=1.39.1"].forEach(function(h){var l=document.createElement("link");l.rel="stylesheet";l.href=h;document.head.appendChild(l)});</script>
-<script src="./bf-assinante-135.js?v=1.39.1"></script>
-<script src="./bf-tutorial-136.js?v=1.39.1"></script>
-<script src="./bf-documentos-137.js?v=1.39.1"></script>
+<script src="./bf-clinical.js?v=1.39.2"></script>
+<script src="./bf-fiscal-advanced.js?v=1.39.2"></script>
+<script src="./bf-nfse-139.js?v=1.39.2"></script>
+<script src="./bf-receituario.js?v=1.39.2"></script>
+<script src="./bf-cadastro-fiscal.js?v=1.39.2"></script>
+<script src="./bf-context-actions.js?v=1.39.2"></script>
+<script src="./bf-integrity-audit.js?v=1.39.2"></script>
+<script src="./bf-blackpay-integrated.js?v=1.39.2"></script>
+<script src="./bf-tati-help.js?v=1.39.2"></script>
+<script src="./bf-mobile-photos.js?v=1.39.2"></script>
+<script src="./bf-documents.js?v=1.39.2"></script>
+<script src="./bf-workflow-123.js?v=1.39.2"></script>
+<script src="./bf-workflow-124.js?v=1.39.2"></script>
+<script>const bfMobileCss=document.createElement("link");bfMobileCss.rel="stylesheet";bfMobileCss.href="./bf-mobile-126.css?v=1.39.2";document.head.appendChild(bfMobileCss);</script>
+<script src="./bf-mobile-126.js?v=1.39.2"></script>
+<script>const bfNavCss=document.createElement("link");bfNavCss.rel="stylesheet";bfNavCss.href="./bf-navegacao-128.css?v=1.39.2";document.head.appendChild(bfNavCss);</script>
+<script src="./bf-navegacao-128.js?v=1.39.2"></script>
+<script src="./bf-barbearia-129.js?v=1.39.2"></script>
+<script src="./bf-catalogos-130.js?v=1.39.2"></script>
+<script src="./bf-sincronia-138.js?v=1.39.2"></script>
+<script src="./bf-cobranca-138.js?v=1.39.2"></script>
+<script src="./bf-assinante-138.js?v=1.39.2"></script>
+<script>["./bf-assinante-135.css?v=1.39.2","./bf-assinante-138.css?v=1.39.2"].forEach(function(h){var l=document.createElement("link");l.rel="stylesheet";l.href=h;document.head.appendChild(l)});</script>
+<script src="./bf-assinante-135.js?v=1.39.2"></script>
+<script src="./bf-tutorial-136.js?v=1.39.2"></script>
+<script src="./bf-documentos-137.js?v=1.39.2"></script>
 </body>
 </html>

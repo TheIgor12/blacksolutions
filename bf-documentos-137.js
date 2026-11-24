@@ -110,10 +110,14 @@
     return (d.items || []).map(function (x) {
       var q = Number(x.quantidade) || 1;
       var unit = Number(x.valor) || 0;
-      var valor = q > 1 ? (q + ' sessões / ' + dinheiro(unit * q)) : dinheiro(unit);
+      /* Com mais de uma sessão, o que vale é o total: é o número que a pessoa
+         decide. O unitário aparece ao lado, menor, para ela conferir a conta. */
+      var valor = q > 1
+        ? dinheiro(unit * q) + '<br><span style="font-size:8.5pt">' + q + ' x ' + dinheiro(unit) + '</span>'
+        : dinheiro(unit);
       return '<tr><td class="serv">' + E(x.nome) + '</td>' +
         '<td class="desc">' + E(x.descricao || '') + '</td>' +
-        '<td class="val">' + E(valor) + '</td></tr>';
+        '<td class="val">' + valor + '</td></tr>';
     }).join('');
   }
 

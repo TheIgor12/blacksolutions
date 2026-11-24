@@ -67,9 +67,7 @@ async function fiscalView(){
   const totals={draft:notes.filter(n=>n.status==='rascunho').length,
     authorized:notes.filter(n=>n.status==='autorizada').length,
     rejected:notes.filter(n=>n.status==='rejeitada').length};
-  const badge='<div class="note" style="margin:0 0 15px">'+
-    '<b>BlackFlow fiscal: cadastro individual por empresa, com roteamento nacional.</b> Rascunhos disponíveis; transmissão fiscal real ainda não habilitada. A autorização depende do canal aplicável ao prestador (SEFIN Nacional ou integrador municipal) e do retorno oficial. A autenticação e a assinatura dependem da modalidade. Pix/cartão não são nota fiscal.'+
-    '<br><a href="https://www.nfse.gov.br/EmissorNacional" target="_blank" rel="noopener">Abrir o Emissor Nacional de NFS-e</a></div>';
+  const badge='<div class="note" id="bf-nfse-situacao" style="margin:0 0 15px">Conferindo a situação da emissão...</div>';
   const summary='<div class="grid g3 bf-fiscal-stats">'+[['Rascunhos',totals.draft],['Notas autorizadas importadas',totals.authorized],['Rejeições registradas',totals.rejected]].map(([name,n])=>'<div class="card"><small>'+name+'</small><h2 style="font-size:25px;margin:4px 0">'+n+'</h2></div>').join('')+'</div>';
   const configured=cfg.situacao_integracao||'nao_configurada';
   const diagnostico=card('Homologação e sincronização fiscal — diagnóstico',
@@ -139,8 +137,15 @@ async function fiscalView(){
             html(n.meio_pagamento||'—');
         return [html(new Date(n.criado_em).toLocaleDateString('pt-BR')),
           html(n.descricao_servico),Number(n.valor).toLocaleString('pt-BR',{style:'currency',currency:'BRL'}),
-          pay,html(n.status),bt('Validar',"bfxValidate('"+n.id+"')",'btn ghost sm')+
+          pay,html(n.status)+(n.numero_nfse?'<br><small>nº '+html(n.numero_nfse)+(n.codigo_verificacao?' · '+html(n.codigo_verificacao):'')+'</small>':'')
+           +(n.motivo_rejeicao?'<br><small style="color:var(--bad)">'+html(String(n.motivo_rejeicao).slice(0,160))+'</small>':''),
+          bt('Validar',"bfxValidate('"+n.id+"')",'btn ghost sm')+
+          (['rascunho','rejeitada'].includes(n.status)?bt('Emitir NFS-e',"bfNfseEmitir('"+n.id+"')",'btn sm'):'')+
+          (n.status==='processando'?bt('Conferir emissão',"bfNfseConferir('"+n.id+"')",'btn sm'):'')+
           (n.status==='rascunho'?bt('Vincular pagamento',"bfxLinkPayment('"+n.id+"')",'btn ghost sm'):'')+
+          (n.status==='autorizada'&&n.pdf_url?'<a class="btn ghost sm" href="'+html(n.pdf_url)+'" target="_blank" rel="noopener">Abrir PDF</a>':'')+
+          (n.status==='autorizada'&&n.xml_url?'<a class="btn ghost sm" href="'+html(n.xml_url)+'" target="_blank" rel="noopener">XML</a>':'')+
+          (n.status==='autorizada'?bt('Cancelar nota',"bfNfseCancelar('"+n.id+"')",'btn ghost sm'):'')+
           (n.status==='autorizada'&&n.chave_acesso?bt('Enviar NFS-e por WhatsApp',"bfNfseWhatsApp('"+n.id+"')",'btn ghost sm'):'')];
       })));
   const imported=card('Compartilhar nota emitida no portal oficial',
