@@ -101,9 +101,9 @@ window.bfShowPatient=async function(id){
   let output=box(patientLabel(p.paciente_ref),button('Voltar à lista',"go('bfclinico')")+
    note('Anotações salvas são rastreáveis. Evite inserir informações clínicas em documentos fiscais.'));
   output+=box('Anamnese',flex(field('bfalergias','Alergias',an.alergias)+field('bfmeds','Medicamentos em uso',an.medicamentos))+
-   '<textarea id="bfanobs" class="inp" style="width:100%;min-height:75px" placeholder="Histórico clínico">'+h(an.historico||'')+'</textarea>'+
+   '<textarea id="bfanobs" data-bf-ditado spellcheck="false" lang="pt-BR" class="inp" style="width:100%;min-height:75px" placeholder="Histórico clínico">'+h(an.historico||'')+'</textarea>'+
    button('Salvar anamnese',"bfSaveAnamnesis('"+id+"')"));
-  output+=box('Evolução clínica','<textarea id="bfevol" class="inp" style="width:100%;min-height:80px"></textarea>'+
+  output+=box('Evolução clínica','<textarea id="bfevol" data-bf-ditado spellcheck="false" lang="pt-BR" class="inp" style="width:100%;min-height:80px"></textarea>'+
    '<label><input id="bfintercorrencia" type="checkbox"> Intercorrência</label> '+
    button('Registrar evolução',"bfSaveEvolution('"+id+"')")+
    rows(['Data','Conteúdo'],ev.map(x=>[h(new Date(x.criado_em).toLocaleString('pt-BR')),h(x.conteudo)])));

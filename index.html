@@ -1144,7 +1144,7 @@ function formModal(title,fields,data,onSave,extra){data=data||{};
   if(f.type==='hora15'){const L=[];for(let m=6*60;m<=22*60;m+=15)L.push(pad(Math.floor(m/60))+':'+pad(m%60));if(v&&!L.includes(String(v).slice(0,5)))L.push(String(v).slice(0,5));L.sort();inp=`<select name="${f.k}" class="hora15">${L.map(o=>`<option ${o===String(v).slice(0,5)?'selected':''}>${o}</option>`).join('')}</select>`}
   else if(f.type==='select')inp=`<select name="${f.k}">${f.opts.map(o=>`<option ${String(o)===String(v)?'selected':''}>${esc(o)}</option>`).join('')}</select>`;
   else if(f.type==='dinheiro')inp=`<input name="${f.k}" type="text" inputmode="decimal" data-mask="dinheiro" value="${esc(v===''||v==null?'':mascDinheiro(v))}" autocomplete="off">`;
-  else if(f.type==='textarea')inp=`<textarea name="${f.k}" rows="${f.rows||4}">${esc(v)}</textarea>`;
+  else if(f.type==='textarea')inp=`<textarea name="${f.k}" rows="${f.rows||4}" ${f.ditado?'data-bf-ditado spellcheck="false" lang="pt-BR"':''}>${esc(v)}</textarea>`;
   else {const mk=f.mask||(f.type&&f.type!=='text'?'':mascNome(f.k));
    inp=`<input name="${f.k}" type="${f.type||'text'}" ${f.type==='number'?`step="${f.step||'0.01'}"${f.min!==undefined?` min="${f.min}"`:''}`:''} ${mk?`data-mask="${mk}"`:''} value="${esc(mk?aplicarMasc(mk,v):v)}" ${f.list?`list="${f.list}"`:''} autocomplete="off">`}
   return `<label class="${f.full?'full':''}" id="mfL_${f.k}"><span>${esc(f.l)}${f.req?' *':''}</span>${inp}</label>`
@@ -1748,7 +1748,7 @@ function agForm(id,pacienteId,pre){pre=pre||{};const a=id?S.agendamentos.find(x=
    {k:'nascimento',l:'Data de nascimento',type:'date',mostrarSe:o=>pacPedeCPF(o.paciente)},{k:'data',l:'Data',type:'date',req:true},{k:'hora',l:'Hora',type:'hora15',req:true,aviso:o=>avisoChoque(o)},{k:'duracao',l:'Duração (minutos)',type:'select',opts:[15,30,45,60,75,90,120,150,180]},{k:'profissional',l:'Profissional',list:'dlProf'},{k:'encaixe',l:'Encaixe, sem hora marcada',type:'select',opts:['Não','Sim'],mostrarSe:o=>temPorProf()},{k:'procedimento',l:ehSeg('podologia')?'Procedimento':'Serviço',full:true,list:'dlServ',auto:o=>{const sv=servPorNome(o.procedimento);if(!sv)return {};return {duracao:servAjuste(sv,o.profissional).duracao}},aviso:o=>{if(!temPorProf())return '';const sv=servPorNome(o.procedimento);if(!sv)return '';const aj=servAjuste(sv,o.profissional);const pr=descontoDoDia(sv,aj.preco,o.data,o.hora);const base=precoTabela(sv.nome);return o.profissional?`${esc(o.profissional)} cobra ${money(pr)} e leva ${aj.duracao} minutos neste serviço${pr<base?', já com o desconto do dia':''}.`:`Valor de tabela ${money(base)} em ${+sv.duracao||30} minutos. Escolha o profissional para ver o preço dele.`}},{k:'status',l:'Status',type:'select',opts:['Agendado','Confirmado','Chegou','Atendido','Faltou','Desmarcado']},
    ...(a?[]:[{k:'repetir',l:'Repetir este atendimento',type:'select',opts:REPETE,full:true},
     {k:'vezes',l:'Quantos atendimentos no total, contando este',type:'select',opts:[2,3,4,5,6,8,10,12,16,20,24],mostrarSe:o=>str(o.repetir)&&str(o.repetir)!=='Não repete'}]),
-   {k:'obs',l:'Observação',type:'textarea',rows:2,full:true},
+   {k:'obs',l:'Observação',type:'textarea',rows:2,full:true,ditado:true},
    {k:'cep',l:'CEP (preenche o endereço sozinho)',cep:{},mostrarSe:o=>pacPedeEndereco(o.paciente)},
    {k:'endereco',l:'Endereço',full:true,mostrarSe:o=>pacPedeEndereco(o.paciente)},
    {k:'numero',l:'Número',mostrarSe:o=>pacPedeEndereco(o.paciente)},
@@ -1866,7 +1866,7 @@ function vPacientes(){return `<div class="page">${faixaDuplicados()}<div class="
  <div class="card"><input class="inp" style="width:100%;max-width:420px;margin-bottom:12px" placeholder="Pesquise por nome, CPF, celular ou código (use % antes para sobrenome)" value="${esc(UI.pacQuery)}" oninput="UI.pacQuery=this.value;UI.pacPage=0;refreshPac()"><div id="pacAZ">${azBarra(pacFiltered(),'pacIrLetra',UI.pacLetra||'')}</div><div id="pacT">${pacTable()}</div></div></div>`}
 function pacForm(id){const p=id?pac(id):null;
  formModal(p?'Editar cadastro':'Novo '+SEG().pessoa.toLowerCase(),[{k:'nome',l:'Nome completo',req:true,full:true},{k:'celular',l:'Celular / WhatsApp',req:!p},{k:'nascimento',l:'Data de nascimento',type:'date'},{k:'cpf',l:'CPF'},{k:'telefone',l:'Telefone fixo'},{k:'email',l:'E-mail',type:'email'},{k:'rg',l:'RG'},{k:'sexo',l:'Sexo',type:'select',opts:['','Feminino','Masculino','Outro']},{k:'estadoCivil',l:'Estado civil'},{k:'profissao',l:'Profissão'},{k:'comoConheceu',l:'Como conheceu',type:'select',opts:['','Google','Instagram','Facebook','Indicado por','Passou em frente','Outros']},{k:'indicadoPor',l:'Indicado por (nome de quem indicou)',list:'dlPac'},
-  {k:'empresa',l:'Empresa onde trabalha'},{k:'cep',l:'CEP (preenche o endereço sozinho)',cep:{}},{k:'endereco',l:'Endereço'},{k:'numero',l:'Número'},{k:'complemento',l:'Complemento'},{k:'bairro',l:'Bairro'},{k:'cidade',l:'Cidade'},{k:'uf',l:'UF'},{k:'plano',l:'Plano ou convênio'},{k:'responsavel',l:'Responsável'},{k:'status',l:'Status',type:'select',opts:['Ativo','Inativo']},{k:'observacoes',l:'Observações',type:'textarea',full:true,rows:3}],
+  {k:'empresa',l:'Empresa onde trabalha'},{k:'cep',l:'CEP (preenche o endereço sozinho)',cep:{}},{k:'endereco',l:'Endereço'},{k:'numero',l:'Número'},{k:'complemento',l:'Complemento'},{k:'bairro',l:'Bairro'},{k:'cidade',l:'Cidade'},{k:'uf',l:'UF'},{k:'plano',l:'Plano ou convênio'},{k:'responsavel',l:'Responsável'},{k:'status',l:'Status',type:'select',opts:['Ativo','Inativo']},{k:'observacoes',l:'Observações',type:'textarea',full:true,rows:3,ditado:true}],
   p||{status:'Ativo'},o=>{o.cep=fmtCEP(o.cep);if(o.indicadoPor){const q=S.pacientes.find(x=>norm(x.nome)===norm(o.indicadoPor)&&(!p||x.id!==p.id));o.indicadoPorId=q?q.id:'';if(!o.comoConheceu)o.comoConheceu='Indicado por'}else o.indicadoPorId='';if(p)Object.assign(p,o);else{const n={id:uid(),codigo:nextCodigo(),...o};S.pacientes.push(n);setTimeout(()=>go('paciente',n.id),0)}})}
 
 function vPaciente(){const p=pac(UI.param);if(!p)return `<div class="page"><div class="card">Paciente não encontrado. <button class="lnk" onclick="go('pacientes')">Voltar</button></div></div>`;
@@ -2178,7 +2178,7 @@ function pEvo(p){const L=S.evolucoes.filter(e=>e.pacienteId===p.id).sort((a,b)=>
  ${altaFaixa(p)}
  <div class="note">Registre aqui o que foi feito em cada atendimento (avaliação, conduta, orientação, materiais). É a prova documental do tratamento.</div>
  ${L.map(e=>`<div class="card"><div style="display:flex;justify-content:space-between;gap:10px;margin-bottom:8px"><b>${br(e.data)}</b><span style="color:var(--mut)">${esc(e.profissional||'')} <button class="lnk" onclick="evoForm('${e.id}')">Editar</button></span></div><div style="white-space:pre-wrap;line-height:1.5">${esc(e.texto)}</div>${fotosMini(p.id,'evolucao',e.id)}</div>`).join('')||'<div class="card mini-empty">Nenhuma evolução registrada.</div>'}`}
-function evoForm(id,pid){const e=id?S.evolucoes.find(x=>x.id===id):null;formModal(e?'Editar evolução':'Nova evolução',[{k:'data',l:'Data',type:'date',req:true},{k:'profissional',l:'Profissional',list:'dlProf'},{k:'texto',l:'Descrição do atendimento',type:'textarea',rows:8,req:true,full:true}],e||{data:todayISO()},o=>{o.profissional=ensureProf(o.profissional);if(e)Object.assign(e,o);else S.evolucoes.push({id:uid(),pacienteId:pid,...o})},e?`<button class="btn danger" style="margin-right:auto" onclick="delRec('evolucoes','${e.id}')">Excluir</button>`:'')}
+function evoForm(id,pid){const e=id?S.evolucoes.find(x=>x.id===id):null;formModal(e?'Editar evolução':'Nova evolução',[{k:'data',l:'Data',type:'date',req:true},{k:'profissional',l:'Profissional',list:'dlProf'},{k:'texto',l:'Descrição do atendimento',type:'textarea',rows:8,ditado:true,req:true,full:true}],e||{data:todayISO()},o=>{o.profissional=ensureProf(o.profissional);if(e)Object.assign(e,o);else S.evolucoes.push({id:uid(),pacienteId:pid,...o})},e?`<button class="btn danger" style="margin-right:auto" onclick="delRec('evolucoes','${e.id}')">Excluir</button>`:'')}
 function pAna(p){const L=S.anamneses.filter(a=>a.pacienteId===p.id).sort((a,b)=>(b.data||'').localeCompare(a.data||''));
  return `<div class="phead"><h2 style="margin:0">Anamnese</h2><button class="btn" onclick="anaForm('${p.id}')">${ico('plus',16)} Nova Anamnese</button></div>
  ${anaFaixa(p.id)}
@@ -2272,8 +2272,8 @@ function anaHTML(){const A=UI.ana,p=pac(A.pid);
      <button class="btn ${norm(r.a)==='nao'?'':'ghost'} sm" onclick="anaResp(${i},'Não')">Não</button>
      ${str(r.a)?`<button class="lnk sm" onclick="anaResp(${i},'')">limpar</button>`:''}</div>`:''}
    ${r.tipo==='texto'
-     ? `<input style="width:100%;margin-top:8px" placeholder="Resposta" value="${esc(r.a)}" oninput="UI.ana.itens[${i}].a=this.value" onblur="anaPintar()">`
-     : (norm(r.a)==='sim'?`<input style="width:100%" placeholder="${esc(r.det||'Detalhe a resposta')}" value="${esc(r.det2)}" oninput="UI.ana.itens[${i}].det2=this.value">`:'')}
+     ? `<input style="width:100%;margin-top:8px" data-bf-ditado spellcheck="false" lang="pt-BR" placeholder="Resposta" value="${esc(r.a)}" oninput="UI.ana.itens[${i}].a=this.value" onblur="if(!event.relatedTarget?.closest('[data-bf-dict-toggle],[data-bf-ditado-dialog]'))anaPintar()">`
+     : (norm(r.a)==='sim'?`<input style="width:100%" data-bf-ditado spellcheck="false" lang="pt-BR" placeholder="${esc(r.det||'Detalhe a resposta')}" value="${esc(r.det2)}" oninput="UI.ana.itens[${i}].det2=this.value">`:'')}
    ${r.alerta?`<div style="margin-top:8px;font-size:12px;color:${al?'var(--bad)':'var(--mut)'}">${al?'Esta resposta vai virar alerta em vermelho.':'Se a resposta for Sim, vira alerta em vermelho.'}</div>`:''}
   </div>`}).join('')}
  </div>
@@ -4983,7 +4983,7 @@ function altaRegistrar(pid,tipo){
   {k:'data',l:'Data',type:'date',req:true},
   {k:'procedimento',l:'Tratamento',list:'dlServ',full:true,req:true},
   {k:'profissional',l:'Profissional responsável',list:'dlProf'},
-  {k:'motivo',l:tipo==='alta'?'Resultado alcançado e orientações de manutenção':'O que a paciente informou, e o que foi orientado',type:'textarea',rows:5,full:true,req:true},
+  {k:'motivo',l:tipo==='alta'?'Resultado alcançado e orientações de manutenção':'O que a paciente informou, e o que foi orientado',type:'textarea',rows:5,ditado:true,full:true,req:true},
   {k:'termo',l:'Gerar o documento para o paciente assinar',type:'select',opts:['Sim','Não']}
  ],{data:todayISO(),profissional:S.config.responsavel||'',termo:'Sim'},o=>{
   p.alta={tipo:tipo,data:o.data,procedimento:str(o.procedimento),profissional:str(o.profissional),motivo:str(o.motivo),registradoPor:nomeUsuario(),em:new Date().toISOString()};
@@ -5067,7 +5067,7 @@ function fichaForm(pid,id){const f=id?S.fichas.find(x=>x.id===id):null;const u=S
 function vProtocolos(){return `<div class="page"><div class="phead"><div><h1>Protocolos</h1><p class="sub">Sequências prontas de sessões, com intervalo entre elas. Ao aplicar em um cliente, o sistema cria o pacote e já agenda todas as sessões.</p></div><button class="btn" onclick="protForm()">${ico('plus',16)} Novo protocolo</button></div>
  <div class="grid g3">${az(S.protocolos).map(p=>`<div class="card"><div style="display:flex;justify-content:space-between"><b>${esc(p.nome)}</b><button class="lnk" onclick="protForm('${p.id}')">Editar</button></div><p class="sub" style="margin:8px 0">${p.sessoes} sessões, uma a cada ${p.intervalo} dias${p.duracao?', '+p.duracao+' minutos cada':''}${p.valor?' · '+money(p.valor):''}</p>${p.descricao?`<p style="font-size:13px">${esc(p.descricao)}</p>`:''}<button class="btn sm" onclick="protAplicar('${p.id}')">Aplicar a um cliente</button></div>`).join('')||'<div class="card empty">Nenhum protocolo. Exemplo: Drenagem pós-operatória, 10 sessões, a cada 2 dias.</div>'}</div></div>`}
 function protForm(id){const p=id?S.protocolos.find(x=>x.id===id):null;
- formModal(p?'Editar protocolo':'Novo protocolo',[{k:'nome',l:'Nome do protocolo',req:true,full:true},{k:'servico',l:'Serviço de cada sessão',list:'dlServ'},{k:'sessoes',l:'Número de sessões',type:'number',req:true},{k:'intervalo',l:'Intervalo entre as sessões (dias)',type:'number',req:true},{k:'duracao',l:'Duração de cada sessão (minutos)',type:'number'},{k:'valor',l:'Valor do protocolo completo',type:'dinheiro'},{k:'descricao',l:'Descrição e cuidados',type:'textarea',full:true,rows:3}],
+ formModal(p?'Editar protocolo':'Novo protocolo',[{k:'nome',l:'Nome do protocolo',req:true,full:true},{k:'servico',l:'Serviço de cada sessão',list:'dlServ'},{k:'sessoes',l:'Número de sessões',type:'number',req:true},{k:'intervalo',l:'Intervalo entre as sessões (dias)',type:'number',req:true},{k:'duracao',l:'Duração de cada sessão (minutos)',type:'number'},{k:'valor',l:'Valor do protocolo completo',type:'dinheiro'},{k:'descricao',l:'Descrição e cuidados',type:'textarea',full:true,ditado:true,rows:3}],
   p||{sessoes:10,intervalo:7,duracao:60},o=>{o.sessoes=Math.max(1,parseInt(o.sessoes,10)||1);o.intervalo=Math.max(1,parseInt(o.intervalo,10)||1);if(p)Object.assign(p,o);else S.protocolos.push({id:uid(),...o})},
   p?`<button class="btn danger" style="margin-right:auto" onclick="delRec('protocolos','${p.id}')">Excluir</button>`:'')}
 function protAplicar(id){const pr=S.protocolos.find(x=>x.id===id);
@@ -6172,5 +6172,6 @@ function menuProfs(){const L=az(S.profissionais.filter(p=>p.ativo!==false));if(!
 <script src="./bf-assinante-135.js?v=1.45.0"></script>
 <script src="./bf-tutorial-136.js?v=1.45.0"></script>
 <script src="./bf-documentos-137.js?v=1.45.0"></script>
+<script src="./bf-ditado-146.js?v=1"></script>
 </body>
 </html>

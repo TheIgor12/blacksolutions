@@ -29,6 +29,10 @@ if [ -d pes ]; then
   mkdir -p app/pes
   cp pes/* app/pes/ 2>/dev/null || true
 fi
+if [ -d ditado ]; then
+  mkdir -p app/ditado
+  for f in ditado/*; do [ -f "$f" ] && cp "$f" "app/$f"; done
+fi
 if [ -d vendor ]; then
   mkdir -p app/vendor
   cp vendor/* app/vendor/ 2>/dev/null || true

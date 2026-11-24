@@ -9,6 +9,7 @@ const BASE=['./','index.html','manifest.webmanifest','icone-192.png','icone-512.
  'bf-cadastro-fiscal.js',
  'bf-catalogos-130.js',
  'bf-clinical.js',
+ 'bf-ditado-146.js?v=1',
  'bf-sincronia-138.js',
  'bf-cobranca-138.js',
  'bf-assinante-138.js',
@@ -65,7 +66,9 @@ self.addEventListener('fetch',event=>{
  const navigation=request.mode==='navigate';
  // Apenas esta malha pública pode entrar no cache, não as APIs ou JSONs clínicos.
  const malha=url.pathname===new URL('pes/modelo-anatomico-1.json',self.registration.scope).pathname;
- if(!navigation&&!STATIC.test(url.pathname)&&!malha)return;
+ const arquivoDitado=['pt-br.aff.gz','pt-br.dic.gz.00','pt-br.dic.gz.01','pt-br.dic.gz.02'].some(
+  p=>url.pathname===new URL('ditado/'+p,self.registration.scope).pathname);
+ if(!navigation&&!STATIC.test(url.pathname)&&!malha&&!arquivoDitado)return;
  event.respondWith((async()=>{
   try{
    const response=await fetch(request,{cache:'no-store'});
