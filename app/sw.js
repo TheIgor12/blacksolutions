@@ -1,7 +1,7 @@
 /* BlackFlow 1.28.0: network-first, sem guardar paciente nem token, offline seguro.
    Os modulos externos entram ja na instalacao: sem eles o sistema abre sem
    receituario, sem orcamento, sem fiscal e sem a navegacao entre janelas. */
-const CACHE='blackflow-v460-ditado-ptbr';
+const CACHE='blackflow-v461-teste-microfone';
 const BASE=['./','index.html','manifest.webmanifest','icone-192.png','icone-512.png',
  'bf-assinante-135.js',
  'bf-barbearia-129.js',
@@ -9,7 +9,7 @@ const BASE=['./','index.html','manifest.webmanifest','icone-192.png','icone-512.
  'bf-cadastro-fiscal.js',
  'bf-catalogos-130.js',
  'bf-clinical.js',
- 'bf-ditado-146.js?v=1.46.0',
+ 'bf-ditado-146.js?v=1.46.1',
  'bf-sincronia-138.js',
  'bf-cobranca-138.js',
  'bf-assinante-138.js',
@@ -32,8 +32,8 @@ const BASE=['./','index.html','manifest.webmanifest','icone-192.png','icone-512.
  'pes/mapa-medial.png',
  'pes/mapa-dedos.png',
  'pes/mapa-calcanhar.png',
- 'bf-pes-141.js?v=1.46.0',
- 'bf-pes3d-141.js?v=1.46.0',
+ 'bf-pes-141.js?v=1.46.1',
+ 'bf-pes3d-141.js?v=1.46.1',
  'bf-integrity-audit.js',
  'bf-mobile-126.js',
  'bf-mobile-photos.js',

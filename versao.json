@@ -1,4 +1,4 @@
 {
-  "versao": "1.46.0",
-  "novidades": "Ditado local e revisão ortográfica em português do Brasil nas anotações dos Pés Interativos, na anamnese, na evolução e em campos clínicos selecionados. Revise o texto antes de inserir; o BlackFlow não envia nem armazena áudio."
+  "versao": "1.46.1",
+  "novidades": "O ditado verifica variantes locais de português do Brasil e oferece um teste de permissão do microfone separado da disponibilidade do reconhecimento. Sem envio ou gravação de áudio."
 }

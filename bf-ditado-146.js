@@ -4,7 +4,12 @@
   if (window.bfDitado) return;
   const script = new URL('.', document.currentScript.src);
   const lang = 'pt-BR';
-  const options = Object.freeze({ langs: Object.freeze([lang]), processLocally: true, quality: 'dictation' });
+  const langs = Object.freeze([lang]);
+  // Alguns navegadores oferecem pt-BR local sem o nível explícito de ditado.
+  // Nenhuma variante consulta ou inicia reconhecimento remoto.
+  const modos = ['dictation', null, 'command'].map(quality => Object.freeze({
+    langs, processLocally:true, ...(quality ? {quality} : {})
+  }));
   const selector = 'textarea[data-bf-ditado],input[data-bf-ditado]';
   const decorados = new WeakSet();
   let current = null, dicionario = null;
@@ -52,6 +57,7 @@
   function atualiza(s) {
     const capturando = !!s.rec;
     s.start.disabled = capturando || s.ocupado;
+    s.teste.disabled = capturando || s.ocupado;
     s.stop.hidden = !capturando;
     s.stop.disabled = s.parando;
     s.revisar.disabled = capturando || s.revisando || !s.rascunho.value.trim();
@@ -103,11 +109,11 @@
       atualiza(s);
     }, 3500);
   }
-  function gravar(s,R) {
+  function gravar(s,R,modo) {
     if (!valida(s) || s.rec || document.hidden) return;
     const r = new R();
     r.lang = lang; r.processLocally = true;
-    if ('quality' in r) r.quality = 'dictation';
+    if (modo.quality && 'quality' in r) r.quality = modo.quality;
     if (r.lang !== lang || r.processLocally !== true) {
       falarStatus(s,'Este navegador não garantiu o ditado em português do Brasil no aparelho.'); return;
     }
@@ -117,6 +123,9 @@
     r.onresult = (e) => { if (valida(s) && s.rec===r) finalizarLote(s,e); };
     r.onerror = (e) => {
       if (!valida(s) || s.rec!==r) return;
+      if (['not-allowed','service-not-allowed','audio-capture','language-not-supported'].includes(e.error)) {
+        s.teste.hidden = false;
+      }
       s.espera = mensagens[e.error] || 'O reconhecimento foi interrompido. O texto confirmado virou rascunho.';
       falarStatus(s,s.espera);
       if (!s.parando) parar(s);
@@ -139,31 +148,76 @@
   }
   async function preparar(s) {
     if (!valida(s) || s.ocupado || s.rec) return;
-    const R = provedor();
+    const R=provedor();
+    s.instalar.hidden=true; s.teste.hidden=true; s.modoInstalar=null;
     if (!R || !window.isSecureContext) {
-      falarStatus(s,'O ditado privado não está disponível neste navegador. Você pode digitar e revisar o texto aqui.');
+      s.teste.hidden=false;
+      falarStatus(s,'O reconhecimento local não está disponível neste navegador. Você ainda pode testar a permissão do microfone.');
       return;
     }
-    s.ocupado = true; s.instalar.hidden = true; atualiza(s);
+    s.ocupado=true; atualiza(s);
+    let paraInstalar=null, baixando=false, verificado=false;
     try {
-      const estado = await R.available(options);
+      for (const modo of modos) {
+        let estado;
+        try { estado=await R.available(modo); } catch (_) { continue; }
+        if (!valida(s)) return;
+        verificado=true;
+        if (estado==='available') {
+          if (window.navigator?.userActivation?.isActive===false) {
+            s.modoPronto={R,modo};
+            falarStatus(s,'Português do Brasil está pronto. Toque em Iniciar para o navegador pedir o microfone.');
+          } else gravar(s,R,modo);
+          return;
+        }
+        if (estado==='downloadable' && !paraInstalar) paraInstalar=modo;
+        if (estado==='downloading') baixando=true;
+      }
+      if (paraInstalar && typeof R.install==='function') {
+        s.modoInstalar=paraInstalar; s.instalar.hidden=false;
+        falarStatus(s,'Instale o pacote pt-BR para ditar sem enviar áudio à internet.');
+      } else if (baixando) falarStatus(s,'O navegador está baixando o pacote pt-BR. Aguarde e toque em Iniciar.');
+      else falarStatus(s,verificado
+        ? 'Este navegador não disponibilizou o reconhecimento local em português do Brasil. Permitir o microfone não instala esse recurso.'
+        : 'O navegador não permitiu verificar o pacote de reconhecimento local.');
+      s.teste.hidden=false;
+    } finally { s.ocupado=false; if (valida(s)) atualiza(s); }
+  }
+  async function testar(s) {
+    if (!valida(s) || s.ocupado || s.rec) return;
+    const dispositivos=window.navigator?.mediaDevices;
+    if (!window.isSecureContext || typeof dispositivos?.getUserMedia!=='function') {
+      falarStatus(s,'Este aplicativo não disponibiliza acesso ao microfone. Abra blackflow.app.br diretamente no Chrome.');
+      return;
+    }
+    s.ocupado=true; atualiza(s);
+    falarStatus(s,'Permita o microfone na janela do navegador. Este teste não grava nem transcreve.');
+    let stream;
+    try {
+      stream=await dispositivos.getUserMedia({audio:true,video:false});
+      stream.getTracks().forEach(t=>t.stop());
       if (!valida(s)) return;
-      if (estado === 'available') gravar(s,R);
-      else if (estado === 'downloadable' && typeof R.install === 'function') {
-        s.instalar.hidden = false;
-        falarStatus(s,'Instale o pacote pt-BR no navegador para ditar sem enviar áudio à internet.');
-      } else if (estado === 'downloading') falarStatus(s,'O navegador está baixando o pacote pt-BR. Aguarde e toque em Iniciar.');
-      else falarStatus(s,'Este navegador não oferece reconhecimento local em português do Brasil. Use a digitação.');
-    } catch (_) { falarStatus(s,'Não consegui verificar o pacote ou a permissão para reconhecimento local.'); }
-    finally { s.ocupado = false; if (valida(s)) atualiza(s); }
+      falarStatus(s,'Microfone autorizado e encontrado. O ditado ainda precisa do reconhecimento local em português do Brasil.');
+      s.start.focus({preventScroll:true});
+    } catch (e) {
+      const erros={
+        NotAllowedError:'Microfone bloqueado. Nas permissões do site, permita o microfone e tente de novo.',
+        NotFoundError:'Nenhum microfone foi encontrado. Confira a entrada de áudio do Windows.',
+        NotReadableError:'O microfone não abriu. Verifique se está disponível e se o Windows permite o acesso por este aplicativo.'
+      };
+      falarStatus(s,erros[e?.name]||'Não consegui testar o microfone neste aplicativo.');
+    } finally {
+      stream?.getTracks().forEach(t=>{if (t.readyState!=='ended') t.stop();});
+      s.ocupado=false; if (valida(s)) atualiza(s);
+    }
   }
   async function instalar(s) {
     const R = provedor();
-    if (!R || !valida(s) || s.ocupado || typeof R.install !== 'function') return;
+    if (!R || !valida(s) || s.ocupado || !s.modoInstalar || typeof R.install !== 'function') return;
     s.instalar.hidden = true; s.ocupado = true; atualiza(s);
     falarStatus(s,'Baixando o pacote de português do Brasil. O microfone ainda está desligado.');
     try {
-      const ok = await R.install(options);
+      const ok = await R.install(s.modoInstalar);
       if (!valida(s)) return;
       if (ok) falarStatus(s,'Pacote pt-BR pronto. Toque em Iniciar para autorizar o microfone.');
       else {
@@ -243,16 +297,23 @@
     s.status=el('p','bfdf-status','Preparando o microfone…'); s.status.setAttribute('role','status');
     s.parcial = el('p','bfdf-parcial');
     s.rascunho=el('textarea','bfdf-texto'); s.rascunho.lang=lang; s.rascunho.spellcheck=false;
+    desativarExtensoes(s.rascunho);
     s.rascunho.rows=5; s.rascunho.placeholder='O que você ditar aparece aqui'; s.rascunho.setAttribute('aria-label','Rascunho do ditado');
     s.rascunho.addEventListener('input',()=>{s.sugestoes.replaceChildren();atualiza(s);});
     s.sugestoes=el('ul','bfdf-sugestoes');
-    s.start=botao('Iniciar',()=>preparar(s));
+    s.start=botao('Iniciar',()=>{
+      const pronto=s.modoPronto;
+      if (pronto && !s.ocupado && valida(s)) {
+        s.modoPronto=null; gravar(s,pronto.R,pronto.modo);
+      } else preparar(s);
+    });
     s.stop=botao('Parar microfone',()=>parar(s),'danger');
     s.instalar=botao('Instalar pacote pt-BR',()=>instalar(s)); s.instalar.hidden=true;
+    s.teste=botao('Testar microfone',()=>testar(s)); s.teste.hidden=true;
     s.revisar=botao('Revisar ortografia',()=>revisar(s));
     s.aplicar=botao('Usar texto',()=>aplicar(s),'bfdf-usar');
     const acoes=el('div','bfdf-acoes');
-    acoes.append(s.start,s.stop,s.instalar,s.revisar,botao('Cancelar',()=>fechar(s,true)),s.aplicar);
+    acoes.append(s.start,s.stop,s.instalar,s.teste,s.revisar,botao('Cancelar',()=>fechar(s,true)),s.aplicar);
     dialog.append(titulo,nota,s.status,s.parcial,s.rascunho,s.sugestoes,acoes);
     dialog.addEventListener('cancel',(e)=>{e.preventDefault();fechar(s,true);});
     dialog.addEventListener('close',()=>{if(current===s)fechar(s,false);});
@@ -260,11 +321,17 @@
     try { dialog.showModal(); } catch (_) { fechar(s,false); return; }
     atualiza(s); preparar(s);
   }
+  function desativarExtensoes(c) {
+    // Extensões que respeitam estes atributos não revisam campos clínicos.
+    c.setAttribute('data-gramm','false');
+    c.setAttribute('data-gramm_editor','false');
+    c.setAttribute('data-enable-grammarly','false');
+  }
   function instalarBotoes() {
     if (current && !valida(current)) fechar(current,false);
     document.querySelectorAll(selector).forEach(campo=>{
       if (decorados.has(campo) || campo.readOnly || campo.disabled) return;
-      decorados.add(campo); campo.lang=lang; campo.spellcheck=false;
+      decorados.add(campo); campo.lang=lang; campo.spellcheck=false; desativarExtensoes(campo);
       const root = el('span','bfdf-ferramentas');
       const micro=el('span','bfdf-mic');
       micro.tabIndex=0; micro.dataset.bfDictToggle=''; micro.setAttribute('role','button');

@@ -19,9 +19,16 @@ class E {
   dispatchEvent(e){this.events[e.type]?.(e);}
 }
 let estado = 'available', capturas = 0, installs = 0, last, inputs = 0;
+let semQualidade = false, pedidosMic = 0, paradas = 0, naPermissao = '';
+const nav = {userActivation:{isActive:true},mediaDevices:{async getUserMedia(o){
+  assert.equal(o.audio,true); assert.equal(o.video,false); pedidosMic++;
+  if(naPermissao) throw Object.assign(new Error(),{name:naPermissao});
+  const track={readyState:'live',stop(){paradas++;this.readyState='ended'}};
+  return {getTracks:()=>[track]};
+}}};
 class Local {
   processLocally=false;
-  static async available(o){assert.equal(o.langs[0],'pt-BR');assert.equal(o.processLocally,true);assert.equal(o.quality,'dictation');return estado;}
+  static async available(o){assert.equal(o.langs[0],'pt-BR');assert.equal(o.processLocally,true);assert.ok(!o.quality || ['dictation','command'].includes(o.quality));return semQualidade && o.quality ? 'unavailable' : estado;}
   static async install(o){assert.equal(o.langs[0],'pt-BR'); assert.equal(o.processLocally,true); installs++; estado='available';return true;}
   start(){assert.equal(this.lang,'pt-BR');assert.equal(this.processLocally,true); capturas++; last=this; this.onstart?.();}
   stop(){this.onend?.();}
@@ -35,7 +42,7 @@ const conta = {clinicaId:'clinic-fake'}, ui={view:'pesmapa',ana:null};
 let observer;
 const ctx={document:doc, SpeechRecognition:Local, webkitSpeechRecognition:Remoto, isSecureContext:true,
   MutationObserver:class {constructor(fn){observer=fn;}observe(){}}, addEventListener(){}, Event,URL, setTimeout,clearTimeout,
-  NV:conta,UI:ui,S:{},console};
+  NV:conta,UI:ui,S:{},console,navigator:nav};
 ctx.window=ctx;
 function campo(tag,inicial,auto=false){
   const c=new E(tag);c.value=inicial;c.dataset.bfDitado=auto?'auto':'';
@@ -72,7 +79,18 @@ botao('Iniciar').events.click();await espera();assert.equal(capturas,3);
 loc().onerror({error:'not-allowed'});assert.match(dlg().nodes.find(x=>x.className==='bfdf-status').textContent,/não autorizado/);
 botao('Cancelar').events.click();
 delete ctx.SpeechRecognition;abrir(outro);await espera();assert.equal(capturas,3);
-assert.match(dlg().nodes.find(x=>x.className==='bfdf-status').textContent,/ditado privado não está disponível/);
+assert.match(dlg().nodes.find(x=>x.className==='bfdf-status').textContent,/reconhecimento local não está disponível/);
+botao('Testar microfone').events.click(); await espera();
+assert.equal(pedidosMic,1); assert.equal(paradas,1); assert.equal(capturas,3);
+assert.match(dlg().nodes.find(x=>x.className==='bfdf-status').textContent,/Microfone autorizado e encontrado/);
+naPermissao='NotAllowedError'; botao('Testar microfone').events.click(); await espera();
+assert.equal(pedidosMic,2); assert.equal(paradas,1);
+assert.match(dlg().nodes.find(x=>x.className==='bfdf-status').textContent,/Microfone bloqueado/);
+botao('Cancelar').events.click();
+ctx.SpeechRecognition=Local; estado='available'; semQualidade=true; nav.userActivation.isActive=false;
+abrir(outro); await espera(); assert.equal(capturas,3);
+nav.userActivation.isActive=true; botao('Iniciar').events.click();
+assert.equal(capturas,4); assert.equal(loc().processLocally,true); assert.equal(loc().lang,'pt-BR');
 botao('Cancelar').events.click();
 const html=read('index.html').toString(), pes=read('bf-pes-141.js').toString();
 assert.match(html,/<script src="\.\/bf-ditado-146\.js\?v=\d+"|<script src="\.\/bf-ditado-146\.js\?v=[\d.]+"/);
