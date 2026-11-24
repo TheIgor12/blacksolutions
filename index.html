@@ -1998,7 +1998,11 @@ function pSess(p){const L=S.tratamentos.filter(t=>t.pacienteId===p.id&&!['Reprov
 function addSessao(id){const t=S.tratamentos.find(x=>x.id===id);t.sessoesRealizadas=(t.sessoesRealizadas||0)+1;if(t.sessoesRealizadas>=t.sessoesTotal)t.statusOrig='Concluído';
  S.evolucoes.push({id:uid(),pacienteId:t.pacienteId,data:todayISO(),profissional:t.profissional||'',texto:`Sessão ${t.sessoesRealizadas}/${t.sessoesTotal} de ${t.procedimento} realizada.`});save();render();toast('Sessão registrada e lançada na evolução')}
 function pEvo(p){const L=S.evolucoes.filter(e=>e.pacienteId===p.id).sort((a,b)=>(b.data||'').localeCompare(a.data||''));
- return `<div class="phead"><h2 style="margin:0">Evolução clínica</h2><button class="btn" onclick="evoForm(null,'${p.id}')">${ico('plus',16)} Nova evolução</button></div>
+ return `<div class="phead"><h2 style="margin:0">Evolução clínica</h2><span style="display:flex;gap:8px;flex-wrap:wrap">
+ <button class="btn green sm" onclick="altaRegistrar('${p.id}','alta')" title="Encerra o tratamento, registra na evolução e gera o documento de alta para assinar">Dar alta</button>
+ <button class="btn ghost sm" onclick="altaRegistrar('${p.id}','abandono')" title="Registra que o paciente interrompeu o tratamento antes do fim, com o que foi orientado">Registrar abandono</button>
+ <button class="btn" onclick="evoForm(null,'${p.id}')">${ico('plus',16)} Nova evolução</button></span></div>
+ ${altaFaixa(p)}
  <div class="note">Registre aqui o que foi feito em cada atendimento (avaliação, conduta, orientação, materiais). É a prova documental do tratamento.</div>
  ${L.map(e=>`<div class="card"><div style="display:flex;justify-content:space-between;gap:10px;margin-bottom:8px"><b>${br(e.data)}</b><span style="color:var(--mut)">${esc(e.profissional||'')} <button class="lnk" onclick="evoForm('${e.id}')">Editar</button></span></div><div style="white-space:pre-wrap;line-height:1.5">${esc(e.texto)}</div>${fotosMini(p.id,'evolucao',e.id)}</div>`).join('')||'<div class="card mini-empty">Nenhuma evolução registrada.</div>'}`}
 function evoForm(id,pid){const e=id?S.evolucoes.find(x=>x.id===id):null;formModal(e?'Editar evolução':'Nova evolução',[{k:'data',l:'Data',type:'date',req:true},{k:'profissional',l:'Profissional',list:'dlProf'},{k:'texto',l:'Descrição do atendimento',type:'textarea',rows:8,req:true,full:true}],e||{data:todayISO()},o=>{o.profissional=ensureProf(o.profissional);if(e)Object.assign(e,o);else S.evolucoes.push({id:uid(),pacienteId:pid,...o})},e?`<button class="btn danger" style="margin-right:auto" onclick="delRec('evolucoes','${e.id}')">Excluir</button>`:'')}
@@ -2449,13 +2453,46 @@ function vDashboard(){const [ry,rm]=UI.dashRef.split('-').map(Number);const n=UI
 
 /* ============ Relatórios ============ */
 const REPORTS={
- 'Pacientes':[['pac_aniv','Aniversariantes'],['pac_origem','Como conheceu (origem)'],['pac_ret','Alertas de retorno'],['pac_ult','Último agendamento'],['pac_loc','Localização'],['pac_recup','Recuperação de pacientes'],['pac_incomp','Cadastros incompletos']],
+ 'Pacientes':[['pac_sumiu','Quem não vem há tantos dias'],['pac_aniv','Aniversariantes'],['pac_origem','Como conheceu (origem)'],['pac_ret','Alertas de retorno'],['pac_ult','Último agendamento'],['pac_loc','Localização'],['pac_recup','Recuperação de pacientes'],['pac_incomp','Cadastros incompletos']],
  'Financeiro':[['fin_formas','Recebimentos por forma de pagamento'],['fin_inad','Parcelas em atraso'],['fin_lanc','Todos os lançamentos'],['fin_desp','Despesas por categoria']],
  'Ticket médio':[['tk_resumo','Ticket médio: ganhou, deixou de ganhar e perdeu'],['tk_mes','Ticket médio por mês'],['tk_pac','Ticket médio por paciente'],['tk_perdas','O que deixou de ganhar e o que perdeu']],
  'Tratamentos':[['tr_aberto','Tratamentos em aberto'],['tr_proc','Procedimentos mais vendidos']],
  'Agendamentos':[['ag_mes','Faltas e desmarcações por mês'],['ag_prof','Atendimentos por profissional']]};
 function repData(id){const t=todayISO();
  switch(id){
+ /* Quem nao vem ha tantos dias.
+    Nao tem nada a ver com procedimento, e esse e o ponto: o relatorio de
+    recuperacao trabalha servico por servico, e por isso traz quem nunca fez
+    aquele servico, o que confunde. Aqui a pergunta e uma so: ha quantos dias
+    esta pessoa nao aparece na clinica, seja la o que ela tenha feito. */
+ case 'pac_sumiu':{
+  const m=lastApptMap(), lim=Math.max(1,Number(UI.diasSumiu)||365);
+  const ultProc={};
+  (S.agendamentos||[]).forEach(a=>{const sa=stAg(a);if(sa==='Desmarcado')return;if(a.data>t)return;
+   const o=ultProc[a.pacienteId];if(!o||a.data>=o.data)ultProc[a.pacienteId]={data:a.data,proc:a.procedimento||''}});
+  const L=[];
+  (S.pacientes||[]).forEach(pa=>{
+   const o=m[pa.id]||{}, al=pa.alta&&pa.alta.tipo?pa.alta:null;
+   if(!o.last){if(UI.sumiuNunca)L.push({p:pa,last:'',dias:null,next:'',al});return}
+   const d=diffDays(o.last,t);
+   if(d<lim)return;
+   if(o.next&&!UI.sumiuAgendados)return;
+   L.push({p:pa,last:o.last,dias:d,next:o.next||'',al});
+  });
+  L.sort((a,b)=>((b.dias==null?1e9:b.dias)-(a.dias==null?1e9:a.dias))||azCmp(a.p.nome,b.p.nome));
+  const sit=x=>x.al?((x.al.tipo==='alta'?'Alta em ':'Abandonou em ')+br(x.al.data))
+   :x.next?('Já tem horário em '+br(x.next))
+   :x.dias==null?'Nunca veio':(x.p.status==='Inativo'?'Cadastro inativo':'Sem retorno');
+  return {
+   filtro:`<label>Não vem há pelo menos <input type="number" min="1" max="3650" value="${lim}" style="width:92px" onchange="UI.diasSumiu=Math.max(1,+this.value||365);render()"> dias</label>
+    <label class="chk" style="align-self:end"><input type="checkbox" ${UI.sumiuNunca?'checked':''} onchange="UI.sumiuNunca=this.checked;render()"> incluir quem nunca veio</label>
+    <label class="chk" style="align-self:end"><input type="checkbox" ${UI.sumiuAgendados?'checked':''} onchange="UI.sumiuAgendados=this.checked;render()"> incluir quem já tem horário marcado</label>`,
+   nota:`Todos os ${SEG().pessoas.toLowerCase()} que não aparecem na clínica há ${lim} dias ou mais, sem olhar o que cada um fez. O que conta é a data do último atendimento, qualquer que tenha sido o procedimento. Quem recebeu alta ou abandonou o tratamento aparece identificado, para você não cobrar retorno de quem já foi liberado.`,
+   cols:['Paciente','Celular','Último atendimento','Dias sem vir','Último procedimento','Situação'],
+   rows:L.map(x=>[x.p.nome,x.p.celular||'',x.last?br(x.last):'',x.dias==null?'':x.dias,
+    (ultProc[x.p.id]||{}).proc||'',sit(x)]),
+   wa:0};
+ }
  case 'pac_aniv':{const m=pad(UI.relMes);return {filtro:`<label>Mês<select onchange="UI.relMes=+this.value;render()">${MESES.map((x,i)=>`<option value="${i+1}" ${i+1===UI.relMes?'selected':''}>${x}</option>`).join('')}</select></label>`,cols:['Dia','Paciente','Idade que completa','Celular'],rows:S.pacientes.filter(p=>p.nascimento&&p.nascimento.slice(5,7)===m).sort((a,b)=>a.nascimento.slice(8).localeCompare(b.nascimento.slice(8))).map(p=>[p.nascimento.slice(8),p.nome,new Date().getFullYear()-+p.nascimento.slice(0,4),p.celular||''])}}
  case 'pac_recup':return {html:recHTML(),cols:[],rows:[]};
  case 'pac_origem':{const g={};S.pacientes.forEach(p=>{const k=p.comoConheceu||'Não informado';g[k]=(g[k]||0)+1});const tot=S.pacientes.length||1;return {cols:['Origem','Pacientes','%'],rows:Object.entries(g).sort((a,b)=>b[1]-a[1]).map(([k,v])=>[k,v,(v/tot*100).toFixed(1)+'%'])}}
@@ -4693,19 +4730,55 @@ async function contratoRemoto(ct){const p=pac(ct.pacienteId);
    ${wl?`<a class="btn green" href="${wl}" target="_blank" rel="noopener" onclick="closeModal()">${ico('wa',15)} Mandar no WhatsApp</a>`:'<span class="badge warn">sem celular na ficha</span>'}</div>`,true)}
 
 const TERMO_PADRAO={
+ alta:'Eu, {nome}, CPF {cpf}, declaro que recebi da {clinica} a alta do tratamento de {procedimento}, encerrado em {data}. Fui informada(o) do resultado alcançado, das orientações de manutenção e dos cuidados em casa, e de que posso retornar a qualquer momento se surgir uma nova queixa. Declaro que o tratamento foi concluído conforme combinado e que não há sessões pendentes a realizar.',
+ abandono:'A {clinica} registra, em {data}, a interrupção do tratamento de {procedimento} de {nome}, CPF {cpf}, por decisão da(o) própria(o) paciente, antes da conclusão indicada pela profissional responsável. A paciente foi orientada sobre a importância de concluir o tratamento e sobre as consequências da interrupção, entre elas o retorno ou o agravamento da queixa, e optou por não dar continuidade. O resultado do tratamento interrompido não pode ser garantido. As sessões não realizadas permanecem à disposição conforme o contrato.',
  consentimento:'Eu, {nome}, CPF {cpf}, declaro que fui informada(o) pela {clinica} sobre o procedimento {procedimento}, seus objetivos, cuidados antes e depois, possíveis reações e resultados esperados, que podem variar de pessoa para pessoa. Informei corretamente meu histórico de saúde e autorizo a realização do procedimento.',
  imagem:'Eu, {nome}, CPF {cpf}, autorizo a {clinica} a usar as fotos e vídeos do meu tratamento ({procedimento}) em suas redes sociais, site e materiais de divulgação, sem identificação do meu nome, de forma gratuita. Posso cancelar esta autorização a qualquer momento, por escrito, valendo para publicações futuras.'};
 function pTermos(p){const L=S.termos.filter(t=>t.pacienteId===p.id).sort((a,b)=>(b.data||'').localeCompare(a.data||''));
- return `<div class="card"><div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px"><h2 style="margin:0">Termos assinados</h2><span style="display:flex;gap:8px"><button class="btn sm" onclick="termoForm('${p.id}','consentimento')">Termo de consentimento</button><button class="btn soft sm" onclick="termoForm('${p.id}','imagem')">Autorização de uso de imagem</button></span></div>
- <table class="tbl mini"><tr><th>Data</th><th>Termo</th><th>Procedimento</th><th>Assinatura</th><th></th></tr>${L.map(t=>`<tr><td>${br(t.data)}</td><td>${t.tipo==='imagem'?'Autorização de uso de imagem':'Termo de consentimento'}${t.revogado?' <span class="badge b-bad">Revogado</span>':''}</td><td>${esc(t.procedimento||'')}</td><td>${t.assinatura?`<span class="badge b-ok">${t.remoto?'Assinado pelo celular':'Assinado na tela'}</span>`:t.remoto?'<span class="badge b-warn">Aguardando assinatura pelo celular</span>':'<span class="badge b-warn">Sem assinatura</span>'}</td><td style="white-space:nowrap">${t.assinatura?`<button class="lnk" onclick="termoComprovante('${t.id}')">Comprovante</button> `:''}<button class="lnk" onclick="termoImprimir('${t.id}')">Imprimir</button>${t.tipo==='imagem'&&!t.revogado?` <button class="lnk" style="color:var(--bad)" onclick="termoRevogar('${t.id}')">Revogar</button>`:''}</td></tr>`).join('')||'<tr><td colspan="5" class="mini-empty">Nenhum termo.</td></tr>'}</table>
+ return `<div class="card"><div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px"><h2 style="margin:0">Termos assinados</h2><span style="display:flex;gap:8px"><button class="btn sm" onclick="termoForm('${p.id}','consentimento')">Termo de consentimento</button><button class="btn ghost sm" onclick="termoForm('${p.id}','alta')">Alta do tratamento</button><button class="btn ghost sm" onclick="termoForm('${p.id}','abandono')">Abandono do tratamento</button><button class="btn soft sm" onclick="termoForm('${p.id}','imagem')">Autorização de uso de imagem</button></span></div>
+ <table class="tbl mini"><tr><th>Data</th><th>Termo</th><th>Procedimento</th><th>Assinatura</th><th></th></tr>${L.map(t=>`<tr><td>${br(t.data)}</td><td>${esc(TERMO_NOME[t.tipo]||t.tipo)}${t.revogado?' <span class="badge b-bad">Revogado</span>':''}</td><td>${esc(t.procedimento||'')}</td><td>${t.assinatura?`<span class="badge b-ok">${t.remoto?'Assinado pelo celular':'Assinado na tela'}</span>`:t.remoto?'<span class="badge b-warn">Aguardando assinatura pelo celular</span>':'<span class="badge b-warn">Sem assinatura</span>'}</td><td style="white-space:nowrap">${t.assinatura?`<button class="lnk" onclick="termoComprovante('${t.id}')">Comprovante</button> `:''}<button class="lnk" onclick="termoImprimir('${t.id}')">Imprimir</button>${t.tipo==='imagem'&&!t.revogado?` <button class="lnk" style="color:var(--bad)" onclick="termoRevogar('${t.id}')">Revogar</button>`:''}</td></tr>`).join('')||'<tr><td colspan="5" class="mini-empty">Nenhum termo.</td></tr>'}</table>
  <p class="sub" style="margin-top:10px">Os textos padrão podem ser ajustados em Configurações. Revise com o seu advogado antes de usar.${L.some(t=>t.remoto&&!t.assinatura)?' <button class="lnk" onclick="termosVerificar(false)">Verificar assinaturas pelo celular</button>':''}</p></div>${(setTimeout(()=>termosVerificar(true),300),'')}`}
-function termoTexto(tipo,p,proc){const tpl=(tipo==='imagem'?S.config.termoImagem:S.config.termoConsentimento)||TERMO_PADRAO[tipo];return fillMsg(tpl,{nome:p.nome,cpf:fmtCPF(p.cpf)||'não informado',clinica:S.config.clinica,procedimento:proc||'',data:br(todayISO())})}
+const TERMO_NOME={imagem:'Autorização de uso de imagem',consentimento:'Termo de consentimento',alta:'Alta do tratamento',abandono:'Registro de abandono do tratamento'};
+function termoTexto(tipo,p,proc){const tpl=(tipo==='imagem'?S.config.termoImagem:tipo==='consentimento'?S.config.termoConsentimento:S.config['termo'+tipo])||TERMO_PADRAO[tipo];return fillMsg(tpl,{nome:p.nome,cpf:fmtCPF(p.cpf)||'não informado',clinica:S.config.clinica,procedimento:proc||'',data:br(todayISO())})}
 function termoForm(pid,tipo){const p=pac(pid);UI.termo={pid,tipo};
- openModal(`<h3>${tipo==='imagem'?'Autorização de uso de imagem':'Termo de consentimento'}</h3><div class="fgrid"><label class="full"><span>Procedimento ou tratamento</span><input id="tmProc" list="dlServ" oninput="$('#tmTxt').value=termoTexto('${tipo}',pac('${pid}'),this.value)"></label><label class="full"><span>Texto do termo</span><textarea id="tmTxt" rows="7">${esc(termoTexto(tipo,p,''))}</textarea></label></div>
+ openModal(`<h3>${esc(TERMO_NOME[tipo]||'Termo')}</h3><div class="fgrid"><label class="full"><span>Procedimento ou tratamento</span><input id="tmProc" list="dlServ" oninput="$('#tmTxt').value=termoTexto('${tipo}',pac('${pid}'),this.value)"></label><label class="full"><span>Texto do termo</span><textarea id="tmTxt" rows="7">${esc(termoTexto(tipo,p,''))}</textarea></label></div>
  <p class="sub" style="margin:10px 0 6px">Assinatura de ${esc(p.nome)} (use o dedo ou o mouse):</p><canvas id="tmCv" width="640" height="170" style="width:100%;max-width:640px;border:1px dashed var(--line);border-radius:10px;background:#fff;touch-action:none"></canvas>
  <div class="mact"><button class="btn ghost" style="margin-right:auto" onclick="const c=$('#tmCv');c.getContext('2d').clearRect(0,0,c.width,c.height);c.dataset.ok=''">Limpar assinatura</button><button class="btn ghost" onclick="closeModal()">Cancelar</button>${NV.ativa?`<button class="btn soft" onclick="termoRemoto('${pid}','${tipo}')">Enviar para assinar pelo celular</button>`:''}<button class="btn" onclick="termoSalvar()">Salvar termo</button></div>`,true);
  const c=$('#tmCv'),x=c.getContext('2d');x.lineWidth=2.4;x.lineCap='round';x.strokeStyle='#111';let on=false;const pt=e=>{const r=c.getBoundingClientRect();return [(e.clientX-r.left)*c.width/r.width,(e.clientY-r.top)*c.height/r.height]};
  c.onpointerdown=e=>{on=true;c.setPointerCapture(e.pointerId);const [a,b]=pt(e);x.beginPath();x.moveTo(a,b)};c.onpointermove=e=>{if(!on)return;const [a,b]=pt(e);x.lineTo(a,b);x.stroke();c.dataset.ok='1'};c.onpointerup=()=>{on=false}}
+/* Alta e abandono deixam marca na ficha e na evolucao, nao so no termo.
+   Sem isso o paciente liberado continuaria aparecendo na lista de quem sumiu,
+   e a clinica nao teria como provar que o tratamento foi interrompido por
+   decisao dele, que e justamente a discussao que aparece depois. */
+function altaRegistrar(pid,tipo){
+ const p=pac(pid);if(!p)return;
+ const nome=tipo==='alta'?'alta do tratamento':'abandono do tratamento';
+ formModal(tipo==='alta'?'Dar alta do tratamento':'Registrar abandono do tratamento',[
+  {k:'data',l:'Data',type:'date',req:true},
+  {k:'procedimento',l:'Tratamento',list:'dlServ',full:true,req:true},
+  {k:'profissional',l:'Profissional responsável',list:'dlProf'},
+  {k:'motivo',l:tipo==='alta'?'Resultado alcançado e orientações de manutenção':'O que a paciente informou, e o que foi orientado',type:'textarea',rows:5,full:true,req:true},
+  {k:'termo',l:'Gerar o documento para o paciente assinar',type:'select',opts:['Sim','Não']}
+ ],{data:todayISO(),profissional:S.config.responsavel||'',termo:'Sim'},o=>{
+  p.alta={tipo:tipo,data:o.data,procedimento:str(o.procedimento),profissional:str(o.profissional),motivo:str(o.motivo),registradoPor:nomeUsuario(),em:new Date().toISOString()};
+  S.evolucoes.push({id:uid(),pacienteId:pid,data:o.data,profissional:str(o.profissional),
+   texto:(tipo==='alta'?'ALTA DO TRATAMENTO':'ABANDONO DO TRATAMENTO')+' · '+str(o.procedimento)+'\n\n'+str(o.motivo)});
+  save();
+  if(o.termo!=='Não'){setTimeout(()=>{termoForm(pid,tipo);const i=$('#tmProc');if(i){i.value=str(o.procedimento);$('#tmTxt').value=termoTexto(tipo,p,str(o.procedimento))}},120)}
+  toast(tipo==='alta'?'Alta registrada na ficha e na evolução.':'Abandono registrado na ficha e na evolução.');
+ });
+}
+function altaDesfazer(pid){
+ const p=pac(pid);if(!p||!p.alta)return;
+ confirmModal('Retirar o registro de '+(p.alta.tipo==='alta'?'alta':'abandono')+'? A evolução e o termo assinado continuam guardados, porque são prova do que aconteceu.',()=>{delete p.alta},'Retirar');
+}
+function altaFaixa(p){
+ if(!p.alta||!p.alta.tipo)return '';
+ const a=p.alta,ok=a.tipo==='alta';
+ return `<div class="note ${ok?'':'warn'}" style="margin:0 0 12px"><b>${ok?'Alta do tratamento':'Abandono do tratamento'}</b> em ${br(a.data)}${a.procedimento?' · '+esc(a.procedimento):''}${a.profissional?' · '+esc(a.profissional):''}
+ ${a.motivo?`<div style="margin-top:6px;white-space:pre-wrap">${esc(a.motivo)}</div>`:''}
+ <div style="margin-top:8px"><button class="lnk" onclick="altaDesfazer('${p.id}')">Retirar este registro</button></div></div>`;
+}
 async function termoSalvar(){const T=UI.termo;const c=$('#tmCv');const txt=$('#tmTxt').value.trim();if(!txt){toast('O texto do termo está vazio');return}
  const h=await sha256Hex(txt);const ag=(navigator.userAgent||'').slice(0,300);
  S.termos.push({id:uid(),pacienteId:T.pid,tipo:T.tipo,procedimento:$('#tmProc').value.trim(),texto:txt,data:todayISO(),hora:new Date().toTimeString().slice(0,5),assinatura:c.dataset.ok?c.toDataURL('image/png'):'',registradoPor:nomeUsuario(),hash:h,agente:ag,assinadoEm:new Date().toISOString()});closeModal();save();render();toast(c.dataset.ok?'Termo assinado e salvo':'Termo salvo sem assinatura')}
@@ -4915,7 +4988,7 @@ function agNovo(a,s){if(s==='Desmarcado'||s==='Faltou')return false;const k=a.da
  const hist=c=>S[c].some(x=>x.pacienteId===a.pacienteId&&((x.data||x.vencimento||x.pagamento||'')<a.data)&&(x.data||x.vencimento||x.pagamento));
  return !hist('evolucoes')&&!hist('tratamentos')&&!S.lancamentos.some(l=>l.pacienteId===a.pacienteId&&l.pagamento&&l.pagamento<a.data)}
 /* ============ Atualização: aviso com botão Atualizar agora ============ */
-const VERSAO_APP='1.39.0';const URL_VERSAO_JSON='https://raw.githubusercontent.com/TheIgor12/blacksolutions/main/versao.json';
+const VERSAO_APP='1.39.1';const URL_VERSAO_JSON='https://raw.githubusercontent.com/TheIgor12/blacksolutions/main/versao.json';
 const numV=v=>String(v||'0').split(/\D+/).filter(Boolean).map(Number);
 function versaoMaior(a,b){const x=numV(a),y=numV(b);for(let i=0;i<Math.max(x.length,y.length);i++){const d=(x[i]||0)-(y[i]||0);if(d)return d>0}return false}
 const ATU={nova:null,timer:null};
@@ -5730,7 +5803,7 @@ function telaCopiaNaoAutorizada(){
   if(!origemAutorizada()){telaCopiaNaoAutorizada();return}}
  try{navigator.storage&&navigator.storage.persist&&navigator.storage.persist()}catch(e){}
  try{fonteAplicar()}catch(e){}
- try{if(/^https?:/.test(location.protocol)&&'serviceWorker' in navigator&&!window.pywebview)navigator.serviceWorker.register('./sw.js?v=1.39.0',{updateViaCache:'none'}).then(r=>r.update()).catch(()=>{})}catch(e){}
+ try{if(/^https?:/.test(location.protocol)&&'serviceWorker' in navigator&&!window.pywebview)navigator.serviceWorker.register('./sw.js?v=1.39.1',{updateViaCache:'none'}).then(r=>r.update()).catch(()=>{})}catch(e){}
  if(NV.ativa){
   if(!window.supabase||!window.supabase.createClient){UI.auth={modo:'offline',temCache:!!(await DB.get('ultimo'))};render();return}
   NV.sb=window.supabase.createClient(NUVEM.url,NUVEM.chave,{auth:{persistSession:true,autoRefreshToken:true}});
@@ -5781,31 +5854,31 @@ function agProf(nome){UI.profOff={};if(nome){S.profissionais.forEach(p=>{if(norm
 function menuProfs(){const L=az(S.profissionais.filter(p=>p.ativo!==false));if(!L.length)return '';const sel=UI.view==='agenda'?(UI.agProf||''):null;
  return `<div class="msec">AGENDA POR PROFISSIONAL</div><button class="${sel===''&&UI.view==='agenda'?'on':''}" onclick="agProf('')">${ico('cal',18)} Todos os profissionais</button>${L.map(p=>`<button class="${sel!=null&&norm(sel)===norm(p.nome)?'on':''}" onclick="agProf(${esc(JSON.stringify(p.nome))})"><span style="display:inline-block;width:12px;height:12px;border-radius:50%;background:${esc(p.cor||'#0a4bde')};margin:0 3px;flex:none"></span> ${esc(p.nome)}</button>`).join('')}`}
 </script>
-<script src="./bf-clinical.js?v=1.39.0"></script>
-<script src="./bf-fiscal-advanced.js?v=1.39.0"></script>
-<script src="./bf-nfse-139.js?v=1.39.0"></script>
-<script src="./bf-receituario.js?v=1.39.0"></script>
-<script src="./bf-cadastro-fiscal.js?v=1.39.0"></script>
-<script src="./bf-context-actions.js?v=1.39.0"></script>
-<script src="./bf-integrity-audit.js?v=1.39.0"></script>
-<script src="./bf-blackpay-integrated.js?v=1.39.0"></script>
-<script src="./bf-tati-help.js?v=1.39.0"></script>
-<script src="./bf-mobile-photos.js?v=1.39.0"></script>
-<script src="./bf-documents.js?v=1.39.0"></script>
-<script src="./bf-workflow-123.js?v=1.39.0"></script>
-<script src="./bf-workflow-124.js?v=1.39.0"></script>
-<script>const bfMobileCss=document.createElement("link");bfMobileCss.rel="stylesheet";bfMobileCss.href="./bf-mobile-126.css?v=1.39.0";document.head.appendChild(bfMobileCss);</script>
-<script src="./bf-mobile-126.js?v=1.39.0"></script>
-<script>const bfNavCss=document.createElement("link");bfNavCss.rel="stylesheet";bfNavCss.href="./bf-navegacao-128.css?v=1.39.0";document.head.appendChild(bfNavCss);</script>
-<script src="./bf-navegacao-128.js?v=1.39.0"></script>
-<script src="./bf-barbearia-129.js?v=1.39.0"></script>
-<script src="./bf-catalogos-130.js?v=1.39.0"></script>
-<script src="./bf-sincronia-138.js?v=1.39.0"></script>
-<script src="./bf-cobranca-138.js?v=1.39.0"></script>
-<script src="./bf-assinante-138.js?v=1.39.0"></script>
-<script>["./bf-assinante-135.css?v=1.39.0","./bf-assinante-138.css?v=1.39.0"].forEach(function(h){var l=document.createElement("link");l.rel="stylesheet";l.href=h;document.head.appendChild(l)});</script>
-<script src="./bf-assinante-135.js?v=1.39.0"></script>
-<script src="./bf-tutorial-136.js?v=1.39.0"></script>
-<script src="./bf-documentos-137.js?v=1.39.0"></script>
+<script src="./bf-clinical.js?v=1.39.1"></script>
+<script src="./bf-fiscal-advanced.js?v=1.39.1"></script>
+<script src="./bf-nfse-139.js?v=1.39.1"></script>
+<script src="./bf-receituario.js?v=1.39.1"></script>
+<script src="./bf-cadastro-fiscal.js?v=1.39.1"></script>
+<script src="./bf-context-actions.js?v=1.39.1"></script>
+<script src="./bf-integrity-audit.js?v=1.39.1"></script>
+<script src="./bf-blackpay-integrated.js?v=1.39.1"></script>
+<script src="./bf-tati-help.js?v=1.39.1"></script>
+<script src="./bf-mobile-photos.js?v=1.39.1"></script>
+<script src="./bf-documents.js?v=1.39.1"></script>
+<script src="./bf-workflow-123.js?v=1.39.1"></script>
+<script src="./bf-workflow-124.js?v=1.39.1"></script>
+<script>const bfMobileCss=document.createElement("link");bfMobileCss.rel="stylesheet";bfMobileCss.href="./bf-mobile-126.css?v=1.39.1";document.head.appendChild(bfMobileCss);</script>
+<script src="./bf-mobile-126.js?v=1.39.1"></script>
+<script>const bfNavCss=document.createElement("link");bfNavCss.rel="stylesheet";bfNavCss.href="./bf-navegacao-128.css?v=1.39.1";document.head.appendChild(bfNavCss);</script>
+<script src="./bf-navegacao-128.js?v=1.39.1"></script>
+<script src="./bf-barbearia-129.js?v=1.39.1"></script>
+<script src="./bf-catalogos-130.js?v=1.39.1"></script>
+<script src="./bf-sincronia-138.js?v=1.39.1"></script>
+<script src="./bf-cobranca-138.js?v=1.39.1"></script>
+<script src="./bf-assinante-138.js?v=1.39.1"></script>
+<script>["./bf-assinante-135.css?v=1.39.1","./bf-assinante-138.css?v=1.39.1"].forEach(function(h){var l=document.createElement("link");l.rel="stylesheet";l.href=h;document.head.appendChild(l)});</script>
+<script src="./bf-assinante-135.js?v=1.39.1"></script>
+<script src="./bf-tutorial-136.js?v=1.39.1"></script>
+<script src="./bf-documentos-137.js?v=1.39.1"></script>
 </body>
 </html>

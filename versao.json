@@ -1,4 +1,4 @@
 {
-  "versao": "1.39.0",
-  "novidades": "Agora dá para emitir NFS-e de dentro do sistema. Na tela NFS-e, cada rascunho ganhou o botão Emitir NFS-e: o sistema confere o cadastro fiscal, avisa exatamente o que falta se faltar algo, transmite pelo integrador homologado e traz de volta o número da nota, o código de verificação e os links do PDF e do XML. Se a prefeitura recusar, o motivo aparece como veio de lá, sem reescrita. Também entraram o acompanhamento de notas em processamento e o cancelamento com justificativa. A emissão começa em homologação, sem validade fiscal, e só passa para produção depois do teste de ponta a ponta."
+  "versao": "1.39.1",
+  "novidades": "Novo relatório Quem não vem há tantos dias, em Relatórios, Pacientes. Você digita o número de dias, 365 ou o que quiser, e ele lista todos os pacientes que não aparecem na clínica há esse tempo, sem olhar procedimento nenhum. O procedimento aparece só como informação na coluna, nunca como filtro. Quem já tem horário marcado fica de fora por padrão, e quem nunca veio entra se você marcar a caixa. Na Evolução clínica entraram os botões Dar alta e Registrar abandono: eles gravam na ficha, lançam na evolução e geram o documento para o paciente assinar, no aparelho ou pelo celular dele. Quem recebeu alta ou abandonou aparece identificado no relatório, para não ser cobrado de retorno à toa."
 }
