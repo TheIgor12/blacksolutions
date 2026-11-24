@@ -1,4 +1,4 @@
 {
-  "versao": "1.38.4",
-  "novidades": "Auditoria de celular: a página não rola mais para os lados em nenhuma tela. A causa era o botão Agendar, que não cabia na largura do celular, e junto ia o botão flutuante de ajuda, que ficava preso fora da tela e aumentava a rolagem. Testadas 840 combinações de tela, segmento e largura, de 320 a 768 pixels, sem nenhum estouro. No Cadastro fiscal, o botão Consultar CNPJ passou a trazer de verdade os dados da Receita Federal: razão social, situação, município, código IBGE, CNAE e endereço, preenchendo os campos sozinho para você apenas conferir."
+  "versao": "1.39.0",
+  "novidades": "Agora dá para emitir NFS-e de dentro do sistema. Na tela NFS-e, cada rascunho ganhou o botão Emitir NFS-e: o sistema confere o cadastro fiscal, avisa exatamente o que falta se faltar algo, transmite pelo integrador homologado e traz de volta o número da nota, o código de verificação e os links do PDF e do XML. Se a prefeitura recusar, o motivo aparece como veio de lá, sem reescrita. Também entraram o acompanhamento de notas em processamento e o cancelamento com justificativa. A emissão começa em homologação, sem validade fiscal, e só passa para produção depois do teste de ponta a ponta."
 }
