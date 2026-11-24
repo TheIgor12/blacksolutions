@@ -1,4 +1,4 @@
 {
-  "versao": "1.44.0",
-  "novidades": "As seis vistas do pé deixaram de ser desenho de traço. Peito do pé, sola, lado de fora, lado de dentro, ponta dos dedos e calcanhar passaram a ser o próprio modelo tridimensional fotografado de frente, com pele, unhas e sombra. O lugar que a profissional toca é descoberto por um mapa de regiões gerado junto com a figura, pela mesma câmera e no mesmo instante, então o ponto cai exatamente na região anatômica certa, e não numa aproximação desenhada à mão. Ligando Zonas em cor, a grade do mapeamento podológico aparece colada na figura, zona por zona. O modelo também ganhou unhas nos cinco dedos, pele e iluminação de estúdio. As seis imagens e os seis mapas somam duzentos kilobytes, e o celular continua sem baixar o modelo tridimensional."
+  "versao": "1.45.0",
+  "novidades": "Pés Interativos com modelo anatômico 3D, giro livre, zoom e dedos numerados de 1 a 5. As marcações ficam ligadas à ficha do paciente, preservando o mapa anterior, as vistas 2D e o fluxo da evolução clínica."
 }

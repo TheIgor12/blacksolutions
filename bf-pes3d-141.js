@@ -1,357 +1,359 @@
-/* BlackFlow 1.41.0 — pé em três dimensões, só no computador.
-
-   Por que existe
-   --------------
-   As seis vistas planas registram tudo o que o prontuário precisa. Este
-   módulo é para quem está olhando de perto: gira o pé com o mouse, em volta
-   inteira, e marca o ponto exato onde está tratando.
-
-   De onde vem o pé
-   ----------------
-   A malha é gerada aqui, por código, a partir de seções transversais ao longo
-   do pé, como fatias. Não é modelo comprado nem baixado: é nosso, sem licença
-   de terceiro e sem arquivo pesado para carregar.
-
-   Isso traz a vantagem que decide tudo: na hora de gerar, cada vértice recebe
-   o nome da região anatômica. Então o clique na malha devolve "calcâneo" ou
-   "cabeça do 1º metatarso" com a mesma palavra da vista plana, em vez de uma
-   coordenada solta que alguém teria de interpretar depois.
-
-   O que ele não é
-   ---------------
-   Não é anatomia de atlas. É um pé reconhecível, com as regiões nos lugares
-   certos, feito para marcar. Quem identifica e interpreta o achado continua
-   sendo a profissional.
-
-   Onde roda
-   ---------
-   Só com tela de 1024 pixels para cima, ponteiro fino, que é mouse ou caneta,
-   e WebGL disponível. Faltando qualquer um dos três, o sistema fica no
-   desenho plano, que funciona em tudo. */
+/* BlackFlow Pés Interativos. Malha anatômica CC0 (veja pes/MODELO-ANATOMICO.md).
+   A malha é genérica; nenhum arquivo 3D contém dados de pacientes. */
 (function () {
   'use strict';
   if (window.__bfPes3d141) return;
   window.__bfPes3d141 = true;
-
-  var THREE = null, carregando = null;
-  var cena, rend, cam, grupo, malha, unhasMesh, luzes, animando = false, alvo = null;
-  var pinos = [], raios = null, aoTocar = null, destruidor = null;
-
-  /* ------------------------------------------------------------ cabimento */
-  window.bfPes3dCabe = function () {
-    try {
-      if (!window.matchMedia) return false;
-      if (!matchMedia('(min-width:1024px)').matches) return false;
-      if (!matchMedia('(pointer:fine)').matches) return false;
-      var c = document.createElement('canvas');
-      return !!(c.getContext('webgl2') || c.getContext('webgl'));
-    } catch (e) { return false; }
+  var base = new URL('.', document.currentScript.src);
+  var MALHA = 'anatomico-1', app = null, carregando = null, geracao = 0, suporta;
+  var ANG = {
+    dorsal: [0, Math.PI / 2], plantar: [0, -Math.PI / 2],
+    lateral: [-Math.PI / 2, 0.12], medial: [Math.PI / 2, 0.12],
+    dedos: [0, 0.12], calcanhar: [Math.PI, 0.12]
   };
-
-  function carregarThree() {
-    if (THREE) return Promise.resolve(THREE);
-    if (carregando) return carregando;
-    carregando = import('./vendor/three.module.min.js')
-      .then(function (m) { THREE = m; return m; })
-      .catch(function (e) { carregando = null; throw e; });
+  var DEDOS = [
+    [-27, 207, 9, 8, 175, 217],
+    [-4, 205, 6, 7, 183, 214],
+    [10, 197, 5.7, 6.5, 177, 205],
+    [22, 186, 5.0, 6, 168, 195],
+    [33, 177, 4.9, 6, 159, 185]
+  ];
+  var refs = { fu1:'u1',fu2:'u2',fu3:'u3',fu4:'u4',fu5:'u5',
+    l5:'d5',m1:'d1',ldor:'dmed',mdor:'dmed',fant:'dant',cmm:'mmal',cml:'lmal' };
+  window.bfPes3dMalha = MALHA;
+  function regiao(p, n) {
+    var u = -p.x, lado = -n.x, z = p.z, y = p.y;
+    var idx = 0, melhor = Infinity;
+    DEDOS.forEach(function (d, i) {
+      var dist = Math.abs(u - d[0]);
+      if (dist < melhor) { melhor = dist; idx = i; }
+    });
+    var d = DEDOS[idx], i = idx + 1;
+    if (z > d[4] - 5 && z < d[4] + 9 && Math.abs(lado) > .22) {
+      for (var j = 0; j < 4; j++) {
+        var gap = (DEDOS[j][0] + DEDOS[j + 1][0]) / 2;
+        if (Math.abs(u - gap) < 2.5 && z > (DEDOS[j][4] + DEDOS[j+1][4]) / 2 - 3) return 'i' + (j + 1);
+      }
+    }
+    if (z > d[4]) {
+      if (n.y > .23 && Math.pow((u-d[0])/d[2],4) + Math.pow((z-d[1])/d[3],4) < 1.24) return 'u' + i;
+      if (n.y < -.24) return 'p' + i;
+      if (n.z > .55 && z > d[5]-9) return 'f' + i;
+      return 'd' + i;
+    }
+    if (n.y < -.40) {
+      if (z < 53) return 'calc';
+      if (z > 121) return 'meta';
+      return Math.abs(lado) > .5 ? (u < 0 ? 'bm' : 'bl') : 'arco';
+    }
+    if (z < 30 && n.z < -.45) return y > 57 ? 'caq' : (y < 11 ? 'cfis' : 'cpos');
+    if (y > 43 && y < 85 && z < 65 && Math.abs(lado) > .65) return u < 0 ? 'mmal' : 'lmal';
+    if (n.y > .32 || y > 72) return z < 59 ? 'torn' : (z > 125 ? 'dant' : 'dmed');
+    if (z < 55) return u < 0 ? 'mcal' : 'lcal';
+    if (z < 127) return u < 0 ? 'marc' : 'lmed';
+    return u < 0 ? 'mant' : 'lant';
+  }
+  function bytes(s) { return Uint8Array.from(atob(s), function (x) { return x.charCodeAt(0); }); }
+  function carregar() {
+    if (!carregando) carregando = Promise.all([
+      import(new URL('vendor/three.module.min.js', base).href),
+      fetch(new URL('pes/modelo-anatomico-1.json', base)).then(function (r) {
+        if (!r.ok) throw new Error('Modelo indisponível'); return r.json();
+      })
+    ]).then(function (pair) {
+      var T = pair[0], d = pair[1], geo = new T.BufferGeometry();
+      var p = bytes(d.p), i = bytes(d.i), c = bytes(d.c);
+      var pi = new DataView(p.buffer), ii = new DataView(i.buffer);
+      var pos = Float32Array.from({length:p.length/2}, function (_, n) { return pi.getInt16(n*2,true)/100; });
+      var idx = Uint16Array.from({length:i.length/2}, function (_, n) { return ii.getUint16(n*2,true); });
+      var color = new Float32Array(c.length);
+      for (var n = 0; n < c.length; n++) {
+        var t = c[n]/255;
+        color[n] = t <= .04045 ? t / 12.92 : Math.pow((t+.055)/1.055,2.4);
+      }
+      geo.setAttribute('position',new T.BufferAttribute(pos,3));
+      geo.setAttribute('color',new T.BufferAttribute(color,3));
+      geo.setIndex(new T.BufferAttribute(idx,1));
+      geo.computeVertexNormals();
+      geo.computeBoundingSphere();
+      var g = geo.attributes, points = {}, centers = {}, P = new T.Vector3(), N = new T.Vector3();
+      for (var k = 0; k < g.position.count; k++) {
+        P.fromBufferAttribute(g.position, k); N.fromBufferAttribute(g.normal,k);
+        var r = regiao(P,N);
+        (points[r] || (points[r] = [])).push({p:P.clone(), n:N.clone()});
+        (centers[r] || (centers[r] = new T.Vector3())).add(P);
+      }
+      Object.keys(points).forEach(function (r) { centers[r].divideScalar(points[r].length); });
+      return { T:T, geo:geo, unhas:desenharUnhas(T,geo), points:points, centers:centers };
+    }).catch(function (e) { carregando = null; throw e; });
     return carregando;
   }
-
-  /* A malha vem de bf-pe-malha.js, que não depende de nada e também é usada
-     pelo gerador das imagens das vistas planas. */
-  function malhaDados() { return window.bfPeMalha(); }
-
-  window.bfPes3dCentros = function () { return malhaDados().centros; };
-
-  /* ------------------------------------------------------------- cena */
-  var EST = { az: 0.85, el: 0.48, dist: 420, arrasto: false, moveu: 0, lx: 0, ly: 0, espelho: false };
-
-  var ANGULOS = {
-    dorsal: { az: 0, el: 1.42 }, plantar: { az: 0, el: -1.42 },
-    lateral: { az: 1.57, el: 0.12 }, medial: { az: -1.57, el: 0.12 },
-    dedos: { az: 0, el: 0.06 }, calcanhar: { az: 3.14, el: 0.18 }
+  // Lâminas das unhas conformadas sobre a superfície. A marcação continua
+  // usando a mesma malha e os mesmos códigos anatômicos da ficha.
+  function desenharUnhas(T,geo) {
+    var skin = new T.Mesh(geo), ray = new T.Raycaster(), N = 24, M = 4;
+    var ps=[], cs=[], is=[], valid=[], dir=new T.Vector3(0,-1,0);
+    skin.updateMatrixWorld();
+    DEDOS.forEach(function (d) {
+      var start = ps.length/3;
+      for (var ring=0;ring<=M;ring++) {
+        for (var j=0;j<N;j++) {
+          var theta=j*Math.PI*2/N, r=ring/M, C=Math.cos(theta), S=Math.sin(theta);
+          var xx = -(d[0]+Math.sign(C)*Math.pow(Math.abs(C),.72)*r*d[2]*.82);
+          var zz = d[1]+Math.sign(S)*Math.pow(Math.abs(S),.72)*r*d[3]*.88;
+          ray.set(new T.Vector3(xx,130,zz),dir);
+          var hit=ray.intersectObject(skin,false)[0];
+          valid.push(!!hit && hit.normal.y>.12);
+          ps.push(xx,hit ? hit.point.y+.20+.42*(1-r*r) : 0,zz);
+          var ponta=Math.min(1,Math.max(0,(zz-d[1])/d[3]*1.85-.26));
+          var sem=new T.Color(0xd49c8a).lerp(new T.Color(0xf3d6c1),ponta);
+          cs.push(sem.r,sem.g,sem.b);
+        }
+      }
+      function tri(a,b,c) { if (valid[a]&&valid[b]&&valid[c]) is.push(a,b,c); }
+      for (var row=0; row<M; row++) {
+        for (var col=0; col<N; col++) {
+          var a=start+row*N+col,b=start+(row+1)*N+col;
+          var c0=start+(row+1)*N+(col+1)%N,d0=start+row*N+(col+1)%N;
+          tri(a,b,c0); if (row) tri(a,c0,d0);
+        }
+      }
+    });
+    skin.material.dispose();
+    var nails=new T.BufferGeometry();
+    nails.setAttribute('position',new T.Float32BufferAttribute(ps,3));
+    nails.setAttribute('color',new T.Float32BufferAttribute(cs,3));
+    nails.setIndex(is); nails.computeVertexNormals(); return nails;
+  }
+  function nearest(d, r, previous) {
+    var key = refs[r] || r, arr = d.points[key];
+    if (!arr) return null;
+    var c = previous || d.centers[key], best, min = Infinity;
+    arr.forEach(function (v) {
+      var len = v.p.distanceToSquared(c);
+      if (len < min) { min = len; best = v; }
+    });
+    return best;
+  }
+  window.bfPes3dCabe = function () {
+    if (suporta !== undefined) return suporta;
+    try {
+      var ctx = document.createElement('canvas').getContext('webgl2');
+      suporta = !!ctx;
+      var ext = ctx && ctx.getExtension('WEBGL_lose_context');
+      if (ext) ext.loseContext();
+    } catch (_) { suporta = false; }
+    return suporta;
   };
-  /* Mover o pé na tela, além de girar, como pede quem está olhando de perto. */
-  var MODO = 'girar', PAN = { x: 0, y: 0 };
-  window.bfPes3dModo = function (m) { MODO = (m === 'mover') ? 'mover' : 'girar'; };
-  window.bfPes3dGrade = function () {
-    if (!malha) return;
-    malha.material.wireframe = !malha.material.wireframe;
-  };
-  window.bfPes3dGirar = function (passo) {
-    EST.az += passo * (Math.PI / 2);
-    posicionarCamera();
-  };
-  window.bfPes3dAngulo = function (nome) {
-    var a = ANGULOS[nome]; if (!a) return;
-    EST.az = a.az; EST.el = a.el; EST.dist = DIST_BASE; PAN.x = 0; PAN.y = 0;
-    posicionarCamera();
-  };
-  window.bfPes3dReenquadrar = function () { EST.dist = DIST_BASE; PAN.x = 0; PAN.y = 0; posicionarCamera(); };
-
-  /* O enquadramento sai da esfera que contém a malha inteira, e não de um
-     número escolhido no olho: assim o pé cabe na tela em qualquer ângulo, de
-     cima, de lado ou de trás, sem cortar os dedos. */
-  var ALVO = { x: 0, y: 40, z: 95 }, DIST_BASE = 420;
-  function enquadrar(geo) {
-    geo.computeBoundingSphere();
-    var b = geo.boundingSphere;
-    if (!b) return;
-    ALVO = { x: b.center.x, y: b.center.y, z: b.center.z };
-    var meio = (cam.fov * Math.PI / 180) / 2;
-    DIST_BASE = (b.radius / Math.sin(meio)) * 1.08;
-    EST.dist = DIST_BASE;
-  }
-  function posicionarCamera() {
-    if (!cam) return;
-    var ce = Math.cos(EST.el), se = Math.sin(EST.el);
-    var ax = ALVO.x + PAN.x, ay = ALVO.y + PAN.y;
-    cam.position.set(
-      ax + Math.sin(EST.az) * ce * EST.dist,
-      ay + se * EST.dist,
-      ALVO.z + Math.cos(EST.az) * ce * EST.dist
-    );
-    cam.up.set(0, 1, 0);
-    if (Math.abs(EST.el) > 1.40) cam.up.set(0, 0, EST.el > 0 ? -1 : 1);
-    cam.lookAt(ax, ay, ALVO.z);
-  }
-
-  /* -------------------------------------------------------- texturas */
-  /* A pele é desenhada aqui, num quadro de 512 por 512: tom de base, variação
-     em manchas e um granulado fino. Não é foto de ninguém, não pesa no
-     carregamento e não tem licença de terceiro. */
-  var TEX = {};
-  /* chapa, e não quadro: já existe um quadro() que é o laço de desenho da
-     cena, e dois nomes iguais fizeram a textura chamar o laço por engano. */
-  function chapa(n) {
-    var c = document.createElement('canvas'); c.width = n; c.height = n;
-    return { c: c, g: c.getContext('2d') };
-  }
-  function texturaPele() {
-    if (TEX.pele) return TEX.pele;
-    var q = chapa(512), g = q.g;
-    g.fillStyle = '#edc8ac'; g.fillRect(0, 0, 512, 512);
-    var i, x, y, r;
-    for (i = 0; i < 420; i++) {
-      x = Math.random() * 512; y = Math.random() * 512; r = 30 + Math.random() * 90;
-      var gr = g.createRadialGradient(x, y, 0, x, y, r);
-      var q1 = Math.random();
-      gr.addColorStop(0, q1 > 0.5 ? 'rgba(248,219,200,0.16)' : 'rgba(214,166,140,0.12)');
-      gr.addColorStop(1, 'rgba(0,0,0,0)');
-      g.fillStyle = gr; g.beginPath(); g.arc(x, y, r, 0, 6.283); g.fill();
-    }
-    var img = g.getImageData(0, 0, 512, 512), dd = img.data;
-    for (i = 0; i < dd.length; i += 4) {
-      var n = (Math.random() - 0.5) * 9;
-      dd[i] += n; dd[i + 1] += n * 0.9; dd[i + 2] += n * 0.8;
-    }
-    g.putImageData(img, 0, 0);
-    var t = new THREE.CanvasTexture(q.c);
-    t.wrapS = t.wrapT = THREE.RepeatWrapping; t.repeat.set(6, 6);
-    TEX.pele = t; return t;
-  }
-  /* Relevo: linhas finas cruzadas, que é o desenho da pele vista de perto. */
-  function texturaRelevo() {
-    if (TEX.relevo) return TEX.relevo;
-    var q = chapa(512), g = q.g;
-    g.fillStyle = '#808080'; g.fillRect(0, 0, 512, 512);
-    g.lineWidth = 1;
-    for (var i = 0; i < 1400; i++) {
-      var x = Math.random() * 512, y = Math.random() * 512;
-      var a = Math.random() * Math.PI, c = 6 + Math.random() * 22;
-      g.strokeStyle = Math.random() > 0.5 ? 'rgba(255,255,255,0.33)' : 'rgba(0,0,0,0.28)';
-      g.beginPath(); g.moveTo(x, y); g.lineTo(x + Math.cos(a) * c, y + Math.sin(a) * c); g.stroke();
-    }
-    var t = new THREE.CanvasTexture(q.c);
-    t.wrapS = t.wrapT = THREE.RepeatWrapping; t.repeat.set(7, 7);
-    TEX.relevo = t; return t;
-  }
-
-  function pinoMesh(cor) {
-    /* a cor vem do achado, igual à do desenho plano */
-    var g = new THREE.SphereGeometry(7, 16, 12);
-    var m = new THREE.MeshStandardMaterial({ color: cor, roughness: .45, metalness: 0 });
-    return new THREE.Mesh(g, m);
-  }
-
-  function desenharPinos(lista) {
-    if (!grupo) return;
-    pinos.forEach(function (p) { grupo.remove(p); p.geometry.dispose(); p.material.dispose(); });
-    pinos = [];
-    (lista || []).forEach(function (p) {
-      var m = pinoMesh(p.cor || 0x5a4cfb);
-      m.position.set(p.x, p.y, p.z);
-      m.userData.id = p.id;
-      grupo.add(m); pinos.push(m);
+  function quadro(st) {
+    if (st.frame || !st.el.isConnected) return;
+    st.frame = requestAnimationFrame(function () {
+      st.frame = 0;
+      if (st !== app || !st.el.isConnected) return;
+      st.renderer.render(st.scene, st.cam);
+      st.labels.forEach(function (l) {
+        var pos = l.p.clone().applyMatrix4(st.group.matrixWorld);
+        var direction = st.cam.position.clone().sub(pos);
+        var front = l.n.clone().transformDirection(st.group.matrixWorld).dot(direction.normalize()) > .20;
+        var ndc = pos.project(st.cam);
+        l.el.hidden = !st.numeros || !front || ndc.x < -.92 || ndc.x > .92 || ndc.y < -.92 || ndc.y > .92;
+        l.el.style.left = (50+ndc.x*50)+'%'; l.el.style.top = (50-ndc.y*50)+'%';
+      });
     });
   }
-  window.bfPes3dPinos = desenharPinos;
-
-  function quadro() {
-    if (!animando || !rend) return;
-    rend.render(cena, cam);
-    requestAnimationFrame(quadro);
+  function camera(st) {
+    var ce = Math.cos(st.elv), p = st.cam.position;
+    p.set(Math.sin(st.az)*ce,Math.sin(st.elv),Math.cos(st.az)*ce).multiplyScalar(st.dist).add(st.target);
+    // Estável nos polos; vistas da sola e do dorso exibem os dedos para cima.
+    st.cam.up.set(-Math.sin(st.az)*Math.sin(st.elv),Math.cos(st.elv),-Math.cos(st.az)*Math.sin(st.elv));
+    if (st.vista === 'dorsal') st.cam.up.set(0,0,1);
+    if (st.vista === 'plantar') st.cam.up.set(0,0,1);
+    st.cam.lookAt(st.target); st.cam.updateMatrixWorld();
+    quadro(st);
   }
-
-  window.bfPes3dMontar = function (caixa, opts) {
-    opts = opts || {};
-    aoTocar = opts.aoTocar || null;
-    return carregarThree().then(function () {
-      window.bfPes3dDestruir();
-      var L = caixa.clientWidth || 600, A = Math.max(320, Math.round(L * 0.78));
-      cena = new THREE.Scene();
-      cam = new THREE.PerspectiveCamera(32, L / A, 1, 3000);
-      rend = new THREE.WebGLRenderer({ antialias: true, alpha: true });
-      rend.setPixelRatio(Math.min(2, window.devicePixelRatio || 1));
-      rend.setSize(L, A);
-      rend.domElement.style.width = '100%';
-      rend.domElement.style.height = 'auto';
-      rend.domElement.style.display = 'block';
-      rend.domElement.style.touchAction = 'none';
-      rend.domElement.style.cursor = 'grab';
-      caixa.innerHTML = '';
-      caixa.appendChild(rend.domElement);
-
-      grupo = new THREE.Group();
-      /* O pé esquerdo é o direito espelhado no eixo de dentro para fora. */
-      grupo.scale.x = opts.pe === 'E' ? -1 : 1;
-      cena.add(grupo);
-
-      var d = malhaDados();
-      var geo = new THREE.BufferGeometry();
-      geo.setAttribute('position', new THREE.Float32BufferAttribute(d.pos, 3));
-      geo.setIndex(d.idx);
-      geo.computeVertexNormals();
-      /* Mapeamento cilíndrico simples: serve para pele, que não tem desenho
-         com lugar certo, e evita costura visível. */
-      var uv = [];
-      for (var vi = 0; vi < d.pos.length; vi += 3) {
-        var px = d.pos[vi], py = d.pos[vi + 1], pz = d.pos[vi + 2];
-        uv.push((Math.atan2(px, py - 25) / (Math.PI * 2)) + 0.5, pz / 260);
+  function ajuste(st, nome, manter) {
+    var a = ANG[nome] || ANG.dorsal;
+    st.vista = nome;
+    st.az = a[0] * (st.left ? -1 : 1); st.elv = a[1];
+    // O polo dorsal usa azimute π para continuar sem inverter o desenho ao arrastar.
+    if (nome === 'dorsal') st.az = Math.PI;
+    if (!manter) { st.dist = st.fit; st.target.copy(st.home); }
+    camera(st);
+  }
+  window.bfPes3dAngulo = function (nome) { if (app && ANG[nome]) ajuste(app,nome); };
+  window.bfPes3dGirar = function (passo) {
+    if (!app) return; app.vista = ''; app.az += passo*Math.PI/2; camera(app);
+  };
+  window.bfPes3dModo = function (m) { if (app) app.modo = m === 'mover' ? 'mover' : 'girar'; };
+  window.bfPes3dGrade = function () {
+    if (!app) return; app.numeros = !app.numeros; quadro(app); return app.numeros;
+  };
+  window.bfPes3dReenquadrar = function () {
+    if (app) { app.dist = app.fit; app.target.copy(app.home); camera(app); }
+  };
+  function zoom(st, passo) {
+    st.dist = Math.max(st.fit*.30,Math.min(st.fit*2,st.dist*passo));
+    camera(st);
+  }
+  window.bfPes3dZoom = function (inward) { if (app) zoom(app,inward ? .82 : 1.22); };
+  function tocar(st,e) {
+    if (!st.cb) return;
+    var r = st.el.getBoundingClientRect();
+    st.ray.setFromCamera({x:(e.clientX-r.left)/r.width*2-1,y:1-(e.clientY-r.top)/r.height*2},st.cam);
+    var hit = st.ray.intersectObject(st.mesh,false)[0];
+    var pin = st.ray.intersectObjects(st.pins,false)[0];
+    if (pin && (!hit || pin.distance < hit.distance+.8)) return st.cb({pino:pin.object.userData.id});
+    if (!hit) return;
+    var local = st.group.worldToLocal(hit.point.clone()), n = hit.normal || hit.face.normal;
+    var reg = regiao(local,n);
+    st.cb({regiao:reg,x:+local.x.toFixed(2),y:+local.y.toFixed(2),z:+local.z.toFixed(2)});
+  }
+  function eventos(st) {
+    var el = st.el, ctrl = st.ctrl = new AbortController(), c = {signal:ctrl.signal};
+    function dist(a,b) { return Math.hypot(a.x-b.x,a.y-b.y); }
+    var pts = new Map(), moved = 0, varios = false;
+    el.addEventListener('pointerdown',function (e) {
+      if (e.button !== 0 && e.button !== 1) return;
+      if (!pts.size) { moved = 0; varios = false; }
+      pts.set(e.pointerId,{x:e.clientX,y:e.clientY});
+      if (pts.size > 1) varios = true;
+      el.setPointerCapture(e.pointerId); el.style.cursor = 'grabbing';
+    },c);
+    el.addEventListener('pointermove',function (e) {
+      var a = pts.get(e.pointerId); if (!a) return;
+      var b = {x:e.clientX,y:e.clientY}, d = dist(a,b);
+      pts.set(e.pointerId,b); moved += d;
+      if (pts.size > 1) {
+        var other = Array.from(pts.entries()).find(function (x) { return x[0] !== e.pointerId; })[1];
+        if (dist(other,b) > 12 && dist(other,a) > 12) zoom(st,dist(other,a)/dist(other,b));
+      } else if (moved > 6 && !varios) {
+        var dx=b.x-a.x,dy=b.y-a.y;
+        if (st.modo === 'mover' || e.shiftKey || e.buttons === 4) {
+          var k = st.dist*.002, T = st.data.T;
+          st.target.add(new T.Vector3(-dx*k,dy*k,0).applyQuaternion(st.cam.quaternion));
+          st.target.clampLength(0,340);
+        } else {
+          st.az -= dx*.009; st.elv = Math.max(-Math.PI/2,Math.min(Math.PI/2,st.elv+dy*.009)); st.vista = '';
+        }
+        camera(st);
       }
-      geo.setAttribute('uv', new THREE.Float32BufferAttribute(uv, 2));
-      malha = new THREE.Mesh(geo, new THREE.MeshStandardMaterial({
-        map: texturaPele(), bumpMap: texturaRelevo(), bumpScale: 0.5,
-        color: 0xfff4ec, roughness: 0.74, metalness: 0.0, side: THREE.DoubleSide
+    },c);
+    function fim(e) {
+      if (!pts.delete(e.pointerId)) return;
+      if (!pts.size) {
+        el.style.cursor = 'grab';
+        if (e.type === 'pointerup' && !varios && moved <= 6 && e.button === 0) tocar(st,e);
+      }
+    }
+    ['pointerup','pointercancel','lostpointercapture'].forEach(function (x) { el.addEventListener(x,fim,c); });
+    el.addEventListener('wheel',function (e) { e.preventDefault(); zoom(st,e.deltaY < 0 ? .9 : 1.1); },{signal:ctrl.signal,passive:false});
+    el.addEventListener('keydown',function (e) {
+      if (e.key === '+' || e.key === '=') zoom(st,.85);
+      else if (e.key === '-') zoom(st,1.18);
+      else if (e.key === 'Home') ajuste(st,'dorsal');
+      else if (/^Arrow/.test(e.key)) {
+        st.vista = '';
+        var step = Math.PI/12;
+        if (e.key === 'ArrowLeft') st.az += step;
+        if (e.key === 'ArrowRight') st.az -= step;
+        if (e.key === 'ArrowUp') st.elv = Math.min(Math.PI/2,st.elv+step);
+        if (e.key === 'ArrowDown') st.elv = Math.max(-Math.PI/2,st.elv-step);
+        camera(st);
+      } else return;
+      e.preventDefault();
+    },c);
+    el.addEventListener('webglcontextlost',function (e) {
+      e.preventDefault();
+      var box = st.box, onError = st.onError;
+      window.bfPes3dDestruir();
+      if (box.isConnected && onError) onError();
+    },c);
+  }
+  function resize(st) {
+    var w = st.box.clientWidth || 320, h = Math.round(Math.max(280,Math.min(540,w*.99)));
+    st.cam.aspect = w/h;
+    st.cam.updateProjectionMatrix();
+    var a = st.cam.fov*Math.PI/360;
+    var b = Math.atan(Math.tan(a)*Math.min(1,w/h));
+    var prev = st.fit;
+    st.fit = st.data.geo.boundingSphere.radius/Math.sin(b)*1.03;
+    st.dist = prev ? st.dist*st.fit/prev : st.fit;
+    st.renderer.setSize(w,h,false); st.el.style.height = h+'px';
+    camera(st);
+  }
+  window.bfPes3dMontar = function (box,opts) {
+    window.bfPes3dDestruir();
+    var seq = geracao;
+    return carregar().then(function (d) {
+      if (seq !== geracao || !box.isConnected) return false;
+      var T=d.T, scene=new T.Scene(), cam=new T.PerspectiveCamera(36,1,3,2200);
+      var renderer=new T.WebGLRenderer({antialias:true,alpha:true,powerPreference:'low-power'});
+      renderer.setPixelRatio(Math.min(2,window.devicePixelRatio||1));
+      renderer.outputColorSpace = T.SRGBColorSpace;
+      var el=renderer.domElement; el.tabIndex=0;
+      el.setAttribute('aria-label','Modelo 3D do pé. Gire com as setas, amplie com mais e reduza com menos.');
+      el.style.cssText='width:100%;display:block;touch-action:none;cursor:grab';
+      var group = new T.Group(), mesh = new T.Mesh(d.geo,new T.MeshStandardMaterial({
+        color:0xffffff,vertexColors:true,roughness:.7,metalness:0
       }));
-      malha.userData.reg = d.reg;
-      grupo.add(malha);
-      enquadrar(geo);
-
-      /* Unhas: geometria própria, mais clara e com brilho, e por isso
-         separada do corpo. */
-      var gu = new THREE.BufferGeometry();
-      gu.setAttribute('position', new THREE.Float32BufferAttribute(d.unhas.pos, 3));
-      gu.setIndex(d.unhas.idx);
-      gu.computeVertexNormals();
-      unhasMesh = new THREE.Mesh(gu, new THREE.MeshStandardMaterial({
-        color: 0xfaf0e6, roughness: 0.18, metalness: 0.02, side: THREE.DoubleSide
-      }));
-      unhasMesh.userData.reg = d.unhas.reg;
-      grupo.add(unhasMesh);
-
-      /* Luz de três pontos, como em estúdio: principal alta à frente,
-         preenchimento fraco do lado oposto e contraluz para destacar a
-         silhueta do pé do fundo claro da tela. */
-      cena.add(new THREE.HemisphereLight(0xfff4ea, 0xc8b5a8, 0.95));
-      var dl = new THREE.DirectionalLight(0xfff1e4, 1.35); dl.position.set(-180, 300, 260); cena.add(dl);
-      var dl2 = new THREE.DirectionalLight(0xdfe6ff, 0.42); dl2.position.set(240, 90, -140); cena.add(dl2);
-      var dl3 = new THREE.DirectionalLight(0xffffff, 0.55); dl3.position.set(40, -140, -260); cena.add(dl3);
-
-      raios = new THREE.Raycaster();
-      posicionarCamera();
-      animando = true; quadro();
-      desenharPinos(opts.pontos || []);
-      ligarMouse(caixa, rend.domElement);
-      destruidor = function () { desligarMouse(rend.domElement); };
+      // Microvariação do sombreado em coordenadas da própria superfície.
+      mesh.material.onBeforeCompile = function (shader) {
+        shader.vertexShader=shader.vertexShader.replace('#include <common>','#include <common>\nvarying vec3 bfSkin;')
+          .replace('#include <begin_vertex>','#include <begin_vertex>\nbfSkin = position;');
+        shader.fragmentShader=shader.fragmentShader.replace('#include <common>','#include <common>\nvarying vec3 bfSkin;')
+          .replace('#include <color_fragment>','#include <color_fragment>\nfloat bfGrain = fract(sin(dot(floor(bfSkin * 3.4), vec3(12.9898,78.233,39.425))) * 43758.5453);\ndiffuseColor.rgb *= 0.98 + bfGrain * 0.04;');
+      };
+      var unhas=new T.Mesh(d.unhas,new T.MeshStandardMaterial({vertexColors:true,roughness:.36,metalness:0,side:T.DoubleSide}));
+      group.scale.x=opts.pe==='E'?-1:1; group.add(mesh,unhas); scene.add(group);
+      scene.add(new T.HemisphereLight(0xfff8f1,0xdbcee0,2.00));
+      var key = new T.DirectionalLight(0xfff8f0,2.10); key.position.set(-100,220,180); scene.add(key);
+      var fill=new T.DirectionalLight(0xf4f7ff,.92); fill.position.set(160,-100,-110); scene.add(fill);
+      var home=d.geo.boundingSphere.center.clone(); home.x*=group.scale.x;
+      var st=app={data:d,scene:scene,cam:cam,group:group,mesh:mesh,renderer:renderer,el:el,box:box,
+        unhas:unhas,target:home.clone(),home:home,fit:0,dist:0,az:0,elv:0,modo:'girar',left:opts.pe==='E',ray:new T.Raycaster(),
+        labels:[],pins:[],numeros:true,cb:opts.aoTocar,onError:opts.aoFalhar};
+      box.replaceChildren(el);
+      var layer=document.createElement('div'); layer.className='bfp-3d-labels'; layer.setAttribute('aria-hidden','true'); box.appendChild(layer);
+      DEDOS.forEach(function(d0,i) {
+        var node=document.createElement('span');
+        node.textContent=String(i+1); layer.appendChild(node);
+        var v=nearest(d,'u'+(i+1));
+        if (v) st.labels.push({el:node,p:v.p.clone().addScaledVector(v.n,1),n:v.n});
+        else node.hidden=true;
+      });
+      (opts.pontos||[]).forEach(function (p) {
+        var exact=p.malha===MALHA && [p.x,p.y,p.z].every(Number.isFinite);
+        // Coordenadas de outra malha nunca são tratadas como exatas no modelo novo.
+        var v=exact ? {p:new T.Vector3(p.x,p.y,p.z),n:null} : nearest(d,p.regiao);
+        if (!v) return;
+        var peg=new T.Mesh(new T.SphereGeometry(exact?2.65:2.1,14,12),new T.MeshBasicMaterial({color:p.cor||0x5144ff}));
+        peg.position.copy(v.p);
+        if (v.n) peg.position.addScaledVector(v.n,.8);
+        peg.userData.id=p.id; group.add(peg); st.pins.push(peg);
+      });
+      resize(st); ajuste(st,opts.angulo || 'dorsal');
+      if (opts.foco) {
+        var foco=st.pins.find(function (x) { return x.userData.id===opts.foco; });
+        if (foco) {
+          st.target.lerp(foco.position.clone().applyMatrix4(group.matrixWorld),.54);
+          st.dist*=.73; camera(st);
+        }
+      }
+      eventos(st);
+      st.ro = new ResizeObserver(function () { if (app===st && box.isConnected) resize(st); });
+      st.ro.observe(box);
       return true;
     });
   };
-
   window.bfPes3dDestruir = function () {
-    animando = false;
-    if (destruidor) { try { destruidor(); } catch (e) { } destruidor = null; }
-    if (rend) { try { rend.dispose(); } catch (e) { } }
-    if (malha) { malha.geometry.dispose(); malha.material.dispose(); }
-    if (unhasMesh) { unhasMesh.geometry.dispose(); unhasMesh.material.dispose(); unhasMesh = null; }
-    pinos.forEach(function (p) { p.geometry.dispose(); p.material.dispose(); });
-    pinos = []; cena = null; rend = null; cam = null; grupo = null; malha = null;
-  };
-
-  /* ------------------------------------------------------- mouse e toque */
-  var fns = {};
-  function ligarMouse(caixa, el) {
-    fns.down = function (e) {
-      EST.arrasto = true; EST.moveu = 0; EST.lx = e.clientX; EST.ly = e.clientY;
-      el.style.cursor = 'grabbing';
-      el.setPointerCapture && e.pointerId != null && el.setPointerCapture(e.pointerId);
-    };
-    fns.move = function (e) {
-      if (!EST.arrasto) return;
-      var dx = e.clientX - EST.lx, dy = e.clientY - EST.ly;
-      EST.lx = e.clientX; EST.ly = e.clientY;
-      EST.moveu += Math.abs(dx) + Math.abs(dy);
-      if (MODO === 'mover' || e.shiftKey || e.buttons === 4) {
-        PAN.x -= dx * (EST.dist * 0.0016);
-        PAN.y += dy * (EST.dist * 0.0016);
-      } else {
-        EST.az -= dx * 0.009;
-        EST.el = Math.max(-1.45, Math.min(1.45, EST.el + dy * 0.008));
-      }
-      posicionarCamera();
-    };
-    fns.up = function (e) {
-      var arrastou = EST.moveu > 6;
-      EST.arrasto = false; el.style.cursor = 'grab';
-      if (arrastou) return;
-      tocar(e, el);
-    };
-    fns.wheel = function (e) {
-      e.preventDefault();
-      var passo = DIST_BASE * 0.07;
-      EST.dist = Math.max(DIST_BASE * 0.45, Math.min(DIST_BASE * 2.2, EST.dist + (e.deltaY > 0 ? passo : -passo)));
-      posicionarCamera();
-    };
-    el.addEventListener('pointerdown', fns.down);
-    el.addEventListener('pointermove', fns.move);
-    el.addEventListener('pointerup', fns.up);
-    el.addEventListener('pointerleave', function () { EST.arrasto = false; });
-    el.addEventListener('wheel', fns.wheel, { passive: false });
-  }
-  function desligarMouse(el) {
-    if (!el) return;
-    el.removeEventListener('pointerdown', fns.down);
-    el.removeEventListener('pointermove', fns.move);
-    el.removeEventListener('pointerup', fns.up);
-    el.removeEventListener('wheel', fns.wheel);
-  }
-
-  function tocar(e, el) {
-    if (!raios || !malha || !aoTocar) return;
-    var r = el.getBoundingClientRect();
-    var p = new THREE.Vector2(
-      ((e.clientX - r.left) / r.width) * 2 - 1,
-      -((e.clientY - r.top) / r.height) * 2 + 1
-    );
-    raios.setFromCamera(p, cam);
-    /* Primeiro os pinos: tocar num ponto já marcado abre aquele ponto. */
-    var nosPinos = raios.intersectObjects(pinos, false);
-    if (nosPinos.length) { aoTocar({ pino: nosPinos[0].object.userData.id }); return; }
-    var alvos2 = unhasMesh ? [malha, unhasMesh] : [malha];
-    var hits = raios.intersectObjects(alvos2, false);
-    if (!hits.length) return;
-    var h = hits[0];
-    var regs = (h.object.userData.reg) || [];
-    var reg = regs[h.face.a] || regs[h.face.b] || regs[h.face.c] || '';
-    /* A posição volta na coordenada da malha, sem o espelho do pé esquerdo,
-       para o ponto do pé esquerdo não virar ponto do direito ao ser redesenhado. */
-    var local = grupo.worldToLocal(h.point.clone());
-    aoTocar({ regiao: reg, x: Math.round(local.x * 10) / 10, y: Math.round(local.y * 10) / 10, z: Math.round(local.z * 10) / 10 });
-  }
-
-  window.bfPes3dRedimensionar = function (caixa) {
-    if (!rend || !cam || !caixa) return;
-    var L = caixa.clientWidth || 600, A = Math.max(320, Math.round(L * 0.78));
-    cam.aspect = L / A; cam.updateProjectionMatrix(); rend.setSize(L, A);
+    geracao++;
+    if (!app) return;
+    var st=app; app=null;
+    if (st.frame) cancelAnimationFrame(st.frame);
+    if (st.ro) st.ro.disconnect();
+    if (st.ctrl) st.ctrl.abort();
+    st.pins.forEach(function (p) { p.geometry.dispose(); p.material.dispose(); });
+    st.mesh.material.dispose(); st.unhas.material.dispose();
+    st.renderer.dispose(); st.renderer.forceContextLoss();
   };
 })();
