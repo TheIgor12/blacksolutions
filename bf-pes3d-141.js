@@ -250,16 +250,23 @@
     lateral: { az: 1.57, el: 0.12 }, medial: { az: -1.57, el: 0.12 },
     dedos: { az: 0, el: 0.06 }, calcanhar: { az: 3.14, el: 0.18 }
   };
+  /* Mover o pé na tela, além de girar, como pede quem está olhando de perto. */
+  var MODO = 'girar', PAN = { x: 0, y: 0 };
+  window.bfPes3dModo = function (m) { MODO = (m === 'mover') ? 'mover' : 'girar'; };
+  window.bfPes3dGrade = function () {
+    if (!malha) return;
+    malha.material.wireframe = !malha.material.wireframe;
+  };
   window.bfPes3dGirar = function (passo) {
     EST.az += passo * (Math.PI / 2);
     posicionarCamera();
   };
   window.bfPes3dAngulo = function (nome) {
     var a = ANGULOS[nome]; if (!a) return;
-    EST.az = a.az; EST.el = a.el; EST.dist = DIST_BASE;
+    EST.az = a.az; EST.el = a.el; EST.dist = DIST_BASE; PAN.x = 0; PAN.y = 0;
     posicionarCamera();
   };
-  window.bfPes3dReenquadrar = function () { EST.dist = DIST_BASE; posicionarCamera(); };
+  window.bfPes3dReenquadrar = function () { EST.dist = DIST_BASE; PAN.x = 0; PAN.y = 0; posicionarCamera(); };
 
   /* O enquadramento sai da esfera que contém a malha inteira, e não de um
      número escolhido no olho: assim o pé cabe na tela em qualquer ângulo, de
@@ -277,17 +284,19 @@
   function posicionarCamera() {
     if (!cam) return;
     var ce = Math.cos(EST.el), se = Math.sin(EST.el);
+    var ax = ALVO.x + PAN.x, ay = ALVO.y + PAN.y;
     cam.position.set(
-      ALVO.x + Math.sin(EST.az) * ce * EST.dist,
-      ALVO.y + se * EST.dist,
+      ax + Math.sin(EST.az) * ce * EST.dist,
+      ay + se * EST.dist,
       ALVO.z + Math.cos(EST.az) * ce * EST.dist
     );
     cam.up.set(0, 1, 0);
     if (Math.abs(EST.el) > 1.40) cam.up.set(0, 0, EST.el > 0 ? -1 : 1);
-    cam.lookAt(ALVO.x, ALVO.y, ALVO.z);
+    cam.lookAt(ax, ay, ALVO.z);
   }
 
   function pinoMesh(cor) {
+    /* a cor vem do achado, igual à do desenho plano */
     var g = new THREE.SphereGeometry(7, 16, 12);
     var m = new THREE.MeshStandardMaterial({ color: cor, roughness: .45, metalness: 0 });
     return new THREE.Mesh(g, m);
@@ -384,8 +393,13 @@
       var dx = e.clientX - EST.lx, dy = e.clientY - EST.ly;
       EST.lx = e.clientX; EST.ly = e.clientY;
       EST.moveu += Math.abs(dx) + Math.abs(dy);
-      EST.az -= dx * 0.009;
-      EST.el = Math.max(-1.45, Math.min(1.45, EST.el + dy * 0.008));
+      if (MODO === 'mover' || e.shiftKey || e.buttons === 4) {
+        PAN.x -= dx * (EST.dist * 0.0016);
+        PAN.y += dy * (EST.dist * 0.0016);
+      } else {
+        EST.az -= dx * 0.009;
+        EST.el = Math.max(-1.45, Math.min(1.45, EST.el + dy * 0.008));
+      }
       posicionarCamera();
     };
     fns.up = function (e) {

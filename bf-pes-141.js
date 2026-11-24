@@ -148,6 +148,44 @@
     'Micose interdigital', 'Onicodistrofia', 'Hematoma subungueal', 'Verruga plantar', 'Ferida ou úlcera',
     'Bolha', 'Rachadura', 'Dor ou sensibilidade', 'Ressecamento', 'Hiperqueratose', 'Esporão', 'Outro'];
 
+  /* Cada achado tem a sua cor, e a mesma cor vale no desenho plano, no pé em
+     três dimensões e na legenda. Cor por família, e não uma por item: sete
+     cores a profissional distingue de relance, dezessete não. */
+  var FAMILIAS = [
+    { k: 'unha', cor: '#e23b3b', nome: 'Unha encravada e alterações da unha', re: /onicocriptose|encravada|onicodistrofia|hematoma subungueal/i },
+    { k: 'calo', cor: '#d99a0b', nome: 'Calosidade e hiperqueratose', re: /calosidade|^calo$|hiperqueratose|esporão/i },
+    { k: 'fissura', cor: '#8b5cf6', nome: 'Fissura e rachadura', re: /fissura|rachadura|ressecamento/i },
+    { k: 'verruga', cor: '#2f7fe0', nome: 'Verruga plantar', re: /verruga/i },
+    { k: 'micose', cor: '#1f9d63', nome: 'Micose', re: /micose|onicomicose/i },
+    { k: 'ferida', cor: '#d9399c', nome: 'Ferida, úlcera e bolha', re: /ferida|úlcera|ulcera|bolha/i },
+    { k: 'dor', cor: '#ef7a1a', nome: 'Dor e sensibilidade', re: /dor|sensibilidade/i },
+    { k: 'outro', cor: '#64748b', nome: 'Outro achado', re: /./ }
+  ];
+  function familiaDe(tipo) {
+    var t = String(tipo || '');
+    for (var i = 0; i < FAMILIAS.length; i++) if (FAMILIAS[i].re.test(t)) return FAMILIAS[i];
+    return FAMILIAS[FAMILIAS.length - 1];
+  }
+  function corDe(tipo) { return familiaDe(tipo).cor; }
+  window.bfPesCor = corDe;
+
+  /* Zonas de referência do mapeamento podológico, numeradas, para a legenda e
+     para a camada de grade anatômica. */
+  var ZONAS = [
+    { n: 1, nome: 'Pododáctilos (dedos)', cor: '#17b6a3', regs: ['d1', 'd2', 'd3', 'd4', 'd5', 'u1', 'u2', 'u3', 'u4', 'u5', 'f1', 'f2', 'f3', 'f4', 'f5', 'fu1', 'fu2', 'fu3', 'fu4', 'fu5', 'l5', 'm1'] },
+    { n: 2, nome: 'Antepé (cabeças dos metatarsos)', cor: '#d99a0b', regs: ['dant', 'meta', 'fant', 'lant', 'mant'] },
+    { n: 3, nome: 'Médio-pé (arco plantar)', cor: '#8b5cf6', regs: ['dmed', 'arco', 'marc', 'lmed'] },
+    { n: 4, nome: 'Retropé (calcanhar)', cor: '#2f7fe0', regs: ['calc', 'lcal', 'mcal', 'cpos', 'cfis', 'torn', 'caq'] },
+    { n: 5, nome: 'Bordas lateral e medial', cor: '#e23b3b', regs: ['bm', 'bl', 'lmal', 'mmal', 'cmm', 'cml'] },
+    { n: 6, nome: 'Polpa digital', cor: '#d9399c', regs: ['p1', 'p2', 'p3', 'p4', 'p5'] },
+    { n: 7, nome: 'Espaços interdigitais', cor: '#1f9d63', regs: ['i1', 'i2', 'i3', 'i4'] }
+  ];
+  var ZONA_DE = null;
+  function zonaDe(reg) {
+    if (!ZONA_DE) { ZONA_DE = {}; ZONAS.forEach(function (z) { z.regs.forEach(function (r) { ZONA_DE[r] = z; }); }); }
+    return ZONA_DE[reg] || null;
+  }
+
   /* ------------------------------------------------------------ gravação */
   function temCol() { if (!Array.isArray(S.pesMapas)) S.pesMapas = []; return S.pesMapas; }
   function mapaDe(pid, criar) {
@@ -194,6 +232,7 @@
     var v = VISTAS[p.vista];
     var onde = v ? (LADO[p.pe] || p.pe) + ', ' + v.nome.toLowerCase() : (LADO[p.pe] || p.pe);
     return onde + (p.regiao ? ', ' + nomeRegiao(p.vista, p.regiao) : '') +
+      (p.forma === 'area' ? ' (área pintada)' : '') +
       (p.tipo ? ' — ' + p.tipo : '') + (p.nota ? ': ' + p.nota : '');
   }
   window.bfPesTexto = function (pid) {
@@ -208,7 +247,7 @@
   };
 
   /* ----------------------------------------------------------- estado UI */
-  var P = { pid: '', pe: 'D', vista: 'dorsal', abrindo: null };
+  var P = { pid: '', pe: 'D', vista: 'dorsal', abrindo: null, grade: false, pintando: false, traco: [], pintandoAgora: false };
   window.__bfPesP = P;
 
   function pacAtivos() {
@@ -239,22 +278,66 @@
   function desenho() {
     var v = VISTAS[P.vista], m = mapaDe(P.pid, false);
     var pts = (m ? m.pontos : []).filter(function (x) { return !!noPlano(x); });
-    var corpo = (v.regioes || []).map(function (f) { return formaSVG(f, ' class="bfp-reg"'); }).join('');
+    var corpo = (v.regioes || []).map(function (f) {
+      var z = P.grade ? zonaDe(f.c) : null;
+      return formaSVG(f, ' class="bfp-reg' + (z ? ' zona' : '') + '"' +
+        (z ? ' style="fill:' + z.cor + ';fill-opacity:.32"' : ''));
+    }).join('');
+    /* Com a grade ligada, o número da zona aparece uma vez por zona, no meio
+       das regiões dela que estão nesta vista. */
+    var numeros = '';
+    if (P.grade) {
+      var acum = {};
+      (v.regioes || []).forEach(function (f) {
+        var z = zonaDe(f.c); if (!z) return;
+        var L = localDaRegiao(f.c); if (!L) return;
+        if (!acum[z.n]) acum[z.n] = { z: z, x: 0, y: 0, n: 0 };
+        acum[z.n].x += L.x; acum[z.n].y += L.y; acum[z.n].n++;
+      });
+      var r = Math.max(5, larguraVB(v) * 0.042);
+      numeros = Object.keys(acum).map(function (k) {
+        var a2 = acum[k];
+        return '<g class="bfp-znum"><circle cx="' + (a2.x / a2.n) + '" cy="' + (a2.y / a2.n) + '" r="' + r +
+          '" style="fill:' + a2.z.cor + '"></circle><text x="' + (a2.x / a2.n) + '" y="' +
+          (a2.y / a2.n + r * 0.36) + '" font-size="' + (r * 1.1) + '">' + a2.z.n + '</text></g>';
+      }).join('');
+    }
+    /* Áreas pintadas entram por baixo dos pontos, para o número continuar
+       legível em cima da mancha. */
+    var areas = pts.filter(function (x) { return x.forma === 'area' && x.vista === P.vista; }).map(function (p) {
+      var n = (m.pontos.indexOf(p) + 1), c = corDe(p.tipo);
+      return '<g class="bfp-pino bfp-area' + (P.abrindo === p.id ? ' sel' : '') + '" data-pino="' + p.id + '">' +
+        '<path d="' + caminhoArea(p.pts) + '" style="fill:' + c + ';fill-opacity:.30;stroke:' + c + ';stroke-width:1.6"></path>' +
+        '<title>' + E(textoPonto(p)) + '</title></g>';
+    }).join('');
     /* O pé esquerdo é o direito espelhado. O espelho fica só no desenho: o
        ponto é gravado na coordenada do desenho, então volta no lugar certo. */
     var esp = P.pe === 'E' ? ' transform="translate(' + larguraVB(v) + ',0) scale(-1,1)"' : '';
     var pinos = pts.map(function (p) {
-      var n = (m.pontos.indexOf(p) + 1), L = noPlano(p);
+      var n = (m.pontos.indexOf(p) + 1), L = noPlano(p), c = corDe(p.tipo);
+      var cen = p.forma === 'area' ? centroArea(p.pts) : L;
       return '<g class="bfp-pino' + (P.abrindo === p.id ? ' sel' : '') + (L.vindo3d ? ' de3d' : '') +
         '" data-pino="' + p.id + '">' +
-        '<circle cx="' + L.x + '" cy="' + L.y + '" r="' + raioPino(v) + '"></circle>' +
-        '<text x="' + L.x + '" y="' + (L.y + raioPino(v) * 0.36) + '" font-size="' + (raioPino(v) * 1.1) + '">' + n + '</text>' +
+        '<circle cx="' + cen.x + '" cy="' + cen.y + '" r="' + raioPino(v) + '" style="fill:' + c + '"></circle>' +
+        '<text x="' + cen.x + '" y="' + (cen.y + raioPino(v) * 0.36) + '" font-size="' + (raioPino(v) * 1.1) + '">' + n + '</text>' +
         '<title>' + E(textoPonto(p)) + (L.vindo3d ? ' (marcado no pé em três dimensões)' : '') + '</title></g>';
     }).join('');
     return '<svg id="bfp-svg" viewBox="' + v.vb + '" role="img" aria-label="' +
       E(LADO[P.pe] + ', ' + v.nome) + '"><g' + esp + '>' +
       '<path class="bfp-contorno" d="' + v.contorno + '"></path>' + corpo + '</g>' +
-      '<g class="bfp-pinos"' + esp + '>' + pinos + '</g></svg>';
+      '<g class="bfp-pinos"' + esp + '>' + numeros + areas + pinos +
+      '<path id="bfp-preview" d="" fill="#5a4cfb" fill-opacity="0.22" stroke="#5a4cfb" stroke-width="1.6"></path>' +
+      '</g></svg>';
+  }
+  function caminhoArea(pts) {
+    if (!pts || !pts.length) return '';
+    return 'M' + pts.map(function (p) { return p[0] + ' ' + p[1]; }).join(' L') + ' Z';
+  }
+  function centroArea(pts) {
+    if (!pts || !pts.length) return { x: 0, y: 0 };
+    var sx = 0, sy = 0;
+    pts.forEach(function (p) { sx += p[0]; sy += p[1]; });
+    return { x: Math.round(sx / pts.length * 10) / 10, y: Math.round(sy / pts.length * 10) / 10 };
   }
   function larguraVB(v) { return Number(String(v.vb).split(' ')[2]) || 100; }
   function raioPino(v) { return Math.max(6, larguraVB(v) * 0.055); }
@@ -295,7 +378,67 @@
   }
 
   /* --------------------------------------------------- perguntar e salvar */
+  /* ------------------------------------------------ pintar área ------- */
+  window.bfPesPincel = function () {
+    P.pintando = !P.pintando; P.traco = []; P.pintandoAgora = false; render();
+  };
+  function previewPintar() {
+    var el = document.getElementById('bfp-preview');
+    if (el) el.setAttribute('d', P.traco.length > 1 ? caminhoArea(P.traco) : '');
+  }
+  window.bfPesPintarInicio = function (ev) {
+    if (!P.pintando || !P.pid) return;
+    ev.preventDefault();
+    var p = pontoDoEvento(ev); if (!p) return;
+    P.pintandoAgora = true; P.traco = [[p.x, p.y]];
+    previewPintar();
+  };
+  window.bfPesPintarMove = function (ev) {
+    if (!P.pintandoAgora) return;
+    ev.preventDefault();
+    var p = pontoDoEvento(ev); if (!p) return;
+    var u = P.traco[P.traco.length - 1];
+    if (!u || Math.abs(p.x - u[0]) + Math.abs(p.y - u[1]) > 1.2) { P.traco.push([p.x, p.y]); previewPintar(); }
+  };
+  window.bfPesPintarFim = function () {
+    if (!P.pintandoAgora) return;
+    P.pintandoAgora = false;
+    if (P.traco.length < 5) { P.traco = []; previewPintar(); return; }
+    var c = centroArea(P.traco);
+    var svg = document.getElementById('bfp-svg');
+    var reg = svg ? regiaoDoPonto(svg, c.x, c.y) : '';
+    perguntarArea(reg);
+  };
+  function perguntarArea(reg) {
+    var onde = (LADO[P.pe] || P.pe) + (VISTAS[P.vista] ? ', ' + VISTAS[P.vista].nome.toLowerCase() : '') +
+      (reg ? ', ' + nomeRegiao(P.vista, reg) : '');
+    openModal('<h3 style="margin-top:0">Salvar esta área?</h3>' +
+      '<p class="sub" style="margin:0 0 14px">Você pintou uma área em <b>' + E(onde) + '</b>.<br>' +
+      'Quer salvar essa área como local do seu tratamento?</p>' +
+      '<div class="fgrid"><label>O que foi encontrado<select id="bfp-tipo">' +
+      ACHADOS.map(function (a) { return '<option>' + E(a) + '</option>'; }).join('') + '</select></label>' +
+      '<label class="full">Anotação<textarea id="bfp-nota" rows="2" placeholder="O que viu, o que fez, o que orientou"></textarea></label></div>' +
+      '<div class="mact"><button class="btn ghost" onclick="bfPesDescartarArea()">Não</button>' +
+      '<button class="btn" onclick="bfPesSalvarArea(\'' + reg + '\')">Sim, salvar a área</button></div>');
+  }
+  window.bfPesDescartarArea = function () { P.traco = []; closeModal(); render(); };
+  window.bfPesSalvarArea = function (reg) {
+    var m = mapaDe(P.pid, true);
+    m.pontos.push({
+      id: uid(), pe: P.pe, vista: P.vista, forma: 'area', pts: P.traco.slice(),
+      x: centroArea(P.traco).x, y: centroArea(P.traco).y, regiao: reg || '',
+      tipo: str((document.getElementById('bfp-tipo') || {}).value || ''),
+      nota: str((document.getElementById('bfp-nota') || {}).value || '').slice(0, 400),
+      em: todayISO(), prof: str(S.config.responsavel || nomeUsuario && nomeUsuario() || '')
+    });
+    m.em = todayISO(); P.traco = [];
+    closeModal(); save(); render();
+    toast('Área ' + m.pontos.length + ' salva no mapa do paciente.');
+  };
+  window.bfPesGrade = function () { P.grade = !P.grade; render(); };
+
   window.bfPesClique = function (ev) {
+    if (P.pintando) return;
     if (!P.pid) { toast('Escolha o paciente antes de marcar.'); return; }
     var alvo = ev.target && ev.target.closest ? ev.target.closest('.bfp-pino') : null;
     if (alvo) { window.bfPesAbrirPino(alvo.getAttribute('data-pino')); return; }
@@ -451,9 +594,10 @@
     var L = [];
     m.pontos.forEach(function (p) {
       if (p.pe !== P.pe) return;
-      if (p.z !== undefined && p.z !== null) { L.push({ id: p.id, x: p.x, y: p.y, z: p.z, cor: P.abrindo === p.id ? 0xd93a3a : 0x5a4cfb }); return; }
+      var cor = parseInt(corDe(p.tipo).slice(1), 16);
+      if (p.z !== undefined && p.z !== null) { L.push({ id: p.id, x: p.x, y: p.y, z: p.z, cor: cor }); return; }
       var c = C[p.regiao];
-      if (c) L.push({ id: p.id, x: c[0], y: c[1], z: c[2], cor: P.abrindo === p.id ? 0xd93a3a : 0x7c71ff });
+      if (c) L.push({ id: p.id, x: c[0], y: c[1], z: c[2], cor: cor });
     });
     return L;
   }
@@ -477,7 +621,8 @@
     if (!m || !m.pontos.length) return '<p class="bfp-vazio">Nenhum ponto marcado ainda. Toque no desenho, em cima do lugar que você está tratando, e o sistema pergunta se quer guardar aquele ponto.</p>';
     return '<ol class="bfp-lista">' + m.pontos.map(function (p, i) {
       return '<li' + (P.abrindo === p.id ? ' class="sel"' : '') + '><div class="bfp-li-t">' +
-        '<b>' + (i + 1) + '. ' + E(p.tipo || 'Ponto marcado') + '</b>' +
+        '<b><i class="bfp-bola" style="background:' + corDe(p.tipo) + '"></i>' + (i + 1) + '. ' +
+        E(p.tipo || 'Ponto marcado') + (p.forma === 'area' ? ' <i class="bfp-marca3d">área</i>' : '') + '</b>' +
         '<span>' + E(LADO[p.pe]) +
         (VISTAS[p.vista] ? ', ' + E(VISTAS[p.vista].nome.toLowerCase()) : '') +
         (p.regiao ? ', ' + E(nomeRegiao(p.vista, p.regiao)) : '') +
@@ -489,6 +634,40 @@
     }).join('') + '</ol>';
   }
 
+  /* ----------------------------------------------------- painéis ------ */
+  function painelTipos() {
+    return '<div class="card bfp-painel"><b>Tipos de marcação</b>' +
+      '<ul class="bfp-leg">' + FAMILIAS.map(function (f) {
+        return '<li><i style="background:' + f.cor + '"></i>' + E(f.nome) + '</li>';
+      }).join('') + '</ul>' +
+      '<p class="bfp-nota-painel">A cor sai sozinha do que você escolher em "o que foi encontrado", no desenho e na lista.</p></div>';
+  }
+  function painelControles() {
+    var tres = P.vista === '3d';
+    return '<div class="card bfp-painel"><b>Controles</b>' +
+      '<div class="bfp-ctl">' +
+      (tres
+        ? '<button class="btn ghost sm" onclick="bfPes3dModo(\'girar\')">Girar</button>' +
+          '<button class="btn ghost sm" onclick="bfPes3dModo(\'mover\')">Mover</button>' +
+          '<button class="btn ghost sm" onclick="bfPes3dReenquadrar()">Enquadrar de novo</button>' +
+          '<button class="btn ghost sm" onclick="bfPes3dGrade()">Grade da malha</button>'
+        : '<button class="btn ' + (P.pintando ? '' : 'ghost') + ' sm" onclick="bfPesPincel()">' +
+          (P.pintando ? 'Pintando área' : 'Pintar área') + '</button>' +
+          '<button class="btn ' + (P.grade ? '' : 'ghost') + ' sm" onclick="bfPesGrade()">Zonas em cor</button>') +
+      '</div>' +
+      '<p class="bfp-nota-painel">' +
+      (tres ? 'Arraste para girar, role para aproximar e toque no pé para marcar o ponto.'
+            : (P.pintando ? 'Arraste por cima do desenho para pintar a área tratada. Soltando, o sistema pergunta se quer guardar.'
+                          : 'Toque no desenho para marcar um ponto, ou ligue Pintar área para contornar a região tratada.')) +
+      '</p></div>';
+  }
+  function painelZonas() {
+    return '<div class="card bfp-painel"><b>Zonas de referência</b>' +
+      '<ul class="bfp-leg">' + ZONAS.map(function (z) {
+        return '<li><i class="num" style="background:' + z.cor + '">' + z.n + '</i>' + E(z.nome) + '</li>';
+      }).join('') + '</ul>' +
+      '<p class="bfp-nota-painel">Ligue "Zonas em cor" para ver a grade anatômica por cima do desenho.</p></div>';
+  }
   function tela() {
     var L = pacAtivos(), m = P.pid ? mapaDe(P.pid, false) : null, p = pacDe(P.pid);
     var ehTres = P.vista === '3d';
@@ -514,7 +693,9 @@
         '<button class="bfp-girar esq" onclick="bfPesGirar(-1)" aria-label="Girar para a esquerda" title="Girar um quarto de volta para a esquerda">&#8249;</button>' +
         (ehTres
           ? '<div class="bfp-tela bfp-3d" id="bfp-3d"></div>'
-          : '<div class="bfp-tela" onclick="bfPesClique(event)">' + desenho() + '</div>') +
+          : '<div class="bfp-tela' + (P.pintando ? ' pintando' : '') + '" onclick="bfPesClique(event)"' +
+            ' onpointerdown="bfPesPintarInicio(event)" onpointermove="bfPesPintarMove(event)"' +
+            ' onpointerup="bfPesPintarFim(event)" onpointerleave="bfPesPintarFim(event)">' + desenho() + '</div>') +
         '<button class="bfp-girar dir" onclick="bfPesGirar(1)" aria-label="Girar para a direita" title="Girar um quarto de volta para a direita">&#8250;</button>' +
         '</div>' +
         (ehTres
@@ -538,7 +719,9 @@
         'oninput="bfPesObs(this.value)">' + E(m ? m.obs : '') + '</textarea></label>' +
         '<div class="bfp-acoes"><button class="btn ghost" onclick="bfPesParaEvolucao()">Lançar na evolução clínica</button>' +
         '<button class="btn" onclick="go(\'paciente\',\'' + E(P.pid) + '\')">Ver na anamnese</button></div>' +
-        '</div></div>'));
+        '</div>' +
+        '<div class="bfp-lado">' + painelControles() + painelTipos() + painelZonas() + '</div>' +
+        '</div>'));
   }
 
   /* --------------------------------------------------------- integração */
@@ -564,7 +747,25 @@
 
   /* ---------------------------------------------------------------- CSS */
   var CSS = '<style>' +
-    '.bfp-grade{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:14px;align-items:start}' +
+/* Quadro de trabalho no computador: o pé grande à esquerda, a ficha no meio e
+   as legendas e os controles numa coluna estreita à direita, sempre à vista.
+   Em tela menor as três colunas viram duas, e no celular viram uma. */
+    '.bfp-grade{display:grid;grid-template-columns:minmax(0,1.25fr) minmax(0,1fr) 252px;gap:14px;align-items:start}' +
+    '@media(max-width:1340px){.bfp-grade{grid-template-columns:minmax(0,1.2fr) minmax(0,1fr)}' +
+    '.bfp-lado{grid-column:1/-1;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px}}' +
+    '.bfp-lado{display:flex;flex-direction:column;gap:14px}' +
+    '.bfp-painel{display:flex;flex-direction:column;gap:8px;padding:14px}' +
+    '.bfp-painel>b{font-size:13.5px}' +
+    '.bfp-leg{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:7px}' +
+    '.bfp-leg li{display:flex;align-items:center;gap:9px;font-size:12.5px;line-height:1.35;color:var(--ink)}' +
+    '.bfp-leg i{flex:0 0 16px;width:16px;height:16px;border-radius:5px;display:inline-block}' +
+    '.bfp-leg i.num{border-radius:999px;color:#fff;font-style:normal;font-weight:700;font-size:10.5px;' +
+    'display:flex;align-items:center;justify-content:center}' +
+    '.bfp-nota-painel{margin:2px 0 0;font-size:11.5px;color:var(--mut);line-height:1.5}' +
+    '.bfp-ctl{display:grid;grid-template-columns:1fr 1fr;gap:8px}' +
+    '.bfp-ctl .btn{width:100%;justify-content:center;white-space:normal;text-align:center;min-width:0}' +
+    '.bfp-tela.pintando{cursor:crosshair;touch-action:none;box-shadow:inset 0 0 0 2px #5a4cfb}' +
+    '.bfp-area path{cursor:pointer}' +
     '.bfp-palco,.bfp-fichario{display:flex;flex-direction:column;gap:12px}' +
 /* Grade, e nao flex, nos pares de botao: com grade as duas caixas saem com a
    mesma largura exata, sem a diferenca de um ou dois pixels que o flex deixa
@@ -589,6 +790,7 @@
     '.bfp-reg:hover{fill:#e8e6ff}' +
     '.bfp-pinos circle{fill:#5a4cfb;stroke:#fff;stroke-width:1.6}' +
     '.bfp-pinos text{fill:#fff;font-weight:700;text-anchor:middle;pointer-events:none}' +
+    '.bfp-znum circle{opacity:.92;stroke:#fff;stroke-width:1.2}.bfp-znum{pointer-events:none}' +
     '.bfp-pino.sel circle{fill:#d93a3a}' +
     '.bfp-legenda{margin:0;text-align:center;font-size:12.5px;color:var(--mut);line-height:1.5}' +
     '.bfp-cab{display:flex;justify-content:space-between;align-items:baseline;gap:10px}' +
@@ -598,6 +800,7 @@
     '.bfp-lista li.sel{border-color:#5a4cfb;box-shadow:inset 3px 0 0 #5a4cfb}' +
     '.bfp-li-t{display:flex;flex-direction:column;gap:3px;min-width:0;flex:1 1 180px}' +
     '.bfp-li-t b{font-size:13.5px}.bfp-li-t span{font-size:12.5px;color:var(--mut)}' +
+    '.bfp-bola{display:inline-block;width:10px;height:10px;border-radius:999px;margin-right:6px;vertical-align:baseline}' +
     '.bfp-marca3d{font-style:normal;font-size:11px;background:#eceaff;color:#4a3fd0;border-radius:999px;padding:1px 7px;white-space:nowrap}' +
     '.bfp-pino.de3d circle{stroke-dasharray:3 2}' +
     '.bfp-li-t small{font-size:12px}.bfp-data{color:var(--mut)}' +
@@ -607,7 +810,8 @@
     '.bfp-obs textarea{width:100%;font:inherit;font-weight:400;color:var(--ink);border:1px solid var(--line,#e6e6ef);' +
     'border-radius:10px;padding:10px;background:#fff}' +
 
-    '@media(max-width:900px){.bfp-grade{grid-template-columns:1fr}}' +
+    '@media(max-width:900px){.bfp-grade{grid-template-columns:1fr}' +
+    '.bfp-lado{grid-column:auto;display:flex;flex-direction:column}}' +
 /* No celular o desenho ocupa a largura inteira e as setas vão para baixo dele.
    Flutuando por cima, elas cobriam justamente o 1º e o 5º dedo na vista de
    frente, que é onde a profissional mais precisa tocar. */
