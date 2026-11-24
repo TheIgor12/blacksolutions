@@ -25,6 +25,7 @@ for(const name of ['bf-clinical.js','bf-fiscal-advanced.js','bf-receituario.js',
  assert.equal(a,b,'Different root and /app copies: '+name);
  new vm.Script(a,{filename:name});
 }
+execFileSync(process.execPath,[fileURLToPath(new URL('./test-ditado.mjs',import.meta.url))],{stdio:'inherit'});
 assert.ok(read('bf-clinical.js').includes('SEGMENTOS.medicina'),'Missing Medicine segment');
 assert.ok(read('bf-receituario.js').includes("conselho:seg()==='odontologia'?'CRO':seg()==='medicina'?'CRM'"),'Missing CRM');
 assert.ok(read('bf-receituario.js').includes('RASCUNHO - NAO ASSINADO'),'Missing watermark');

@@ -537,7 +537,7 @@
       'Quer salvar essa área como local do seu tratamento?</p>' +
       '<div class="fgrid"><label>O que foi encontrado<select id="bfp-tipo">' +
       ACHADOS.map(function (a) { return '<option>' + E(a) + '</option>'; }).join('') + '</select></label>' +
-      '<label class="full">Anotação<textarea id="bfp-nota" rows="2" placeholder="O que viu, o que fez, o que orientou"></textarea></label></div>' +
+      '<label class="full">Anotação<textarea id="bfp-nota" data-bf-ditado data-bf-ditado-limite="400" spellcheck="false" lang="pt-BR" rows="2" placeholder="O que viu, o que fez, o que orientou"></textarea></label></div>' +
       '<div class="mact"><button class="btn ghost" onclick="bfPesDescartarArea()">Não</button>' +
       '<button class="btn" onclick="bfPesSalvarArea(\'' + reg + '\')">Sim, salvar a área</button></div>');
   }
@@ -609,7 +609,7 @@
       'Salvar na ficha de <b>' + E(paciente.nome) + '</b>?</p>' +
       '<div class="fgrid"><label>O que foi encontrado<select id="bfp-tipo">' +
       ACHADOS.map(function (a) { return '<option>' + E(a) + '</option>'; }).join('') + '</select></label>' +
-      '<label class="full">Anotação<textarea id="bfp-nota" rows="2" placeholder="O que viu, o que fez, o que orientou"></textarea></label></div>' +
+      '<label class="full">Anotação<textarea id="bfp-nota" data-bf-ditado data-bf-ditado-limite="400" spellcheck="false" lang="pt-BR" rows="2" placeholder="O que viu, o que fez, o que orientou"></textarea></label></div>' +
       '<div class="mact"><button class="btn ghost" onclick="closeModal()">Não</button>' +
       '<button class="btn" onclick="bfPesSalvarPonto(' + x + ',' + y + ',\'' + reg + '\'' +
       (z === undefined ? '' : ',' + z) + ')">Sim, salvar aqui</button></div>');
@@ -626,7 +626,7 @@
       '<div class="fgrid"><label>O que foi encontrado<select id="bfp-tipo">' +
       ACHADOS.map(function (a) { return '<option' + (a === p.tipo ? ' selected' : '') + '>' + E(a) + '</option>'; }).join('') +
       (ACHADOS.indexOf(p.tipo) < 0 && p.tipo ? '<option selected>' + E(p.tipo) + '</option>' : '') + '</select></label>' +
-      '<label class="full">Anotação<textarea id="bfp-nota" rows="3">' + E(p.nota) + '</textarea></label></div>' +
+      '<label class="full">Anotação<textarea id="bfp-nota" data-bf-ditado data-bf-ditado-limite="400" spellcheck="false" lang="pt-BR" rows="3">' + E(p.nota) + '</textarea></label></div>' +
       '<div class="mact"><button class="btn danger" style="margin-right:auto" onclick="bfPesApagarPonto(\'' + p.id + '\')">Apagar ponto</button>' +
       '<button class="btn ghost" onclick="closeModal()">Fechar</button>' +
       '<button class="btn" onclick="bfPesGravarPonto(\'' + p.id + '\')">Salvar</button></div>');
@@ -871,7 +871,7 @@
         (m && m.pontos.length ? '<button class="lnk" onclick="bfPesLimpar()">apagar todos</button>' : '') + '</div>' +
         listaPontos(m) +
         '<label class="bfp-obs">Anotação geral deste paciente' +
-        '<textarea rows="3" placeholder="O que vale para os dois pés, orientações, o que observar no retorno" ' +
+        '<textarea rows="3" data-bf-ditado="auto" data-bf-ditado-limite="1200" spellcheck="false" lang="pt-BR" placeholder="O que vale para os dois pés, orientações, o que observar no retorno" ' +
         'oninput="bfPesObs(this.value)">' + E(m ? m.obs : '') + '</textarea></label>' +
         '<div class="bfp-acoes"><button class="btn ghost" onclick="bfPesParaEvolucao()">Lançar na evolução clínica</button>' +
         '<button class="btn" onclick="go(\'paciente\',\'' + E(P.pid) + '\')">Ver na anamnese</button></div>' +
