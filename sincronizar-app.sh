@@ -24,6 +24,11 @@ done
 # A pasta vendor guarda biblioteca de terceiros, hoje o three.js do pé em três
 # dimensoes. Como os caminhos sao relativos, /app/ precisa da copia dela, senao
 # o modulo tridimensional pede um arquivo que nao existe ali.
+# As figuras do pé e os mapas de região, que o módulo pede por pes/...
+if [ -d pes ]; then
+  mkdir -p app/pes
+  cp pes/* app/pes/ 2>/dev/null || true
+fi
 if [ -d vendor ]; then
   mkdir -p app/vendor
   cp vendor/* app/vendor/ 2>/dev/null || true
@@ -50,6 +55,9 @@ for f in $(grep -o 'src="\./[^"?]*"' index.html | sed 's/src="\.\///;s/"//' ; \
 done
 cmp -s index.html app/index.html || { echo "index.html diferente de app/index.html"; falta=1; }
 [ -f vendor/three.module.min.js ] && [ ! -f app/vendor/three.module.min.js ] && { echo "FALTA app/vendor/three.module.min.js"; falta=1; }
+for f in pes/*.webp pes/mapa-*.png; do
+  [ -f "$f" ] && [ ! -f "app/$f" ] && { echo "FALTA app/$f"; falta=1; }
+done
 for f in $(grep -oh "img/[a-zA-Z0-9_.-]*" index.html bf-*.js 2>/dev/null | sort -u); do
   [ -f "$f" ] && [ ! -f "app/$f" ] && { echo "FALTA app/$f"; falta=1; }
 done

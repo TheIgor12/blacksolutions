@@ -1,7 +1,7 @@
 /* BlackFlow 1.28.0: network-first, sem guardar paciente nem token, offline seguro.
    Os modulos externos entram ja na instalacao: sem eles o sistema abre sem
    receituario, sem orcamento, sem fiscal e sem a navegacao entre janelas. */
-const CACHE='blackflow-v430-20261124';
+const CACHE='blackflow-v440-20261124';
 const BASE=['./','index.html','manifest.webmanifest','icone-192.png','icone-512.png',
  'bf-assinante-135.js',
  'bf-barbearia-129.js',
@@ -17,6 +17,20 @@ const BASE=['./','index.html','manifest.webmanifest','icone-192.png','icone-512.
  'bf-documents.js',
  'bf-fiscal-advanced.js',
  'bf-nfse-139.js',
+ 'bf-pe-malha.js',
+ 'bf-pe-vistas.js',
+ 'pes/dorsal.webp',
+ 'pes/plantar.webp',
+ 'pes/lateral.webp',
+ 'pes/medial.webp',
+ 'pes/dedos.webp',
+ 'pes/calcanhar.webp',
+ 'pes/mapa-dorsal.png',
+ 'pes/mapa-plantar.png',
+ 'pes/mapa-lateral.png',
+ 'pes/mapa-medial.png',
+ 'pes/mapa-dedos.png',
+ 'pes/mapa-calcanhar.png',
  'bf-pes-141.js',
  'bf-pes3d-141.js',
  'bf-integrity-audit.js',
