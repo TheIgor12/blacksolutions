@@ -39,11 +39,15 @@
   var DORSAL_CONTORNO = 'M14 72 C10 92 18 112 24 130 C28 146 26 160 30 176 C24 196 34 220 53 220 ' +
     'C72 220 82 198 76 176 C80 158 80 144 84 130 C90 112 94 92 88 72 ' +
     'C80 58 62 54 46 56 C30 58 18 62 14 72 Z';
-  var PERFIL = 'M30 20 L58 20 C62 44 70 60 92 70 C120 82 158 88 192 90 C206 91 212 96 210 101 ' +
-    'C208 106 198 107 186 107 L62 107 C40 107 24 92 22 70 C20 50 22 30 30 20 Z';
-  var PERFIL_ARCO = 'M30 20 L58 20 C62 44 70 60 92 70 C120 82 158 88 192 90 C206 91 212 96 210 101 ' +
-    'C208 106 198 107 186 107 L120 107 C96 107 76 100 60 92 C44 100 34 92 22 70 ' +
-    'C20 50 22 30 30 20 Z';
+  /* Perfil do pé: coluna da perna no alto à esquerda, calcanhar arredondado
+     embaixo, peito do pé descendo até os dedos, à direita. O perfil de dentro
+     levanta a sola no meio, que é onde aparece o arco. */
+  var PERFIL = 'M28 12 L66 12 C66 34 70 48 80 58 C100 72 140 82 182 86 ' +
+    'C200 88 216 90 218 96 C220 102 212 106 198 106 L70 106 ' +
+    'C44 106 26 94 24 72 C22 50 22 26 28 12 Z';
+  var PERFIL_ARCO = 'M28 12 L66 12 C66 34 70 48 80 58 C100 72 140 82 182 86 ' +
+    'C200 88 216 90 218 96 C220 102 212 106 198 106 L146 106 ' +
+    'C116 106 92 100 76 90 C60 100 40 100 24 72 C22 50 22 26 28 12 Z';
 
   var VISTAS = {
     dorsal: {
@@ -71,12 +75,12 @@
     lateral: {
       nome: 'Lado de fora', ajuda: 'bordo lateral, do lado do 5º dedo', vb: '0 0 230 120', contorno: PERFIL,
       regioes: [
-        { c: 'lcal', t: 'calcâneo (talão), de lado', f: 'e', cx: 44, cy: 86, rx: 22, ry: 18 },
-        { c: 'lmal', t: 'maléolo lateral (osso do tornozelo, por fora)', f: 'e', cx: 46, cy: 44, rx: 15, ry: 13 },
-        { c: 'lmed', t: 'bordo lateral do médio-pé', f: 'p', d: 'M70 80 C100 92 140 98 176 100 L176 106 L70 106 Z' },
-        { c: 'lant', t: 'antepé, por fora', f: 'e', cx: 192, cy: 98, rx: 20, ry: 11 },
-        { c: 'l5', t: '5º pododáctilo, de lado', f: 'e', cx: 203, cy: 92, rx: 11, ry: 9 },
-        { c: 'ldor', t: 'dorso do pé, de lado', f: 'p', d: 'M60 30 C70 56 100 72 150 82 L150 90 C96 80 66 62 58 34 Z' }
+        { c: 'lcal', t: 'calcâneo (talão), de lado', f: 'e', cx: 48, cy: 84, rx: 18, ry: 15 },
+        { c: 'lmal', t: 'maléolo lateral (osso do tornozelo, por fora)', f: 'e', cx: 52, cy: 42, rx: 13, ry: 12 },
+        { c: 'lmed', t: 'bordo lateral do médio-pé', f: 'p', d: 'M74 92 C102 99 132 102 158 103 L158 105 L74 105 Z' },
+        { c: 'lant', t: 'antepé, por fora', f: 'e', cx: 178, cy: 97, rx: 20, ry: 7.5 },
+        { c: 'l5', t: '5º pododáctilo, de lado', f: 'e', cx: 204, cy: 97, rx: 10, ry: 7 },
+        { c: 'ldor', t: 'dorso do pé, de lado', f: 'p', d: 'M82 58 C104 72 142 82 180 86 L178 93 C138 89 100 78 78 64 Z' }
       ]
     },
     plantar: {
@@ -97,12 +101,12 @@
     medial: {
       nome: 'Lado de dentro', ajuda: 'bordo medial, do lado do hálux, onde aparece o arco', vb: '0 0 230 120', contorno: PERFIL_ARCO,
       regioes: [
-        { c: 'mcal', t: 'calcâneo (talão), por dentro', f: 'e', cx: 44, cy: 86, rx: 22, ry: 18 },
-        { c: 'mmal', t: 'maléolo medial (osso do tornozelo, por dentro)', f: 'e', cx: 46, cy: 44, rx: 15, ry: 13 },
-        { c: 'marc', t: 'arco medial', f: 'p', d: 'M66 90 C84 102 110 106 140 106 L140 99 C108 98 84 92 70 82 Z' },
-        { c: 'mant', t: 'antepé, por dentro', f: 'e', cx: 190, cy: 98, rx: 22, ry: 11 },
-        { c: 'm1', t: '1º pododáctilo (hálux), de lado', f: 'e', cx: 203, cy: 90, rx: 12, ry: 10 },
-        { c: 'mdor', t: 'dorso do pé, por dentro', f: 'p', d: 'M60 30 C70 56 100 72 150 82 L150 90 C96 80 66 62 58 34 Z' }
+        { c: 'mcal', t: 'calcâneo (talão), por dentro', f: 'e', cx: 48, cy: 84, rx: 18, ry: 15 },
+        { c: 'mmal', t: 'maléolo medial (osso do tornozelo, por dentro)', f: 'e', cx: 52, cy: 42, rx: 13, ry: 12 },
+        { c: 'marc', t: 'arco medial', f: 'p', d: 'M76 90 C94 100 118 104 146 105 L146 99 C120 98 96 93 80 84 Z' },
+        { c: 'mant', t: 'antepé, por dentro', f: 'e', cx: 178, cy: 97, rx: 20, ry: 7.5 },
+        { c: 'm1', t: '1º pododáctilo (hálux), de lado', f: 'e', cx: 204, cy: 96, rx: 11, ry: 8 },
+        { c: 'mdor', t: 'dorso do pé, por dentro', f: 'p', d: 'M82 58 C104 72 142 82 180 86 L178 93 C138 89 100 78 78 64 Z' }
       ]
     },
     dedos: {
@@ -483,14 +487,16 @@
     'border-radius:10px;padding:10px;background:#fff}' +
 
     '@media(max-width:900px){.bfp-grade{grid-template-columns:1fr}}' +
-/* No celular as setas flutuam sobre o desenho, nas bordas: assim o pé usa a
-   largura inteira da tela, que é o que importa para marcar com o dedo. */
+/* No celular o desenho ocupa a largura inteira e as setas vão para baixo dele.
+   Flutuando por cima, elas cobriam justamente o 1º e o 5º dedo na vista de
+   frente, que é onde a profissional mais precisa tocar. */
     '@media(max-width:760px){.bfp-vistas{grid-template-columns:repeat(2,minmax(0,1fr))}' +
     '.bfp-tela svg{max-height:none}' +
-    '.bfp-girar{position:absolute;top:50%;transform:translateY(-50%);z-index:2;height:64px;width:40px;' +
-    'flex:0 0 40px;box-shadow:0 2px 10px rgba(0,0,0,.14);opacity:.96}' +
-    '.bfp-girar.esq{left:2px}.bfp-girar.dir{right:2px}' +
-    '.bfp-palco-in>.bfp-tela{width:100%}' +
+    '.bfp-palco-in{display:grid;grid-template-columns:1fr 1fr;gap:8px;' +
+    'grid-template-areas:"tela tela" "esq dir"}' +
+    '.bfp-palco-in>.bfp-tela{grid-area:tela;width:100%}' +
+    '.bfp-girar{position:static;transform:none;width:100%;height:52px;flex:none}' +
+    '.bfp-girar.esq{grid-area:esq}.bfp-girar.dir{grid-area:dir}' +
     '.bfp-obs textarea{font-size:16px;min-height:92px;padding:11px 12px}' +
     '.bfp-acoes,.bfp-pontas{grid-template-columns:1fr}}' +
     '</style>';
