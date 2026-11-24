@@ -18,6 +18,7 @@ const BASE=['./','index.html','manifest.webmanifest','icone-192.png','icone-512.
  'bf-fiscal-advanced.js',
  'bf-nfse-139.js',
  'bf-pes-141.js',
+ 'bf-pes3d-141.js',
  'bf-integrity-audit.js',
  'bf-mobile-126.js',
  'bf-mobile-photos.js',

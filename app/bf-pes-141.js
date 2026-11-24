@@ -162,12 +162,38 @@
   function nomeRegiao(vista, cod) {
     var R = (VISTAS[vista] || {}).regioes || [];
     for (var i = 0; i < R.length; i++) if (R[i].c === cod) return R[i].t;
-    return '';
+    var L = localDaRegiao(cod);
+    return L ? L.t : '';
   }
+  /* Onde uma região mora no desenho plano: em que vista e em que ponto dela.
+     É isso que faz um ponto marcado no pé em três dimensões aparecer também
+     no celular, na vista certa, sem virar outro registro. */
+  var CACHE_REG = null;
+  function localDaRegiao(cod) {
+    if (!CACHE_REG) {
+      CACHE_REG = {};
+      Object.keys(VISTAS).forEach(function (v) {
+        (VISTAS[v].regioes || []).forEach(function (f) {
+          var x, y;
+          if (f.f === 'e') { x = f.cx; y = f.cy; }
+          else if (f.f === 'r') { x = f.x + f.w / 2; y = f.y + f.h / 2; }
+          else {
+            var nums = String(f.d).match(/-?\d+(?:\.\d+)?/g) || [];
+            var sx = 0, sy = 0, n = 0;
+            for (var i = 0; i + 1 < nums.length; i += 2) { sx += +nums[i]; sy += +nums[i + 1]; n++; }
+            x = n ? sx / n : 50; y = n ? sy / n : 50;
+          }
+          CACHE_REG[f.c] = { vista: v, x: Math.round(x * 10) / 10, y: Math.round(y * 10) / 10, t: f.t };
+        });
+      });
+    }
+    return CACHE_REG[cod] || null;
+  }
+  window.bfPesLocalRegiao = localDaRegiao;
   function textoPonto(p) {
-    var v = VISTAS[p.vista] || {};
-    return (LADO[p.pe] || p.pe) + ', ' + (v.nome || p.vista).toLowerCase() +
-      (p.regiao ? ', ' + nomeRegiao(p.vista, p.regiao) : '') +
+    var v = VISTAS[p.vista];
+    var onde = v ? (LADO[p.pe] || p.pe) + ', ' + v.nome.toLowerCase() : (LADO[p.pe] || p.pe);
+    return onde + (p.regiao ? ', ' + nomeRegiao(p.vista, p.regiao) : '') +
       (p.tipo ? ' — ' + p.tipo : '') + (p.nota ? ': ' + p.nota : '');
   }
   window.bfPesTexto = function (pid) {
@@ -199,19 +225,31 @@
     return '<path d="' + f.d + '"' + com + '><title>' + E(f.t) + '</title></path>';
   }
 
+  /* Onde um ponto é desenhado na vista plana atual. O ponto marcado no pé em
+     três dimensões não tem coordenada de desenho, então cai no centro da
+     própria região, na vista a que aquela região pertence. */
+  function noPlano(p) {
+    if (p.pe !== P.pe) return null;
+    if (p.vista === P.vista) return { x: p.x, y: p.y, vindo3d: false };
+    if (p.vista !== '3d') return null;
+    var L = localDaRegiao(p.regiao);
+    if (!L || L.vista !== P.vista) return null;
+    return { x: L.x, y: L.y, vindo3d: true };
+  }
   function desenho() {
     var v = VISTAS[P.vista], m = mapaDe(P.pid, false);
-    var pts = (m ? m.pontos : []).filter(function (x) { return x.pe === P.pe && x.vista === P.vista; });
+    var pts = (m ? m.pontos : []).filter(function (x) { return !!noPlano(x); });
     var corpo = (v.regioes || []).map(function (f) { return formaSVG(f, ' class="bfp-reg"'); }).join('');
     /* O pé esquerdo é o direito espelhado. O espelho fica só no desenho: o
        ponto é gravado na coordenada do desenho, então volta no lugar certo. */
     var esp = P.pe === 'E' ? ' transform="translate(' + larguraVB(v) + ',0) scale(-1,1)"' : '';
-    var pinos = pts.map(function (p, i) {
-      var n = (m.pontos.indexOf(p) + 1);
-      return '<g class="bfp-pino' + (P.abrindo === p.id ? ' sel' : '') + '" data-pino="' + p.id + '">' +
-        '<circle cx="' + p.x + '" cy="' + p.y + '" r="' + raioPino(v) + '"></circle>' +
-        '<text x="' + p.x + '" y="' + (p.y + raioPino(v) * 0.36) + '" font-size="' + (raioPino(v) * 1.1) + '">' + n + '</text>' +
-        '<title>' + E(textoPonto(p)) + '</title></g>';
+    var pinos = pts.map(function (p) {
+      var n = (m.pontos.indexOf(p) + 1), L = noPlano(p);
+      return '<g class="bfp-pino' + (P.abrindo === p.id ? ' sel' : '') + (L.vindo3d ? ' de3d' : '') +
+        '" data-pino="' + p.id + '">' +
+        '<circle cx="' + L.x + '" cy="' + L.y + '" r="' + raioPino(v) + '"></circle>' +
+        '<text x="' + L.x + '" y="' + (L.y + raioPino(v) * 0.36) + '" font-size="' + (raioPino(v) * 1.1) + '">' + n + '</text>' +
+        '<title>' + E(textoPonto(p)) + (L.vindo3d ? ' (marcado no pé em três dimensões)' : '') + '</title></g>';
     }).join('');
     return '<svg id="bfp-svg" viewBox="' + v.vb + '" role="img" aria-label="' +
       E(LADO[P.pe] + ', ' + v.nome) + '"><g' + esp + '>' +
@@ -263,37 +301,45 @@
     if (alvo) { window.bfPesAbrirPino(alvo.getAttribute('data-pino')); return; }
     var p = pontoDoEvento(ev); if (!p) return;
     var svg = document.getElementById('bfp-svg');
-    var reg = regiaoDoPonto(svg, p.x, p.y);
-    var v = VISTAS[P.vista];
-    openModal('<h3 style="margin-top:0">Salvar este ponto?</h3>' +
-      '<p class="sub" style="margin:0 0 14px">Você tocou em <b>' + E(LADO[P.pe]) + ', ' + E(v.nome.toLowerCase()) +
-      (reg ? ', ' + E(nomeRegiao(P.vista, reg)) : '') + '</b>.<br>Quer salvar este clique como local do seu tratamento?</p>' +
-      '<div class="fgrid"><label>O que foi encontrado<select id="bfp-tipo">' +
-      ACHADOS.map(function (a) { return '<option>' + E(a) + '</option>'; }).join('') + '</select></label>' +
-      '<label class="full">Anotação<textarea id="bfp-nota" rows="2" placeholder="O que viu, o que fez, o que orientou"></textarea></label></div>' +
-      '<div class="mact"><button class="btn ghost" onclick="closeModal()">Não</button>' +
-      '<button class="btn" onclick="bfPesSalvarPonto(' + p.x + ',' + p.y + ',\'' + reg + '\')">Sim, salvar aqui</button></div>');
+    perguntar(regiaoDoPonto(svg, p.x, p.y), p.x, p.y);
   };
 
-  window.bfPesSalvarPonto = function (x, y, reg) {
+  window.bfPesSalvarPonto = function (x, y, reg, z) {
     var m = mapaDe(P.pid, true);
     var tipo = (document.getElementById('bfp-tipo') || {}).value || '';
     var nota = (document.getElementById('bfp-nota') || {}).value || '';
-    m.pontos.push({
+    var ponto = {
       id: uid(), pe: P.pe, vista: P.vista, x: x, y: y, regiao: reg || '',
       tipo: str(tipo), nota: str(nota).slice(0, 400), em: todayISO(),
       prof: str(S.config.responsavel || nomeUsuario && nomeUsuario() || '')
-    });
+    };
+    if (z !== undefined && z !== null) ponto.z = z;
+    m.pontos.push(ponto);
     m.em = todayISO();
     closeModal(); save(); render();
     toast('Ponto ' + m.pontos.length + ' salvo no mapa do paciente.');
   };
+  /* A mesma pergunta serve ao desenho plano e ao pé em três dimensões. */
+  function perguntar(reg, x, y, z) {
+    var onde = (LADO[P.pe] || P.pe) + (VISTAS[P.vista] ? ', ' + VISTAS[P.vista].nome.toLowerCase() : '') +
+      (reg ? ', ' + nomeRegiao(P.vista, reg) : '');
+    openModal('<h3 style="margin-top:0">Salvar este ponto?</h3>' +
+      '<p class="sub" style="margin:0 0 14px">Você tocou em <b>' + E(onde) + '</b>.<br>' +
+      'Quer salvar este clique como local do seu tratamento?</p>' +
+      '<div class="fgrid"><label>O que foi encontrado<select id="bfp-tipo">' +
+      ACHADOS.map(function (a) { return '<option>' + E(a) + '</option>'; }).join('') + '</select></label>' +
+      '<label class="full">Anotação<textarea id="bfp-nota" rows="2" placeholder="O que viu, o que fez, o que orientou"></textarea></label></div>' +
+      '<div class="mact"><button class="btn ghost" onclick="closeModal()">Não</button>' +
+      '<button class="btn" onclick="bfPesSalvarPonto(' + x + ',' + y + ',\'' + reg + '\'' +
+      (z === undefined ? '' : ',' + z) + ')">Sim, salvar aqui</button></div>');
+  }
 
   window.bfPesAbrirPino = function (id) {
     var m = mapaDe(P.pid, false); if (!m) return;
     var p = m.pontos.find(function (x) { return x.id === id; }); if (!p) return;
     openModal('<h3 style="margin-top:0">Ponto ' + (m.pontos.indexOf(p) + 1) + '</h3>' +
-      '<p class="sub" style="margin:0 0 14px">' + E(LADO[p.pe]) + ', ' + E((VISTAS[p.vista] || {}).nome || p.vista).toLowerCase() +
+      '<p class="sub" style="margin:0 0 14px">' + E(LADO[p.pe]) +
+      (VISTAS[p.vista] ? ', ' + E(VISTAS[p.vista].nome.toLowerCase()) : ', pé em três dimensões') +
       (p.regiao ? ', ' + E(nomeRegiao(p.vista, p.regiao)) : '') + ' · marcado em ' + E(br(p.em)) + '</p>' +
       '<div class="fgrid"><label>O que foi encontrado<select id="bfp-tipo">' +
       ACHADOS.map(function (a) { return '<option' + (a === p.tipo ? ' selected' : '') + '>' + E(a) + '</option>'; }).join('') +
@@ -320,6 +366,7 @@
 
   /* --------------------------------------------------------- comandos */
   window.bfPesGirar = function (passo) {
+    if (P.vista === '3d') { if (window.bfPes3dGirar) window.bfPes3dGirar(passo); return; }
     var i = GIRO.indexOf(P.vista);
     if (i < 0) { P.vista = 'dorsal'; } else { P.vista = GIRO[(i + passo + GIRO.length) % GIRO.length]; }
     render();
@@ -327,13 +374,33 @@
   window.bfPesPonta = function (qual) {
     P.vista = (P.vista === qual) ? 'dorsal' : qual; render();
   };
-  window.bfPesVista = function (v) { if (VISTAS[v]) { P.vista = v; render(); } };
-  window.bfPesPe = function (l) { P.pe = (l === 'E' ? 'E' : 'D'); render(); };
-  window.bfPesPaciente = function (id) { P.pid = String(id || ''); P.abrindo = null; render(); };
+  window.bfPesVista = function (v) {
+    if (v !== '3d' && !VISTAS[v]) return;
+    if (P.vista === '3d' && v !== '3d' && window.bfPes3dDestruir) window.bfPes3dDestruir();
+    P.vista = v; render();
+  };
+  window.bfPesPe = function (l) {
+    P.pe = (l === 'E' ? 'E' : 'D');
+    if (P.vista === '3d' && window.bfPes3dDestruir) window.bfPes3dDestruir();
+    render();
+  };
+  window.bfPesPaciente = function (id) {
+    P.pid = String(id || ''); P.abrindo = null;
+    if (P.vista === '3d' && window.bfPes3dDestruir) window.bfPes3dDestruir();
+    render();
+  };
   window.bfPesIr = function (id) {
     var m = mapaDe(P.pid, false); if (!m) return;
     var p = m.pontos.find(function (x) { return x.id === id; }); if (!p) return;
-    P.pe = p.pe; P.vista = p.vista; P.abrindo = p.id; render();
+    /* Ponto do modelo tridimensional num aparelho que não o suporta: abre na
+       vista plana da região, que mostra a mesma coisa. */
+    var destino = p.vista;
+    if (destino === '3d' && !tem3d()) {
+      var Lr = localDaRegiao(p.regiao);
+      destino = Lr ? Lr.vista : 'dorsal';
+    }
+    if (P.vista === '3d' && destino !== '3d' && window.bfPes3dDestruir) window.bfPes3dDestruir();
+    P.pe = p.pe; P.vista = destino; P.abrindo = p.id; render();
   };
   window.bfPesObs = function (v) {
     var m = mapaDe(P.pid, true); m.obs = String(v || '').slice(0, 1200); m.em = todayISO();
@@ -363,12 +430,47 @@
   };
 
   /* ------------------------------------------------------------- a tela */
+  var tem3d = function () { return typeof window.bfPes3dCabe === 'function' && window.bfPes3dCabe(); };
   function barraVistas() {
     var botoes = GIRO.concat(PONTAS).map(function (k) {
       return '<button class="btn ' + (P.vista === k ? '' : 'ghost') + ' sm" onclick="bfPesVista(\'' + k + '\')">' +
         E(VISTAS[k].nome) + '</button>';
     }).join('');
-    return '<div class="bfp-vistas">' + botoes + '</div>';
+    if (tem3d()) botoes += '<button class="btn ' + (P.vista === '3d' ? '' : 'ghost') +
+      ' sm bfp-b3d" onclick="bfPesVista(\'3d\')">Pé em três dimensões</button>';
+    return '<div class="bfp-vistas' + (tem3d() ? ' com3d' : '') + '">' + botoes + '</div>';
+  }
+
+  /* ------------------------------------------- o pé em três dimensões */
+  /* Um ponto marcado no desenho plano não tem coordenada de profundidade.
+     Para ele aparecer no modelo, cai no centro da própria região, que o
+     gerador da malha calculou vértice a vértice. */
+  function pontos3d() {
+    var m = mapaDe(P.pid, false); if (!m) return [];
+    var C = (typeof window.bfPes3dCentros === 'function') ? window.bfPes3dCentros() : {};
+    var L = [];
+    m.pontos.forEach(function (p) {
+      if (p.pe !== P.pe) return;
+      if (p.z !== undefined && p.z !== null) { L.push({ id: p.id, x: p.x, y: p.y, z: p.z, cor: P.abrindo === p.id ? 0xd93a3a : 0x5a4cfb }); return; }
+      var c = C[p.regiao];
+      if (c) L.push({ id: p.id, x: c[0], y: c[1], z: c[2], cor: P.abrindo === p.id ? 0xd93a3a : 0x7c71ff });
+    });
+    return L;
+  }
+  function montar3d() {
+    var caixa = document.getElementById('bfp-3d'); if (!caixa) return;
+    caixa.innerHTML = '<p class="bfp-carregando">Montando o pé...</p>';
+    window.bfPes3dMontar(caixa, {
+      pe: P.pe, pontos: pontos3d(),
+      aoTocar: function (r) {
+        if (r.pino) { window.bfPesAbrirPino(r.pino); return; }
+        perguntar(r.regiao, r.x, r.y, r.z);
+      }
+    }).catch(function (e) {
+      caixa.innerHTML = '<p class="bfp-carregando">Não foi possível abrir o pé em três dimensões neste computador. ' +
+        'Use os desenhos acima, que registram a mesma coisa.</p>';
+      console.error('BlackFlow 3D:', e);
+    });
   }
 
   function listaPontos(m) {
@@ -376,8 +478,10 @@
     return '<ol class="bfp-lista">' + m.pontos.map(function (p, i) {
       return '<li' + (P.abrindo === p.id ? ' class="sel"' : '') + '><div class="bfp-li-t">' +
         '<b>' + (i + 1) + '. ' + E(p.tipo || 'Ponto marcado') + '</b>' +
-        '<span>' + E(LADO[p.pe]) + ', ' + E((VISTAS[p.vista] || {}).nome || '').toLowerCase() +
-        (p.regiao ? ', ' + E(nomeRegiao(p.vista, p.regiao)) : '') + '</span>' +
+        '<span>' + E(LADO[p.pe]) +
+        (VISTAS[p.vista] ? ', ' + E(VISTAS[p.vista].nome.toLowerCase()) : '') +
+        (p.regiao ? ', ' + E(nomeRegiao(p.vista, p.regiao)) : '') +
+        (p.vista === '3d' ? ' <i class="bfp-marca3d">marcado em três dimensões</i>' : '') + '</span>' +
         (p.nota ? '<small>' + E(p.nota) + '</small>' : '') +
         '<small class="bfp-data">' + E(br(p.em)) + (p.prof ? ' · ' + E(p.prof) : '') + '</small></div>' +
         '<div class="bfp-li-b"><button class="btn ghost sm" onclick="bfPesIr(\'' + p.id + '\')">ver no pé</button>' +
@@ -387,7 +491,8 @@
 
   function tela() {
     var L = pacAtivos(), m = P.pid ? mapaDe(P.pid, false) : null, p = pacDe(P.pid);
-    var v = VISTAS[P.vista];
+    var ehTres = P.vista === '3d';
+    var v = VISTAS[P.vista] || VISTAS.dorsal;
     return '<div class="page bfp-page"><div class="phead"><div>' +
       '<h1>Pés interativos</h1>' +
       '<p class="sub">Gire o pé, toque onde está tratando e guarde o ponto. O que você marcar aqui aparece na anamnese do paciente.</p>' +
@@ -407,12 +512,22 @@
         barraVistas() +
         '<div class="bfp-palco-in">' +
         '<button class="bfp-girar esq" onclick="bfPesGirar(-1)" aria-label="Girar para a esquerda" title="Girar um quarto de volta para a esquerda">&#8249;</button>' +
-        '<div class="bfp-tela" onclick="bfPesClique(event)">' + desenho() + '</div>' +
+        (ehTres
+          ? '<div class="bfp-tela bfp-3d" id="bfp-3d"></div>'
+          : '<div class="bfp-tela" onclick="bfPesClique(event)">' + desenho() + '</div>') +
         '<button class="bfp-girar dir" onclick="bfPesGirar(1)" aria-label="Girar para a direita" title="Girar um quarto de volta para a direita">&#8250;</button>' +
         '</div>' +
-        '<p class="bfp-legenda"><b>' + E(LADO[P.pe]) + ' · ' + E(v.nome) + '</b><br>' + E(v.ajuda) + '</p>' +
-        '<div class="bfp-pontas"><button class="btn ghost sm" onclick="bfPesPonta(\'dedos\')">Virar para a ponta dos dedos</button>' +
-        '<button class="btn ghost sm" onclick="bfPesPonta(\'calcanhar\')">Virar para o calcanhar</button></div>' +
+        (ehTres
+          ? '<p class="bfp-legenda"><b>' + E(LADO[P.pe]) + ' · Pé em três dimensões</b><br>' +
+            'Arraste com o mouse para girar em volta inteira, role para aproximar e toque no pé para marcar o ponto.</p>' +
+            '<div class="bfp-pontas">' +
+            '<button class="btn ghost sm" onclick="bfPes3dAngulo(\'dorsal\')">Ver por cima</button>' +
+            '<button class="btn ghost sm" onclick="bfPes3dAngulo(\'plantar\')">Ver a sola</button>' +
+            '<button class="btn ghost sm" onclick="bfPes3dAngulo(\'lateral\')">Ver de fora</button>' +
+            '<button class="btn ghost sm" onclick="bfPes3dAngulo(\'medial\')">Ver de dentro</button></div>'
+          : '<p class="bfp-legenda"><b>' + E(LADO[P.pe]) + ' · ' + E(v.nome) + '</b><br>' + E(v.ajuda) + '</p>' +
+            '<div class="bfp-pontas"><button class="btn ghost sm" onclick="bfPesPonta(\'dedos\')">Virar para a ponta dos dedos</button>' +
+            '<button class="btn ghost sm" onclick="bfPesPonta(\'calcanhar\')">Virar para o calcanhar</button></div>') +
         '</div>' +
         '<div class="card bfp-fichario">' +
         '<div class="bfp-cab"><b>Pontos marcados' + (m && m.pontos.length ? ' (' + m.pontos.length + ')' : '') + '</b>' +
@@ -444,6 +559,7 @@
     if (!cabe()) { UI.view = 'agenda'; return renderAntes(); }
     document.getElementById('app').innerHTML = shell(tela());
     try { fonteAplicar(); } catch (e) { }
+    if (P.vista === '3d' && P.pid) setTimeout(montar3d, 0);
   };
 
   /* ---------------------------------------------------------------- CSS */
@@ -456,6 +572,9 @@
     '.bfp-pes,.bfp-pontas,.bfp-acoes{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}' +
     '.bfp-pes .btn,.bfp-pontas .btn,.bfp-acoes .btn{width:100%;min-width:0;justify-content:center;white-space:normal;text-align:center}' +
     '.bfp-vistas{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}' +
+    '.bfp-vistas.com3d .bfp-b3d{grid-column:1/-1}' +
+    '.bfp-3d{padding:0;overflow:hidden;cursor:grab;display:flex;align-items:center;justify-content:center;min-height:320px}' +
+    '.bfp-carregando{margin:0;padding:24px;text-align:center;font-size:13px;color:var(--mut);line-height:1.6}' +
     '.bfp-vistas .btn{justify-content:center;white-space:normal;text-align:center;min-width:0}' +
     '.bfp-palco-in{display:flex;align-items:center;gap:6px;position:relative}' +
     '.bfp-ficha{margin-top:10px}.bfp-ficha .btn{width:100%;justify-content:center}' +
@@ -479,6 +598,8 @@
     '.bfp-lista li.sel{border-color:#5a4cfb;box-shadow:inset 3px 0 0 #5a4cfb}' +
     '.bfp-li-t{display:flex;flex-direction:column;gap:3px;min-width:0;flex:1 1 180px}' +
     '.bfp-li-t b{font-size:13.5px}.bfp-li-t span{font-size:12.5px;color:var(--mut)}' +
+    '.bfp-marca3d{font-style:normal;font-size:11px;background:#eceaff;color:#4a3fd0;border-radius:999px;padding:1px 7px;white-space:nowrap}' +
+    '.bfp-pino.de3d circle{stroke-dasharray:3 2}' +
     '.bfp-li-t small{font-size:12px}.bfp-data{color:var(--mut)}' +
     '.bfp-li-b{display:flex;gap:6px;flex-wrap:wrap}' +
     '.bfp-vazio{margin:0;font-size:13px;color:var(--mut);line-height:1.6}' +

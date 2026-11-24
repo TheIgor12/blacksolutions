@@ -5160,6 +5160,8 @@ const NOVIDADES={versao:'1.41.0',itens:[
   d:'Quando o serviço tem pacote cadastrado, ele aparece na lista em duas linhas: uma do avulso, com o valor da sessão, e uma do pacote, com o valor fechado. Escolhendo o pacote, o orçamento leva o valor fechado, uma vez, com as sessões escritas na descrição. Antes o sistema multiplicava as sessões do pacote pelo preço avulso, e o total saía maior do que o combinado.'},
  {t:'Alta e abandono do tratamento',
   d:'No pop-up do agendamento e no relatório de quem não vem há muito tempo apareceram os botões de dar alta e de registrar abandono. Os dois ficam na evolução clínica, com data e profissional, e geram documento para o paciente assinar.'},
+ {seg:'podologia',t:'Pé em três dimensões, no computador',
+  d:'No módulo Pés interativos, quem estiver no computador tem também o pé em três dimensões. Arrasta com o mouse para girar em volta inteira, rola para aproximar e toca no pé para marcar. O ponto marcado ali aparece depois no celular, no desenho plano da mesma região, porque é o mesmo registro. No celular continua o desenho de sempre, que não baixa nada a mais.'},
  {t:'Aparência no celular',
   d:'Os campos e os botões ficaram do mesmo tamanho em todas as telas, e a letra dos campos aumentou, para o celular parar de dar zoom sozinho quando você toca para escrever.'}]};
 function novidadeItens(){const seg=String((S&&S.config&&S.config.segmento)||'podologia');
@@ -6055,6 +6057,7 @@ function menuProfs(){const L=az(S.profissionais.filter(p=>p.ativo!==false));if(!
 <script src="./bf-fiscal-advanced.js?v=1.41.0"></script>
 <script src="./bf-nfse-139.js?v=1.41.0"></script>
 <script src="./bf-pes-141.js?v=1.41.0"></script>
+<script src="./bf-pes3d-141.js?v=1.41.0"></script>
 <script src="./bf-receituario.js?v=1.41.0"></script>
 <script src="./bf-cadastro-fiscal.js?v=1.41.0"></script>
 <script src="./bf-context-actions.js?v=1.41.0"></script>

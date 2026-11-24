@@ -21,6 +21,19 @@ cp manifest.webmanifest app/manifest.webmanifest
 for f in bf-*.js bf-*.css icone-*.png; do
   [ -f "$f" ] && cp "$f" "app/$f"
 done
+# A pasta vendor guarda biblioteca de terceiros, hoje o three.js do pé em três
+# dimensoes. Como os caminhos sao relativos, /app/ precisa da copia dela, senao
+# o modulo tridimensional pede um arquivo que nao existe ali.
+if [ -d vendor ]; then
+  mkdir -p app/vendor
+  cp vendor/* app/vendor/ 2>/dev/null || true
+fi
+# As imagens que o sistema pede pelo caminho img/... Copiadas só as usadas, e
+# nao a pasta inteira, que tem material de divulgacao e pesa megabytes.
+mkdir -p app/img
+for f in $(grep -oh "img/[a-zA-Z0-9_.-]*" index.html bf-*.js 2>/dev/null | sort -u); do
+  [ -f "$f" ] && cp "$f" "app/$f"
+done
 # Tira de app/ o que nao existe mais na raiz: modulo removido que continua la
 # e carregado pelo navegador de quem entra por /app/, e volta a vida sozinho.
 for f in app/bf-*.js app/bf-*.css; do
@@ -36,5 +49,9 @@ for f in $(grep -o 'src="\./[^"?]*"' index.html | sed 's/src="\.\///;s/"//' ; \
   case "$f" in *.js|*.css) [ -f "app/$f" ] || { echo "FALTA app/$f"; falta=1; } ;; esac
 done
 cmp -s index.html app/index.html || { echo "index.html diferente de app/index.html"; falta=1; }
-[ "$falta" = 0 ] && echo "app/ sincronizado: $(ls app | wc -l) arquivos"
+[ -f vendor/three.module.min.js ] && [ ! -f app/vendor/three.module.min.js ] && { echo "FALTA app/vendor/three.module.min.js"; falta=1; }
+for f in $(grep -oh "img/[a-zA-Z0-9_.-]*" index.html bf-*.js 2>/dev/null | sort -u); do
+  [ -f "$f" ] && [ ! -f "app/$f" ] && { echo "FALTA app/$f"; falta=1; }
+done
+[ "$falta" = 0 ] && echo "app/ sincronizado: $(ls app | wc -l) arquivos, mais $(ls app/vendor 2>/dev/null | wc -l) em vendor"
 exit $falta
