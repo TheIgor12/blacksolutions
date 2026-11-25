@@ -10,6 +10,8 @@
      direto no HTML em centenas de lugares; tirar isso é reescrever a interface
      inteira, e está anotado no plano de segurança como dívida. -->
 <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://cdnjs.cloudflare.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' data: https://fonts.gstatic.com; img-src 'self' data: blob: https://*.supabase.co; media-src 'self' data: blob:; connect-src 'self' blob: data: https://*.supabase.co https://raw.githubusercontent.com https://brasilapi.com.br https://open.cnpja.com https://viacep.com.br https://generativelanguage.googleapis.com; worker-src 'self' blob:; object-src 'none'; base-uri 'self'; form-action 'self'">
+<!-- Encaminha o retorno padrão de senha antes da inicialização do cliente Auth. -->
+<script>(function(){const h=new URLSearchParams(location.hash.slice(1)),q=new URLSearchParams(location.search);let destino='';if(h.get('type')==='recovery'||h.has('error_code')&&h.has('error_description'))destino='#link-antigo';else if(q.has('code')){try{if(localStorage.getItem('blackflow-recovery-1492-code-verifier'))destino='#'+location.search.slice(1);}catch(_){}}if(destino){window.__bfRetornoRecuperacao=true;history.replaceState(null,'',location.pathname);location.replace('/recuperar-senha/'+destino);}})();</script>
 <title>BlackFlow</title>
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link id="fonteLink" href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
 <link rel="icon" id="fav">
@@ -5232,7 +5234,7 @@ function agNovo(a,s){if(s==='Desmarcado'||s==='Faltou')return false;const k=a.da
  const hist=c=>S[c].some(x=>x.pacienteId===a.pacienteId&&((x.data||x.vencimento||x.pagamento||'')<a.data)&&(x.data||x.vencimento||x.pagamento));
  return !hist('evolucoes')&&!hist('tratamentos')&&!S.lancamentos.some(l=>l.pacienteId===a.pacienteId&&l.pagamento&&l.pagamento<a.data)}
 /* ============ Atualização: aviso com botão Atualizar agora ============ */
-const VERSAO_APP='1.49.1';const URL_VERSAO_JSON='https://raw.githubusercontent.com/TheIgor12/blacksolutions/main/versao.json';
+const VERSAO_APP='1.49.2';const URL_VERSAO_JSON='https://raw.githubusercontent.com/TheIgor12/blacksolutions/main/versao.json';
 const numV=v=>String(v||'0').split(/\D+/).filter(Boolean).map(Number);
 function versaoMaior(a,b){const x=numV(a),y=numV(b);for(let i=0;i<Math.max(x.length,y.length);i++){const d=(x[i]||0)-(y[i]||0);if(d)return d>0}return false}
 const ATU={nova:null,timer:null};
@@ -5242,7 +5244,8 @@ const ATU={nova:null,timer:null};
    muda, sobe uma janela dizendo o que mudou no trabalho dela, com as palavras
    do dia a dia, e nao com os nomes internos do sistema. Sobe uma vez por
    versao em cada aparelho, e nunca por cima de outra janela aberta. */
-const NOVIDADES={versao:'1.49.1',itens:[
+const NOVIDADES={versao:'1.49.2',itens:[
+ {t:'Link para recuperar a senha',d:'O link recebido por e-mail agora abre a tela separada para escolher uma nova senha. O autenticador do Painel Mestre continua obrigatório.'},
  {t:'Painel Mestre no computador',d:'O acesso mestre agora tem uma entrada própria e mostra Biomedicina e Odontologia com dados fictícios, sem abrir cadastros de clínicas.'},
  {seg:'odontologia',t:'Odontograma e ficha periodontal',d:'Abra o Odontograma para marcar a face de cada dente e registrar a ficha periodontal.'},
  {seg:'biomedicina',t:'Histórico intramuscular',d:'Registre uma aplicação já realizada, digite o nome do produto usado e revise o rascunho antes de salvar na ficha.'},
@@ -5743,7 +5746,7 @@ function vAuth(){const A=UI.auth;const box=c=>`<div class="auth"><div class="aut
  case 'carregando':return box(`<h2>Carregando...</h2><p class="sub">${esc(A.msg||'Buscando os dados da clínica na nuvem.')}</p>`);
  case 'criar':return box(`<h2>Criar conta</h2><form onsubmit="authCriar();return false"><label>Seu nome<input id="au_nome" autocomplete="name" value="${esc(A.nome||'')}"></label><label>Celular com WhatsApp<input id="au_cel" type="tel" inputmode="numeric" data-mask="fone" autocomplete="tel" value="${esc(A.cel||'')}" placeholder="(00) 00000-0000"></label><label>E-mail<input id="au_email" type="email" autocomplete="email" value="${esc(A.email||'')}"></label><label>Senha (mínimo de 8 caracteres)<input id="au_senha" type="password" autocomplete="new-password"></label><label>Repita a senha<input id="au_senha2" type="password" autocomplete="new-password"></label>${msg}<button class="btn">Criar conta</button></form><div class="authlinks"><button class="lnk" onclick="UI.auth={modo:'entrar'};render()">Já tenho conta</button></div>`);
  case 'codigo':return box(`<h2>Confirme seu e-mail</h2><p class="sub" style="margin-bottom:14px">Enviamos um e-mail de confirmação para <b>${esc(A.email)}</b>. Se não aparecer, olhe a caixa de spam.<br><br>Se o e-mail trouxer um <b>código</b>, digite abaixo. Se trouxer um <b>link</b>, clique nele, volte aqui e clique em Já confirmei.</p><form onsubmit="authCodigo();return false"><label>Código<input id="au_cod" inputmode="numeric" maxlength="10" autocomplete="one-time-code"></label>${msg}<button class="btn">Confirmar</button></form><button class="btn ghost" style="margin-top:10px" onclick="UI.auth={modo:'entrar',email:'${esc(A.email)}',msg:'Agora entre com o seu e-mail e senha.',ok:true};render()">Já confirmei pelo link</button><div class="authlinks"><button class="lnk" onclick="authReenviar()">Enviar de novo</button><button class="lnk" onclick="UI.auth={modo:'entrar',email:'${esc(A.email)}'};render()">Voltar</button></div>`);
- case 'esqueci':return box(`<h2>Recuperar senha</h2><p class="sub" style="margin-bottom:14px">Informe o e-mail da conta. Vamos enviar um código para criar uma nova senha.</p><form onsubmit="authEsqueci();return false"><label>E-mail<input id="au_email" type="email" value="${esc(A.email||'')}"></label>${msg}<button class="btn">Enviar código</button></form><div class="authlinks"><button class="lnk" onclick="UI.auth={modo:'entrar'};render()">Voltar</button></div>`);
+ case 'esqueci':return box(`<h2>Recuperar senha</h2><p class="sub" style="margin-bottom:14px">Para receber um link de recuperação da sua senha, use a tela separada.</p><form onsubmit="authEsqueci();return false"><label>E-mail<input id="au_email" type="email" value="${esc(A.email||'')}"></label>${msg}<button class="btn">Enviar código</button></form><div class="authlinks"><button class="lnk" onclick="UI.auth={modo:'entrar'};render()">Voltar</button></div>`);
  case 'nova_senha':return box(`<h2>Nova senha</h2><p class="sub" style="margin-bottom:14px">Digite o código enviado para <b>${esc(A.email)}</b> e escolha a nova senha.</p><form onsubmit="authNovaSenha();return false"><label>Código<input id="au_cod" inputmode="numeric" maxlength="10" autocomplete="one-time-code"></label><label>Nova senha<input id="au_senha" type="password" autocomplete="new-password"></label><label>Repita a nova senha<input id="au_senha2" type="password" autocomplete="new-password"></label>${msg}<button class="btn">Salvar nova senha</button></form><div class="authlinks"><button class="lnk" onclick="UI.auth={modo:'entrar'};render()">Voltar</button></div>`);
  case 'clinica':{const seg=A.seg||'',pl=A.plano||'';const esc2=x=>esc(x);
   const op=(n,k,p2,t,d,pr)=>`<button type="button" class="aopt ${A.op===n?'on':''}" onclick="authEsc(${n},'${k}','${p2}')"><span><b>${t}</b><small>${d}</small></span><span class="pr">${pr}</span></button>`;
@@ -5783,7 +5786,7 @@ function vAuth(){const A=UI.auth;const box=c=>`<div class="auth"><div class="aut
   return box(`<h2>${titulo}</h2><p class="sub" style="margin-bottom:14px">${txt}</p>${pagar}${voucher}<div class="authlinks">${teste?`<button class="lnk" id="btPrazo" onclick="pedirPrazo(this)">Pedir mais prazo ao suporte</button>`:''}<button class="lnk" onclick="entrar(NV.sessao)">Já paguei, verificar de novo</button><button class="lnk" onclick="sair()">Sair</button></div>`);
  }
  case 'offline':return box(`<h2>Sem conexão</h2><p class="sub" style="margin-bottom:14px">Não foi possível falar com o servidor. Verifique a internet.</p>${A.temCache?`<p class="sub" style="margin-bottom:14px">Você pode abrir os dados salvos neste computador. O que for alterado será enviado quando a internet voltar.</p><button class="btn" onclick="abrirOffline()">Abrir dados salvos neste computador</button><div style="height:10px"></div>`:''}<button class="btn ghost" onclick="location.reload()">Tentar de novo</button>`);
- default:return box(`<h2>Entrar</h2><p><a href="/painel-mestre/">Painel Mestre no computador</a></p><form onsubmit="authEntrar();return false"><label>E-mail<input id="au_email" type="email" autocomplete="email" value="${esc(A.email||'')}"></label><label>Senha<input id="au_senha" type="password" autocomplete="current-password"></label>${msg}<button class="btn">Entrar</button></form><div class="authlinks"><button class="lnk" onclick="UI.auth={modo:'esqueci',email:val('#au_email')};render()">Esqueci minha senha</button><button class="lnk" onclick="UI.auth={modo:'criar',email:val('#au_email')};render()">Criar conta</button></div>`)}}
+ default:return box(`<h2>Entrar</h2><p><a href="/painel-mestre/">Painel Mestre no computador</a></p><form onsubmit="authEntrar();return false"><label>E-mail<input id="au_email" type="email" autocomplete="email" value="${esc(A.email||'')}"></label><label>Senha<input id="au_senha" type="password" autocomplete="current-password"></label>${msg}<button class="btn">Entrar</button></form><div class="authlinks"><button class="lnk" onclick="location.assign('/recuperar-senha/')">Esqueci minha senha</button><button class="lnk" onclick="UI.auth={modo:'criar',email:val('#au_email')};render()">Criar conta</button></div>`)}}
 async function authEntrar(){const email=val('#au_email'),senha=$('#au_senha').value;if(!email||!senha){authMsg('Informe e-mail e senha.');return}authMsg('Entrando...',true);
  const {data,error}=await NV.sb.auth.signInWithPassword({email,password:senha});
  if(error){if(/not confirmed/i.test(error.message)){await NV.sb.auth.resend({type:'signup',email});UI.auth={modo:'codigo',email,msg:'Seu e-mail ainda não foi confirmado. Enviamos um novo código.',ok:true};render();return}authMsg(traduz(error));return}
@@ -6116,6 +6119,7 @@ function telaCopiaNaoAutorizada(){
   <p style="font-size:12px;color:#9ca3af;margin:18px 0 0">Precisa de ajuda? suporte@blacksolutions.net.br</p>
  </div></div>`}
 (async function(){
+ if(window.__bfRetornoRecuperacao)return;
  /* O programa instalado injeta o pywebview depois do carregamento, por isso a
     segunda conferência. Enquanto isso o sistema não abre. */
  if(!origemAutorizada()){
@@ -6123,7 +6127,7 @@ function telaCopiaNaoAutorizada(){
   if(!origemAutorizada()){telaCopiaNaoAutorizada();return}}
  try{navigator.storage&&navigator.storage.persist&&navigator.storage.persist()}catch(e){}
  try{fonteAplicar()}catch(e){}
- try{if(/^https?:/.test(location.protocol)&&'serviceWorker' in navigator&&!window.pywebview)navigator.serviceWorker.register('./sw.js?v=1.49.1',{updateViaCache:'none'}).then(r=>r.update()).catch(()=>{})}catch(e){}
+ try{if(/^https?:/.test(location.protocol)&&'serviceWorker' in navigator&&!window.pywebview)navigator.serviceWorker.register('./sw.js?v=1.49.2',{updateViaCache:'none'}).then(r=>r.update()).catch(()=>{})}catch(e){}
  if(NV.ativa){
   if(!window.supabase||!window.supabase.createClient){UI.auth={modo:'offline',temCache:!!(await DB.get('ultimo'))};render();return}
   NV.sb=window.supabase.createClient(NUVEM.url,NUVEM.chave,{auth:{persistSession:true,autoRefreshToken:true}});
@@ -6174,41 +6178,41 @@ function agProf(nome){UI.profOff={};if(nome){S.profissionais.forEach(p=>{if(norm
 function menuProfs(){const L=az(S.profissionais.filter(p=>p.ativo!==false));if(!L.length)return '';const sel=UI.view==='agenda'?(UI.agProf||''):null;
  return `<div class="msec">AGENDA POR PROFISSIONAL</div><button class="${sel===''&&UI.view==='agenda'?'on':''}" onclick="agProf('')">${ico('cal',18)} Todos os profissionais</button>${L.map(p=>`<button class="${sel!=null&&norm(sel)===norm(p.nome)?'on':''}" onclick="agProf(${esc(JSON.stringify(p.nome))})"><span style="display:inline-block;width:12px;height:12px;border-radius:50%;background:${esc(p.cor||'#0a4bde')};margin:0 3px;flex:none"></span> ${esc(p.nome)}</button>`).join('')}`}
 </script>
-<script src="./bf-foto-clinica-149.js?v=1.49.1"></script>
-<script src="./bf-clinical.js?v=1.49.1"></script>
-<script src="./bf-fiscal-advanced.js?v=1.49.1"></script>
-<script src="./bf-nfse-139.js?v=1.49.1"></script>
-<script src="./bf-pes-141.js?v=1.49.1"></script>
-<script src="./bf-pe-malha.js?v=1.49.1"></script>
-<script src="./bf-pe-vistas.js?v=1.49.1"></script>
-<script src="./bf-pes3d-141.js?v=1.49.1"></script>
-<script src="./bf-receituario.js?v=1.49.1"></script>
-<script src="./bf-cadastro-fiscal.js?v=1.49.1"></script>
-<script src="./bf-context-actions.js?v=1.49.1"></script>
-<script src="./bf-integrity-audit.js?v=1.49.1"></script>
-<script src="./bf-blackpay-integrated.js?v=1.49.1"></script>
-<script src="./bf-tati-help.js?v=1.49.1"></script>
-<script src="./bf-mobile-photos.js?v=1.49.1"></script>
-<script src="./bf-documents.js?v=1.49.1"></script>
-<script src="./bf-workflow-123.js?v=1.49.1"></script>
-<script src="./bf-workflow-124.js?v=1.49.1"></script>
-<script>const bfMobileCss=document.createElement("link");bfMobileCss.rel="stylesheet";bfMobileCss.href="./bf-mobile-126.css?v=1.49.1";document.head.appendChild(bfMobileCss);</script>
-<script src="./bf-mobile-126.js?v=1.49.1"></script>
-<script>const bfNavCss=document.createElement("link");bfNavCss.rel="stylesheet";bfNavCss.href="./bf-navegacao-128.css?v=1.49.1";document.head.appendChild(bfNavCss);</script>
-<script src="./bf-navegacao-128.js?v=1.49.1"></script>
-<script src="./bf-barbearia-129.js?v=1.49.1"></script>
-<script src="./bf-catalogos-130.js?v=1.49.1"></script>
-<script src="./bf-sincronia-138.js?v=1.49.1"></script>
-<script src="./bf-cobranca-138.js?v=1.49.1"></script>
-<script src="./bf-assinante-138.js?v=1.49.1"></script>
-<script>["./bf-assinante-135.css?v=1.49.1","./bf-assinante-138.css?v=1.49.1"].forEach(function(h){var l=document.createElement("link");l.rel="stylesheet";l.href=h;document.head.appendChild(l)});</script>
-<script src="./bf-assinante-135.js?v=1.49.1"></script>
-<script src="./bf-tutorial-136.js?v=1.49.1"></script>
-<script src="./bf-documentos-137.js?v=1.49.1"></script>
-<script src="./bf-ditado-146.js?v=1.49.1"></script>
-<script src="./bf-acessos-prontuario-149.js?v=1.49.1"></script>
-<script src="./bf-odontomapa-149.js?v=1.49.1"></script>
-<script src="./bf-ciencia-facial-149.js?v=1.49.1"></script>
-<script src="./bf-estetmapa-149.js?v=1.49.1"></script>
+<script src="./bf-foto-clinica-149.js?v=1.49.2"></script>
+<script src="./bf-clinical.js?v=1.49.2"></script>
+<script src="./bf-fiscal-advanced.js?v=1.49.2"></script>
+<script src="./bf-nfse-139.js?v=1.49.2"></script>
+<script src="./bf-pes-141.js?v=1.49.2"></script>
+<script src="./bf-pe-malha.js?v=1.49.2"></script>
+<script src="./bf-pe-vistas.js?v=1.49.2"></script>
+<script src="./bf-pes3d-141.js?v=1.49.2"></script>
+<script src="./bf-receituario.js?v=1.49.2"></script>
+<script src="./bf-cadastro-fiscal.js?v=1.49.2"></script>
+<script src="./bf-context-actions.js?v=1.49.2"></script>
+<script src="./bf-integrity-audit.js?v=1.49.2"></script>
+<script src="./bf-blackpay-integrated.js?v=1.49.2"></script>
+<script src="./bf-tati-help.js?v=1.49.2"></script>
+<script src="./bf-mobile-photos.js?v=1.49.2"></script>
+<script src="./bf-documents.js?v=1.49.2"></script>
+<script src="./bf-workflow-123.js?v=1.49.2"></script>
+<script src="./bf-workflow-124.js?v=1.49.2"></script>
+<script>const bfMobileCss=document.createElement("link");bfMobileCss.rel="stylesheet";bfMobileCss.href="./bf-mobile-126.css?v=1.49.2";document.head.appendChild(bfMobileCss);</script>
+<script src="./bf-mobile-126.js?v=1.49.2"></script>
+<script>const bfNavCss=document.createElement("link");bfNavCss.rel="stylesheet";bfNavCss.href="./bf-navegacao-128.css?v=1.49.2";document.head.appendChild(bfNavCss);</script>
+<script src="./bf-navegacao-128.js?v=1.49.2"></script>
+<script src="./bf-barbearia-129.js?v=1.49.2"></script>
+<script src="./bf-catalogos-130.js?v=1.49.2"></script>
+<script src="./bf-sincronia-138.js?v=1.49.2"></script>
+<script src="./bf-cobranca-138.js?v=1.49.2"></script>
+<script src="./bf-assinante-138.js?v=1.49.2"></script>
+<script>["./bf-assinante-135.css?v=1.49.2","./bf-assinante-138.css?v=1.49.2"].forEach(function(h){var l=document.createElement("link");l.rel="stylesheet";l.href=h;document.head.appendChild(l)});</script>
+<script src="./bf-assinante-135.js?v=1.49.2"></script>
+<script src="./bf-tutorial-136.js?v=1.49.2"></script>
+<script src="./bf-documentos-137.js?v=1.49.2"></script>
+<script src="./bf-ditado-146.js?v=1.49.2"></script>
+<script src="./bf-acessos-prontuario-149.js?v=1.49.2"></script>
+<script src="./bf-odontomapa-149.js?v=1.49.2"></script>
+<script src="./bf-ciencia-facial-149.js?v=1.49.2"></script>
+<script src="./bf-estetmapa-149.js?v=1.49.2"></script>
 </body>
 </html>
