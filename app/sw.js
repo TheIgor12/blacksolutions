@@ -1,30 +1,30 @@
 /* BlackFlow 1.28.0: network-first, sem guardar paciente nem token, offline seguro.
    Os modulos externos entram ja na instalacao: sem eles o sistema abre sem
    receituario, sem orcamento, sem fiscal e sem a navegacao entre janelas. */
-const CACHE='blackflow-v490-modulos-clinicos-convite';
+const CACHE='blackflow-v491-painel-mestre';
 const BASE=['./','index.html','manifest.webmanifest','icone-192.png','icone-512.png',
- 'bf-assinante-135.js?v=1.49.0',
- 'bf-barbearia-129.js?v=1.49.0',
- 'bf-blackpay-integrated.js?v=1.49.0',
- 'bf-cadastro-fiscal.js?v=1.49.0',
- 'bf-catalogos-130.js?v=1.49.0',
- 'bf-foto-clinica-149.js?v=1.49.0',
- 'bf-clinical.js?v=1.49.0',
- 'bf-acessos-prontuario-149.js?v=1.49.0',
- 'bf-odontomapa-149.js?v=1.49.0',
- 'bf-ciencia-facial-149.js?v=1.49.0',
- 'bf-estetmapa-149.js?v=1.49.0',
- 'bf-ditado-146.js?v=1.49.0',
- 'bf-sincronia-138.js?v=1.49.0',
- 'bf-cobranca-138.js?v=1.49.0',
- 'bf-assinante-138.js?v=1.49.0',
- 'bf-context-actions.js?v=1.49.0',
- 'bf-documentos-137.js?v=1.49.0',
- 'bf-documents.js?v=1.49.0',
- 'bf-fiscal-advanced.js?v=1.49.0',
- 'bf-nfse-139.js?v=1.49.0',
- 'bf-pe-malha.js?v=1.49.0',
- 'bf-pe-vistas.js?v=1.49.0',
+ 'bf-assinante-135.js?v=1.49.1',
+ 'bf-barbearia-129.js?v=1.49.1',
+ 'bf-blackpay-integrated.js?v=1.49.1',
+ 'bf-cadastro-fiscal.js?v=1.49.1',
+ 'bf-catalogos-130.js?v=1.49.1',
+ 'bf-foto-clinica-149.js?v=1.49.1',
+ 'bf-clinical.js?v=1.49.1',
+ 'bf-acessos-prontuario-149.js?v=1.49.1',
+ 'bf-odontomapa-149.js?v=1.49.1',
+ 'bf-ciencia-facial-149.js?v=1.49.1',
+ 'bf-estetmapa-149.js?v=1.49.1',
+ 'bf-ditado-146.js?v=1.49.1',
+ 'bf-sincronia-138.js?v=1.49.1',
+ 'bf-cobranca-138.js?v=1.49.1',
+ 'bf-assinante-138.js?v=1.49.1',
+ 'bf-context-actions.js?v=1.49.1',
+ 'bf-documentos-137.js?v=1.49.1',
+ 'bf-documents.js?v=1.49.1',
+ 'bf-fiscal-advanced.js?v=1.49.1',
+ 'bf-nfse-139.js?v=1.49.1',
+ 'bf-pe-malha.js?v=1.49.1',
+ 'bf-pe-vistas.js?v=1.49.1',
  'pes/dorsal.webp',
  'pes/plantar.webp',
  'pes/lateral.webp',
@@ -37,21 +37,21 @@ const BASE=['./','index.html','manifest.webmanifest','icone-192.png','icone-512.
  'pes/mapa-medial.png',
  'pes/mapa-dedos.png',
  'pes/mapa-calcanhar.png',
- 'bf-pes-141.js?v=1.49.0',
- 'bf-pes3d-141.js?v=1.49.0',
- 'bf-integrity-audit.js?v=1.49.0',
- 'bf-mobile-126.js?v=1.49.0',
- 'bf-mobile-photos.js?v=1.49.0',
- 'bf-navegacao-128.js?v=1.49.0',
- 'bf-receituario.js?v=1.49.0',
- 'bf-tati-help.js?v=1.49.0',
- 'bf-tutorial-136.js?v=1.49.0',
- 'bf-workflow-123.js?v=1.49.0',
- 'bf-workflow-124.js?v=1.49.0',
- 'bf-assinante-135.css?v=1.49.0',
- 'bf-assinante-138.css?v=1.49.0',
- 'bf-mobile-126.css?v=1.49.0',
- 'bf-navegacao-128.css?v=1.49.0'];
+ 'bf-pes-141.js?v=1.49.1',
+ 'bf-pes3d-141.js?v=1.49.1',
+ 'bf-integrity-audit.js?v=1.49.1',
+ 'bf-mobile-126.js?v=1.49.1',
+ 'bf-mobile-photos.js?v=1.49.1',
+ 'bf-navegacao-128.js?v=1.49.1',
+ 'bf-receituario.js?v=1.49.1',
+ 'bf-tati-help.js?v=1.49.1',
+ 'bf-tutorial-136.js?v=1.49.1',
+ 'bf-workflow-123.js?v=1.49.1',
+ 'bf-workflow-124.js?v=1.49.1',
+ 'bf-assinante-135.css?v=1.49.1',
+ 'bf-assinante-138.css?v=1.49.1',
+ 'bf-mobile-126.css?v=1.49.1',
+ 'bf-navegacao-128.css?v=1.49.1'];
 self.addEventListener('install',event=>{
  event.waitUntil(caches.open(CACHE)
   .then(cache=>Promise.allSettled(BASE.map(path=>cache.add(path))))
@@ -69,6 +69,7 @@ self.addEventListener('fetch',event=>{
  const url=new URL(request.url);
  if(url.origin!==self.location.origin||url.searchParams.has('token')||url.pathname.includes('/validar/'))return;
  // A criação de senha nunca usa o HTML ou o cache de uma sessão anterior.
+ if(url.pathname==='/painel-mestre'||url.pathname.startsWith('/painel-mestre/'))return;
  if(url.pathname==='/criar-senha'||url.pathname.startsWith('/criar-senha/'))return;
  // A entrada do signatário nunca é restaurada do cache do app.
  if(/^(?:\/app)?\/(?:ciencia-facial|laboratorio-facial)(?:\/|$)/.test(url.pathname))return;
