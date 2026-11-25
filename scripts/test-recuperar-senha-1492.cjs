@@ -14,8 +14,8 @@ window.supabase={createClient:(_u,_k,{auth:o})=>{
  if(o.storage.getItem(key)!=='fictional-pkce')throw Error('proof unavailable');codeUsed=code;
  o.storage.setItem(o.storageKey,'fictional app token');return {data:{session:{access_token:'fictional bearer'},user}};
  },getClaims:async()=>({data:{claims:{sub:'new',aal:'aal1',amr:[{method:codeUsed==='${bad}'?'otp':'recovery',timestamp:Math.floor(Date.now()/1000)}]}}}),
- mfa:{listFactors:async()=>{const totp=codeUsed==='${ordinary}'?[]:[{id:'f1',friendly_name:'Principal',status:'verified'},{id:'f2',friendly_name:'Reserva',status:'verified'}];return {data:{all:totp,totp}}},challengeAndVerify:async ({factorId,code})=>factorId==='f2'&&code==='123456'?(verified=true,{data:true}):{error:true},getAuthenticatorAssuranceLevel:async()=>({data:{currentLevel:verified?'aal2':'aal1'}})},
- getUser:async()=>({data:{user}}),updateUser:async({password})=>{if((codeUsed!=='${ordinary}'&&!verified)||password!=='SyntheticPass12')throw Error('invalid target');(window.updates??=[]).push(user.id);return {data:{user}}},signOut:async()=>{window.closedRecovery=true;}
+ mfa:{listFactors:async()=>{const totp=codeUsed==='${ordinary}'?[]:[{id:'f1',friendly_name:'Principal',status:'verified'},{id:'f2',friendly_name:'Reserva',status:'verified'}];return {data:{all:totp,totp}}},challengeAndVerify:async ({factorId,code})=>((window.mfaAttempts??= []).push(factorId),factorId==='f2'&&code==='123456'?(verified=true,{data:true}):{error:true}),getAuthenticatorAssuranceLevel:async()=>({data:{currentLevel:verified?'aal2':'aal1'}})},
+ getUser:async()=>window.expireRecovery?{error:{code:'session_expired'}}:({data:{user}}),updateUser:async({password})=>{if(codeUsed!=='${ordinary}'&&!verified)throw Error('MFA required');if(password==='UnchangedPass12')return {error:{code:'same_password'}};if(password==='GenericError12')return {error:{code:'unexpected_error'}};if((codeUsed!=='${ordinary}'&&!verified)||password!=='SyntheticPass12')throw Error('invalid target');(window.updates??=[]).push(user.id);return {data:{user}}},signOut:async()=>{window.closedRecovery=true;}
  }}}};
  `}):r.abort());
 const request=c.pages()[0]||await c.newPage();
@@ -28,15 +28,27 @@ await recovered.getByRole('button',{name:'Confirmar autenticador'}).click();awai
 await recovered.locator('[name=codigo]').fill('123456');await recovered.getByRole('button',{name:'Confirmar autenticador'}).click();await recovered.locator('#alterar').waitFor();
 a.equal(new URL(recovered.url()).pathname,'/recuperar-senha/');a.equal(new URL(recovered.url()).hash+new URL(recovered.url()).search,'');
 a.equal(await recovered.evaluate(()=>localStorage.getItem('blackflow-recovery-1492')),null);
-async function fill(page,email){await page.locator('#alterar [name=email]').fill(email);await page.locator('[name=senha]').fill('SyntheticPass12');await page.locator('[name=repita]').fill('SyntheticPass12');await page.getByRole('button',{name:'Salvar nova senha'}).click();}
+async function fill(page,email,password='SyntheticPass12'){await page.locator('#alterar [name=email]').fill(email);await page.locator('[name=senha]').fill(password);await page.locator('[name=repita]').fill(password);await page.getByRole('button',{name:'Salvar nova senha'}).click();}
 await fill(recovered,'wrong@example.test');await recovered.getByText(/não corresponde ao link/).waitFor();a.equal(await recovered.evaluate(()=>window.updates),undefined);
-await fill(recovered,'fixture@example.test');await recovered.getByText(/Senha atualizada/).waitFor();a.deepEqual(await recovered.evaluate(()=>window.updates),['new']);a.equal(await recovered.evaluate(()=>localStorage.getItem('old-auth')),'unchanged');a.equal(await recovered.evaluate(()=>window.closedRecovery),true);
+await fill(recovered,'fixture@example.test','GenericError12');await recovered.getByText(/Não foi possível salvar a nova senha/).waitFor();
+await fill(recovered,'fixture@example.test','UnchangedPass12');await recovered.getByText('A nova senha precisa ser diferente da atual.').waitFor();
+a(await recovered.locator('#alterar').isVisible());a(await recovered.locator('#autenticador').isHidden());a(await recovered.locator('#pedir').isHidden());
+a.equal(await recovered.locator('[name=senha]').inputValue(),'');a.equal(await recovered.locator('[name=repita]').inputValue(),'');
+a.equal(await recovered.locator('#alterar [name=email]').inputValue(),'fixture@example.test');a.equal(await recovered.evaluate(()=>window.closedRecovery),undefined);
+a.equal(await recovered.evaluate(()=>window.updates),undefined);
+await fill(recovered,'fixture@example.test');await recovered.getByText(/Senha atualizada/).waitFor();a.deepEqual(await recovered.evaluate(()=>window.mfaAttempts),['f2','f2']);a.deepEqual(await recovered.evaluate(()=>window.updates),['new']);a.equal(await recovered.evaluate(()=>localStorage.getItem('old-auth')),'unchanged');a.equal(await recovered.evaluate(()=>window.closedRecovery),true);
 await recovered.goto(home+'/app/#access_token=fictive.to.ken&refresh_token=oldsynthetic&type=recovery');await recovered.getByText(/Link inválido/).waitFor();a(await recovered.locator('#alterar').isHidden());
 await recovered.evaluate(()=>localStorage.setItem('blackflow-recovery-1492-code-verifier',JSON.stringify({valor:'fictional-pkce',expira:Date.now()+10000})));
 await recovered.goto(home+'/app/?code='+bad);await recovered.getByText(/Link inválido/).waitFor();a(await recovered.locator('#alterar').isHidden());
 await recovered.evaluate(()=>localStorage.setItem('blackflow-recovery-1492-code-verifier',JSON.stringify({valor:'fictional-pkce',expira:Date.now()+10000})));
 await recovered.goto(home+'/app/?code='+ordinary);await recovered.locator('#alterar').waitFor();a(await recovered.locator('#autenticador').isHidden());
 await fill(recovered,'fixture@example.test');await recovered.getByText(/Senha atualizada/).waitFor();
+await recovered.evaluate(()=>localStorage.setItem('blackflow-recovery-1492-code-verifier',JSON.stringify({valor:'fictional-pkce',expira:Date.now()+10000})));
+await recovered.goto(home+'/?code='+good);await recovered.locator('#autenticador').waitFor();
+await recovered.locator('[name=fator]').selectOption('f2');await recovered.locator('[name=codigo]').fill('123456');await recovered.getByRole('button',{name:'Confirmar autenticador'}).click();await recovered.locator('#alterar').waitFor();
+await recovered.evaluate(()=>{window.expireRecovery=true;});
+await fill(recovered,'fixture@example.test');await recovered.getByText('A sessão de recuperação venceu. Peça outro link.').waitFor();
+a(await recovered.locator('#alterar').isHidden());a(await recovered.locator('#pedir').isVisible());a.equal(await recovered.evaluate(()=>window.updates),undefined);a.equal(await recovered.evaluate(()=>window.closedRecovery),true);
 await recovered.setViewportSize({width:390,height:844});a(await recovered.evaluate(()=>document.documentElement.scrollWidth===innerWidth));
-console.log('PASS: route from Painel Mestre; new browser tab; root and app recovery handoff; no persistent Auth token; wrong email and non-recovery proof denied; legacy rejected; original session storage intact; 390px.');
+console.log('PASS: route from Painel Mestre; new browser tab; root and app recovery handoff; no persistent Auth token; wrong email and non-recovery proof denied; legacy rejected; original session storage intact; same-password retry without re-link/MFA; generic fallback; expired session denied; 390px.');
 }finally{if(b)await b.close();srv.close()}})().catch(e=>{console.error(e);process.exitCode=1});

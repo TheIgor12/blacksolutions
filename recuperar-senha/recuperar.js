@@ -70,6 +70,7 @@ acao('alterar',async f=>{
   if(a.error||a.data?.currentLevel!=='aal2'){f.reset();mostrar('pedir');await authFim();estado('A sessão de recuperação venceu. Peça outro link.');return;}
  }
  const r=await auth.updateUser({password:senha});f.elements.senha.value=f.elements.repita.value='';
+ if(r.error?.code==='same_password'){estado('A nova senha precisa ser diferente da atual.');return;}
  if(r.error||r.data?.user?.id!==sessionId){estado('Não foi possível salvar a nova senha. Confira os requisitos e tente novamente.');return;}
  f.reset();mostrar(null);await authFim();estado('Senha atualizada. Entre novamente. No Painel Mestre, confirme com seu autenticador.');
 });
