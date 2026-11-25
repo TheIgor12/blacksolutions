@@ -37,6 +37,10 @@ if [ -d vendor ]; then
   mkdir -p app/vendor
   cp vendor/* app/vendor/ 2>/dev/null || true
 fi
+if [ -d estetmapa ]; then
+  mkdir -p app/estetmapa
+  for f in estetmapa/*.webp estetmapa/*.png; do [ ! -f "$f" ] || cp "$f" "app/$f"; done
+fi
 # As imagens que o sistema pede pelo caminho img/... Copiadas só as usadas, e
 # nao a pasta inteira, que tem material de divulgacao e pesa megabytes.
 mkdir -p app/img

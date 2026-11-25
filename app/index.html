@@ -5232,7 +5232,7 @@ function agNovo(a,s){if(s==='Desmarcado'||s==='Faltou')return false;const k=a.da
  const hist=c=>S[c].some(x=>x.pacienteId===a.pacienteId&&((x.data||x.vencimento||x.pagamento||'')<a.data)&&(x.data||x.vencimento||x.pagamento));
  return !hist('evolucoes')&&!hist('tratamentos')&&!S.lancamentos.some(l=>l.pacienteId===a.pacienteId&&l.pagamento&&l.pagamento<a.data)}
 /* ============ Atualização: aviso com botão Atualizar agora ============ */
-const VERSAO_APP='1.48.0';const URL_VERSAO_JSON='https://raw.githubusercontent.com/TheIgor12/blacksolutions/main/versao.json';
+const VERSAO_APP='1.49.0';const URL_VERSAO_JSON='https://raw.githubusercontent.com/TheIgor12/blacksolutions/main/versao.json';
 const numV=v=>String(v||'0').split(/\D+/).filter(Boolean).map(Number);
 function versaoMaior(a,b){const x=numV(a),y=numV(b);for(let i=0;i<Math.max(x.length,y.length);i++){const d=(x[i]||0)-(y[i]||0);if(d)return d>0}return false}
 const ATU={nova:null,timer:null};
@@ -5242,7 +5242,10 @@ const ATU={nova:null,timer:null};
    muda, sobe uma janela dizendo o que mudou no trabalho dela, com as palavras
    do dia a dia, e nao com os nomes internos do sistema. Sobe uma vez por
    versao em cada aparelho, e nunca por cima de outra janela aberta. */
-const NOVIDADES={versao:'1.48.0',itens:[
+const NOVIDADES={versao:'1.49.0',itens:[
+ {seg:'odontologia',t:'Odontograma e ficha periodontal',d:'Abra o Odontograma para marcar a face de cada dente e registrar a ficha periodontal.'},
+ {seg:'biomedicina',t:'Histórico intramuscular',d:'Registre uma aplicação já realizada, digite o nome do produto usado e revise o rascunho antes de salvar na ficha.'},
+ {seg:'biomedicina',t:'Mapa estético',d:'Abra o Mapa estético para registrar os procedimentos, com lote e validade, e consultar o histórico.'},
  {t:'A ficha do paciente e a agenda voltaram a ser a mesma coisa',
   d:'Tinha um defeito sério e ele já está corrigido. Quando você cadastrava uma paciente nova e depois ia marcar o retorno dela, o sistema abria uma segunda ficha com o mesmo nome, em vez de reconhecer a que você já tinha preenchido. Por isso parecia que o cadastro e a anamnese tinham sumido. Nada se perdeu: estava tudo guardado na primeira ficha. Agora, ao digitar o nome de alguém que já existe, o sistema usa a ficha dela, com a anamnese, o histórico e os agendamentos juntos. Se houver duas pessoas com o nome exatamente igual, ele não adivinha e pede para você escolher, porque juntar prontuário errado não tem volta. Se já tiverem aparecido fichas repetidas aí, a faixa de conferência no alto da lista de pacientes mostra quais são e junta com um toque.'},
  {t:'O valor do procedimento agora aparece sozinho no orçamento',
@@ -5493,12 +5496,12 @@ function perfilAtual(){if(!NV.ativa)return null;if(NV.papel==='admin')return nul
  const id=acessos()[emailAtual()];if(!id)return null;return perfis().find(x=>x.id===id)||null}
 function podeTela(k){const pf=perfilAtual();if(!pf)return true;
  if(TELAS_CLINICAS.includes(k)&&!pode('clinico'))return false;
- if(k==='prontuarios'||k==='fotorapida'||k==='pesmapa'||k==='evolucoes')k='pacientes';
+ if(k==='prontuarios'||k==='fotorapida'||k==='pesmapa'||k==='evolucoes'||k==='odontomapa'||k==='estetmapa')k='pacientes';
  if(k==='orcamentos')k='servicos';if(k==='receituario')k='pacientes';
  return (pf.telas||[]).includes(k)}
 function pode(k){const pf=perfilAtual();if(!pf)return true;return !!(pf.extras||{})[k]}
 /* Telas clínicas inteiras, fora da ficha do paciente. */
-const TELAS_CLINICAS=['prontuarios','fotorapida','receituario','evolucoes','pesmapa','bfclinico'];
+const TELAS_CLINICAS=['prontuarios','fotorapida','receituario','evolucoes','pesmapa','bfclinico','odontomapa','estetmapa','acessosprontuario'];
 function perfilForm(id){const novo=!id;const pf=novo?{id:'p'+uid().slice(0,6),nome:'',telas:['agenda','pacientes'],extras:{}}:perfis().find(x=>x.id===id);if(!pf)return;
  const chk=(k,n,marc,fn)=>`<label class="chk" style="margin:4px 0"><input type="checkbox" ${marc?'checked':''} onchange="${fn}"> ${esc(n)}</label>`;
  window._pf=JSON.parse(JSON.stringify(pf));
@@ -6119,7 +6122,7 @@ function telaCopiaNaoAutorizada(){
   if(!origemAutorizada()){telaCopiaNaoAutorizada();return}}
  try{navigator.storage&&navigator.storage.persist&&navigator.storage.persist()}catch(e){}
  try{fonteAplicar()}catch(e){}
- try{if(/^https?:/.test(location.protocol)&&'serviceWorker' in navigator&&!window.pywebview)navigator.serviceWorker.register('./sw.js?v=1.48.0',{updateViaCache:'none'}).then(r=>r.update()).catch(()=>{})}catch(e){}
+ try{if(/^https?:/.test(location.protocol)&&'serviceWorker' in navigator&&!window.pywebview)navigator.serviceWorker.register('./sw.js?v=1.49.0',{updateViaCache:'none'}).then(r=>r.update()).catch(()=>{})}catch(e){}
  if(NV.ativa){
   if(!window.supabase||!window.supabase.createClient){UI.auth={modo:'offline',temCache:!!(await DB.get('ultimo'))};render();return}
   NV.sb=window.supabase.createClient(NUVEM.url,NUVEM.chave,{auth:{persistSession:true,autoRefreshToken:true}});
@@ -6170,36 +6173,41 @@ function agProf(nome){UI.profOff={};if(nome){S.profissionais.forEach(p=>{if(norm
 function menuProfs(){const L=az(S.profissionais.filter(p=>p.ativo!==false));if(!L.length)return '';const sel=UI.view==='agenda'?(UI.agProf||''):null;
  return `<div class="msec">AGENDA POR PROFISSIONAL</div><button class="${sel===''&&UI.view==='agenda'?'on':''}" onclick="agProf('')">${ico('cal',18)} Todos os profissionais</button>${L.map(p=>`<button class="${sel!=null&&norm(sel)===norm(p.nome)?'on':''}" onclick="agProf(${esc(JSON.stringify(p.nome))})"><span style="display:inline-block;width:12px;height:12px;border-radius:50%;background:${esc(p.cor||'#0a4bde')};margin:0 3px;flex:none"></span> ${esc(p.nome)}</button>`).join('')}`}
 </script>
-<script src="./bf-clinical.js?v=1.48.0"></script>
-<script src="./bf-fiscal-advanced.js?v=1.48.0"></script>
-<script src="./bf-nfse-139.js?v=1.48.0"></script>
-<script src="./bf-pes-141.js?v=1.48.0"></script>
-<script src="./bf-pe-malha.js?v=1.48.0"></script>
-<script src="./bf-pe-vistas.js?v=1.48.0"></script>
-<script src="./bf-pes3d-141.js?v=1.48.0"></script>
-<script src="./bf-receituario.js?v=1.48.0"></script>
-<script src="./bf-cadastro-fiscal.js?v=1.48.0"></script>
-<script src="./bf-context-actions.js?v=1.48.0"></script>
-<script src="./bf-integrity-audit.js?v=1.48.0"></script>
-<script src="./bf-blackpay-integrated.js?v=1.48.0"></script>
-<script src="./bf-tati-help.js?v=1.48.0"></script>
-<script src="./bf-mobile-photos.js?v=1.48.0"></script>
-<script src="./bf-documents.js?v=1.48.0"></script>
-<script src="./bf-workflow-123.js?v=1.48.0"></script>
-<script src="./bf-workflow-124.js?v=1.48.0"></script>
-<script>const bfMobileCss=document.createElement("link");bfMobileCss.rel="stylesheet";bfMobileCss.href="./bf-mobile-126.css?v=1.48.0";document.head.appendChild(bfMobileCss);</script>
-<script src="./bf-mobile-126.js?v=1.48.0"></script>
-<script>const bfNavCss=document.createElement("link");bfNavCss.rel="stylesheet";bfNavCss.href="./bf-navegacao-128.css?v=1.48.0";document.head.appendChild(bfNavCss);</script>
-<script src="./bf-navegacao-128.js?v=1.48.0"></script>
-<script src="./bf-barbearia-129.js?v=1.48.0"></script>
-<script src="./bf-catalogos-130.js?v=1.48.0"></script>
-<script src="./bf-sincronia-138.js?v=1.48.0"></script>
-<script src="./bf-cobranca-138.js?v=1.48.0"></script>
-<script src="./bf-assinante-138.js?v=1.48.0"></script>
-<script>["./bf-assinante-135.css?v=1.48.0","./bf-assinante-138.css?v=1.48.0"].forEach(function(h){var l=document.createElement("link");l.rel="stylesheet";l.href=h;document.head.appendChild(l)});</script>
-<script src="./bf-assinante-135.js?v=1.48.0"></script>
-<script src="./bf-tutorial-136.js?v=1.48.0"></script>
-<script src="./bf-documentos-137.js?v=1.48.0"></script>
-<script src="./bf-ditado-146.js?v=1.48.0"></script>
+<script src="./bf-foto-clinica-149.js?v=1.49.0"></script>
+<script src="./bf-clinical.js?v=1.49.0"></script>
+<script src="./bf-fiscal-advanced.js?v=1.49.0"></script>
+<script src="./bf-nfse-139.js?v=1.49.0"></script>
+<script src="./bf-pes-141.js?v=1.49.0"></script>
+<script src="./bf-pe-malha.js?v=1.49.0"></script>
+<script src="./bf-pe-vistas.js?v=1.49.0"></script>
+<script src="./bf-pes3d-141.js?v=1.49.0"></script>
+<script src="./bf-receituario.js?v=1.49.0"></script>
+<script src="./bf-cadastro-fiscal.js?v=1.49.0"></script>
+<script src="./bf-context-actions.js?v=1.49.0"></script>
+<script src="./bf-integrity-audit.js?v=1.49.0"></script>
+<script src="./bf-blackpay-integrated.js?v=1.49.0"></script>
+<script src="./bf-tati-help.js?v=1.49.0"></script>
+<script src="./bf-mobile-photos.js?v=1.49.0"></script>
+<script src="./bf-documents.js?v=1.49.0"></script>
+<script src="./bf-workflow-123.js?v=1.49.0"></script>
+<script src="./bf-workflow-124.js?v=1.49.0"></script>
+<script>const bfMobileCss=document.createElement("link");bfMobileCss.rel="stylesheet";bfMobileCss.href="./bf-mobile-126.css?v=1.49.0";document.head.appendChild(bfMobileCss);</script>
+<script src="./bf-mobile-126.js?v=1.49.0"></script>
+<script>const bfNavCss=document.createElement("link");bfNavCss.rel="stylesheet";bfNavCss.href="./bf-navegacao-128.css?v=1.49.0";document.head.appendChild(bfNavCss);</script>
+<script src="./bf-navegacao-128.js?v=1.49.0"></script>
+<script src="./bf-barbearia-129.js?v=1.49.0"></script>
+<script src="./bf-catalogos-130.js?v=1.49.0"></script>
+<script src="./bf-sincronia-138.js?v=1.49.0"></script>
+<script src="./bf-cobranca-138.js?v=1.49.0"></script>
+<script src="./bf-assinante-138.js?v=1.49.0"></script>
+<script>["./bf-assinante-135.css?v=1.49.0","./bf-assinante-138.css?v=1.49.0"].forEach(function(h){var l=document.createElement("link");l.rel="stylesheet";l.href=h;document.head.appendChild(l)});</script>
+<script src="./bf-assinante-135.js?v=1.49.0"></script>
+<script src="./bf-tutorial-136.js?v=1.49.0"></script>
+<script src="./bf-documentos-137.js?v=1.49.0"></script>
+<script src="./bf-ditado-146.js?v=1.49.0"></script>
+<script src="./bf-acessos-prontuario-149.js?v=1.49.0"></script>
+<script src="./bf-odontomapa-149.js?v=1.49.0"></script>
+<script src="./bf-ciencia-facial-149.js?v=1.49.0"></script>
+<script src="./bf-estetmapa-149.js?v=1.49.0"></script>
 </body>
 </html>

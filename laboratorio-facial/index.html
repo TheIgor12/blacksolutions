@@ -1,0 +1,24 @@
+<!doctype html><html lang="pt-BR"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' 'wasm-unsafe-eval'; style-src 'self'; img-src 'self' blob:; connect-src 'self' blob:; base-uri 'none'; form-action 'none'">
+<title>BlackFlow | Simulação facial ilustrativa</title><link rel="stylesheet" href="./view.css">
+<script src="./view.js" defer></script></head>
+<body><main><p class="tag">BlackFlow · processamento local</p><h1>Simulação facial ilustrativa</h1>
+<p>Confira a detecção e ajuste os pontos manualmente. A foto fica apenas neste navegador e a prévia não prevê resultado.</p>
+<section class="panel"><label for="imagem">Exemplo fictício</label>
+<select id="imagem"><option value="1">Retrato sintético A</option><option value="2">Retrato sintético B</option><option value="3">Modelo anatômico 3D</option><option value="5">Modelo sintético D</option><option value="4">Imagem sem rosto (teste)</option></select>
+<label for="foto-local">Ou escolha uma foto local</label><input id="foto-local" type="file" accept="image/jpeg,image/png,image/webp" disabled><p id="foto-origem" hidden>Resumo SHA-256 do original: <code id="foto-hash"></code></p><button type="button" id="limpar-foto" hidden>Remover foto</button><button id="iniciar" disabled>Detectar pontos</button><p id="status" role="status">Verificando o dispositivo.</p>
+<div id="resultado" hidden><canvas id="quadro" tabindex="0" aria-label="Pontos faciais. Arraste um ponto para corrigir ou selecione pelo número e use as setas."></canvas>
+<div class="controls"><label for="id-ponto">Ponto a corrigir</label><input type="number" id="id-ponto" min="1" max="478" value="469" inputmode="numeric"><button id="restaurar" type="button">Restaurar detecção</button><p id="distancia"></p><p id="metricas"></p></div>
+<section class="demonstracao" aria-label="Ensaio de processamento visual">
+<button id="confirmar-pontos" type="button">Gerar prévia ilustrativa</button>
+<div id="painel-previa" hidden>
+<h2>Prévia gráfica, sem significado clínico</h2>
+<p>Os dois controles só mudam a ilustração. Não são doses nem estimativas de resultado.</p>
+<label for="volume">Intensidade visual de volume <output id="val-volume">0</output></label><input id="volume" type="range" min="0" max="100" value="0">
+<label for="atenuacao">Atenuação visual de marcas <output id="val-atenuacao">0</output></label><input id="atenuacao" type="range" min="0" max="100" value="0">
+<canvas id="previa" aria-label="Prévia ilustrativa com marca gravada nos pixels"></canvas>
+<p id="tempo-ajuste" role="status"></p><button id="imprimir" type="button" disabled>Imprimir prévia ilustrativa</button>
+</div>
+</section>
+<p>As alterações ficam apenas nesta página. A distância em pixels usa os centros estimados das íris (pontos 469 e 474). Ela não representa uma medida física.</p>
+</div></section><noscript>Ative JavaScript para usar a bancada local.</noscript></main></body></html>

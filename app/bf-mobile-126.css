@@ -214,3 +214,11 @@ body.bf-modal-open #bf-tati-root{display:none!important}
  }
  #bf-fiscal-content button,#bf-fiscal-content select{touch-action:manipulation}
 }
+
+/* Alvos de toque da página: mantém os rótulos e a ordem de cada tela. */
+@media(max-width:760px){
+ .page button{min-height:40px}
+ .page button:not(.sm):not(.tiny):not(.xs){min-height:44px}
+ .page input:not([type=hidden]):not([type=checkbox]):not([type=radio]):not([type=range]),
+ .page select,.page textarea{min-height:46px;font-size:16px}
+}

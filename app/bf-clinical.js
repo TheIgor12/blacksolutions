@@ -86,9 +86,13 @@ window.bfOpenPatient=async function(){
   await window.bfShowPatient(l[0].id);
  }catch(e){err(e)}
 };
+let bfFichaVisita=0;
 window.bfShowPatient=async function(id){
+ const visita=++bfFichaVisita, clinicaInicial=cn(), usuarioInicial=who(), telaInicial=UI.view;
+ const vigente=()=>visita===bfFichaVisita&&clinicaInicial===cn()&&usuarioInicial===who()&&telaInicial===UI.view&&!UI.auth;
  try{
   const p=(await sel('bf_prontuarios','id,paciente_ref,segmento,anamnese',{id,clinica_id:cn()}))[0];
+  if(!vigente())return;
   if(!p)return toast('Prontuário não encontrado.');
   const [ev,procedures,files,teeth]=await Promise.all([
    sel('bf_evolucoes','conteudo,intercorrencia,criado_em',{prontuario_id:id},'criado_em'),
@@ -98,6 +102,7 @@ window.bfShowPatient=async function(id){
   ]);
   const an=p.anamnese||{};
   const catalog=await sel('bf_catalogo_servicos','codigo,nome,categoria',{segmento:p.segmento});
+  if(!vigente())return;
   let output=box(patientLabel(p.paciente_ref),button('Voltar à lista',"go('bfclinico')")+
    note('Anotações salvas são rastreáveis. Evite inserir informações clínicas em documentos fiscais.'));
   output+=box('Anamnese',flex(field('bfalergias','Alergias',an.alergias)+field('bfmeds','Medicamentos em uso',an.medicamentos))+
@@ -118,6 +123,7 @@ window.bfShowPatient=async function(id){
     field('bfdenteobs','Observação'))+button('Registrar marcação',"bfSaveTooth('"+id+"')")+
     rows(['Data','Marcações'],teeth.map(x=>[h(new Date(x.criado_em).toLocaleDateString('pt-BR')),h(JSON.stringify(x.dentes))])));
   }
+  if(p.segmento==='biomedicina'&&window.BFFotoClinica149)output+='<div id="bf-foto-clinica-montar"></div>';
   output+=box('Imagens e exames — arquivos privados',flex(choose('bftipoarquivo',[['fotografia','Fotografia'],['radiografia','Radiografia'],['dicom','DICOM'],['exame','Exame'],['outro','Outro']])+
    '<input id="bfarquivo" type="file" class="inp" accept="image/*,application/pdf,.dcm,.dicom">')+
    button('Anexar arquivo',"bfUploadFile('"+id+"')")+
@@ -128,6 +134,12 @@ window.bfShowPatient=async function(id){
    note('Prescrições e documentos profissionais exigem revisão, competência legal e assinatura apropriada.')+
    button('Guardar rascunho',"bfSaveDocument('"+id+"')"));
   body(output);
+  const mount=document.getElementById('bf-foto-clinica-montar'),actor=who(),clinic=cn(),client=NV.sb;
+  if(mount&&client&&actor)window.BFFotoClinica149?.open(mount,
+   ()=>vigente()&&mount.isConnected&&UI.view==='bfclinico'&&!UI.auth&&NV.ativa&&!NV.offline&&
+    S.config.segmento==='biomedicina'&&podeTela('bfclinico')&&who()===actor&&cn()===clinic&&NV.sb===client?
+     {clinica:clinic,ficha:p.id,paciente:String(p.paciente_ref),usuario:actor,sb:client}:null,
+   ()=>window.bfShowPatient(p.id));
  }catch(e){err(e)}
 };
 window.bfSaveAnamnesis=async id=>{try{

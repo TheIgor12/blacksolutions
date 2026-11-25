@@ -1,4 +1,4 @@
 {
-  "versao": "1.48.0",
-  "novidades": "A ficha do paciente e a agenda voltaram a ser a mesma coisa: ao marcar retorno de quem já está cadastrado, o sistema usa a ficha existente em vez de abrir outra. E o valor do procedimento passa a aparecer sozinho no orçamento."
+  "versao": "1.49.0",
+  "novidades": "Odontograma e ficha periodontal para Odontologia; mapa estético e histórico intramuscular para Biomedicina."
 }

@@ -1,0 +1,20 @@
+<!doctype html><html lang="pt-BR"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="referrer" content="no-referrer"><meta http-equiv="Content-Security-Policy" content="default-src 'none';script-src 'self';style-src 'self';connect-src https://blszdbjpxgtloblxlusr.supabase.co; form-action 'none';base-uri 'none'; object-src 'none'"><title>BlackFlow | Termo de ciência</title>
+<link rel="stylesheet" href="./ciencia.css">
+<script type="module" src="./conta.mjs"></script></head><body><main><p class="sub">BlackFlow · novo termo de ciência</p><h1>Simulação facial ilustrativa</h1>
+<section id="acesso"><h2>Entre na sua conta</h2>
+<form id="entrar"><label for="email">E-mail</label><input id="email" type="email" maxlength="254" required autocomplete="username">
+<label for="senha">Senha</label><input id="senha" type="password" required maxlength="128" autocomplete="current-password">
+<button type="submit">Entrar</button></form></section>
+<p id="sessao-estado" role="status" aria-live="polite"></p>
+<section id="conta" hidden><p>Se a profissional ainda vai emitir o termo, mostre este código a ela na clínica: <code id="ref-conta"></code>.</p><button type="button" class="alt" id="sair">Sair</button></section>
+<section id="fluxo" hidden><p>Abra o termo na sua conta confirmada. Use o código entregue pessoalmente pela profissional que conferiu sua identidade.</p>
+<label for="codigo">Código de uso único</label><input id="codigo" type="text" autocomplete="off" spellcheck="false" maxlength="64"><button id="abrir">Abrir termo</button>
+<div id="documento" hidden><h2>Leia e assine</h2><p id="texto"></p>
+<label id="rotulo">Assine no quadro</label><canvas id="cv" aria-labelledby="rotulo"></canvas>
+<button class="alt" id="limpar">Limpar assinatura</button>
+<label><input type="checkbox" id="ciencia"> Li o termo e concordo em assinar.</label>
+<button id="assinar" disabled>Assinar este termo</button></div>
+<div id="consulta"><h2>Consultar um recibo</h2><p>Se já assinou, entre com a mesma conta e informe o número que você guardou.</p><label for="numero-recibo">Número do recibo</label><input id="numero-recibo" type="text" autocomplete="off" spellcheck="false" maxlength="36"><button class="alt" id="buscar-recibo">Consultar recibo</button></div>
+<div id="confirmado" hidden><h2>Termo assinado</h2><p>Guarde este número de recibo: <b id="recibo"></b></p><p>Se não quiser permitir novas simulações, você pode revogar por aqui.</p><button class="alt" id="revogar">Revogar autorização</button><button class="alt" id="confirmar-revogacao" hidden>Confirmar revogação</button></div>
+<p id="estado" role="status" aria-live="polite"></p></section></main></body></html>
