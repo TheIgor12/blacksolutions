@@ -35,11 +35,16 @@ window.supabase={createClient:()=>{
 });
 for(const entry of ['/','/app/']){
  await page.goto(home+entry);await login(page,{id:expected,role:'admin'});
- const button=page.locator('[data-bf-previa-clinica]');await button.waitFor({state:'attached'});
+ const button=page.locator('aside .menu [data-bf-previa-clinica="bio"]');await button.waitFor({state:'attached'});
  await page.getByRole('button',{name:'Menu',exact:true}).click();
- await button.click();await page.getByRole('dialog').waitFor();
+ const pes=page.getByRole('button',{name:'Pés interativos',exact:true});
+ a.deepEqual(await pes.evaluate(el=>[el.nextElementSibling.textContent.trim(),el.nextElementSibling.nextElementSibling.textContent.trim()]),['Biomedicina','Odontologia']);
+ a.equal(await page.getByRole('button',{name:'Prévia de outros painéis'}).count(),0);
+ await pes.click();await page.getByRole('heading',{name:'Pés interativos',exact:true}).waitFor();
+ a.equal(await page.locator('dialog iframe').count(),0);
+ await page.getByRole('button',{name:'Menu',exact:true}).click();
+ await button.click();await page.getByRole('dialog',{name:'Biomedicina',exact:true}).waitFor();
  a.equal(await page.evaluate(()=>S.config.segmento),'podologia');a.equal(await page.evaluate(()=>NV.plano),'cortesia');
- await page.getByRole('button',{name:'Biomedicina',exact:true}).click();
  let f=page.frameLocator('dialog iframe');await f.getByRole('heading',{name:'Mapa estético'}).waitFor();
  await f.locator('#bf-em-paciente').selectOption({label:'Pessoa fictícia'});
  await f.getByRole('button',{name:'Histórico intramuscular'}).click();
@@ -49,14 +54,15 @@ for(const entry of ['/','/app/']){
  a(await sub.evaluate(()=>{try{localStorage.length;return false}catch{return true}}));
  a(await sub.evaluate(()=>{try{indexedDB.open('isolamento');return false}catch{return true}}));
  a(await sub.evaluate(async()=>{try{await fetch('/versao.json');return false}catch{return true}}));
- await page.getByRole('button',{name:'Odontologia',exact:true}).click();
+ await page.getByRole('button',{name:'Fechar prévia'}).click();
+ await page.getByRole('button',{name:'Odontologia',exact:true}).click();await page.getByRole('dialog',{name:'Odontologia',exact:true}).waitFor();
  f=page.frameLocator('dialog iframe');await f.getByRole('heading',{name:'Odontograma interativo'}).waitFor();
  await f.locator('#bfoPaciente').selectOption({label:'Pessoa fictícia'});
  await f.getByRole('button',{name:'Ficha periodontal'}).click();await f.locator('#bfoDentePerio').waitFor();
  const rpc=await page.evaluate(()=>window.rpcLog.filter(x=>x[0]==='bf_previa_clinica_autorizada'));
- a(rpc.length>=4);a(rpc.every(x=>x[1].p_clinica===expected));
+ a(rpc.length>=3);a(rpc.every(x=>x[1].p_clinica===expected));
  if(entry==='/')await page.evaluate(()=>{window.revoked=true;document.dispatchEvent(new Event('visibilitychange'));});
- else await page.getByRole('button',{name:'Biomedicina',exact:true}).evaluate(b=>{window.deniedError=true;b.click();});
+ else await page.evaluate(()=>{window.deniedError=true;document.dispatchEvent(new Event('visibilitychange'));});
  await page.getByRole('dialog').waitFor({state:'detached'});a.equal(await page.locator('dialog iframe').count(),0);a.equal(await page.evaluate(()=>NV.segmento),'podologia');
 }
 for(const fixture of [{id:expected,role:'usuario'},{id:other,role:'admin'}]){
@@ -65,19 +71,20 @@ for(const fixture of [{id:expected,role:'usuario'},{id:other,role:'admin'}]){
  a.equal(await page.locator('[data-bf-previa-clinica]').count(),0);a.equal(await page.locator('dialog iframe').count(),0);
 }
 await page.goto(home+'/');await login(page,{id:expected,role:'admin'});
-await page.locator('[data-bf-previa-clinica]').waitFor({state:'attached'});await page.getByRole('button',{name:'Menu',exact:true}).click();
-await page.locator('[data-bf-previa-clinica]').click();await page.getByRole('button',{name:'Odontologia',exact:true}).click();
+await page.locator('[data-bf-previa-clinica="odonto"]').waitFor({state:'attached'});await page.getByRole('button',{name:'Menu',exact:true}).click();
+await page.getByRole('button',{name:'Odontologia',exact:true}).click();
 await page.locator('dialog iframe').waitFor();await page.evaluate(()=>sair());await page.getByRole('dialog').waitFor({state:'detached'});await page.locator('#au_email').waitFor();
 await page.goto(home+'/');await login(page,{id:expected,role:'admin',multi:true});
-await page.locator('[data-bf-previa-clinica]').waitFor({state:'attached'});await page.getByRole('button',{name:'Menu',exact:true}).click();
-await page.locator('[data-bf-previa-clinica]').click();await page.getByRole('button',{name:'Odontologia',exact:true}).click();
+await page.locator('[data-bf-previa-clinica="odonto"]').waitFor({state:'attached'});await page.getByRole('button',{name:'Menu',exact:true}).click();
+await page.getByRole('button',{name:'Odontologia',exact:true}).click();
 await page.locator('dialog iframe').waitFor();
 await page.evaluate(id=>{void abrirOutraClinica(id);},other);await page.getByRole('dialog').waitFor({state:'detached'});await page.locator('#au_email').waitFor();
 await login(page,{id:expected,role:'admin',multi:true});a.equal(await page.evaluate(()=>NV.clinicaId),other);a.equal(await page.locator('[data-bf-previa-clinica]').count(),0);
 await page.goto(home+'/');await page.setViewportSize({width:390,height:844});await login(page,{id:expected,role:'admin'});
 await page.getByRole('button',{name:'Menu',exact:true}).click();await page.getByRole('button',{name:'Outros painéis: abra no computador'}).click();
+a.equal(await page.getByRole('button',{name:'Biomedicina',exact:true}).count(),0);a.equal(await page.getByRole('button',{name:'Odontologia',exact:true}).count(),0);
 await page.getByText('Abra no computador para conferir Biomedicina e Odontologia.').waitFor();
 a.equal(await page.locator('dialog iframe').count(),0);a(await page.evaluate(()=>document.documentElement.scrollWidth===innerWidth));
 a.deepEqual(errors,[]);a.deepEqual(external,[]);
-console.log('PASS: login comum nas duas portas, admin autorizado, membro comum e outro admin negados, todos os módulos fictícios, logout, troca de clínica, revogação, erro do RPC, desktop e celular sem overflow, sandbox sem acesso a rede ou storage.');
+console.log('PASS: login comum nas duas portas, ordem Pés interativos / Biomedicina / Odontologia, abertura direta, pés preservados, admin autorizado, membro comum e outro admin negados, todos os módulos fictícios, logout, troca de clínica, revogação, erro do RPC, desktop e celular sem overflow, sandbox sem acesso a rede ou storage.');
 }finally{if(browser)await browser.close();srv.close()}})().catch(e=>{console.error(e);process.exitCode=1});

@@ -5234,7 +5234,7 @@ function agNovo(a,s){if(s==='Desmarcado'||s==='Faltou')return false;const k=a.da
  const hist=c=>S[c].some(x=>x.pacienteId===a.pacienteId&&((x.data||x.vencimento||x.pagamento||'')<a.data)&&(x.data||x.vencimento||x.pagamento));
  return !hist('evolucoes')&&!hist('tratamentos')&&!S.lancamentos.some(l=>l.pacienteId===a.pacienteId&&l.pagamento&&l.pagamento<a.data)}
 /* ============ Atualização: aviso com botão Atualizar agora ============ */
-const VERSAO_APP='1.49.3';const URL_VERSAO_JSON='https://raw.githubusercontent.com/TheIgor12/blacksolutions/main/versao.json';
+const VERSAO_APP='1.49.4';const URL_VERSAO_JSON='https://raw.githubusercontent.com/TheIgor12/blacksolutions/main/versao.json';
 const numV=v=>String(v||'0').split(/\D+/).filter(Boolean).map(Number);
 function versaoMaior(a,b){const x=numV(a),y=numV(b);for(let i=0;i<Math.max(x.length,y.length);i++){const d=(x[i]||0)-(y[i]||0);if(d)return d>0}return false}
 const ATU={nova:null,timer:null};
@@ -5244,8 +5244,8 @@ const ATU={nova:null,timer:null};
    muda, sobe uma janela dizendo o que mudou no trabalho dela, com as palavras
    do dia a dia, e nao com os nomes internos do sistema. Sobe uma vez por
    versao em cada aparelho, e nunca por cima de outra janela aberta. */
-const NOVIDADES={versao:'1.49.3',itens:[
- {t:'Prévia de outros painéis',d:'Clínicas com liberação da direção podem conferir exemplos fictícios de Biomedicina e Odontologia pelo computador.'},
+const NOVIDADES={versao:'1.49.4',itens:[
+ {seg:'podologia',t:'Biomedicina e Odontologia no menu',d:'Clínicas autorizadas podem abrir as prévias pelo computador, logo abaixo de Pés interativos.'},
  {t:'Link para recuperar a senha',d:'O link recebido por e-mail agora abre a tela separada para escolher uma nova senha. O autenticador do Painel Mestre continua obrigatório.'},
  {t:'Painel Mestre no computador',d:'O acesso mestre agora tem uma entrada própria e mostra Biomedicina e Odontologia com dados fictícios, sem abrir cadastros de clínicas.'},
  {seg:'odontologia',t:'Odontograma e ficha periodontal',d:'Abra o Odontograma para marcar a face de cada dente e registrar a ficha periodontal.'},
@@ -6128,7 +6128,7 @@ function telaCopiaNaoAutorizada(){
   if(!origemAutorizada()){telaCopiaNaoAutorizada();return}}
  try{navigator.storage&&navigator.storage.persist&&navigator.storage.persist()}catch(e){}
  try{fonteAplicar()}catch(e){}
- try{if(/^https?:/.test(location.protocol)&&'serviceWorker' in navigator&&!window.pywebview)navigator.serviceWorker.register('./sw.js?v=1.49.3',{updateViaCache:'none'}).then(r=>r.update()).catch(()=>{})}catch(e){}
+ try{if(/^https?:/.test(location.protocol)&&'serviceWorker' in navigator&&!window.pywebview)navigator.serviceWorker.register('./sw.js?v=1.49.4',{updateViaCache:'none'}).then(r=>r.update()).catch(()=>{})}catch(e){}
  if(NV.ativa){
   if(!window.supabase||!window.supabase.createClient){UI.auth={modo:'offline',temCache:!!(await DB.get('ultimo'))};render();return}
   NV.sb=window.supabase.createClient(NUVEM.url,NUVEM.chave,{auth:{persistSession:true,autoRefreshToken:true}});
@@ -6179,42 +6179,42 @@ function agProf(nome){UI.profOff={};if(nome){S.profissionais.forEach(p=>{if(norm
 function menuProfs(){const L=az(S.profissionais.filter(p=>p.ativo!==false));if(!L.length)return '';const sel=UI.view==='agenda'?(UI.agProf||''):null;
  return `<div class="msec">AGENDA POR PROFISSIONAL</div><button class="${sel===''&&UI.view==='agenda'?'on':''}" onclick="agProf('')">${ico('cal',18)} Todos os profissionais</button>${L.map(p=>`<button class="${sel!=null&&norm(sel)===norm(p.nome)?'on':''}" onclick="agProf(${esc(JSON.stringify(p.nome))})"><span style="display:inline-block;width:12px;height:12px;border-radius:50%;background:${esc(p.cor||'#0a4bde')};margin:0 3px;flex:none"></span> ${esc(p.nome)}</button>`).join('')}`}
 </script>
-<script src="./bf-foto-clinica-149.js?v=1.49.3"></script>
-<script src="./bf-clinical.js?v=1.49.3"></script>
-<script src="./bf-fiscal-advanced.js?v=1.49.3"></script>
-<script src="./bf-nfse-139.js?v=1.49.3"></script>
-<script src="./bf-pes-141.js?v=1.49.3"></script>
-<script src="./bf-pe-malha.js?v=1.49.3"></script>
-<script src="./bf-pe-vistas.js?v=1.49.3"></script>
-<script src="./bf-pes3d-141.js?v=1.49.3"></script>
-<script src="./bf-receituario.js?v=1.49.3"></script>
-<script src="./bf-cadastro-fiscal.js?v=1.49.3"></script>
-<script src="./bf-context-actions.js?v=1.49.3"></script>
-<script src="./bf-integrity-audit.js?v=1.49.3"></script>
-<script src="./bf-blackpay-integrated.js?v=1.49.3"></script>
-<script src="./bf-tati-help.js?v=1.49.3"></script>
-<script src="./bf-mobile-photos.js?v=1.49.3"></script>
-<script src="./bf-documents.js?v=1.49.3"></script>
-<script src="./bf-workflow-123.js?v=1.49.3"></script>
-<script src="./bf-workflow-124.js?v=1.49.3"></script>
-<script>const bfMobileCss=document.createElement("link");bfMobileCss.rel="stylesheet";bfMobileCss.href="./bf-mobile-126.css?v=1.49.3";document.head.appendChild(bfMobileCss);</script>
-<script src="./bf-mobile-126.js?v=1.49.3"></script>
-<script>const bfNavCss=document.createElement("link");bfNavCss.rel="stylesheet";bfNavCss.href="./bf-navegacao-128.css?v=1.49.3";document.head.appendChild(bfNavCss);</script>
-<script src="./bf-navegacao-128.js?v=1.49.3"></script>
-<script src="./bf-barbearia-129.js?v=1.49.3"></script>
-<script src="./bf-catalogos-130.js?v=1.49.3"></script>
-<script src="./bf-sincronia-138.js?v=1.49.3"></script>
-<script src="./bf-cobranca-138.js?v=1.49.3"></script>
-<script src="./bf-assinante-138.js?v=1.49.3"></script>
-<script>["./bf-assinante-135.css?v=1.49.3","./bf-assinante-138.css?v=1.49.3"].forEach(function(h){var l=document.createElement("link");l.rel="stylesheet";l.href=h;document.head.appendChild(l)});</script>
-<script src="./bf-assinante-135.js?v=1.49.3"></script>
-<script src="./bf-tutorial-136.js?v=1.49.3"></script>
-<script src="./bf-documentos-137.js?v=1.49.3"></script>
-<script src="./bf-ditado-146.js?v=1.49.3"></script>
-<script src="./bf-acessos-prontuario-149.js?v=1.49.3"></script>
-<script src="./bf-odontomapa-149.js?v=1.49.3"></script>
-<script src="./bf-ciencia-facial-149.js?v=1.49.3"></script>
-<script src="./bf-estetmapa-149.js?v=1.49.3"></script>
-<script src="./bf-previa-clinica-149.js?v=1.49.3"></script>
+<script src="./bf-foto-clinica-149.js?v=1.49.4"></script>
+<script src="./bf-clinical.js?v=1.49.4"></script>
+<script src="./bf-fiscal-advanced.js?v=1.49.4"></script>
+<script src="./bf-nfse-139.js?v=1.49.4"></script>
+<script src="./bf-pes-141.js?v=1.49.4"></script>
+<script src="./bf-pe-malha.js?v=1.49.4"></script>
+<script src="./bf-pe-vistas.js?v=1.49.4"></script>
+<script src="./bf-pes3d-141.js?v=1.49.4"></script>
+<script src="./bf-receituario.js?v=1.49.4"></script>
+<script src="./bf-cadastro-fiscal.js?v=1.49.4"></script>
+<script src="./bf-context-actions.js?v=1.49.4"></script>
+<script src="./bf-integrity-audit.js?v=1.49.4"></script>
+<script src="./bf-blackpay-integrated.js?v=1.49.4"></script>
+<script src="./bf-tati-help.js?v=1.49.4"></script>
+<script src="./bf-mobile-photos.js?v=1.49.4"></script>
+<script src="./bf-documents.js?v=1.49.4"></script>
+<script src="./bf-workflow-123.js?v=1.49.4"></script>
+<script src="./bf-workflow-124.js?v=1.49.4"></script>
+<script>const bfMobileCss=document.createElement("link");bfMobileCss.rel="stylesheet";bfMobileCss.href="./bf-mobile-126.css?v=1.49.4";document.head.appendChild(bfMobileCss);</script>
+<script src="./bf-mobile-126.js?v=1.49.4"></script>
+<script>const bfNavCss=document.createElement("link");bfNavCss.rel="stylesheet";bfNavCss.href="./bf-navegacao-128.css?v=1.49.4";document.head.appendChild(bfNavCss);</script>
+<script src="./bf-navegacao-128.js?v=1.49.4"></script>
+<script src="./bf-barbearia-129.js?v=1.49.4"></script>
+<script src="./bf-catalogos-130.js?v=1.49.4"></script>
+<script src="./bf-sincronia-138.js?v=1.49.4"></script>
+<script src="./bf-cobranca-138.js?v=1.49.4"></script>
+<script src="./bf-assinante-138.js?v=1.49.4"></script>
+<script>["./bf-assinante-135.css?v=1.49.4","./bf-assinante-138.css?v=1.49.4"].forEach(function(h){var l=document.createElement("link");l.rel="stylesheet";l.href=h;document.head.appendChild(l)});</script>
+<script src="./bf-assinante-135.js?v=1.49.4"></script>
+<script src="./bf-tutorial-136.js?v=1.49.4"></script>
+<script src="./bf-documentos-137.js?v=1.49.4"></script>
+<script src="./bf-ditado-146.js?v=1.49.4"></script>
+<script src="./bf-acessos-prontuario-149.js?v=1.49.4"></script>
+<script src="./bf-odontomapa-149.js?v=1.49.4"></script>
+<script src="./bf-ciencia-facial-149.js?v=1.49.4"></script>
+<script src="./bf-estetmapa-149.js?v=1.49.4"></script>
+<script src="./bf-previa-clinica-149.js?v=1.49.4"></script>
 </body>
 </html>
