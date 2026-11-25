@@ -43,6 +43,18 @@ function pacoteDoServico(s){
  return n>1&&tot>0?{sessoes:n,total:tot}:null;
 }
 const avulsoDoServico=s=>Math.max(0,Number(s&&s.preco)||0);
+/* Compara nome digitado com nome cadastrado sem acento, sem caixa e sem espaco
+   sobrando. Serve so para achar o servico, nunca para calcular. */
+const chaveNome=t=>String(t||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().replace(/\s+/g,' ').trim();
+/* Lista de nomes cadastrados, para o campo de texto sugerir enquanto digita.
+   A podologa relatou em 24/11/2026 que digitava o procedimento e o valor nao
+   aparecia: ela preenchia o campo de nome, que e livre, sem passar pela lista
+   de servicos, e o item ficava com valor zero sem nenhum aviso. */
+const nomesDatalist=()=>'<datalist id="bf-doc-servnomes">'+safeList().map(s=>{
+  const av=avulsoDoServico(s),pac=pacoteDoServico(s);
+  const r=av>0?moneyBR(av):(pac?moneyBR(pac.total)+' o pacote':'sem valor cadastrado');
+  return '<option value="'+E(s.nome)+'">'+E(r)+'</option>';
+ }).join('')+'</datalist>';
 const svcOptions=sel=>{
  let h='<option value="">Selecionar serviço cadastrado</option>';
  safeList().forEach(s=>{
@@ -83,13 +95,18 @@ function avisoSessoes(x){
   'Se já são o valor fechado do plano, deixe a quantidade em 1. Para o sistema preencher isso sozinho, '+
   'cadastre o pacote em Serviços, no campo de valor do pacote e número de sessões.</div>';
 }
+function avisoSemValor(x){
+ return '<div class="bf-doc-aviso" style="display:'+((Number(x.valor)||0)>0?'none':'block')+'">'+
+  'Este item está <b>sem valor</b> e vai sair zerado no orçamento. Escolha o serviço na lista acima, '+
+  'que o valor entra sozinho, ou digite o valor à mão.</div>';
+}
 function budgetRows(){return draft.items.map((x,i)=>'<div class="bf-doc-row'+(x.pacote?' bf-doc-row-pac':'')+'"><div class="bf-doc-grid">'+
  '<label>Serviço<select data-index="'+i+'" onchange="bfDocChooseService('+i+',this.value)">'+svcOptions(x.servicoId)+'</select></label>'+
- '<label>Nome do serviço / produto<input data-index="'+i+'" data-key="nome" value="'+E(x.nome)+'" required></label>'+
+ '<label>Nome do serviço / produto<input data-index="'+i+'" data-key="nome" list="bf-doc-servnomes" autocomplete="off" value="'+E(x.nome)+'" oninput="bfDocNome('+i+',this.value)" onchange="bfDocNome('+i+',this.value)" required></label>'+
  '<label class="full">Descrição<textarea data-index="'+i+'" data-key="descricao" rows="2">'+E(x.descricao)+'</textarea></label>'+
  '<label>'+(x.pacote?'Quantos pacotes':'Quantidade')+'<input data-index="'+i+'" data-key="quantidade" type="number" min="1" max="999" step="1" value="'+E(x.quantidade)+'" oninput="bfDocTotais()"></label>'+
- '<label>'+(x.pacote?'Valor fechado do pacote (R$)':'Valor unitário (R$)')+'<input data-index="'+i+'" data-key="valor" type="number" min="0" max="999999" step="0.01" value="'+E(x.valor)+'" oninput="bfDocTotais()"></label>'+
- '</div>'+(x.pacote?'<div class="bf-doc-selo">Pacote fechado</div>':'')+avisoSessoes(x)+
+ '<label>'+(x.pacote?'Valor fechado do pacote (R$)':'Valor unitário (R$)')+'<input data-index="'+i+'" data-key="valor" type="number" min="0" max="999999" step="0.01" value="'+E(x.valor)+'" oninput="bfDocValor('+i+')"></label>'+
+ '</div>'+(x.pacote?'<div class="bf-doc-selo">Pacote fechado</div>':'')+avisoSemValor(x)+avisoSessoes(x)+
  '<div class="bf-doc-sub"><span>Total deste item</span><b id="bf-doc-sub-'+i+'">'+moneyBR(subtotal(x))+'</b></div>'+
  '<button class="btn ghost sm" type="button" onclick="bfDocRemove('+i+')" '+(draft.items.length===1?'disabled':'')+'>Remover item</button></div>').join('')}
 function medRows(){return draft.meds.map((x,i)=>'<div class="bf-doc-row"><div class="bf-doc-grid">'+
@@ -102,7 +119,7 @@ function medRows(){return draft.meds.map((x,i)=>'<div class="bf-doc-row"><div cl
  '<label class="full">Orientações complementares<textarea rows="2" data-med="'+i+'" data-key="orientacoes">'+E(x.orientacoes)+'</textarea></label></div>'+
  '<button class="btn ghost sm" type="button" onclick="bfDocRemove('+i+')" '+(draft.meds.length===1?'disabled':'')+'>Remover item</button></div>').join('')}
 function collectionHTML(){return draft.kind==='orc'?
- '<div class="bf-doc-grid"><label>Tratamento / objetivo<input name="tratamento" value="'+E(draft.tratamento)+'"></label><label>Validade da proposta<input type="date" name="validade" value="'+E(draft.validade)+'"></label></div><div id="bf-doc-rows">'+budgetRows()+'</div>'+
+ nomesDatalist()+'<div class="bf-doc-grid"><label>Tratamento / objetivo<input name="tratamento" value="'+E(draft.tratamento)+'"></label><label>Validade da proposta<input type="date" name="validade" value="'+E(draft.validade)+'"></label></div><div id="bf-doc-rows">'+budgetRows()+'</div>'+
  '<button class="btn ghost" type="button" onclick="bfDocAdd()">+ Adicionar outro serviço ou produto</button>'+
  '<div class="bf-doc-total"><span>Total do orçamento</span><b id="bf-doc-total">'+moneyBR(totalOrc())+'</b></div>'+
  '<label class="bf-doc-note">Condições e observações<textarea name="nota" rows="2">'+E(draft.nota)+'</textarea></label>':
@@ -121,7 +138,7 @@ function renderForm(){const f=document.getElementById('bf-doc-form');if(!f)retur
 window.bfDocChooseService=function(i,valor){syncRows();let x=draft.items[i];if(!x)return;
  const v=String(valor||''),ehPacote=v.endsWith('|p'),id=ehPacote?v.slice(0,-2):v;
  const s=safeList().find(z=>String(z.id)===id);
- x.servicoId=v;x.pacote=ehPacote;x.nome=s?.nome||x.nome;
+ x.servicoId=v;x.pacote=ehPacote;x.valorManual=false;x.nome=s?.nome||x.nome;
  const pac=pacoteDoServico(s);
  if(ehPacote&&pac){
   /* Pacote: uma linha, valor fechado, sessoes na descricao. */
@@ -137,10 +154,36 @@ window.bfDocChooseService=function(i,valor){syncRows();let x=draft.items[i];if(!
 
 /* Recalcula sem redesenhar o formulario, para o campo nao perder o foco
    enquanto a pessoa digita. */
+/* A pessoa digitou o nome do procedimento. Se o nome for de servico cadastrado
+   e ela ainda nao tiver digitado valor a mao, o valor entra sozinho. Nao
+   redesenha o formulario, so atualiza os campos, senao o cursor some do meio
+   da palavra enquanto ela digita. */
+window.bfDocNome=function(i,txt){
+ syncRows();const x=draft.items[i];if(!x||x.pacote||x.valorManual)return;
+ const k=chaveNome(txt);if(!k)return;
+ const s=safeList().find(z=>chaveNome(z.nome)===k);if(!s)return;
+ const av=avulsoDoServico(s),pac=pacoteDoServico(s);
+ const v=av>0?av:0;
+ if(v<=0)return;
+ x.valor=v;x.servicoId=String(s.id);
+ const cv=document.querySelector('[data-index="'+i+'"][data-key="valor"]');if(cv)cv.value=v;
+ const sel=document.querySelector('select[data-index="'+i+'"]');if(sel)sel.value=String(s.id);
+ if(pac){const d=document.querySelector('[data-index="'+i+'"][data-key="descricao"]');
+  if(d&&!String(d.value).trim()){d.value='Valor por sessão. Existe pacote de '+pac.sessoes+' sessões por '+moneyBR(pac.total)+'.';x.descricao=d.value}}
+ bfDocTotais();
+};
+/* Valor digitado a mao manda em tudo: o sistema nao sobrescreve depois. */
+window.bfDocValor=function(i){
+ const x=draft.items[i];if(x)x.valorManual=true;
+ bfDocTotais();
+};
 window.bfDocTotais=function(){
  syncRows();
  draft.items.forEach((x,i)=>{const e=document.getElementById('bf-doc-sub-'+i);if(e)e.textContent=moneyBR(subtotal(x))});
  const t=document.getElementById('bf-doc-total');if(t)t.textContent=moneyBR(totalOrc());
+ const rows=document.querySelectorAll('#bf-doc-rows .bf-doc-row');
+ draft.items.forEach((x,i)=>{const r=rows[i];if(!r)return;const av=r.querySelector('.bf-doc-aviso');
+  if(av)av.style.display=(Number(x.valor)||0)>0?'none':'block'});
 };
 window.bfDocAdd=function(){syncRows();if(draft.kind==='orc')draft.items.push({servicoId:'',nome:'',descricao:'',valor:0,quantidade:1,pacote:false});
  else draft.meds.push({nome:'',tipo:'Industrializado',concentracao:'',forma:'',posologia:'',quantidade:'',orientacoes:''});

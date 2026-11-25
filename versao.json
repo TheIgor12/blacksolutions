@@ -1,4 +1,4 @@
 {
-  "versao": "1.47.0",
-  "novidades": "A nota fiscal sai com o CNPJ da própria clínica. Em Configurações, Cadastro fiscal, grave o token do integrador fiscal da sua empresa. O token fica guardado no servidor e a tela mostra apenas os seis últimos caracteres."
+  "versao": "1.48.0",
+  "novidades": "A ficha do paciente e a agenda voltaram a ser a mesma coisa: ao marcar retorno de quem já está cadastrado, o sistema usa a ficha existente em vez de abrir outra. E o valor do procedimento passa a aparecer sozinho no orçamento."
 }

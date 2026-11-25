@@ -872,11 +872,29 @@ function nextCodigo(){let m=0;S.pacientes.forEach(p=>{const n=parseInt(p.codigo,
    outra Maria Silva. Antes o sistema fundia as duas sem avisar, e prontuário
    fundido não se separa depois. Agora o nome igual cria ficha separada,
    marcada para conferência, e quem decide é a profissional. */
-function findPatient(nome,cpf,codigo){const k=keyCPF(cpf);if(k){const p=S.pacientes.find(p=>keyCPF(p.cpf)===k);if(p)return p}
+/* Procurar paciente ja cadastrado.
+   porNome vale SOMENTE para os fluxos em que a propria pessoa digitou o nome
+   escolhendo da lista de pacientes ja cadastrados: agenda, comanda, atendimento,
+   indicacao. Nesses casos o nome digitado e uma escolha, e recusar o encontro
+   cria ficha duplicada, que foi o defeito relatado pela podologa em 24/11/2026:
+   cadastrou a paciente, preencheu a anamnese, e ao remarcar o retorno o sistema
+   abriu uma segunda ficha, deixando a anamnese presa na primeira.
+   A importacao em lote nunca passa porNome, porque juntar fichas por nome igual
+   em planilha de centenas de linhas junta paciente errado, que nao tem volta. */
+function findPatient(nome,cpf,codigo,porNome){const k=keyCPF(cpf);if(k){const p=S.pacientes.find(p=>keyCPF(p.cpf)===k);if(p)return p}
  if(codigo){const p=S.pacientes.find(p=>String(p.codigo)===String(codigo)&&norm(p.nome)===norm(nome));if(p)return p}
+ if(porNome===true){const n=norm(nome);
+  if(n){const iguais=S.pacientes.filter(p=>norm(p.nome)===n);
+   if(iguais.length===1)return iguais[0];
+   if(iguais.length>1){const ativos=iguais.filter(p=>str(p.status||'Ativo')!=='Inativo');
+    if(ativos.length===1)return ativos[0];
+    return null}}}
  return null}
 function xaraDe(nome){const n=norm(nome);if(!n)return null;return S.pacientes.find(p=>norm(p.nome)===n)||null}
-function ensurePatient(nomeRaw,cpf){const {nome,codigo}=splitNome(nomeRaw);let p=findPatient(nome,cpf,codigo);
+function ensurePatient(nomeRaw,cpf,porNome){const {nome,codigo}=splitNome(nomeRaw);
+ /* porNome e verdadeiro por padrao: quem chama sem dizer nada e tela usada por
+    pessoa. Somente a importacao em lote passa false, de forma explicita. */
+ let p=findPatient(nome,cpf,codigo,porNome!==false);
  if(p)return p;
  if(!nome)return null;
  const xara=xaraDe(nome);
@@ -907,7 +925,7 @@ function pacJuntar(id){const novo=pac(id);if(!novo)return;const velho=pac(novo.c
   },'Juntar as fichas')}
 const pac=id=>S.pacientes.find(p=>p.id===id);
 /* ---- Apoio para digitar o nome do paciente em qualquer tela ---- */
-function acharPac(v){const {nome,codigo}=splitNome(v||'');return nome?findPatient(nome,'',codigo):null}
+function acharPac(v){const {nome,codigo}=splitNome(v||'');return nome?findPatient(nome,'',codigo,true):null}
 function levCurto(a,b){const n=a.length,m=b.length;if(Math.abs(n-m)>2)return 9;
  let ant=Array.from({length:m+1},(_,j)=>j);
  for(let i=1;i<=n;i++){const at=[i];let min=i;
@@ -1081,23 +1099,23 @@ const IMPORTERS={
    let p=findPatient(o.nome,o.cpf,o.codigo);if(p){Object.assign(p,o);delete p.criadoPorImportacao;r.atualizadas++}else{S.pacientes.push({id:uid(),status:'Ativo',...o,codigo:o.codigo||nextCodigo()});r.importadas++}});return r},
  financeiro(rows,head,map,mode){const r={lidas:0,importadas:0,ignoradas:0,novosPacientes:0};if(mode==='substituir')S.lancamentos=S.lancamentos.filter(l=>l.origem!=='import');
   rows.forEach(row=>{r.lidas++;const G=k=>map[k]==null?'':row[map[k]];const nome=str(G('paciente'));const valor=parseNum(G('valor')),vp=parseNum(G('valorPago'));
-   if(!nome||(!valor&&!vp)){r.ignoradas++;return}const n0=S.pacientes.length;const p=ensurePatient(nome,str(G('cpf')));if(!p){r.ignoradas++;return}if(S.pacientes.length>n0)r.novosPacientes++;
+   if(!nome||(!valor&&!vp)){r.ignoradas++;return}const n0=S.pacientes.length;const p=ensurePatient(nome,str(G('cpf')),false);if(!p){r.ignoradas++;return}if(S.pacientes.length>n0)r.novosPacientes++;
    S.lancamentos.push({id:uid(),pacienteId:p.id,descricao:str(G('descricao'))||'Lançamento',valor:valor||vp,valorPago:vp,vencimento:parseDT(G('vencimento')).d,pagamento:parseDT(G('pagamento')).d,forma:str(G('forma')),parcela:str(G('parcela')),statusOrig:str(G('status')),profissional:ensureProf(G('profissional')),origem:'import'});r.importadas++});return r},
  tratamentos(rows,head,map,mode){const r={lidas:0,importadas:0,ignoradas:0,novosPacientes:0};if(mode==='substituir')S.tratamentos=S.tratamentos.filter(t=>t.origem!=='import');
   rows.forEach(row=>{r.lidas++;const G=k=>map[k]==null?'':row[map[k]];const nome=str(G('paciente')),proc=str(G('procedimento'));if(!nome||!proc){r.ignoradas++;return}
-   const n0=S.pacientes.length;const p=ensurePatient(nome,str(G('cpf')));if(!p){r.ignoradas++;return}if(S.pacientes.length>n0)r.novosPacientes++;
+   const n0=S.pacientes.length;const p=ensurePatient(nome,str(G('cpf')),false);if(!p){r.ignoradas++;return}if(S.pacientes.length>n0)r.novosPacientes++;
    S.tratamentos.push({id:uid(),pacienteId:p.id,procedimento:proc,data:parseDT(G('data')).d,sessoesTotal:parseNum(G('sessoesTotal'))||1,sessoesRealizadas:parseNum(G('sessoesRealizadas')),valor:parseNum(G('valor')),statusOrig:str(G('status')),profissional:ensureProf(G('profissional')),especialidade:str(G('especialidade')),origem:'import'});r.importadas++});return r},
  anamnese(rows,head,map,mode){const r={lidas:0,importadas:0,ignoradas:0,novosPacientes:0};if(mode==='substituir')S.anamneses=S.anamneses.filter(a=>a.origem!=='import');
   const used=Object.values(map);const longo=map.pergunta!=null&&map.resposta!=null;const grupos={};
   rows.forEach(row=>{r.lidas++;const G=k=>map[k]==null?'':row[map[k]];const nome=str(G('paciente'));if(!nome){r.ignoradas++;return}
-   const n0=S.pacientes.length;const p=ensurePatient(nome,str(G('cpf')));if(!p){r.ignoradas++;return}if(S.pacientes.length>n0)r.novosPacientes++;
+   const n0=S.pacientes.length;const p=ensurePatient(nome,str(G('cpf')),false);if(!p){r.ignoradas++;return}if(S.pacientes.length>n0)r.novosPacientes++;
    const data=parseDT(G('data')).d,modelo=str(G('modelo'));
    if(longo){const key=p.id+'|'+data+'|'+modelo;const g=grupos[key]||(grupos[key]={id:uid(),pacienteId:p.id,data,modelo,respostas:[],origem:'import'});const q=str(G('pergunta')),a=str(G('resposta'));if(q||a)g.respostas.push({q,a})}
    else{const respostas=(head||[]).map((h,i)=>({i,q:str(h)||('Coluna '+(i+1)),a:str(typeof row[i]==='number'&&/data|nasc/.test(norm(h))?br(parseDT(row[i]).d):row[i])})).filter(x=>!used.includes(x.i)&&x.a).map(({q,a})=>({q,a}));S.anamneses.push({id:uid(),pacienteId:p.id,data,modelo,respostas,origem:'import'});r.importadas++}});
   if(longo){Object.values(grupos).forEach(g=>{S.anamneses.push(g);r.importadas++})}return r},
  agendamentos(rows,head,map,mode){const r={lidas:0,importadas:0,ignoradas:0,novosPacientes:0};if(mode==='substituir')S.agendamentos=S.agendamentos.filter(a=>a.origem!=='import');
   rows.forEach(row=>{r.lidas++;const G=k=>map[k]==null?'':row[map[k]];const nome=str(G('paciente'));const dt=parseDT(G('data'));if(!nome||!dt.d){r.ignoradas++;return}
-   const n0=S.pacientes.length;const p=ensurePatient(nome,str(G('cpf')));if(!p){r.ignoradas++;return}if(S.pacientes.length>n0)r.novosPacientes++;
+   const n0=S.pacientes.length;const p=ensurePatient(nome,str(G('cpf')),false);if(!p){r.ignoradas++;return}if(S.pacientes.length>n0)r.novosPacientes++;
    let hora=(map.hora!=null?(parseDT(G('hora')).t||str(G('hora')).slice(0,5)):'')||dt.t;if(!/^\d{2}:\d{2}$/.test(hora))hora='08:00';
    let dur=30;const fim=map.horaFim!=null?parseDT(G('horaFim')).t:'';const dv=G('duracao');
    if(fim){const [h1,m1]=hora.split(':').map(Number),[h2,m2]=fim.split(':').map(Number);const d=(h2*60+m2)-(h1*60+m1);if(d>0)dur=d}
@@ -3288,7 +3306,7 @@ function importarClinicorp(items,mode){
   if(o.clinicorpId)porId[o.clinicorpId]=p})}
  /* Liga o paciente de qualquer tabela pelo código interno do Clinicorp; sem ele, pelo CPF ou pelo nome */
  const acharPac=(id,nome,cpf,r)=>{const k=ccpTxt(id);if(k&&porId[k])return porId[k];const n=ccpTxt(nome);if(!n&&!keyCPF(cpf))return null;
-  const n0=S.pacientes.length;const p=ensurePatient(n||'Paciente sem nome',ccpTxt(cpf));if(p&&S.pacientes.length>n0)r.novosPacientes++;if(p&&k&&!p.clinicorpId){p.clinicorpId=k;porId[k]=p}return p};
+  const n0=S.pacientes.length;const p=ensurePatient(n||'Paciente sem nome',ccpTxt(cpf),false);if(p&&S.pacientes.length>n0)r.novosPacientes++;if(p&&k&&!p.clinicorpId){p.clinicorpId=k;porId[k]=p}return p};
  /* Tratamentos: cada linha do orçamento é uma sessão; as linhas do mesmo procedimento no mesmo orçamento viram um tratamento */
  if(T.Budgets){limpar('tratamentos');const r=res.Budgets=novo();const g={};
   T.Budgets.forEach(b=>{r.lidas++;if(ccpSim(b.Deleted)||!ccpTxt(b.ProcedureName)){r.ignoradas++;return}const k=ccpTxt(b.BudgetId)+'|'+norm(b.ProcedureName);(g[k]||(g[k]=[])).push(b)});
@@ -5214,7 +5232,7 @@ function agNovo(a,s){if(s==='Desmarcado'||s==='Faltou')return false;const k=a.da
  const hist=c=>S[c].some(x=>x.pacienteId===a.pacienteId&&((x.data||x.vencimento||x.pagamento||'')<a.data)&&(x.data||x.vencimento||x.pagamento));
  return !hist('evolucoes')&&!hist('tratamentos')&&!S.lancamentos.some(l=>l.pacienteId===a.pacienteId&&l.pagamento&&l.pagamento<a.data)}
 /* ============ Atualização: aviso com botão Atualizar agora ============ */
-const VERSAO_APP='1.47.0';const URL_VERSAO_JSON='https://raw.githubusercontent.com/TheIgor12/blacksolutions/main/versao.json';
+const VERSAO_APP='1.48.0';const URL_VERSAO_JSON='https://raw.githubusercontent.com/TheIgor12/blacksolutions/main/versao.json';
 const numV=v=>String(v||'0').split(/\D+/).filter(Boolean).map(Number);
 function versaoMaior(a,b){const x=numV(a),y=numV(b);for(let i=0;i<Math.max(x.length,y.length);i++){const d=(x[i]||0)-(y[i]||0);if(d)return d>0}return false}
 const ATU={nova:null,timer:null};
@@ -5224,7 +5242,11 @@ const ATU={nova:null,timer:null};
    muda, sobe uma janela dizendo o que mudou no trabalho dela, com as palavras
    do dia a dia, e nao com os nomes internos do sistema. Sobe uma vez por
    versao em cada aparelho, e nunca por cima de outra janela aberta. */
-const NOVIDADES={versao:'1.47.0',itens:[
+const NOVIDADES={versao:'1.48.0',itens:[
+ {t:'A ficha do paciente e a agenda voltaram a ser a mesma coisa',
+  d:'Tinha um defeito sério e ele já está corrigido. Quando você cadastrava uma paciente nova e depois ia marcar o retorno dela, o sistema abria uma segunda ficha com o mesmo nome, em vez de reconhecer a que você já tinha preenchido. Por isso parecia que o cadastro e a anamnese tinham sumido. Nada se perdeu: estava tudo guardado na primeira ficha. Agora, ao digitar o nome de alguém que já existe, o sistema usa a ficha dela, com a anamnese, o histórico e os agendamentos juntos. Se houver duas pessoas com o nome exatamente igual, ele não adivinha e pede para você escolher, porque juntar prontuário errado não tem volta. Se já tiverem aparecido fichas repetidas aí, a faixa de conferência no alto da lista de pacientes mostra quais são e junta com um toque.'},
+ {t:'O valor do procedimento agora aparece sozinho no orçamento',
+  d:'Ao digitar o nome do procedimento no orçamento, o sistema reconhece o serviço cadastrado e preenche o valor na hora, e o campo passou a sugerir os nomes enquanto você digita. Se um item ficar sem valor, aparece um aviso amarelo no próprio item, em vez de o orçamento sair zerado sem ninguém perceber. Valor digitado à mão continua mandando: o sistema não sobrescreve.'},
  {t:'A nota fiscal sai com o CNPJ da sua clínica',
   d:'Em Configurações, Cadastro fiscal, apareceu o campo do token do integrador fiscal. A nota fiscal é da sua clínica e sai com o CNPJ dela, assinada pelo certificado digital dela, então o token que emite também é o da sua empresa, não o da BlackSolutions. Cole ali o token que o integrador mostra depois que o CNPJ e o certificado A1 são cadastrados. O token fica guardado no servidor, e a tela mostra apenas os seis últimos caracteres, para você conferir que colou o certo. Comece pelo ambiente de teste e só mude para produção depois que uma nota de teste for autorizada pelo município.'},
  {seg:'podologia',t:'Permissão do microfone no ditado',
@@ -6097,7 +6119,7 @@ function telaCopiaNaoAutorizada(){
   if(!origemAutorizada()){telaCopiaNaoAutorizada();return}}
  try{navigator.storage&&navigator.storage.persist&&navigator.storage.persist()}catch(e){}
  try{fonteAplicar()}catch(e){}
- try{if(/^https?:/.test(location.protocol)&&'serviceWorker' in navigator&&!window.pywebview)navigator.serviceWorker.register('./sw.js?v=1.47.0',{updateViaCache:'none'}).then(r=>r.update()).catch(()=>{})}catch(e){}
+ try{if(/^https?:/.test(location.protocol)&&'serviceWorker' in navigator&&!window.pywebview)navigator.serviceWorker.register('./sw.js?v=1.48.0',{updateViaCache:'none'}).then(r=>r.update()).catch(()=>{})}catch(e){}
  if(NV.ativa){
   if(!window.supabase||!window.supabase.createClient){UI.auth={modo:'offline',temCache:!!(await DB.get('ultimo'))};render();return}
   NV.sb=window.supabase.createClient(NUVEM.url,NUVEM.chave,{auth:{persistSession:true,autoRefreshToken:true}});
@@ -6148,36 +6170,36 @@ function agProf(nome){UI.profOff={};if(nome){S.profissionais.forEach(p=>{if(norm
 function menuProfs(){const L=az(S.profissionais.filter(p=>p.ativo!==false));if(!L.length)return '';const sel=UI.view==='agenda'?(UI.agProf||''):null;
  return `<div class="msec">AGENDA POR PROFISSIONAL</div><button class="${sel===''&&UI.view==='agenda'?'on':''}" onclick="agProf('')">${ico('cal',18)} Todos os profissionais</button>${L.map(p=>`<button class="${sel!=null&&norm(sel)===norm(p.nome)?'on':''}" onclick="agProf(${esc(JSON.stringify(p.nome))})"><span style="display:inline-block;width:12px;height:12px;border-radius:50%;background:${esc(p.cor||'#0a4bde')};margin:0 3px;flex:none"></span> ${esc(p.nome)}</button>`).join('')}`}
 </script>
-<script src="./bf-clinical.js?v=1.47.0"></script>
-<script src="./bf-fiscal-advanced.js?v=1.47.0"></script>
-<script src="./bf-nfse-139.js?v=1.47.0"></script>
-<script src="./bf-pes-141.js?v=1.47.0"></script>
-<script src="./bf-pe-malha.js?v=1.47.0"></script>
-<script src="./bf-pe-vistas.js?v=1.47.0"></script>
-<script src="./bf-pes3d-141.js?v=1.47.0"></script>
-<script src="./bf-receituario.js?v=1.47.0"></script>
-<script src="./bf-cadastro-fiscal.js?v=1.47.0"></script>
-<script src="./bf-context-actions.js?v=1.47.0"></script>
-<script src="./bf-integrity-audit.js?v=1.47.0"></script>
-<script src="./bf-blackpay-integrated.js?v=1.47.0"></script>
-<script src="./bf-tati-help.js?v=1.47.0"></script>
-<script src="./bf-mobile-photos.js?v=1.47.0"></script>
-<script src="./bf-documents.js?v=1.47.0"></script>
-<script src="./bf-workflow-123.js?v=1.47.0"></script>
-<script src="./bf-workflow-124.js?v=1.47.0"></script>
-<script>const bfMobileCss=document.createElement("link");bfMobileCss.rel="stylesheet";bfMobileCss.href="./bf-mobile-126.css?v=1.47.0";document.head.appendChild(bfMobileCss);</script>
-<script src="./bf-mobile-126.js?v=1.47.0"></script>
-<script>const bfNavCss=document.createElement("link");bfNavCss.rel="stylesheet";bfNavCss.href="./bf-navegacao-128.css?v=1.47.0";document.head.appendChild(bfNavCss);</script>
-<script src="./bf-navegacao-128.js?v=1.47.0"></script>
-<script src="./bf-barbearia-129.js?v=1.47.0"></script>
-<script src="./bf-catalogos-130.js?v=1.47.0"></script>
-<script src="./bf-sincronia-138.js?v=1.47.0"></script>
-<script src="./bf-cobranca-138.js?v=1.47.0"></script>
-<script src="./bf-assinante-138.js?v=1.47.0"></script>
-<script>["./bf-assinante-135.css?v=1.47.0","./bf-assinante-138.css?v=1.47.0"].forEach(function(h){var l=document.createElement("link");l.rel="stylesheet";l.href=h;document.head.appendChild(l)});</script>
-<script src="./bf-assinante-135.js?v=1.47.0"></script>
-<script src="./bf-tutorial-136.js?v=1.47.0"></script>
-<script src="./bf-documentos-137.js?v=1.47.0"></script>
-<script src="./bf-ditado-146.js?v=1.47.0"></script>
+<script src="./bf-clinical.js?v=1.48.0"></script>
+<script src="./bf-fiscal-advanced.js?v=1.48.0"></script>
+<script src="./bf-nfse-139.js?v=1.48.0"></script>
+<script src="./bf-pes-141.js?v=1.48.0"></script>
+<script src="./bf-pe-malha.js?v=1.48.0"></script>
+<script src="./bf-pe-vistas.js?v=1.48.0"></script>
+<script src="./bf-pes3d-141.js?v=1.48.0"></script>
+<script src="./bf-receituario.js?v=1.48.0"></script>
+<script src="./bf-cadastro-fiscal.js?v=1.48.0"></script>
+<script src="./bf-context-actions.js?v=1.48.0"></script>
+<script src="./bf-integrity-audit.js?v=1.48.0"></script>
+<script src="./bf-blackpay-integrated.js?v=1.48.0"></script>
+<script src="./bf-tati-help.js?v=1.48.0"></script>
+<script src="./bf-mobile-photos.js?v=1.48.0"></script>
+<script src="./bf-documents.js?v=1.48.0"></script>
+<script src="./bf-workflow-123.js?v=1.48.0"></script>
+<script src="./bf-workflow-124.js?v=1.48.0"></script>
+<script>const bfMobileCss=document.createElement("link");bfMobileCss.rel="stylesheet";bfMobileCss.href="./bf-mobile-126.css?v=1.48.0";document.head.appendChild(bfMobileCss);</script>
+<script src="./bf-mobile-126.js?v=1.48.0"></script>
+<script>const bfNavCss=document.createElement("link");bfNavCss.rel="stylesheet";bfNavCss.href="./bf-navegacao-128.css?v=1.48.0";document.head.appendChild(bfNavCss);</script>
+<script src="./bf-navegacao-128.js?v=1.48.0"></script>
+<script src="./bf-barbearia-129.js?v=1.48.0"></script>
+<script src="./bf-catalogos-130.js?v=1.48.0"></script>
+<script src="./bf-sincronia-138.js?v=1.48.0"></script>
+<script src="./bf-cobranca-138.js?v=1.48.0"></script>
+<script src="./bf-assinante-138.js?v=1.48.0"></script>
+<script>["./bf-assinante-135.css?v=1.48.0","./bf-assinante-138.css?v=1.48.0"].forEach(function(h){var l=document.createElement("link");l.rel="stylesheet";l.href=h;document.head.appendChild(l)});</script>
+<script src="./bf-assinante-135.js?v=1.48.0"></script>
+<script src="./bf-tutorial-136.js?v=1.48.0"></script>
+<script src="./bf-documentos-137.js?v=1.48.0"></script>
+<script src="./bf-ditado-146.js?v=1.48.0"></script>
 </body>
 </html>
